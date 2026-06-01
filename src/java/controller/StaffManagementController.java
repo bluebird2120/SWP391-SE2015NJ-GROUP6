@@ -200,7 +200,53 @@ public class StaffManagementController extends HttpServlet {
         }
         response.sendRedirect(request.getContextPath() + "/owner/staff?action=list&msg=updated");
     }
+    private void handleEdit(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        int id = parseIntOrDefault(request.getParameter("id"), 0);
+        if (id <= 0) {
+            response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
+            return;
+        }
+        EmployeeDAO dao = new EmployeeDAO();
+        Employee existing = dao.findById(id);
+        if (existing == null || existing.getRoleID() != UserRole.RESTAURANT_STAFF.getRoleID()) {
+            response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
+            return;
+        }
 
+        Employee e = new Employee();
+        e.setEmployeeID(id);
+        e.setRoleID(existing.getRoleID());
+        e.setIsActive(existing.getIsActive());
+        e.setPassword(existing.getPassword());
+        e.setImage(existing.getImage());
+        e.setMustChangePassword(existing.getMustChangePassword());
+
+        Map<String, String> errors = bindAndValidate(request, e, false, id);
+
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            request.setAttribute("staff", e);
+            request.setAttribute("mode", "edit");
+            request.getRequestDispatcher(FORM_VIEW).forward(request, response);
+            return;
+        }
+
+        String imagePath = handleImageUpload(request, id);
+        if (imagePath != null) e.setImage(imagePath);
+
+        boolean ok = dao.update(e);
+        if (!ok) {
+            errors.put("_global", "Unable to update. Please try again.");
+            request.setAttribute("errors", errors);
+            request.setAttribute("staff", e);
+            request.setAttribute("mode", "edit");
+            request.getRequestDispatcher(FORM_VIEW).forward(request, response);
+            return;
+        }
+        response.sendRedirect(request.getContextPath() + "/owner/staff?action=list&msg=updated");
+    }
+    
     
 
     private Map<String, String> bindAndValidate(HttpServletRequest request, Employee e, boolean isCreate, int excludeId) {
