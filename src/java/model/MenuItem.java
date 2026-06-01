@@ -14,13 +14,13 @@ public class MenuItem {
     private String image;
     private int isAvailable;
     private String allergyNotes;
+    private String categoryName;
 
     public MenuItem() {
     }
 
-    public MenuItem(int itemID, int categoryID, String itemName, String description,
-            BigDecimal price, BigDecimal discountPercent, BigDecimal discountedPrice,
-            String image, int isAvailable, String allergyNotes) {
+    public MenuItem(int itemID, int categoryID, String itemName, String description, BigDecimal price,
+            BigDecimal discountPercent, BigDecimal discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
         this.itemID = itemID;
         this.categoryID = categoryID;
         this.itemName = itemName;
@@ -31,6 +31,7 @@ public class MenuItem {
         this.image = image;
         this.isAvailable = isAvailable;
         this.allergyNotes = allergyNotes;
+        this.categoryName = categoryName;
     }
 
     public int getItemID() {
@@ -112,4 +113,13 @@ public class MenuItem {
     public void setAllergyNotes(String allergyNotes) {
         this.allergyNotes = allergyNotes;
     }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
 }
