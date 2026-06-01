@@ -93,7 +93,7 @@ public class MenuItemController extends HttpServlet {
         int status = ((status_raw != null) && !(status_raw.isEmpty())) ? Integer.parseInt(status_raw) : 1;
         BigDecimal minPrice = ((minPrice_raw != null) && !(minPrice_raw.isEmpty())) ? new BigDecimal(minPrice_raw) : BigDecimal.ZERO;
         BigDecimal maxPrice = ((maxPrice_raw != null) && !(maxPrice_raw.isEmpty())) ? new BigDecimal(maxPrice_raw) : new BigDecimal("999999999");
-        System.out.println("Search = " + search);
+        
         //load lại list category
         List<MenuCategory> list = md.getAllMenuCategory();
         request.setAttribute("list", list);

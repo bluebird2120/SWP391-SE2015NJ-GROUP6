@@ -36,7 +36,8 @@ public class MenuItemDAO extends DBContext {
                         rs.getBigDecimal("discountedPrice"),
                         rs.getString("image"),
                         rs.getInt("isAvailable"),
-                        rs.getString("allergyNotes"));
+                        rs.getString("allergyNotes"),
+                        rs.getString("categoryName"));
 
                 list.add(mi);
             }
@@ -95,11 +96,11 @@ public class MenuItemDAO extends DBContext {
                         rs.getBigDecimal("discountedPrice"),
                         rs.getString("image"),
                         rs.getInt("isAvailable"),
-                        rs.getString("allergyNotes"));
+                        rs.getString("allergyNotes"),
+                        rs.getString("categoryName"));
 
                 list.add(mi);
             }
-            System.out.println("Size = " + list.size());
 
         } catch (Exception e) {
             e.printStackTrace();
