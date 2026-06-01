@@ -296,11 +296,14 @@ public class StaffManagementController extends HttpServlet {
             }
         }
 
-        if (dobStr != null && !dobStr.isBlank()) {
+       if (dobStr != null && !dobStr.isBlank()) {
             try {
                 LocalDate dob = LocalDate.parse(dobStr);
                 if (!dob.isBefore(LocalDate.now())) {
                     errors.put("dob", "Date of birth must be in the past.");
+                } else if (dob.isAfter(LocalDate.now().minusYears(18))) {
+                    // ← THÊM DÒNG NÀY
+                    errors.put("dob", "Employee must be at least 18 years old.");
                 } else {
                     e.setDob(Date.valueOf(dob));
                 }
