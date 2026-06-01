@@ -1,261 +1,520 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Restaurant Header</title>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%-- KHÔNG cần taglib fn nữa, lấy chữ cái đầu bằng Java scriptlet --%>
 
-        <!-- Google Font -->
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<%
+    // Lấy chữ cái đầu của tên để hiển thị avatar chữ
+    String customerInitial  = "";
+    String employeeInitial  = "";
+    model.Customer  cust = (model.Customer)  session.getAttribute("customer");
+    model.Employee  emp  = (model.Employee)  session.getAttribute("employee");
 
-        <!-- Font Awesome -->
-        <link rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    if (cust != null && cust.getUserName() != null && !cust.getUserName().isEmpty()) {
+        customerInitial = String.valueOf(cust.getUserName().charAt(0)).toUpperCase();
+    }
+    if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty()) {
+        employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
+    }
+%>
 
-        <style>
+<!-- Google Font + FontAwesome -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
-            *{
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        font-family: 'Inter', sans-serif;
+    }
 
-            body{
-                font-family: 'Inter', sans-serif;
-            }
+    /* ── HEADER ── */
+    .header {
+        width: 100%;
+        height: 78px;
+        background: #76493b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 50px;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+    }
 
-            /* HEADER */
-            .header{
-                width: 100%;
-                height: 78px;
-                background: #76493b;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 50px;
-            }
+    /* ── LOGO ── */
+    .logo img {
+        height: 58px;
+        object-fit: contain;
+    }
 
-            /* LOGO */
-            .logo img{
-                height: 58px;
-                object-fit: contain;
-            }
+    /* ── NAV ── */
+    .navbar {
+        display: flex;
+        gap: 50px;
+    }
+    .navbar a {
+        text-decoration: none;
+        color: #d7bfa4;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition: 0.3s;
+    }
+    .navbar a:hover {
+        color: #f0dcc2;
+    }
+    .navbar a .fa-gauge-high {
+        font-size: 13px;
+        margin-right: 5px;
+    }
 
-            /* MENU */
-            .navbar{
-                display: flex;
-                gap: 50px;
-            }
+    /* ── RIGHT ── */
+    .right-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
 
-            .navbar a{
-                text-decoration: none;
-                color: #d7bfa4;
-                font-size: 18px;
-                font-weight: 600;
-                text-transform: uppercase;
-                transition: 0.3s;
-            }
+    /* ── SEARCH ── */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        width: 240px;
+        height: 40px;
+        border: none;
+        outline: none;
+        border-radius: 6px;
+        background: #d7bfa4;
+        padding: 0 42px 0 14px;
+        font-size: 14px;
+    }
+    .search-box i {
+        position: absolute;
+        right: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #76493b;
+        cursor: pointer;
+    }
 
-            .navbar a:hover{
-                color: #e8cfae;
-            }
+    /* ── CHƯA ĐĂNG NHẬP ── */
+    .auth-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    .auth-link {
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 1.5px solid #d7bfa4;
+        color: #d7bfa4;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: 0.3s;
+    }
+    .auth-link:hover           {
+        background: #d7bfa4;
+        color: #76493b;
+    }
+    .auth-link.btn-register    {
+        background: #d7bfa4;
+        color: #76493b;
+    }
+    .auth-link.btn-register:hover {
+        background: #f0dcc2;
+    }
 
-            /* RIGHT SIDE */
-            .right-header{
-                display: flex;
-                align-items: center;
-                gap: 18px;
-            }
+    /* ── USER MENU ── */
+    .user-menu {
+        position: relative;
+    }
 
-            /* SEARCH */
-            .search-box{
-                position: relative;
-            }
+    .user-trigger {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+    .user-trigger:hover {
+        background: rgba(255,255,255,0.1);
+    }
 
-            .search-box input{
-                width: 260px;
-                height: 42px;
-                border: none;
-                outline: none;
-                border-radius: 6px;
-                background: #d7bfa4;
-                padding-left: 15px;
-                padding-right: 45px;
-                font-size: 15px;
-            }
+    .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #d7bfa4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: #76493b;
+        overflow: hidden;
+    }
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
-            .search-box i{
-                position: absolute;
-                right: 15px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #76493b;
-                cursor: pointer;
-            }
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .user-name  {
+        color: #f0dcc2;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
 
-            /* USER DROPDOWN */
-            .user-menu{
-                position: relative;
-            }
+    .role-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 20px;
+        margin-top: 2px;
+        width: fit-content;
+    }
+    .badge-customer {
+        background: #e8cfae;
+        color: #76493b;
+    }
+    .badge-staff    {
+        background: #3498db;
+        color: #fff;
+    }
+    .badge-owner    {
+        background: #e74c3c;
+        color: #fff;
+    }
 
-            /* ICON */
-            .user-icon{
-                width: 42px;
-                height: 42px;
-                border-radius: 50%;
-                background: #d7bfa4;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: 0.3s;
-            }
+    .fa-chevron-down {
+        color: #c9a98a;
+        font-size: 11px;
+        transition: 0.3s;
+    }
+    .user-menu.open .fa-chevron-down {
+        transform: rotate(180deg);
+    }
 
-            .user-icon:hover{
-                background: #e8cfae;
-            }
+    /* ── DROPDOWN ── */
+    .dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 210px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        display: none;
+        overflow: hidden;
+        z-index: 1000;
+    }
+    .dropdown.show {
+        display: block;
+        animation: fadeIn 0.15s ease;
+    }
 
-            .user-icon i{
-                color: #76493b;
-                font-size: 20px;
-            }
+    @keyframes fadeIn {
+        from {
+            opacity:0;
+            transform: translateY(-6px);
+        }
+        to {
+            opacity:1;
+            transform: translateY(0);
+        }
+    }
 
-            /* DROPDOWN */
-            .dropdown{
-                position: absolute;
-                top: 55px;
-                right: 0;
-                width: 180px;
-                background: white;
-                border-radius: 8px;
-                overflow: hidden;
-                display: none;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            }
+    .dd-header {
+        padding: 14px 18px 11px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .dd-header .dd-name  {
+        font-weight: 700;
+        color: #333;
+        font-size: 14px;
+    }
+    .dd-header .dd-email {
+        color: #999;
+        font-size: 11px;
+        margin-top: 2px;
+    }
 
-            .dropdown a{
-                display: block;
-                padding: 14px 18px;
-                text-decoration: none;
-                color: #333;
-                font-size: 15px;
-                transition: 0.3s;
-            }
+    .dd-section {
+        padding: 5px 0;
+    }
+    .dd-section + .dd-section {
+        border-top: 1px solid #f0f0f0;
+    }
 
-            .dropdown a:hover{
-                background: #f2f2f2;
-                color: #76493b;
-            }
+    .dropdown a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px;
+        text-decoration: none;
+        color: #444;
+        font-size: 13px;
+        transition: 0.15s;
+    }
+    .dropdown a i {
+        width: 15px;
+        color: #76493b;
+        font-size: 13px;
+    }
+    .dropdown a:hover  {
+        background: #fdf6f0;
+        color: #76493b;
+    }
+    .dropdown a.logout {
+        color: #e74c3c;
+    }
+    .dropdown a.logout i {
+        color: #e74c3c;
+    }
+    .dropdown a.logout:hover {
+        background: #fff5f5;
+    }
 
-            .dropdown{
-                position: absolute;
-                top: 55px;
-                right: 0;
-                width: 180px;
-                background: white;
-                border-radius: 8px;
-                overflow: hidden;
-                display: none;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            }
+    /* ── NOTIFICATION BELL ── */
+    .notif-btn {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+    .notif-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    .notif-btn i {
+        color: #d7bfa4;
+        font-size: 17px;
+    }
+    .notif-count {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background: #e74c3c;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
 
-            .dropdown.show{
-                display: block;
-            }
+<header class="header">
 
-            .auth-buttons{
-                display: flex;
-                gap: 12px;
-            }
+    <!-- LOGO -->
+    <a href="${pageContext.request.contextPath}/" class="logo">
+        <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
+    </a>
 
-            .auth-link{
-                text-decoration: none;
-                padding: 8px 14px;
-                border: 1px solid #d7bfa4;
-                color: #d7bfa4;
-                border-radius: 6px;
-                font-size: 14px;
-                transition: 0.3s;
-            }
+    <!-- NAV -->
+    <nav class="navbar">
+        <a href="#">Giới thiệu</a>
+        <a href="#">Thực đơn</a>
 
-            .auth-link:hover{
-                background: #d7bfa4;
-                color: #fff;
-            }
-        </style>
-    </head>
+        <%-- Đặt bàn: chỉ khách / chưa đăng nhập --%>
+        <c:if test="${sessionScope.employee == null}">
+            <a href="#">Đặt bàn</a>
+        </c:if>
 
-    <body>
+        <a href="#">Album ảnh</a>
+        <a href="#">Liên hệ</a>
 
-        <header class="header">
+        <%-- Dashboard: chỉ Staff và Owner --%>
+        <c:if test="${sessionScope.employee != null}">
+            <a href="${pageContext.request.contextPath}/staff/dashboard">
+                <i class="fa-solid fa-gauge-high"></i>Quản lý
+            </a>
+        </c:if>
+    </nav>
 
-            <!-- LOGO -->
-            <a href="#" class="logo">
-                <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
+    <!-- RIGHT SIDE -->
+    <div class="right-header">
+
+        <%-- Search: ẩn với staff/owner --%>
+        <c:if test="${sessionScope.employee == null}">
+            <div class="search-box">
+                <input type="text" placeholder="Tìm kiếm món ăn...">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+        </c:if>
+
+        <!-- ========== CHƯA ĐĂNG NHẬP ========== -->
+        <c:if test="${sessionScope.customer == null && sessionScope.employee == null}">
+            <div class="auth-buttons">
+                <a href="${pageContext.request.contextPath}/login" class="auth-link">
+                    <i class="fa-solid fa-right-to-bracket" style="margin-right:5px"></i>Đăng nhập
+                </a>
+                <a href="${pageContext.request.contextPath}/register" class="auth-link btn-register">
+                    <i class="fa-solid fa-user-plus" style="margin-right:5px"></i>Đăng ký
+                </a>
+            </div>
+        </c:if>
+
+        <!-- ========== KHÁCH HÀNG (Customer) ========== -->
+        <c:if test="${sessionScope.customer != null}">
+
+            <%-- Chuông thông báo --%>
+            <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
+                <i class="fa-solid fa-bell"></i>
+                <c:if test="${sessionScope.unreadCount > 0}">
+                    <span class="notif-count">${sessionScope.unreadCount}</span>
+                </c:if>
             </a>
 
-            <!-- MENU -->
-            <nav class="navbar">
-                <a href="#">Giới thiệu</a>
-                <a href="#">Thực đơn</a>
-                <a href="#">Đặt bàn</a>
-                <a href="#">Album ảnh</a>
-                <a href="#">Liên hệ</a>
-            </nav>
-
-            <!-- RIGHT -->
-            <div class="right-header">
-
-                <!-- SEARCH -->
-                <div class="search-box">
-                    <input type="text" placeholder="Tìm kiếm">
-                    <i class="fa-solid fa-magnifying-glass"></i>
+            <div class="user-menu" id="menuCustomer">
+                <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
+                    <div class="user-avatar">
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.customer.image}">
+                                <img src="${sessionScope.customer.image}" alt="avatar">
+                            </c:when>
+                            <c:otherwise><%= customerInitial %></c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">${sessionScope.customer.userName}</span>
+                        <span class="role-badge badge-customer">Khách hàng</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
                 </div>
 
-                <!-- CHƯA LOGIN -->
-                <c:if test="${sessionScope.user == null}">
-                    <div class="auth-buttons">
-                        <a href="login.jsp" class="auth-link">Đăng nhập</a>
-                        <a href="register.jsp" class="auth-link">Đăng ký</a>
+                <div class="dropdown" id="dropCustomer">
+                    <div class="dd-header">
+                        <div class="dd-name">${sessionScope.customer.userName}</div>
+                        <div class="dd-email">${sessionScope.customer.email}</div>
                     </div>
-                </c:if>
-
-                <!-- ĐÃ LOGIN -->
-                <c:if test="${sessionScope.user != null}">
-                    <div class="user-menu">
-
-                        <div class="user-icon" onclick="toggleMenu()">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-
-                        <div class="dropdown" id="dropdownMenu">
-                            <a href="#">Hồ sơ của tôi</a>
-                            <a href="logout">Đăng xuất</a>
-                        </div>
-
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/customer/profile">
+                            <i class="fa-solid fa-user"></i>Hồ sơ của tôi
+                        </a>
+                        <a href="${pageContext.request.contextPath}/customer/reservations">
+                            <i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn
+                        </a>
+                        <a href="${pageContext.request.contextPath}/customer/orders">
+                            <i class="fa-solid fa-receipt"></i>Lịch sử đặt món
+                        </a>
                     </div>
-                </c:if>
-
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/customer/reviews">
+                            <i class="fa-solid fa-star"></i>Đánh giá của tôi
+                        </a>
+                        <a href="${pageContext.request.contextPath}/customer/feedback">
+                            <i class="fa-solid fa-comment-dots"></i>Phản hồi
+                        </a>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/logout" class="logout">
+                            <i class="fa-solid fa-right-from-bracket"></i>Đăng xuất
+                        </a>
+                    </div>
+                </div>
             </div>
+        </c:if>
 
-        </header>
-        <script>
+        <!-- ========== NHÂN VIÊN / OWNER (Employee) ========== -->
+        <c:if test="${sessionScope.employee != null}">
 
-            function toggleMenu() {
-                document.getElementById("dropdownMenu")
-                        .classList.toggle("show");
-            }
+            <%--
+                Chuông thông báo cho cả Staff lẫn Owner.
+                Cả 2 đều là Employee nên dùng chung URL /staff/notifications.
+                Owner KHÔNG cần /owner/notifications riêng vì Owner đi qua /staff/* bình thường.
+            --%>
+            <a href="${pageContext.request.contextPath}/staff/notifications" class="notif-btn">
+                <i class="fa-solid fa-bell"></i>
+                <c:if test="${sessionScope.unreadCount > 0}">
+                    <span class="notif-count">${sessionScope.unreadCount}</span>
+                </c:if>
+            </a>
 
-            // click ra ngoài sẽ tự đóng
-            window.onclick = function (event) {
+            <div class="user-menu" id="menuEmployee">
+                <div class="user-trigger" onclick="toggleMenu('dropEmployee', 'menuEmployee')">
+                    <div class="user-avatar">
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.employee.image}">
+                                <img src="${pageContext.request.contextPath}/${sessionScope.employee.image}" alt="avatar">
+                            </c:when>
+                            <c:otherwise><%= employeeInitial %></c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">${sessionScope.employee.fullName}</span>
+                        <%-- roleID=1 là Owner, còn lại là Staff. Sửa số này cho đúng với DB. --%>
+                        <c:choose>
+                            <c:when test="${sessionScope.employee.roleID == 1}">
+                                <span class="role-badge badge-owner">Owner</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="role-badge badge-staff">Nhân viên</span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
 
-                if (!event.target.closest('.user-menu')) {
-                    document.getElementById("dropdownMenu")
-                            .classList.remove("show");
-                }
+                <%--
+                    Dropdown Staff và Owner giống hệt nhau: chỉ có 3 mục.
+                    Các chức năng quản lý (nhân viên, báo cáo...) được đặt trong
+                    trang dashboard riêng, truy cập qua link "Quản lý" trên nav bar.
+                --%>
+                <div class="dropdown" id="dropEmployee">
+                    <div class="dd-header">
+                        <div class="dd-name">${sessionScope.employee.fullName}</div>
+                        <div class="dd-email">${sessionScope.employee.email}</div>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/staff/profile">
+                            <i class="fa-solid fa-user"></i>Hồ sơ của tôi
+                        </a>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/staff/change-password">
+                            <i class="fa-solid fa-lock"></i>Đổi mật khẩu
+                        </a>
+                        <a href="${pageContext.request.contextPath}/logout" class="logout">
+                            <i class="fa-solid fa-right-from-bracket"></i>Đăng xuất
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </c:if>
 
-            }
+    </div>
+</header>
 
-        </script>
-    </body>
-</html>
+<script>
+    function toggleMenu(dropId, menuId) {
+        document.getElementById(dropId).classList.toggle('show');
+        document.getElementById(menuId).classList.toggle('open');
+    }
+    window.addEventListener('click', function (e) {
+        if (!e.target.closest('.user-menu')) {
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+            document.querySelectorAll('.user-menu').forEach(m => m.classList.remove('open'));
+        }
+    });
+</script>

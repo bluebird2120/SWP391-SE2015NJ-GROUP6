@@ -3,8 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/Study/Ky5/SWP391/Project/SWP391-SE2015NJ-GROUP6/Project/Restaurant-Reservation-And-Table-Service-System/web/images/logo.png</file>
-            <file>file:/D:/Study/Ky5/SWP391/Project/SWP391-SE2015NJ-GROUP6/Project/Restaurant-Reservation-And-Table-Service-System/web/includes/dashboard.jsp</file>
+            <file>file:/D:/Study/Ky5/SWP391/Project/SWP391-SE2015NJ-GROUP6/Project/Restaurant-Reservation-And-Table-Service-System/web/includes/header.jsp</file>
+            <file>file:/D:/Study/Ky5/SWP391/Project/SWP391-SE2015NJ-GROUP6/Project/Restaurant-Reservation-And-Table-Service-System/src/java/filter/AuthenticationFilter.java</file>
+            <file>file:/D:/Study/Ky5/SWP391/Project/SWP391-SE2015NJ-GROUP6/Project/Restaurant-Reservation-And-Table-Service-System/src/java/dal/DBContext.java</file>
         </group>
     </open-files>
 </project-private>
