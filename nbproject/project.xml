@@ -27,21 +27,13 @@
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
             </web-module-libraries>
-
             <web-module-additional-libraries/>
-
             <source-roots>
-                <root id="src.dir"/>
-            </source-roots>
-
-            <test-roots>
-                <root id="test.src.dir"/>
                 <root id="src.dir" name="Source Packages"/>
             </source-roots>
             <test-roots>
                 <root id="test.src.dir" name="Test Packages"/>
             </test-roots>
-
         </data>
     </configuration>
 </project>
