@@ -22,13 +22,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
+    .header, .header * {
         box-sizing: border-box;
-    }
-    body {
-        font-family: 'Inter', sans-serif;
     }
 
     /* ── HEADER ── */
@@ -43,6 +38,7 @@
         position: sticky;
         top: 0;
         z-index: 999;
+        flex-shrink: 0;
     }
 
     /* ── LOGO ── */
