@@ -5,10 +5,6 @@
         <data xmlns="http://www.netbeans.org/ns/web-project/3">
             <name>Restaurant-Reservation-And-Table-Service-System</name>
             <minimum-ant-version>1.6.5</minimum-ant-version>
-<<<<<<< HEAD
-
-=======
->>>>>>> c1ade4a9a22456340e9e62f71f10626ced7848f0
             <web-module-libraries>
                 <library dirs="200">
                     <file>${file.reference.jakarta.servlet.jsp.jstl-2.0.0.jar}</file>
@@ -31,24 +27,13 @@
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
             </web-module-libraries>
-
             <web-module-additional-libraries/>
-
             <source-roots>
-<<<<<<< HEAD
-                <root id="src.dir"/>
-            </source-roots>
-
-            <test-roots>
-                <root id="test.src.dir"/>
-=======
                 <root id="src.dir" name="Source Packages"/>
             </source-roots>
             <test-roots>
                 <root id="test.src.dir" name="Test Packages"/>
->>>>>>> c1ade4a9a22456340e9e62f71f10626ced7848f0
             </test-roots>
-
         </data>
     </configuration>
 </project>
