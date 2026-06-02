@@ -2,6 +2,13 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group/>
+        <group>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/src/java/dal/MenuItemDAO.java</file>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/src/java/dal/MenuCategoryDAO.java</file>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/src/java/controller/MenuItemController.java</file>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/web/views/admin/dish-list.jsp</file>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/src/java/model/Order.java</file>
+            <file>file:/D:/Knowledge/ki5/SWP/Project/Restaurant-Reservation-And-Table-Service-System/src/java/model/MenuItem.java</file>
+        </group>
     </open-files>
 </project-private>

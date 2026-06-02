@@ -7,33 +7,37 @@ public class Order {
 
     private int orderID;
     private int customerID;
-    private int reservationID;
     private int tableID;
     private int invoiceID;
-    private String tableStatus;          // available / occupied / reserved / cleaning
-    private String orderStatus;          // pending / confirmed / preparing / served / checkout
+    private String tableStatus;
     private BigDecimal totalAmount;
-    private Timestamp checkoutRequestAt; // DATETIME
+    private Timestamp checkoutRequestAt;
     private int isStaffConfirmed;
-    private Timestamp createdAt;         // DATETIME
-
+    private Timestamp createdAt;
+    private int orderType;
+    private Timestamp orderTime;
+    private BigDecimal depositAmount;
+    private String orderStatus;
+    
+    
     public Order() {
     }
 
-    public Order(int orderID, int customerID, int reservationID, int tableID, int invoiceID,
-            String tableStatus, String orderStatus, BigDecimal totalAmount,
-            Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt) {
+    public Order(int orderID, int customerID, int tableID, int invoiceID, 
+            String tableStatus, BigDecimal totalAmount, Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt, int orderType, Timestamp orderTime, BigDecimal depositAmount, String orderStatus) {
         this.orderID = orderID;
         this.customerID = customerID;
-        this.reservationID = reservationID;
         this.tableID = tableID;
         this.invoiceID = invoiceID;
         this.tableStatus = tableStatus;
-        this.orderStatus = orderStatus;
         this.totalAmount = totalAmount;
         this.checkoutRequestAt = checkoutRequestAt;
         this.isStaffConfirmed = isStaffConfirmed;
         this.createdAt = createdAt;
+        this.orderType = orderType;
+        this.orderTime = orderTime;
+        this.depositAmount = depositAmount;
+        this.orderStatus = orderStatus;
     }
 
     public int getOrderID() {
@@ -50,14 +54,6 @@ public class Order {
 
     public void setCustomerID(int customerID) {
         this.customerID = customerID;
-    }
-
-    public int getReservationID() {
-        return reservationID;
-    }
-
-    public void setReservationID(int reservationID) {
-        this.reservationID = reservationID;
     }
 
     public int getTableID() {
@@ -82,14 +78,6 @@ public class Order {
 
     public void setTableStatus(String tableStatus) {
         this.tableStatus = tableStatus;
-    }
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public void setOrderStatus(String orderStatus) {
-        this.orderStatus = orderStatus;
     }
 
     public BigDecimal getTotalAmount() {
@@ -122,5 +110,37 @@ public class Order {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public int getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(int orderType) {
+        this.orderType = orderType;
+    }
+
+    public Timestamp getOrderTime() {
+        return orderTime;
+    }
+
+    public void setOrderTime(Timestamp orderTime) {
+        this.orderTime = orderTime;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public void setDepositAmount(BigDecimal depositAmount) {
+        this.depositAmount = depositAmount;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
     }
 }
