@@ -14,6 +14,48 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
+            .filter-form{
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                background: gray;
+                padding: 12px;
+                flex-wrap: wrap; /*tự động xuống dòng khi screen nhỏ */
+                border-radius: 12px;
+                margin-bottom: 20px;
+                font-family: Arial, sans-serif;
+            }
+            .filter-input, .filter-select{
+                padding: 8px 12px;
+                border: 1px solid #cccccc;
+                border-radius: 8px;
+                font-size: 14px;
+                color: #333333;
+                background-color: #ffffff;
+            }
+            .filter-price{
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 14px;
+                color: #555555;
+            }
+            .filter-price input {
+                width: 100px;
+                border-radius: 6px;
+            }
+            .btn-submit {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                padding: 8px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            .btn-submit:hover {
+                background-color: #0056b3;
+            }
             .menu-container{
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -22,7 +64,7 @@
             }
             .card{
                 border: 1px solid #e0e0e0;
-                border-radius: 16px; /* Bo góc 16px giống hệt ảnh mẫu */
+                border-radius: 16px;
                 padding: 16px;
                 background: #ffffff;
                 font-family: Arial, sans-serif;
@@ -36,12 +78,12 @@
             }
             .status {
                 display: block;
-                background-color: #edf7ed; /* Màu nền xanh lá cây nhạt */
-                color: #1e4620; /* Màu chữ xanh lá cây đậm */
+                background-color: #edf7ed;
+                color: #1e4620;
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 14px;
-                
+
             }
             .item-name {
                 font-size: 18px;
@@ -100,10 +142,10 @@
     </head>
     <body>
         <!--Filter to search dish-->
-        <form action="${pageContext.request.contextPath}/menu" method="post">
-            <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn"/>
+        <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
+            <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn" class="filter-input"/>
 
-            <select name="category">
+            <select name="category" class="filter-select">
                 <option value="">Tất cả các món</option>
                 <c:forEach var="cat" items="${list}">
                     <option value="${cat.categoryID}" ${param.category == cat.categoryID ? "selected" : ""}>
@@ -112,28 +154,30 @@
                 </c:forEach>
             </select>
 
-            <select name="status">
+            <select name="status" class="filter-select">
                 <option value="1" ${param.status == 1 ? 'selected' : ''}>Đang Bán</option>
                 <option value="0" ${param.status == 0 ? 'selected' : ''}>Tạm Ngưng</option>
             </select>
-            <br/>
+
             Sắp xếp theo:
-            <select name="price">
+            <select name="price" class="filter-select">
                 <option value="price" ${param.price == 'price' ? 'selected' : ''}>Giá Gốc</option>
                 <option value="discountedPrice" ${param.price == 'discountedPrice' ? 'selected' : ''}>Giá Giảm Giá</option>
             </select>
-            <br/>
-            Giá từ:
-            <input type="number" name="minPrice" value="${param.minPrice}"/>
-            đến:
-            <input type="number" name="maxPrice" value="${param.maxPrice}"/>
-            <br/>
+
+            <div class="filter-price">
+                Giá từ:
+                <input type="number" name="minPrice" value="${param.minPrice}"/>
+                đến:
+                <input type="number" name="maxPrice" value="${param.maxPrice}"/>
+            </div>
+
             Sắp xếp theo thứ tự:
-            <select name="sort">
+            <select name="sort" class="filter-select">
                 <option value="asc" ${param.sort == 'asc' ? 'selected' : ''}>Tăng Dần</option>
                 <option value="desc" ${param.sort == 'desc' ? 'selected' : ''}>Giảm Dần</option>
             </select>
-            <input type="submit" value="LỌC"/>
+            <input type="submit" value="LỌC" class="btn-submit"/>
         </form>
         <!--Display dish-->
         <div class="menu-container">

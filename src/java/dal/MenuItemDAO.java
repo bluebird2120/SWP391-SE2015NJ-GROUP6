@@ -20,7 +20,8 @@ public class MenuItemDAO extends DBContext {
     public List<MenuItem> getAllMenuItem() {
 
         List<MenuItem> list = new ArrayList<>();
-        String sql = "select * from MenuItem";
+        String sql = "select * from MenuItem mi "
+                + "join MenuCategory mc on mi.categoryID = mc.categoryID";
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);

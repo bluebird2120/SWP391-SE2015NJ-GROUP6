@@ -64,6 +64,8 @@ public class MenuItemController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         List<MenuCategory> list = md.getAllMenuCategory();
+        List<MenuItem> listItem = mi.getAllMenuItem();
+        request.setAttribute("listItem", listItem);
         request.setAttribute("list", list);
         request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
     }
