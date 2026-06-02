@@ -40,7 +40,6 @@
             </source-roots>
             <test-roots>
                 <root id="test.src.dir" name="Test Packages"/>
->>>>>>> c1ade4a9a22456340e9e62f71f10626ced7848f0
             </test-roots>
 
         </data>
