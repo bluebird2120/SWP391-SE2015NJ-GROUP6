@@ -1,191 +1,198 @@
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@page contentType="text/html" pageEncoding="UTF-8" %>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Login - Restaurant System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #d7bfa4 0%, #76493b 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .login-card {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 460px;
-            overflow: hidden;
-        }
-        .login-header {
-            padding: 32px 32px 16px;
-            text-align: center;
-        }
-        .login-header h1 {
-            font-family: 'Playfair Display', serif;
-            color: #76493b;
-            font-size: 1.8rem;
-            margin-bottom: 6px;
-        }
-        .login-header p {
-            color: #a0714f;
-            font-size: 0.9rem;
-        }
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #ede0d8;
-        }
-        .tab {
-            flex: 1;
-            padding: 14px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 600;
-            color: #a0714f;
-            text-decoration: none;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-            background: #faf6f2;
-        }
-        .tab:hover { background: #f5ece4; }
-        .tab.active {
-            color: #76493b;
-            background: #fff;
-            border-bottom: 3px solid #76493b;
-        }
-        .login-body { padding: 28px 32px 32px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: #6b4c3b;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1px solid #d7bfa4;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #76493b;
-            box-shadow: 0 0 0 3px rgba(118, 73, 59, 0.12);
-        }
-        .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: #76493b;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 8px;
-        }
-        .btn-login:hover { background: #5d3a2e; }
-        .alert {
-            padding: 11px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 0.88rem;
-        }
-        .alert-error {
-            background: #fde7e9;
-            color: #b00020;
-            border: 1px solid #f5c2c7;
-        }
-        .login-footer {
-            text-align: center;
-            margin-top: 14px;
-            font-size: 0.85rem;
-            color: #a0714f;
-        }
-        .login-footer a {
-            color: #76493b;
-            font-weight: 600;
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-card">
-        <div class="login-header">
-            <h1><i class="fas fa-utensils"></i> Restaurant System</h1>
-            <p>Sign in to continue</p>
-        </div>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <title>Đăng nhập – Lách Tách Restaurant</title>
 
-        <div class="tabs">
-            <a href="${pageContext.request.contextPath}/login?type=customer"
-               class="tab ${loginType != 'employee' ? 'active' : ''}">
-                <i class="fas fa-user"></i> Customer
-            </a>
-            <a href="${pageContext.request.contextPath}/login?type=employee"
-               class="tab ${loginType == 'employee' ? 'active' : ''}">
-                <i class="fas fa-user-tie"></i> Employee
-            </a>
-        </div>
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
-        <div class="login-body">
-            <c:if test="${not empty error}">
-                <div class="alert alert-error">
-                    <i class="fas fa-exclamation-circle"></i> ${error}
+        <style>
+            body {
+                margin: 0;
+                font-family: 'Nunito', sans-serif;
+                background: #fdf6f0;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                font-family: 'Nunito', sans-serif !important;
+            }
+
+
+            .navbar a {
+                color: #d7bfa4;
+                margin-left: 30px;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+            .page-body {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px 20px;
+                box-sizing: border-box;
+            }
+
+            .login-box {
+                width: 850px;
+                display: flex;
+                border-radius: 18px;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            }
+
+            .left {
+                flex: 1;
+                background: #76493b;
+                color: #f0dcc2;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 40px;
+                text-align: center;
+            }
+
+            .left img {
+                width: 200px;
+                margin-bottom: 20px;
+            }
+
+            .left h2 {
+                font-family: 'Playfair Display', serif;
+                margin: 0;
+            }
+
+            .right {
+                flex: 1.2;
+                background: white;
+                padding: 50px;
+            }
+
+            .right h2 {
+                margin-bottom: 5px;
+            }
+
+            .field {
+                margin-top: 18px;
+            }
+
+            .field input {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                margin-top: 20px;
+                padding: 12px;
+                background: #76493b;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: 700;
+            }
+
+            .btn:hover {
+                background: #5a3329;
+            }
+
+            .register {
+                margin-top: 15px;
+                text-align: center;
+                font-size: 14px;
+            }
+
+            .register a {
+                color: #76493b;
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+
+            .error {
+                color: red;
+                font-size: 13px;
+                margin-top: 5px;
+            }
+
+            .welcome-text {
+                font-family: 'Playfair Display', serif;
+                font-size: 28px;
+                margin: 0;
+                font-weight: 700;
+                color: #f0dcc2;
+            }
+
+            .brand-text {
+                font-family: 'Playfair Display', serif;
+                font-size: 22px;
+                margin-top: 6px;
+                font-weight: 600;
+                color: #f0dcc2;
+            }
+        </style>
+    </head>
+
+    <body>
+        <%@include file="/includes/header.jsp" %>
+
+        <!-- BODY -->
+        <div class="page-body">
+
+            <div class="login-box">
+
+                <!-- LEFT -->
+                <div class="left">
+                    <img class="logo-left" src="${pageContext.request.contextPath}/images/logo.png">
+
+                    <h2 class="welcome-text">Chào mừng đến với</h2>
+                    <h3 class="brand-text">Lách Tách Restaurant</h3>
                 </div>
-            </c:if>
 
-            <c:choose>
-                <c:when test="${loginType == 'employee'}">
-                    <form method="post" action="${pageContext.request.contextPath}/login">
-                        <input type="hidden" name="loginType" value="employee">
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" name="email" value="${email}" placeholder="staff@restaurant.local" required>
+                <!-- RIGHT -->
+                <div class="right">
+
+                    <h2>Đăng nhập</h2>
+                    <p>Nhập số điện thoại và mật khẩu</p>
+
+                    <form action="${pageContext.request.contextPath}/login" method="post">
+
+                        <!-- SĐT -->
+                        <div class="field">
+                            <input type="text" name="identifier" placeholder="Số điện thoại">
+                            <div class="error">${phoneError}</div>
                         </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" placeholder="Enter your password" required>
+
+                        <!-- Password -->
+                        <div class="field">
+                            <input type="password" name="password" placeholder="Mật khẩu">
+                            <div class="error">${passwordError}</div>
                         </div>
-                        <button type="submit" class="btn-login">
-                            <i class="fas fa-sign-in-alt"></i> Sign in
+
+                        <button class="btn" type="submit">
+                            Đăng nhập
                         </button>
+
                     </form>
-                </c:when>
-                <c:otherwise>
-                    <form method="post" action="${pageContext.request.contextPath}/login">
-                        <input type="hidden" name="loginType" value="customer">
-                        <div class="form-group">
-                            <label>Username / Email</label>
-                            <input type="text" name="identifier" value="${identifier}" placeholder="Enter username or email" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" placeholder="Enter your password" required>
-                        </div>
-                        <button type="submit" class="btn-login">
-                            <i class="fas fa-sign-in-alt"></i> Sign in
-                        </button>
-                    </form>
-                    <div class="login-footer">
-                        Don't have an account? <a href="${pageContext.request.contextPath}/register">Register now</a>
+
+                    <div class="register">
+                        Chưa có tài khoản?
+                        <a href="${pageContext.request.contextPath}/register">Đăng ký</a>
                     </div>
-                </c:otherwise>
-            </c:choose>
+
+                </div>
+
+            </div>
+
         </div>
-    </div>
-</body>
+                  <%@include file="/includes/footer.jsp" %>  
+    </body>
 </html>
+

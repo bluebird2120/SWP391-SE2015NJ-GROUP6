@@ -22,133 +22,308 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        padding-top: 78px;
+    }
 
     /* ── HEADER ── */
     .header {
-        width: 100%; height: 78px;
+        width: 100%;
+        height: 78px;
         background: #76493b;
-        display: flex; align-items: center; justify-content: space-between;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         padding: 0 50px;
-        position: sticky; top: 0; z-index: 999;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
     }
 
     /* ── LOGO ── */
-    .logo img { height: 58px; object-fit: contain; }
+    .logo img {
+        height: 58px;
+        object-fit: contain;
+    }
 
     /* ── NAV ── */
-    .navbar { display: flex; gap: 50px; }
+    .navbar {
+        display: flex;
+        gap: 50px;
+    }
     .navbar a {
-        text-decoration: none; color: #d7bfa4;
-        font-size: 16px; font-weight: 600; text-transform: uppercase;
+        text-decoration: none;
+        color: #d7bfa4;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
         transition: 0.3s;
     }
-    .navbar a:hover { color: #f0dcc2; }
-    .navbar a .fa-gauge-high { font-size: 13px; margin-right: 5px; }
+    .navbar a:hover {
+        color: #f0dcc2;
+    }
+    .navbar a .fa-gauge-high {
+        font-size: 13px;
+        margin-right: 5px;
+    }
 
     /* ── RIGHT ── */
-    .right-header { display: flex; align-items: center; gap: 16px; }
+    .right-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
 
     /* ── SEARCH ── */
-    .search-box { position: relative; }
+    .search-box {
+        position: relative;
+    }
     .search-box input {
-        width: 240px; height: 40px;
-        border: none; outline: none; border-radius: 6px;
-        background: #d7bfa4; padding: 0 42px 0 14px; font-size: 14px;
+        width: 240px;
+        height: 40px;
+        border: none;
+        outline: none;
+        border-radius: 6px;
+        background: #d7bfa4;
+        padding: 0 42px 0 14px;
+        font-size: 14px;
     }
     .search-box i {
-        position: absolute; right: 13px; top: 50%;
-        transform: translateY(-50%); color: #76493b; cursor: pointer;
+        position: absolute;
+        right: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #76493b;
+        cursor: pointer;
     }
 
     /* ── CHƯA ĐĂNG NHẬP ── */
-    .auth-buttons { display: flex; gap: 10px; }
-    .auth-link {
-        text-decoration: none; padding: 8px 16px;
-        border: 1.5px solid #d7bfa4; color: #d7bfa4;
-        border-radius: 6px; font-size: 14px; font-weight: 500; transition: 0.3s;
+    .auth-buttons {
+        display: flex;
+        gap: 10px;
     }
-    .auth-link:hover           { background: #d7bfa4; color: #76493b; }
-    .auth-link.btn-register    { background: #d7bfa4; color: #76493b; }
-    .auth-link.btn-register:hover { background: #f0dcc2; }
+    .auth-link {
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 1.5px solid #d7bfa4;
+        color: #d7bfa4;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: 0.3s;
+    }
+    .auth-link:hover           {
+        background: #d7bfa4;
+        color: #76493b;
+    }
+    .auth-link.btn-register    {
+        background: #d7bfa4;
+        color: #76493b;
+    }
+    .auth-link.btn-register:hover {
+        background: #f0dcc2;
+    }
 
     /* ── USER MENU ── */
-    .user-menu { position: relative; }
+    .user-menu {
+        position: relative;
+    }
 
     .user-trigger {
-        display: flex; align-items: center; gap: 9px;
-        cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 8px;
+        transition: 0.3s;
     }
-    .user-trigger:hover { background: rgba(255,255,255,0.1); }
+    .user-trigger:hover {
+        background: rgba(255,255,255,0.1);
+    }
 
     .user-avatar {
-        width: 38px; height: 38px; border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
         background: #d7bfa4;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 16px; font-weight: 700; color: #76493b; overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: #76493b;
+        overflow: hidden;
     }
-    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
-    .user-info { display: flex; flex-direction: column; }
-    .user-name  { color: #f0dcc2; font-size: 13px; font-weight: 600; line-height: 1.2; }
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .user-name  {
+        color: #f0dcc2;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
 
     .role-badge {
-        font-size: 10px; font-weight: 600; padding: 1px 7px;
-        border-radius: 20px; margin-top: 2px; width: fit-content;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 20px;
+        margin-top: 2px;
+        width: fit-content;
     }
-    .badge-customer { background: #e8cfae; color: #76493b; }
-    .badge-staff    { background: #3498db; color: #fff; }
-    .badge-owner    { background: #e74c3c; color: #fff; }
+    .badge-customer {
+        background: #e8cfae;
+        color: #76493b;
+    }
+    .badge-staff    {
+        background: #3498db;
+        color: #fff;
+    }
+    .badge-owner    {
+        background: #e74c3c;
+        color: #fff;
+    }
 
-    .fa-chevron-down { color: #c9a98a; font-size: 11px; transition: 0.3s; }
-    .user-menu.open .fa-chevron-down { transform: rotate(180deg); }
+    .fa-chevron-down {
+        color: #c9a98a;
+        font-size: 11px;
+        transition: 0.3s;
+    }
+    .user-menu.open .fa-chevron-down {
+        transform: rotate(180deg);
+    }
 
     /* ── DROPDOWN ── */
     .dropdown {
-        position: absolute; top: calc(100% + 8px); right: 0;
-        min-width: 210px; background: #fff;
-        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        display: none; overflow: hidden; z-index: 1000;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 210px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        display: none;
+        overflow: hidden;
+        z-index: 1000;
     }
-    .dropdown.show { display: block; animation: fadeIn 0.15s ease; }
+    .dropdown.show {
+        display: block;
+        animation: fadeIn 0.15s ease;
+    }
 
-    @keyframes fadeIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes fadeIn {
+        from {
+            opacity:0;
+            transform: translateY(-6px);
+        }
+        to {
+            opacity:1;
+            transform: translateY(0);
+        }
+    }
 
     .dd-header {
-        padding: 14px 18px 11px; border-bottom: 1px solid #f0f0f0;
+        padding: 14px 18px 11px;
+        border-bottom: 1px solid #f0f0f0;
     }
-    .dd-header .dd-name  { font-weight: 700; color: #333; font-size: 14px; }
-    .dd-header .dd-email { color: #999; font-size: 11px; margin-top: 2px; }
+    .dd-header .dd-name  {
+        font-weight: 700;
+        color: #333;
+        font-size: 14px;
+    }
+    .dd-header .dd-email {
+        color: #999;
+        font-size: 11px;
+        margin-top: 2px;
+    }
 
-    .dd-section { padding: 5px 0; }
-    .dd-section + .dd-section { border-top: 1px solid #f0f0f0; }
+    .dd-section {
+        padding: 5px 0;
+    }
+    .dd-section + .dd-section {
+        border-top: 1px solid #f0f0f0;
+    }
 
     .dropdown a {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 18px; text-decoration: none; color: #444; font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px;
+        text-decoration: none;
+        color: #444;
+        font-size: 13px;
         transition: 0.15s;
     }
-    .dropdown a i { width: 15px; color: #76493b; font-size: 13px; }
-    .dropdown a:hover  { background: #fdf6f0; color: #76493b; }
-    .dropdown a.logout { color: #e74c3c; }
-    .dropdown a.logout i { color: #e74c3c; }
-    .dropdown a.logout:hover { background: #fff5f5; }
+    .dropdown a i {
+        width: 15px;
+        color: #76493b;
+        font-size: 13px;
+    }
+    .dropdown a:hover  {
+        background: #fdf6f0;
+        color: #76493b;
+    }
+    .dropdown a.logout {
+        color: #e74c3c;
+    }
+    .dropdown a.logout i {
+        color: #e74c3c;
+    }
+    .dropdown a.logout:hover {
+        background: #fff5f5;
+    }
 
     /* ── NOTIFICATION BELL ── */
     .notif-btn {
-        position: relative; width: 38px; height: 38px; border-radius: 50%;
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
         background: rgba(255,255,255,0.1);
-        display: flex; align-items: center; justify-content: center;
-        text-decoration: none; transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: 0.3s;
     }
-    .notif-btn:hover { background: rgba(255,255,255,0.2); }
-    .notif-btn i { color: #d7bfa4; font-size: 17px; }
+    .notif-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    .notif-btn i {
+        color: #d7bfa4;
+        font-size: 17px;
+    }
     .notif-count {
-        position: absolute; top: -2px; right: -2px;
-        background: #e74c3c; color: #fff; font-size: 9px; font-weight: 700;
-        width: 17px; height: 17px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background: #e74c3c;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 </style>
 
@@ -215,7 +390,7 @@
             </a>
 
             <div class="user-menu" id="menuCustomer">
-                <div class="user-trigger" onclick="toggleMenu('dropCustomer','menuCustomer')">
+                <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
                     <div class="user-avatar">
                         <c:choose>
                             <c:when test="${not empty sessionScope.customer.image}">
@@ -280,7 +455,7 @@
             </a>
 
             <div class="user-menu" id="menuEmployee">
-                <div class="user-trigger" onclick="toggleMenu('dropEmployee','menuEmployee')">
+                <div class="user-trigger" onclick="toggleMenu('dropEmployee', 'menuEmployee')">
                     <div class="user-avatar">
                         <c:choose>
                             <c:when test="${not empty sessionScope.employee.image}">
@@ -339,7 +514,7 @@
         document.getElementById(dropId).classList.toggle('show');
         document.getElementById(menuId).classList.toggle('open');
     }
-    window.addEventListener('click', function(e) {
+    window.addEventListener('click', function (e) {
         if (!e.target.closest('.user-menu')) {
             document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
             document.querySelectorAll('.user-menu').forEach(m => m.classList.remove('open'));
