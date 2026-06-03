@@ -8,15 +8,16 @@
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <style>
-    html, body {
-        margin: 0;
-        overflow-x: hidden;
+    .footer {
+        width: 100%;
+        box-sizing: border-box;
     }
-
+    
     .footer{
         background: #76493b;
         color: #d7bfa4;
         padding: 60px 80px 20px;
+        flex-shrink: 0;
     }
 
     .footer-container{
