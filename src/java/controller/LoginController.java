@@ -162,8 +162,8 @@ public class LoginController extends HttpServlet {
         if (phone == null || phone.isBlank()) {
             return "Vui lòng nhập số điện thoại.";
         }
-        if (!phone.matches("\\d{10}")) {
-            return "Số điện thoại phải có đúng 10 chữ số.";
+        if (!phone.matches("\\d{10,11}")) {
+            return "Số điện thoại phải có đúng 10-11 chữ số.";
         }
         return null;
     }
