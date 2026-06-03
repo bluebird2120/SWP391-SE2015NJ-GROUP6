@@ -108,5 +108,32 @@ public class MenuItemDAO extends DBContext {
         }
         return list;
     }
-
+    
+    public MenuItem getMenuItemById(int id){
+        MenuItem mi;
+        String sql = "select * from MenuItem mi "
+                + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "where mi.itemID = ?";
+        try { 
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();  
+            if(rs.next()){
+                mi = new MenuItem(rs.getInt("itemID"),
+                        rs.getInt("categoryID"),
+                        rs.getString("itemName"),
+                        rs.getString("description"),
+                        rs.getBigDecimal("price"),
+                        rs.getBigDecimal("discountPercent"),
+                        rs.getBigDecimal("discountedPrice"),
+                        rs.getString("image"),
+                        rs.getInt("isAvailable"),
+                        rs.getString("allergyNotes"),
+                        rs.getString("categoryName"));
+                return mi;
+            }
+        } catch (Exception e) {
+        }
+        return null;
+    }
 }

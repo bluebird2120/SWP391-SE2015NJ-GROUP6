@@ -14,10 +14,6 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
-            body{
-                margin: 0;
-                overflow: hidden;
-            }
             .admin-layout{
                 display: flex;
                 flex: 1;
@@ -151,6 +147,8 @@
                 align-items: center;
                 justify-content: center;
                 gap: 6px; /* Khoảng cách giữa icon và chữ */
+                text-decoration: none;
+                color: black;
             }
             /* Hiệu ứng đổi màu nhẹ khi di chuột vào nút */
             .btn:hover {
@@ -226,9 +224,8 @@
 
                             <p>Chi tiết: ${item.allergyNotes}</p>
 
-                            <div class="button-group">
-                                <button class="btn">Detail</button>
-                                <button class="btn">Update</button>
+                            <div class="button-group">                       
+                                <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">UPDATE</a>
                             </div>
 
                         </div>

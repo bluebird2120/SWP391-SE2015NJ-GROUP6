@@ -17,11 +17,11 @@ public class DBContext {
     public DBContext() {
         try {
             // Edit your connection details here
-            String username = "sa";
-            String password = "123";
-            String url = "jdbc:sqlserver://localhost:1433;databaseName=Restaurant_Reservation_and_Table_Service_System;encrypt=true;trustServerCertificate=true";
+            String username = "root";
+            String password = "123456";
+            String url = "jdbc:mysql://localhost:3306/Restaurant_Reservation_and_Table_Service_System?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
 
-            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(url, username, password);
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, null, ex);
@@ -45,10 +45,16 @@ public class DBContext {
     }
 
     public Connection getConnection() {
-        return new DBContext().connection;
+        return this.connection;
     }
 
     public static void main(String[] args) {
-        System.out.println(new DBContext().connection);
+        // Kiểm tra kết nối trực tiếp
+        DBContext db = new DBContext();
+        if (db.connection != null) {
+            System.out.println("✅ Thành công! Kết nối MySQL hoạt động: " + db.connection);
+        } else {
+            System.out.println("❌ Thất bại! Biến connection vẫn bị null.");
+        }
     }
 }
