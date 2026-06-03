@@ -156,6 +156,14 @@
                 <i class="fas fa-user-clock"></i> Shift Assignments
             </a>
         </li>
+        <c:if test="${sessionScope.employee.roleID == 1}">
+            <li class="nav-item">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/staff?action=list">
+                    <i class="fas fa-user-tie"></i> Manage Staff
+                </a>
+            </li>
+        </c:if>
 
         <!-- Finance -->
         <li class="nav-item">

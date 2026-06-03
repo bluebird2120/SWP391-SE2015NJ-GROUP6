@@ -19,18 +19,6 @@
                 font-family: 'Nunito', sans-serif !important;
             }
 
-            .header {
-                height: 78px;
-                background: #76493b;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 50px;
-            }
-
-            .header .logo img {
-                height: 58px;
-            }
 
             .navbar a {
                 color: #d7bfa4;
@@ -127,12 +115,6 @@
                 text-decoration: none;
             }
 
-            .footer {
-                background: #76493b;
-                color: #d7bfa4;
-                text-align: center;
-                padding: 15px;
-            }
 
             .error {
                 color: red;
@@ -159,7 +141,7 @@
     </head>
 
     <body>
-
+        <%@include file="/includes/header.jsp" %>
 
         <!-- BODY -->
         <div class="page-body">
@@ -210,6 +192,6 @@
             </div>
 
         </div>
-
+                  <%@include file="/includes/footer.jsp" %>  
     </body>
 </html>
