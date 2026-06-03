@@ -22,8 +22,14 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
-    .header, .header * {
+    * {
+        margin: 0;
+        padding: 0;
         box-sizing: border-box;
+    }
+
+    body {
+        padding-top: 78px;
     }
 
     /* ── HEADER ── */
@@ -35,10 +41,11 @@
         align-items: center;
         justify-content: space-between;
         padding: 0 50px;
-        position: sticky;
+        position: fixed;
         top: 0;
-        z-index: 999;
-        flex-shrink: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
     }
 
     /* ── LOGO ── */

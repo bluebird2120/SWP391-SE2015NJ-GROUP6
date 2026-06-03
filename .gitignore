@@ -1,4 +1,77 @@
+# Build outputs
 /dist/
 /build/
-/nbproject/private/
+/out/
+/target/
+
+# Class files
 *.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# NetBeans
+/nbproject/private/
+/nbproject/build-impl.xml
+/nbproject/genfiles.properties
+nbactions.xml
+nb-configuration.xml
+.nb-gradle/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Maven / Gradle
+.mvn/
+.gradle/
+gradle-app.setting
+
+# Logs
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Tomcat / Server
+catalina.base_IS_UNDEFINED.*
+*.pid
+
+# Sensitive config (DB credentials, secrets)
+*.env
+.env.*
+secret.properties
+credentials.properties
+
+# Temp / Backup files
+*.bak
+*.swp
+*.tmp
+*~
+*.orig
+
+# Uploaded files (user content)
+/web/uploads/
+/build/web/uploads/
+
+# Compiled JSP
+/work/
