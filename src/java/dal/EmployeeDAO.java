@@ -1,6 +1,5 @@
 package dal;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,14 +10,60 @@ import java.util.List;
 import model.Employee;
 import util.UserRole;
 
-/**
- * DAO cho bảng Employee. Hỗ trợ login + CRUD staff.
- * roleID: 1 = RESTAURANT_OWNER, 2 = RESTAURANT_STAFF.
- */
 public class EmployeeDAO extends DBContext {
 
-    /** Tìm employee theo email (dùng cho login). */
-    public Employee findByEmail(String email) {
+    /**
+     * Tìm nhân viên theo số điện thoại + mật khẩu. JOIN bảng Role để lấy
+     * roleName, map thẳng vào Employee.roleName.
+     *
+     * @return Employee (có roleName) nếu đúng, null nếu sai phone/password
+     */
+    public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
+            throws SQLException {
+
+        String sql = "SELECT e.employeeID, e.roleID, "
+                + "       e.fullName, e.phoneNumber, e.email, "
+                + "       e.salary, e.isActive, e.address, e.image, "
+                + "       e.createdAt, e.lastPasswordChangedAt, "
+                + "       e.mustChangePassword, e.password "
+                + "FROM Employee e "
+                + "WHERE e.phoneNumber = ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, phoneNumber);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) {
+                    return null;
+                }
+
+                String storedPassword = rs.getString("password");
+                if (!storedPassword.equals(rawPassword)) {
+                    return null;
+                }
+
+                Employee emp = new Employee();
+                emp.setEmployeeID(rs.getInt("employeeID"));
+                emp.setRoleID(rs.getInt("roleID"));
+
+                emp.setFullName(rs.getString("fullName"));
+                emp.setPhoneNumber(rs.getString("phoneNumber"));
+                emp.setEmail(rs.getString("email"));
+                emp.setSalary(rs.getBigDecimal("salary"));
+                emp.setIsActive(rs.getInt("isActive"));
+                emp.setAddress(rs.getString("address"));
+                emp.setImage(rs.getString("image"));
+                emp.setCreatedAt(rs.getTimestamp("createdAt"));
+                emp.setLastPasswordChangedAt(rs.getTimestamp("lastPasswordChangedAt"));
+                emp.setMustChangePassword(rs.getInt("mustChangePassword"));
+
+                return emp;
+            }
+        }
+    }
+    
+     public Employee findByEmail(String email) {
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "salary, isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE email = ?";
@@ -168,7 +213,8 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
- /** Reactivate: set isActive = 1. */
+
+    /** Reactivate: set isActive = 1. */
     public boolean reactivate(int employeeID) {
         String sql = "UPDATE Employee SET isActive = 1 WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -179,7 +225,13 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
-     public int countStaff(String keyword, Integer status) {
+
+    /**
+     * Đếm tổng số staff thoả filter.
+     * keyword: search theo fullName/phoneNumber/email (có thể null/blank).
+     * status: 1 = active, 0 = inactive, null = tất cả.
+     */
+    public int countStaff(String keyword, Integer status) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Employee WHERE roleID = ?");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
@@ -210,7 +262,8 @@ public class EmployeeDAO extends DBContext {
         }
         return 0;
     }
-   /**
+
+    /**
      * Lấy danh sách staff có phân trang + filter.
      * page bắt đầu từ 1.
      */
@@ -257,7 +310,52 @@ public class EmployeeDAO extends DBContext {
         }
         return list;
     }
-    
+
+    public boolean updatePassword(int employeeID, String newHashedPassword) {
+        String sql = "UPDATE Employee SET password = ?, lastPasswordChangedAt = ?, mustChangePassword = 0 "
+                + "WHERE employeeID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, newHashedPassword);
+            ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+            ps.setInt(3, employeeID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean isEmailExists(String email, int excludeID) {
+        String sql = "SELECT 1 FROM Employee WHERE email = ? AND employeeID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean isPhoneExists(String phone, int excludeID) {
+        if (phone == null || phone.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM Employee WHERE phoneNumber = ? AND employeeID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
     private Employee mapRow(ResultSet rs) throws SQLException {
         Employee e = new Employee();
         e.setEmployeeID(rs.getInt("employeeID"));
@@ -276,5 +374,4 @@ public class EmployeeDAO extends DBContext {
         e.setMustChangePassword(rs.getInt("mustChangePassword"));
         return e;
     }
-    }
-
+}
