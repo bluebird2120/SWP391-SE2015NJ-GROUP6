@@ -141,7 +141,7 @@
     </head>
 
     <body>
-        <%@include file="/includes/header.jsp" %>
+        <%@include file="/views/includes/header.jsp" %>
 
         <!-- BODY -->
         <div class="page-body">
@@ -192,7 +192,7 @@
             </div>
 
         </div>
-                  <%@include file="/includes/footer.jsp" %>  
+                  <%@include file="/views/includes/footer.jsp" %>  
     </body>
 </html>
 
