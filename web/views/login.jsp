@@ -173,10 +173,15 @@
                         <!-- SĐT -->
                         <div class="field">
                             <input
+
                                 type="tel"
                                 name="identifier"
                                 placeholder="Số điện thoại"
                                 value="${identifier}" required>
+
+                               
+                               
+
                             <div class="error">${phoneError}</div>
                         </div>
 
@@ -185,7 +190,11 @@
                             <input
                                 type="password"
                                 name="password"
+
                                 placeholder="Mật khẩu" required>
+
+                           
+
                             <div class="error">${passwordError}</div>
 
                             <!-- Quên mật khẩu -->
@@ -244,7 +253,7 @@
                             width="18"
                             height="18">
 
-                        Tiếp tục với Google
+
                     </a>
 
                     <!-- Register -->
@@ -262,4 +271,8 @@
         </div>
         <%@include file="/views/includes/footer.jsp" %>  
     </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> ed24e257433c9e0def45854d9ef8149583bfb600
