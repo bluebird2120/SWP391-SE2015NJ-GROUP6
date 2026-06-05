@@ -108,5 +108,64 @@ public class MenuItemDAO extends DBContext {
         }
         return list;
     }
-
+    
+    public MenuItem getMenuItemById(int id){
+        MenuItem mi;
+        String sql = "select * from MenuItem mi "
+                + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "where mi.itemID = ?";
+        try { 
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();  
+            if(rs.next()){
+                mi = new MenuItem(rs.getInt("itemID"),
+                        rs.getInt("categoryID"),
+                        rs.getString("itemName"),
+                        rs.getString("description"),
+                        rs.getBigDecimal("price"),
+                        rs.getBigDecimal("discountPercent"),
+                        rs.getBigDecimal("discountedPrice"),
+                        rs.getString("image"),
+                        rs.getInt("isAvailable"),
+                        rs.getString("allergyNotes"),
+                        rs.getString("categoryName"));
+                return mi;
+            }
+        } catch (Exception e) {
+        }
+        return null;
+    }
+    
+    public boolean updateMenuItemById(int id, int categoryId, String itemName, String description, int price,
+            int discountPercent, String image, int isAvailable, String allergyNotes){
+        String sql = "update MenuItem "
+                + "set categoryID = ? , "
+                + "itemName = ? , "
+                + "description = ? , "
+                + "price = ? , "
+                + "discountPercent = ? , "
+                + "discountPrice = ? , "
+                + "image = ? , "
+                + "isAvailable = ? , "
+                + "allergyNotes = ?  , "
+                + "where itemID = ? ";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, categoryId);
+            ps.setString(2, itemName);
+            ps.setString(3, description);
+            ps.setInt(4, price);
+            ps.setInt(5, discountPercent);
+            ps.setInt(6, price * discountPercent);
+            ps.setString(7, image);
+            ps.setInt(8, isAvailable);
+            ps.setString(9, allergyNotes);
+            ps.setInt(10, id);
+            
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+        }
+        return true;
+    }
 }

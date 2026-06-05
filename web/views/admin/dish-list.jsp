@@ -14,6 +14,20 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
+            .admin-layout{
+                display: flex;
+                flex: 1;
+                flex-wrap: wrap;
+            }
+            .line2{
+                width: 100%;
+            }
+            .main-content{
+                flex: 1;            /* Tự động húp trọn phần khoảng trống còn lại bên phải */
+                padding: 24px;
+                background-color: #ffffff;
+                box-sizing: border-box; /* Bảo hiểm giữ khung, chống tràn viền màn hình */
+            }
             .filter-form{
                 display: flex;
                 gap: 12px;
@@ -133,6 +147,8 @@
                 align-items: center;
                 justify-content: center;
                 gap: 6px; /* Khoảng cách giữa icon và chữ */
+                text-decoration: none;
+                color: black;
             }
             /* Hiệu ứng đổi màu nhẹ khi di chuột vào nút */
             .btn:hover {
@@ -141,76 +157,82 @@
         </style>
     </head>
     <body>
-        <!--Filter to search dish-->
-        <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
-            <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn" class="filter-input"/>
+        <%@ include file="/views/includes/header.jsp" %>
+        <div class="admin-layout">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <div class="main-content">
+                <!--Filter to search dish-->
+                <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
+                    <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn" class="filter-input"/>
 
-            <select name="category" class="filter-select">
-                <option value="">Tất cả các món</option>
-                <c:forEach var="cat" items="${list}">
-                    <option value="${cat.categoryID}" ${param.category == cat.categoryID ? "selected" : ""}>
-                        ${cat.categoryName}
-                    </option>
-                </c:forEach>
-            </select>
+                    <select name="category" class="filter-select">
+                        <option value="">Tất cả các món</option>
+                        <c:forEach var="cat" items="${list}">
+                            <option value="${cat.categoryID}" ${param.category == cat.categoryID ? "selected" : ""}>
+                                ${cat.categoryName}
+                            </option>
+                        </c:forEach>
+                    </select>
 
-            <select name="status" class="filter-select">
-                <option value="1" ${param.status == 1 ? 'selected' : ''}>Đang Bán</option>
-                <option value="0" ${param.status == 0 ? 'selected' : ''}>Tạm Ngưng</option>
-            </select>
+                    <select name="status" class="filter-select">
+                        <option value="1" ${param.status == 1 ? 'selected' : ''}>Đang Bán</option>
+                        <option value="0" ${param.status == 0 ? 'selected' : ''}>Tạm Ngưng</option>
+                    </select>
 
-            Sắp xếp theo:
-            <select name="price" class="filter-select">
-                <option value="price" ${param.price == 'price' ? 'selected' : ''}>Giá Gốc</option>
-                <option value="discountedPrice" ${param.price == 'discountedPrice' ? 'selected' : ''}>Giá Giảm Giá</option>
-            </select>
+                    Sắp xếp theo:
+                    <select name="price" class="filter-select">
+                        <option value="price" ${param.price == 'price' ? 'selected' : ''}>Giá Gốc</option>
+                        <option value="discountedPrice" ${param.price == 'discountedPrice' ? 'selected' : ''}>Giá Giảm Giá</option>
+                    </select>
 
-            <div class="filter-price">
-                Giá từ:
-                <input type="number" name="minPrice" value="${param.minPrice}"/>
-                đến:
-                <input type="number" name="maxPrice" value="${param.maxPrice}"/>
-            </div>
-
-            Sắp xếp theo thứ tự:
-            <select name="sort" class="filter-select">
-                <option value="asc" ${param.sort == 'asc' ? 'selected' : ''}>Tăng Dần</option>
-                <option value="desc" ${param.sort == 'desc' ? 'selected' : ''}>Giảm Dần</option>
-            </select>
-            <input type="submit" value="LỌC" class="btn-submit"/>
-        </form>
-        <!--Display dish-->
-        <div class="menu-container">
-
-            <c:forEach var="item" items="${listItem}">
-                <div class="card">
-
-                    <img src="${item.image}" alt="${item.itemName}">
-
-                    <span class="status">${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}</span>
-
-                    <h3 class="item-name">${item.itemName}</h3>
-
-                    <p class="category">🏷️ ${item.categoryName}</p>
-
-                    <div class="price-container">
-                        <div class="discount-price">${item.discountedPrice}</div>
-
-                        <div class="price">${item.price}</div>
-
-                        <div class="discount-percent">${item.discountPercent}%</div>
+                    <div class="filter-price">
+                        Giá từ:
+                        <input type="number" name="minPrice" value="${param.minPrice}"/>
+                        đến:
+                        <input type="number" name="maxPrice" value="${param.maxPrice}"/>
                     </div>
-
-                    <p>Chi tiết: ${item.allergyNotes}</p>
-
-                    <div class="button-group">
-                        <button class="btn">Detail</button>
-                        <button class="btn">Update</button>
+                    <div class="line2">
+                        Sắp xếp theo thứ tự:
+                        <select name="sort" class="filter-select">
+                            <option value="asc" ${param.sort == 'asc' ? 'selected' : ''}>Tăng Dần</option>
+                            <option value="desc" ${param.sort == 'desc' ? 'selected' : ''}>Giảm Dần</option>
+                        </select>
+                        <input type="submit" value="LỌC" class="btn-submit"/>
                     </div>
+                </form>
+                <!--Display dish-->
+                <div class="menu-container">
 
+                    <c:forEach var="item" items="${listItem}">
+                        <div class="card">
+
+                            <img src="${item.image}" alt="${item.itemName}">
+
+                            <span class="status">${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}</span>
+
+                            <h3 class="item-name">${item.itemName}</h3>
+
+                            <p class="category">🏷️ ${item.categoryName}</p>
+
+                            <div class="price-container">
+                                <div class="discount-price">${item.discountedPrice}</div>
+
+                                <div class="price">${item.price}</div>
+
+                                <div class="discount-percent">${item.discountPercent}%</div>
+                            </div>
+
+                            <p>Chi tiết: ${item.allergyNotes}</p>
+
+                            <div class="button-group">                       
+                                <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">UPDATE</a>
+                            </div>
+
+                        </div>
+                    </c:forEach>
                 </div>
-            </c:forEach>
-
+            </div>
         </div>
+        <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>
