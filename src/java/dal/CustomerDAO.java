@@ -60,4 +60,18 @@ public class CustomerDAO extends DBContext {
             return false;
         }
     }
+    
+    public boolean isEmailExists(String email, int excludeID) {
+        String sql = "SELECT 1 FROM Customer WHERE email = ? AND customerID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }

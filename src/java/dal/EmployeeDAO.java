@@ -68,4 +68,18 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
+    
+    public boolean isEmailExists(String email, int excludeID) {
+        String sql = "SELECT 1 FROM Employee WHERE email = ? AND employeeID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }
