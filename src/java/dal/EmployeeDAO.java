@@ -12,12 +12,6 @@ import util.UserRole;
 
 public class EmployeeDAO extends DBContext {
 
-    /**
-     * Tìm nhân viên theo số điện thoại + mật khẩu. JOIN bảng Role để lấy
-     * roleName, map thẳng vào Employee.roleName.
-     *
-     * @return Employee (có roleName) nếu đúng, null nếu sai phone/password
-     */
     public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 

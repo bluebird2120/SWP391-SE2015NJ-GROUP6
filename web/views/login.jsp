@@ -57,8 +57,7 @@
             }
 
             .left img {
-                width: 200px;
-                margin-bottom: 20px;
+                width: 250px;
             }
 
             .left h2 {
@@ -162,29 +161,98 @@
                     <h2>Đăng nhập</h2>
                     <p>Nhập số điện thoại và mật khẩu</p>
 
+                    <!-- Lỗi tổng -->
+                    <c:if test="${not empty loginError}">
+                        <div class="error" style="margin-bottom:15px;">
+                            ${loginError}
+                        </div>
+                    </c:if>
+
                     <form action="${pageContext.request.contextPath}/login" method="post">
 
                         <!-- SĐT -->
                         <div class="field">
-                            <input type="text" name="identifier" placeholder="Số điện thoại">
+                            <input
+                                type="tel"
+                                name="identifier"
+                                placeholder="Số điện thoại"
+                                value="${identifier}" required>
                             <div class="error">${phoneError}</div>
                         </div>
 
                         <!-- Password -->
                         <div class="field">
-                            <input type="password" name="password" placeholder="Mật khẩu">
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Mật khẩu" required>
                             <div class="error">${passwordError}</div>
+
+                            <!-- Quên mật khẩu -->
+                            <div style="text-align:right; margin-top:8px;">
+                                <a href="${pageContext.request.contextPath}/forgot-password"
+                                   style="
+                                   color:#76493b;
+                                   font-size:13px;
+                                   font-weight:600;
+                                   text-decoration:none;">
+                                    Quên mật khẩu?
+                                </a>
+                            </div>
                         </div>
 
+                        <!-- Button Login -->
                         <button class="btn" type="submit">
                             Đăng nhập
                         </button>
 
                     </form>
 
+                    <!-- Divider -->
+                    <div style="
+                         display:flex;
+                         align-items:center;
+                         margin:20px 0;">
+                        <div style="flex:1;height:1px;background:#ddd;"></div>
+                        <span style="
+                              padding:0 12px;
+                              color:#999;
+                              font-size:13px;">
+                            hoặc
+                        </span>
+                        <div style="flex:1;height:1px;background:#ddd;"></div>
+                    </div>
+
+                    <!-- Login Google -->
+                    <a href="${pageContext.request.contextPath}/login/google"
+                       style="
+                       width:100%;
+                       display:flex;
+                       align-items:center;
+                       justify-content:center;
+                       gap:10px;
+                       padding:12px;
+                       border:1px solid #ddd;
+                       border-radius:10px;
+                       text-decoration:none;
+                       color:#333;
+                       font-weight:600;
+                       box-sizing:border-box;">
+
+                        <img
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            width="18"
+                            height="18">
+
+                        Tiếp tục với Google
+                    </a>
+
+                    <!-- Register -->
                     <div class="register">
                         Chưa có tài khoản?
-                        <a href="${pageContext.request.contextPath}/register">Đăng ký</a>
+                        <a href="${pageContext.request.contextPath}/register">
+                            Đăng ký ngay
+                        </a>
                     </div>
 
                 </div>
@@ -192,7 +260,6 @@
             </div>
 
         </div>
-                  <%@include file="/views/includes/footer.jsp" %>  
+        <%@include file="/views/includes/footer.jsp" %>  
     </body>
 </html>
-

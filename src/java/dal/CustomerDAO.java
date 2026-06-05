@@ -7,15 +7,12 @@ import model.Customer;
 
 public class CustomerDAO extends DBContext {
 
-    /**
-     * Login customer bằng phone + password
-     */
     public Customer findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
         String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
-                   + "FROM Customer "
-                   + "WHERE phoneNumber = ?";
+                + "FROM Customer "
+                + "WHERE phoneNumber = ?";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, phoneNumber);
@@ -44,6 +41,37 @@ public class CustomerDAO extends DBContext {
 
                 return c;
             }
+        }
+    }
+
+    public boolean isPhoneExists(String phone, int excludeID) {
+        if (phone == null || phone.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM Customer WHERE phoneNumber = ? AND customerID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+    
+    public boolean isEmailExists(String email, int excludeID) {
+        String sql = "SELECT 1 FROM Customer WHERE email = ? AND customerID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
         }
     }
 }
