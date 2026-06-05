@@ -110,7 +110,7 @@
         color: #d7bfa4;
     }
 
-    .logo img{
+    .logoFooter img{
         height: 70px;
         width: auto;
         object-fit: contain;
@@ -129,7 +129,7 @@
         <!-- Cột 1 -->
         <div class="footer-section">
             <!-- LOGO -->
-            <a href="#" class="logo">
+            <a href="${pageContext.request.contextPath}/" class="logoFooter">
                 <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
             </a>
 

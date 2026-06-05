@@ -7,12 +7,6 @@ import model.Employee;
 
 public class EmployeeDAO extends DBContext {
 
-    /**
-     * Tìm nhân viên theo số điện thoại + mật khẩu. JOIN bảng Role để lấy
-     * roleName, map thẳng vào Employee.roleName.
-     *
-     * @return Employee (có roleName) nếu đúng, null nếu sai phone/password
-     */
     public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
@@ -55,6 +49,23 @@ public class EmployeeDAO extends DBContext {
 
                 return emp;
             }
+        }
+    }
+
+    public boolean isPhoneExists(String phone, int excludeID) {
+        if (phone == null || phone.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM Employee WHERE phoneNumber = ? AND employeeID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
         }
     }
 }
