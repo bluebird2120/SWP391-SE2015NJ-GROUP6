@@ -157,9 +157,9 @@
         </style>
     </head>
     <body>
-        <%@ include file="/includes/header.jsp" %>
+        <%@ include file="/views/includes/header.jsp" %>
         <div class="admin-layout">
-            <%@ include file="/includes/dashboard.jsp" %>
+            <%@ include file="/views/includes/dashboard.jsp" %>
             <div class="main-content">
                 <!--Filter to search dish-->
                 <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
@@ -233,6 +233,6 @@
                 </div>
             </div>
         </div>
-        <%@ include file="/includes/footer.jsp" %>
+        <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>

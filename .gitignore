@@ -1,4 +1,6 @@
-# Build outputs
+# ==========================================
+# Build outputs (Chặn file tự sinh khi chạy)
+# ==========================================
 /dist/
 /build/
 /out/
@@ -11,67 +13,49 @@
 *.ear
 *.nar
 
-# NetBeans
+# ==========================================
+# NetBeans (ĐÃ TỐI ƯU: Chỉ giữ lại file private rác)
+# ==========================================
 /nbproject/private/
-/nbproject/build-impl.xml
-/nbproject/genfiles.properties
 nbactions.xml
 nb-configuration.xml
 .nb-gradle/
+# ĐÃ BỎ: Không cấm build-impl.xml và genfiles.properties để tránh lỗi mở project
 
-# IntelliJ IDEA
+# ==========================================
+# IDEs khác (IntelliJ, Eclipse, VS Code...)
+# ==========================================
 .idea/
 *.iml
 *.iws
 *.ipr
-
-# Eclipse
 .classpath
 .project
 .settings/
 .factorypath
-
-# VS Code
 .vscode/
 *.code-workspace
 
-# Maven / Gradle
+# Maven / Gradle / Logs / OS Files
 .mvn/
 .gradle/
 gradle-app.setting
-
-# Logs
 *.log
 logs/
-hs_err_pid*
-replay_pid*
-
-# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-$RECYCLE.BIN/
 
-# Tomcat / Server
-catalina.base_IS_UNDEFINED.*
-*.pid
-
-# Sensitive config (DB credentials, secrets)
+# Cấu hình nhạy cảm & File tạm
 *.env
 .env.*
 secret.properties
 credentials.properties
-
-# Temp / Backup files
 *.bak
 *.swp
 *.tmp
 *~
-*.orig
 
-# Uploaded files (user content)
+# Uploaded files
 /web/uploads/
 /build/web/uploads/
-
-# Compiled JSP
-/work/
