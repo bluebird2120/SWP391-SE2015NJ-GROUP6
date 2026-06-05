@@ -1,6 +1,6 @@
 package controller;
 
-import dal.OrderDAO;
+import dal.OrderDAOSon;
 import dal.TableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -21,7 +21,7 @@ import model.Table;
 public class ReservationController extends HttpServlet {
 
     private final TableDAO tableDAO = new TableDAO();
-    private final OrderDAO orderDAO = new OrderDAO();
+    private final OrderDAOSon orderDAO = new OrderDAOSon();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
