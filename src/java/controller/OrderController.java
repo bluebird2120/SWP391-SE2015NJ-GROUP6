@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
+import model.MenuItem;
 
 /**
  *
@@ -62,33 +63,34 @@ public class OrderController extends HttpServlet {
      */
     
     // =========================================================
-    // GET /order?action=cart
-    // Hiển thị giỏ hàng của bàn hiện tại
+    // GET /order?action=cart  →  hiển thị giỏ hàng
     // =========================================================
 //    @Override
 //    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-//    throws ServletException, IOException {
+//            throws ServletException, IOException {
+// 
 //        String action = request.getParameter("action");
-//
+// 
 //        if ("cart".equals(action)) {
 //            HttpSession session = request.getSession();
-//
-////            // Lấy orderID đang lưu trong session
-////            Integer orderID = (Integer) session.getAttribute("orderID");
-//            Integer orderID = 2;
+//            Integer orderID = (Integer) session.getAttribute("orderID");
+// 
 //            if (orderID == null) {
-//                // Chưa có đơn nào → giỏ hàng trống
-//                request.setAttribute("cartItems", null);
-//                request.setAttribute("orderID", null);
+//                request.setAttribute("orderItems", null);
+//                request.setAttribute("menuItems",  null);
 //            } else {
-//                List<OrderItem> cartItems = orderDAO.getOrderItemsByOrderId(orderID);
-//                request.setAttribute("cartItems", cartItems);
-//                request.setAttribute("orderID", orderID);
+//                // Lấy 2 list song song — thứ tự index tương ứng nhau
+//                List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
+//                List<MenuItem>  menuItems  = orderDAO.getMenuItemsByOrderId(orderID);
+// 
+//                request.setAttribute("orderItems", orderItems);
+//                request.setAttribute("menuItems",  menuItems);
+//                request.setAttribute("orderID",    orderID);
 //            }
-//
-//            request.getRequestDispatcher("/views/user/cart.jsp").forward(request, response);
+// 
+//            request.getRequestDispatcher("/views/cart.jsp").forward(request, response);
 //        }
-//    } 
+//    }
 
     @Override
 protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -107,19 +109,20 @@ throws ServletException, IOException {
         Integer orderID = 2; 
         
         if (orderID == null) {
-            request.setAttribute("cartItems", null);
-            request.setAttribute("orderID", null);
-        } else {
-            List<OrderItem> cartItems = orderDAO.getOrderItemsByOrderId(orderID);
-            request.setAttribute("cartItems", cartItems);
-            request.setAttribute("orderID", orderID);
+                request.setAttribute("orderItems", null);
+                request.setAttribute("menuItems",  null);
+            } else {
+                // Lấy 2 list song song — thứ tự index tương ứng nhau
+                List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
+                List<MenuItem>  menuItems  = orderDAO.getMenuItemsByOrderId(orderID);
+ 
+                request.setAttribute("orderItems", orderItems);
+                request.setAttribute("menuItems",  menuItems);
+                request.setAttribute("orderID",    orderID);
+            }
+ 
+            request.getRequestDispatcher("/views/user/cart.jsp").forward(request, response);
         }
-
-        request.getRequestDispatcher("/views/user/cart.jsp").forward(request, response);
-    } else {
-        // Nếu truyền action bậy bạ, chuyển hướng về trang chủ hoặc menu
-        response.sendRedirect(request.getContextPath() + "/menu");
-    }
 }
     /** 
      * Handles the HTTP <code>POST</code> method.
