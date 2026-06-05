@@ -23,14 +23,13 @@ public class ReservationController extends HttpServlet {
     private final TableDAO tableDAO = new TableDAO();
     private final OrderDAO orderDAO = new OrderDAO();
 
-    // ── GET ──────────────────────────────────────────────────────────────
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
-        // ── Lịch sử đặt bàn (BẮT BUỘC ĐĂNG NHẬP) ─────────────────────────────
+        // ── 1. Lịch sử đặt bàn ─────────────────────────────────────────────
         if ("history".equals(action)) {
             Customer customer = getCustomer(request);
             if (customer == null) { goLogin(request, response); return; }
@@ -42,7 +41,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── Huỷ đơn (BẮT BUỘC ĐĂNG NHẬP) ─────────────────────────────────────
+        // ── 2. Huỷ đơn ─────────────────────────────────────────────────────
         if ("cancel".equals(action)) {
             Customer customer = getCustomer(request);
             if (customer == null) { goLogin(request, response); return; }
@@ -55,10 +54,11 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── Bước 2: Hiển thị danh sách bàn trống + Xử lý gợi ý thông minh ──
-        if ("choosetable".equals(action)) {
+        // ── 3. Xử lý hiển thị bàn trống / gợi ý trực tiếp ngay bên dưới form ──
+        if ("choosetable".equals(action) || "choosefood".equals(action)) {
             String dateTimeStr = request.getParameter("orderTime");
             String areaType    = request.getParameter("areaType");
+            String tableID     = request.getParameter("tableID");
 
             String error = validateDateTime(dateTimeStr);
             if (error != null || areaType == null || areaType.isBlank()) {
@@ -74,13 +74,12 @@ public class ReservationController extends HttpServlet {
 
             request.setAttribute("orderTime", dateTimeStr);
             request.setAttribute("areaType",  areaType);
-            request.setAttribute("areaLabel", "public".equals(areaType) ? "Ngoài sảnh" : "Trong phòng");
+            request.setAttribute("tableID",   tableID); // Lưu giữ vết bàn được chọn nếu có
 
-            // Kịch bản: Hết loại bàn yêu cầu (Ví dụ hết bàn 2 chỗ) -> Kích hoạt gợi ý thông minh
             if (tables.isEmpty()) {
+                // Kích hoạt hộp gợi ý đổi vị trí thông minh
                 List<Table> higherTables = tableDAO.findAlternativeTablesHigherCapacity(areaType, orderTime, 2);
                 List<Table> otherAreaTables = tableDAO.findAlternativeTablesOtherArea(areaType, orderTime);
-
                 request.setAttribute("higherTables", higherTables);
                 request.setAttribute("otherAreaTables", otherAreaTables);
                 request.setAttribute("step", "no-table-suggest"); 
@@ -88,23 +87,12 @@ public class ReservationController extends HttpServlet {
                 request.setAttribute("tables", tables);
                 request.setAttribute("step", "choose-table");
             }
+            request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             forward(request, response);
             return;
         }
 
-        // ── Bước chọn món ăn đặt trước (Tạm thời để trống chờ nạp Menu) ──
-        if ("choosefood".equals(action)) {
-            String dateTimeStr = request.getParameter("orderTime");
-            String tableID     = request.getParameter("tableID");
-
-            request.setAttribute("orderTime", dateTimeStr);
-            request.setAttribute("tableID",    tableID);
-            request.setAttribute("step",       "choose-food");
-            forward(request, response);
-            return;
-        }
-
-        // ── Bước 3: Trang xác nhận thành công ───────────────────────────
+        // ── 4. Thành công ──────────────────────────────────────────────────
         if ("success".equals(action)) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getAttribute("lastReservation") == null) {
@@ -124,30 +112,30 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── Bước 1 (mặc định): Hoặc Tự động khôi phục dữ liệu sau khi đăng nhập thành công ──
+        // ── 5. Khôi phục dữ liệu tự động sau khi đăng nhập xong quay trở lại ──
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute("customer") != null) {
             String tempOrderTime = (String) session.getAttribute("tempOrderTime");
             Integer tempTableID  = (Integer) session.getAttribute("tempTableID");
 
-            // Nếu trong tủ đồ session có lưu thông tin chọn bàn dở trước khi bị bắt login
             if (tempOrderTime != null && tempTableID != null && tempTableID > 0) {
-                // Tự động nhảy cóc đưa khách sang thẳng Bước chọn món với data cũ luôn!
-                request.setAttribute("orderTime", tempOrderTime);
-                request.setAttribute("tableID",    String.valueOf(tempTableID));
-                request.setAttribute("step",       "choose-food");
-                forward(request, response);
-                return;
+                Table savedTable = tableDAO.getTableByID(tempTableID);
+                if (savedTable != null) {
+                    // Chuyển hướng nội bộ để vẽ lại form kèm trạng thái bàn đã click sẵn trước đó
+                    response.sendRedirect(request.getContextPath() + "/reservation?action=choosefood&orderTime=" 
+                            + tempOrderTime + "&areaType=" + savedTable.getAreaType() + "&tableID=" + tempTableID);
+                    return;
+                }
             }
         }
 
-        // Nếu là khách mới tinh chưa chọn gì hoặc không có đơn chờ, hiển thị Bước 1 như cũ
+        // Mặc định ban đầu vào trang
         request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
         request.setAttribute("step", "pick-time");
         forward(request, response);
     }
 
-    // ── POST: Khách xác nhận bước cuối → Tạo đơn (BẮT ĐẦU CHECK LOGIN) ──
+    // ── POST: Xử lý chốt đơn cuối cùng (Chỉ chặn đăng nhập tại đây) ──
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -155,23 +143,18 @@ public class ReservationController extends HttpServlet {
         String dateTimeStr = request.getParameter("orderTime");
         int    tableID     = toInt(request.getParameter("tableID"), -1);
 
-        // Kiểm tra xem người dùng hiện tại đã đăng nhập hay chưa
         Customer customer = getCustomer(request);
-        
         if (customer == null) {
-            // CHƯA ĐĂNG NHẬP: Lưu trữ các tham số đã chọn vào session tạm thời
+            // Chưa đăng nhập: Cất tạm dữ liệu vào tủ đồ Session chờ khách login quay lại
             HttpSession session = request.getSession(true);
             session.setAttribute("tempOrderTime", dateTimeStr);
             session.setAttribute("tempTableID", tableID);
-            
-            // Đẩy hướng người dùng tới trang đăng nhập/đăng ký tài khoản
             goLogin(request, response);
             return;
         }
 
-        // NẾU ĐÃ ĐĂNG NHẬP CHUẨN CHỈ: Tiến hành xử lý tạo đơn đặt chỗ
         if (tableID < 0) {
-            request.setAttribute("error", "Vui lòng chọn một bàn.");
+            request.setAttribute("error", "Vui lòng chọn vị trí bàn mong muốn.");
             request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             request.setAttribute("step", "pick-time");
             forward(request, response);
@@ -192,7 +175,7 @@ public class ReservationController extends HttpServlet {
                 customer.getCustomerID(), tableID, orderTime, BigDecimal.ZERO);
 
         if (orderID < 0) {
-            request.setAttribute("error", "Đã có lỗi khi tạo đơn. Vui lòng thử lại.");
+            request.setAttribute("error", "Lỗi tạo đơn hệ thống. Vui lòng thử lại.");
             request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             request.setAttribute("step", "pick-time");
             forward(request, response);
@@ -203,14 +186,11 @@ public class ReservationController extends HttpServlet {
         session.setAttribute("lastReservation", orderDAO.getOrderByID(orderID));
         session.setAttribute("assignedTable",   tableDAO.getTableByID(tableID));
         
-        // Dọn dẹp session tạm sau khi hoàn tất đặt bàn thành công
         session.removeAttribute("tempOrderTime");
         session.removeAttribute("tempTableID");
         
         response.sendRedirect(request.getContextPath() + "/reservation?action=success");
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────
 
     private void forward(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
@@ -250,7 +230,8 @@ public class ReservationController extends HttpServlet {
     }
 
     private int toInt(String value, int def) {
-        try { return Integer.parseInt(value); }
-        catch (Exception e) { return def; }
+        try { return Integer.parseInt(value); } catch (Exception e) { return def; }
     }
+    
+    // update
 }
