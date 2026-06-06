@@ -41,6 +41,7 @@ public class OrderDAO {
             ps.setLong(11, order.getDepositAmount());
             ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "pending");
 
+      
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
             if (rs.next())
@@ -218,6 +219,7 @@ public class OrderDAO {
     // =========================================================
     private Order mapToOrder(ResultSet rs) throws SQLException {
         return new Order(
+
                 rs.getInt("orderID"),
                 rs.getInt("customerID"),
                 rs.getInt("tableID"),
@@ -231,6 +233,7 @@ public class OrderDAO {
                 rs.getTimestamp("orderTime"),
                 rs.getLong("depositAmount"),
                 rs.getString("orderStatus"));
+
     }
 
     // =========================================================
@@ -250,6 +253,7 @@ public class OrderDAO {
     // =========================================================
     private MenuItem mapToMenuItem(ResultSet rs) throws SQLException {
         return new MenuItem(
+
                 rs.getInt("itemID"),
                 rs.getInt("categoryID"),
                 rs.getString("itemName"),
