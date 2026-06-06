@@ -40,7 +40,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 50px;
+        padding: 0 20px;
         position: fixed;
         top: 0;
         left: 0;
@@ -56,8 +56,10 @@
 
     /* ── NAV ── */
     .navbar {
+        flex: 1;
+        justify-content: center;
         display: flex;
-        gap: 50px;
+        gap: 30px;
     }
     .navbar a {
         text-decoration: none;
