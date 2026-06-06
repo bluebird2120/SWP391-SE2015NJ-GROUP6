@@ -380,7 +380,7 @@
             </div>
         </c:if>
 
-        <!-- ========== KHÁCH HÀNG (Customer) ========== -->
+        <!-- ========== KHÁCH HÀNG ========== -->
         <c:if test="${sessionScope.customer != null}">
 
             <%-- Chuông thông báo --%>
@@ -396,7 +396,7 @@
                     <div class="user-avatar">
                         <c:choose>
                             <c:when test="${not empty sessionScope.customer.image}">
-                                <img src="${sessionScope.customer.image}" alt="avatar">
+                                <img src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">
                             </c:when>
                             <c:otherwise><%= customerInitial %></c:otherwise>
                         </c:choose>
@@ -444,11 +444,7 @@
         <!-- ========== NHÂN VIÊN / OWNER (Employee) ========== -->
         <c:if test="${sessionScope.employee != null}">
 
-            <%--
-                Chuông thông báo cho cả Staff lẫn Owner.
-                Cả 2 đều là Employee nên dùng chung URL /staff/notifications.
-                Owner KHÔNG cần /owner/notifications riêng vì Owner đi qua /staff/* bình thường.
-            --%>
+            <!--Notification cho staff và owner dùng chung-->
             <a href="${pageContext.request.contextPath}/staff/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
                 <c:if test="${sessionScope.unreadCount > 0}">

@@ -149,8 +149,9 @@
 
                 <!-- LEFT -->
                 <div class="left">
-                    <img class="logo-left" src="${pageContext.request.contextPath}/images/logo.png">
-
+                    <a href="${pageContext.request.contextPath}/" class="logo-left">
+                        <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
+                    </a>
                     <h2 class="welcome-text">Chào mừng đến với</h2>
                     <h3 class="brand-text">Lách Tách Restaurant</h3>
                 </div>
@@ -165,6 +166,11 @@
                     <c:if test="${not empty loginError}">
                         <div class="error" style="margin-bottom:15px;">
                             ${loginError}
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty successMessage}">
+                        <div style="color: green; font-size: 14px; margin-bottom: 15px; text-align: center; font-weight: 600;">
+                            <i class="fas fa-circle-check"></i> ${successMessage}
                         </div>
                     </c:if>
 

@@ -23,23 +23,13 @@ public class CustomerDAO extends DBContext {
                     return null;
                 }
 
-                String storedPassword = rs.getString("password");
+                String storedPassword = rs.getString("password") == null ? "" : rs.getString("password");
 
                 if (!storedPassword.equals(rawPassword)) {
                     return null;
                 }
-
-                Customer c = new Customer();
-
-                c.setCustomerID(rs.getInt("customerID"));
-                c.setUserName(rs.getString("userName"));
-                c.setPassword(rs.getString("password")); // optional (thường KHÔNG set)
-                c.setPhoneNumber(rs.getString("phoneNumber"));
-                c.setEmail(rs.getString("email"));
-                c.setCreatedAt(rs.getTimestamp("createdAt"));
-                c.setLoginProvider(rs.getString("loginProvider"));
-
-                return c;
+                
+                return mapRow(rs);
             }
         }
     }
@@ -60,8 +50,11 @@ public class CustomerDAO extends DBContext {
             return false;
         }
     }
-    
+
     public boolean isEmailExists(String email, int excludeID) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
         String sql = "SELECT 1 FROM Customer WHERE email = ? AND customerID <> ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
@@ -73,5 +66,48 @@ public class CustomerDAO extends DBContext {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    public boolean isUserNameExists(String userName, int excludeID) {
+        if (userName == null || userName.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM Customer WHERE userName = ? AND customerID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, userName);
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    private Customer mapRow(ResultSet rs) throws SQLException {
+        Customer c = new Customer();
+        c.setCustomerID(rs.getInt("customerID"));
+        c.setUserName(rs.getString("userName"));
+        c.setPhoneNumber(rs.getString("phoneNumber"));
+        c.setEmail(rs.getString("email"));
+        c.setCreatedAt(rs.getTimestamp("createdAt"));
+        c.setLoginProvider(rs.getString("loginProvider"));
+        return c;
+    }
+
+    public boolean register(String userName, String phoneNumber,
+            String email, String password) throws SQLException {
+        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider) "
+                + "VALUES (?, ?, ?, ?, 'local')";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, userName);
+            ps.setString(2, phoneNumber);
+            ps.setString(3, email);
+            ps.setString(4, password);
+            //trả về true / false
+            return ps.executeUpdate() > 0;
+        }
+
     }
 }

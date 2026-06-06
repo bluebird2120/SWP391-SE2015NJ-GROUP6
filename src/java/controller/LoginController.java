@@ -23,6 +23,12 @@ public class LoginController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        //register -> login
+        if ("true".equals(request.getParameter("registered"))) {
+            request.setAttribute("successMessage",
+                    "Đăng ký thành công. Vui lòng đăng nhập.");
+        }
+
         HttpSession session = request.getSession(false);
 
         if (session != null) {
@@ -43,7 +49,7 @@ public class LoginController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String phone = request.getParameter("identifier");
+        String phone = trim(request.getParameter("identifier"));
         String password = request.getParameter("password");
 
         //Validate
@@ -65,13 +71,13 @@ public class LoginController extends HttpServlet {
                 handleEmployeeLogin(request, response, employee);
                 return;
             }
-            
+
             Customer customer = customerDAO.findByPhoneAndPassword(phone, password);
             if (customer != null) {
                 handleCustomerLogin(request, response, customer);
                 return;
             }
-            
+
             //nếu cả 2 null -> sai thông tin
             request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng!");
             request.setAttribute("identifier", phone);
@@ -97,28 +103,28 @@ public class LoginController extends HttpServlet {
             }
             return;
         }
-        
+
         HttpSession session = request.getSession(true);
         session.setAttribute("employee", employee);
         session.setMaxInactiveInterval(30 * 60);
-        
+
         if (employee.getMustChangePassword() == 1) {
             response.sendRedirect(request.getContextPath() + "/staff/change-password?first=true");
             return;
         }
-        
+
         redirectEmployee(request, response, employee);
     }
-    
+
     // ── Xử lý login Customer ─────────────────────────────────────────────
     private void handleCustomerLogin(HttpServletRequest request, HttpServletResponse response,
             Customer customer)
             throws ServletException, IOException, SQLException {
-        
+
         HttpSession session = request.getSession(true);
         session.setAttribute("customer", customer);
         session.setMaxInactiveInterval(30 * 60);
-        
+
         String redirectUrl = (String) session.getAttribute("redirectAfterLogin");
         if (redirectUrl != null) {
             session.removeAttribute("redirectAfterLogin");
@@ -141,6 +147,9 @@ public class LoginController extends HttpServlet {
     }
 
     private String validatePhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            return "Vui lòng nhập số điện thoại.";
+        }
         if (!phone.matches("\\d{10,11}")) {
             return "Số điện thoại phải có đúng 10-11 chữ số.";
         }
@@ -148,9 +157,16 @@ public class LoginController extends HttpServlet {
     }
 
     private String validatePassword(String password) {
+        if (password == null || password.isBlank()) {
+            return "Vui lòng nhập mật khẩu.";
+        }
         if (password.length() < 6) {
             return "Mật khẩu phải có ít nhất 6 ký tự.";
         }
         return null;
+    }
+    
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }
