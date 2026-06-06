@@ -32,14 +32,14 @@ public class OrderDAO {
             ps.setObject    (3,  order.getInvoiceID()  == 0 ? null : order.getInvoiceID());
             ps.setInt       (4,  order.getOrderType());
             ps.setString    (5,  order.getTableStatus() != null ? order.getTableStatus() : "available");
-            ps.setBigDecimal(6,  order.getTotalAmount());
+            ps.setLong(6,  order.getTotalAmount());
             ps.setTimestamp (7,  order.getCheckoutRequestAt());
             ps.setInt       (8,  order.getIsStaffConfirmed());
             ps.setTimestamp (9,  order.getCreatedAt() != null
                                 ? order.getCreatedAt()
                                 : new Timestamp(System.currentTimeMillis()));
             ps.setTimestamp (10, order.getOrderTime());
-            ps.setBigDecimal(11, order.getDepositAmount());
+            ps.setLong(11, order.getDepositAmount());
             ps.setString    (12, order.getOrderStatus() != null ? order.getOrderStatus() : "pending");
 
             ps.executeUpdate();
@@ -218,13 +218,13 @@ public class OrderDAO {
             rs.getInt       ("tableID"),
             rs.getInt       ("invoiceID"),
             rs.getString    ("tableStatus"),
-            rs.getBigDecimal("totalAmount"),
+            rs.getLong("totalAmount"),
             rs.getTimestamp ("checkoutRequestAt"),
             rs.getInt       ("isStaffConfirmed"),
             rs.getTimestamp ("createdAt"),
             rs.getInt       ("orderType"),
             rs.getTimestamp ("orderTime"),
-            rs.getBigDecimal("depositAmount"),
+            rs.getLong("depositAmount"),
             rs.getString    ("orderStatus")
         );
     }
@@ -251,9 +251,9 @@ public class OrderDAO {
             rs.getInt       ("categoryID"),
             rs.getString    ("itemName"),
             rs.getString    ("description"),
-            rs.getBigDecimal("price"),
-            rs.getBigDecimal("discountPercent"),
-            rs.getBigDecimal("discountedPrice"),
+            rs.getInt("price"),
+            rs.getInt("discountPercent"),
+            rs.getInt("discountedPrice"),
             rs.getString    ("image"),
             rs.getInt       ("isAvailable"),
             rs.getString    ("allergyNotes"),
