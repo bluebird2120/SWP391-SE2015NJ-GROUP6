@@ -10,21 +10,19 @@ public class Order {
     private int tableID;
     private int invoiceID;
     private String tableStatus;
-    private BigDecimal totalAmount;
+    private long totalAmount;
     private Timestamp checkoutRequestAt;
     private int isStaffConfirmed;
     private Timestamp createdAt;
     private int orderType;
     private Timestamp orderTime;
-    private BigDecimal depositAmount;
+    private long depositAmount;
     private String orderStatus;
-    
-    
+
     public Order() {
     }
 
-    public Order(int orderID, int customerID, int tableID, int invoiceID, 
-            String tableStatus, BigDecimal totalAmount, Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt, int orderType, Timestamp orderTime, BigDecimal depositAmount, String orderStatus) {
+    public Order(int orderID, int customerID, int tableID, int invoiceID, String tableStatus, long totalAmount, Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt, int orderType, Timestamp orderTime, long depositAmount, String orderStatus) {
         this.orderID = orderID;
         this.customerID = customerID;
         this.tableID = tableID;
@@ -80,11 +78,11 @@ public class Order {
         this.tableStatus = tableStatus;
     }
 
-    public BigDecimal getTotalAmount() {
+    public long getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(BigDecimal totalAmount) {
+    public void setTotalAmount(long totalAmount) {
         this.totalAmount = totalAmount;
     }
 
@@ -128,11 +126,11 @@ public class Order {
         this.orderTime = orderTime;
     }
 
-    public BigDecimal getDepositAmount() {
+    public long getDepositAmount() {
         return depositAmount;
     }
 
-    public void setDepositAmount(BigDecimal depositAmount) {
+    public void setDepositAmount(long depositAmount) {
         this.depositAmount = depositAmount;
     }
 
@@ -143,4 +141,5 @@ public class Order {
     public void setOrderStatus(String orderStatus) {
         this.orderStatus = orderStatus;
     }
+
 }

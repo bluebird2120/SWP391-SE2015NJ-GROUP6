@@ -32,9 +32,9 @@ public class MenuItemDAO extends DBContext {
                         rs.getInt("categoryID"),
                         rs.getString("itemName"),
                         rs.getString("description"),
-                        rs.getBigDecimal("price"),
-                        rs.getBigDecimal("discountPercent"),
-                        rs.getBigDecimal("discountedPrice"),
+                        rs.getInt("price"),
+                        rs.getInt("discountPercent"),
+                        rs.getInt("discountedPrice"),
                         rs.getString("image"),
                         rs.getInt("isAvailable"),
                         rs.getString("allergyNotes"),
@@ -50,7 +50,7 @@ public class MenuItemDAO extends DBContext {
     }
 
     public List<MenuItem> searchMenuItem(String search, int categoryId, int status,
-            BigDecimal minPrice, BigDecimal maxPrice, String sort, String priceType) {
+            int minPrice, int maxPrice, String sort, String priceType) {
 
         List<MenuItem> list = new ArrayList<>();
         String sql = "select * from MenuItem mi "
@@ -77,13 +77,13 @@ public class MenuItemDAO extends DBContext {
                 ps.setString(1, "%" + search + "%");
                 ps.setInt(2, categoryId);
                 ps.setInt(3, status);
-                ps.setBigDecimal(4, minPrice);
-                ps.setBigDecimal(5, maxPrice);
+                ps.setInt(4, minPrice);
+                ps.setInt(5, maxPrice);
             }else{
                 ps.setString(1,  "%" + search + "%");
                 ps.setInt(2, status);
-                ps.setBigDecimal(3, minPrice);
-                ps.setBigDecimal(4, maxPrice);
+                ps.setInt(3, minPrice);
+                ps.setInt(4, maxPrice);
             }
             ResultSet rs = ps.executeQuery();
 
@@ -92,9 +92,9 @@ public class MenuItemDAO extends DBContext {
                         rs.getInt("categoryID"),
                         rs.getString("itemName"),
                         rs.getString("description"),
-                        rs.getBigDecimal("price"),
-                        rs.getBigDecimal("discountPercent"),
-                        rs.getBigDecimal("discountedPrice"),
+                        rs.getInt("price"),
+                        rs.getInt("discountPercent"),
+                        rs.getInt("discountedPrice"),
                         rs.getString("image"),
                         rs.getInt("isAvailable"),
                         rs.getString("allergyNotes"),
@@ -123,9 +123,9 @@ public class MenuItemDAO extends DBContext {
                         rs.getInt("categoryID"),
                         rs.getString("itemName"),
                         rs.getString("description"),
-                        rs.getBigDecimal("price"),
-                        rs.getBigDecimal("discountPercent"),
-                        rs.getBigDecimal("discountedPrice"),
+                        rs.getInt("price"),
+                        rs.getInt("discountPercent"),
+                        rs.getInt("discountedPrice"),
                         rs.getString("image"),
                         rs.getInt("isAvailable"),
                         rs.getString("allergyNotes"),
@@ -135,5 +135,37 @@ public class MenuItemDAO extends DBContext {
         } catch (Exception e) {
         }
         return null;
+    }
+    
+    public boolean updateMenuItemById(int id, int categoryId, String itemName, String description, int price,
+            int discountPercent, String image, int isAvailable, String allergyNotes){
+        String sql = "update MenuItem "
+                + "set categoryID = ? , "
+                + "itemName = ? , "
+                + "description = ? , "
+                + "price = ? , "
+                + "discountPercent = ? , "
+                + "discountPrice = ? , "
+                + "image = ? , "
+                + "isAvailable = ? , "
+                + "allergyNotes = ?  , "
+                + "where itemID = ? ";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, categoryId);
+            ps.setString(2, itemName);
+            ps.setString(3, description);
+            ps.setInt(4, price);
+            ps.setInt(5, discountPercent);
+            //ps.setInt(6, );
+            ps.setString(7, image);
+            ps.setInt(8, isAvailable);
+            ps.setString(9, allergyNotes);
+            ps.setInt(10, id);
+            
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+        }
+        return true;
     }
 }

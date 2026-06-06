@@ -93,8 +93,8 @@ public class MenuItemController extends HttpServlet {
                
         int categoryId = ((category_raw != null) && !(category_raw.isEmpty())) ? Integer.parseInt(category_raw) : 0;
         int status = ((status_raw != null) && !(status_raw.isEmpty())) ? Integer.parseInt(status_raw) : 1;
-        BigDecimal minPrice = ((minPrice_raw != null) && !(minPrice_raw.isEmpty())) ? new BigDecimal(minPrice_raw) : BigDecimal.ZERO;
-        BigDecimal maxPrice = ((maxPrice_raw != null) && !(maxPrice_raw.isEmpty())) ? new BigDecimal(maxPrice_raw) : new BigDecimal("999999999");
+        int minPrice = ((minPrice_raw != null) && !(minPrice_raw.isEmpty())) ? Integer.parseInt(minPrice_raw) : 0;
+        int maxPrice = ((maxPrice_raw != null) && !(maxPrice_raw.isEmpty())) ? Integer.parseInt(maxPrice_raw) : 999999999;
         
         //load lại list category
         List<MenuCategory> list = md.getAllMenuCategory();

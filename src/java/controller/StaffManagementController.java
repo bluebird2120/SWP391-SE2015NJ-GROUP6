@@ -25,12 +25,8 @@ import model.Employee;
 import util.PasswordUtil;
 import util.UserRole;
 
-@WebServlet(name = "StaffManagementController", urlPatterns = {"/owner/staff"})
-@MultipartConfig(
-        fileSizeThreshold = 1024 * 1024,
-        maxFileSize = 2L * 1024 * 1024,
-        maxRequestSize = 5L * 1024 * 1024
-)
+@WebServlet(name = "StaffManagementController", urlPatterns = { "/owner/staff" })
+@MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 2L * 1024 * 1024, maxRequestSize = 5L * 1024 * 1024)
 public class StaffManagementController extends HttpServlet {
 
     private static final String LIST_VIEW = "/views/owner/staff-list.jsp";
@@ -250,7 +246,8 @@ public class StaffManagementController extends HttpServlet {
         response.sendRedirect(buildListBackUrl(request, "reactivated"));
     }
 
-    private Map<String, String> bindAndValidate(HttpServletRequest request, Employee e, boolean isCreate, int excludeId) {
+    private Map<String, String> bindAndValidate(HttpServletRequest request, Employee e, boolean isCreate,
+            int excludeId) {
         Map<String, String> errors = new HashMap<>();
 
         String fullName = trim(request.getParameter("fullName"));
@@ -314,8 +311,8 @@ public class StaffManagementController extends HttpServlet {
 
         if (salaryStr != null && !salaryStr.isBlank()) {
             try {
-                BigDecimal sal = new BigDecimal(salaryStr);
-                if (sal.signum() < 0) {
+                int sal = Integer.parseInt(salaryStr);
+                if (sal < 0) {
                     errors.put("salary", "Salary cannot be negative.");
                 } else {
                     e.setSalary(sal);
