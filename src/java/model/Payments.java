@@ -9,15 +9,14 @@ public class Payments {
     private int invoiceID;
     private String transactionCode;
     private String paymentGateway;  // vnpay / momo / cash
-    private BigDecimal amount;
+    private long amount;
     private String status;          // pending / success / failed / refunded
     private Timestamp paidAt;       // DATETIME
 
     public Payments() {
     }
 
-    public Payments(int paymentID, int invoiceID, String transactionCode, String paymentGateway,
-            BigDecimal amount, String status, Timestamp paidAt) {
+    public Payments(int paymentID, int invoiceID, String transactionCode, String paymentGateway, long amount, String status, Timestamp paidAt) {
         this.paymentID = paymentID;
         this.invoiceID = invoiceID;
         this.transactionCode = transactionCode;
@@ -59,11 +58,11 @@ public class Payments {
         this.paymentGateway = paymentGateway;
     }
 
-    public BigDecimal getAmount() {
+    public long getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(long amount) {
         this.amount = amount;
     }
 
@@ -82,4 +81,5 @@ public class Payments {
     public void setPaidAt(Timestamp paidAt) {
         this.paidAt = paidAt;
     }
+
 }

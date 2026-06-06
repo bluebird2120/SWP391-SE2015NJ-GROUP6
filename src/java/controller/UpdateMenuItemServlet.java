@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import java.math.BigDecimal;
 import java.util.List;
 import model.MenuItem;
 
@@ -95,19 +96,24 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String discountPercent_raw = request.getParameter("discountPercent");
         String isAvailable_raw = request.getParameter("isAvailable");
         String allergyNotes_raw = request.getParameter("allergyNotes");
-        Part image = request.getPart("image");
-        String oldImage = request.getParameter("image");
+        String oldImage = request.getParameter("oldImage");
+        Part image = request.getPart("newImage");
+        String newImage = request.getParameter("image");
         
-        String errorName = ((itemName != null) && !(itemName.isEmpty())) ? "" : "Tên món ăn rỗng!";
-        String errorDescription = ((description_raw != null) && !(description_raw.isEmpty())) ? "" : "Mô tả món ăn rỗng!";
-        String errorPrice = ((price_raw != null) && !(price_raw.isEmpty())) ? "" : "Giá món ăn rỗng!";  
-        String errorDiscountPercent = ((discountPercent_raw != null) && !(discountPercent_raw.isEmpty())) ? "" : "Giảm giá món ăn rỗng!";
-        String errorAllergyNotes = ((allergyNotes_raw != null) && !(allergyNotes_raw.isEmpty())) ? "" : "Ghi chú dị ứng món ăn rỗng!";
+        String errorName = isEmpty(itemName, "Tên món ăn rỗng!");
+        String errorDescription = isEmpty(description_raw, "Mô tả món ăn rỗng!");
+        String errorPrice = isValidPositive(price_raw, "Giá món ăn rỗng!", "Giá món ăn là số nguyên dương!");
+        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn rỗng!", "Giảm giá món ăn là số nguyên dương!");
+        String errorAllergyNotes = isEmpty(allergyNotes_raw, "Mô tả dị ứng ăn rỗng!");
         
+        if(!errorName.isEmpty() || !errorDescription.isEmpty() || !errorPrice.isEmpty() || 
+                !errorDiscountPercent.isEmpty() || !errorAllergyNotes.isEmpty()){
+            
+            
+        }
         int itemId = Integer.parseInt(menuItemId_raw);
         int categoryId = Integer.parseInt(categoryId_raw);
         int price = Integer.parseInt(price_raw);
-        errorPrice = (price >= 0) ? "" : "Giá món ăn phải là số nguyên";
         int discountPercent = Integer.parseInt(discountPercent_raw);
         int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
         String fileName = (image != null) ? image.getSubmittedFileName() : oldImage;
@@ -122,6 +128,25 @@ public class UpdateMenuItemServlet extends HttpServlet {
         request.setAttribute("result", result);
         request.setAttribute("dish", mi);
         request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+    }
+    
+    public String isEmpty(String data, String ms){
+        return ((data != null) && (!data.isEmpty()) ? "" : ms);
+    }
+    
+    public String isValidPositive(String data, String ms1, String ms2){
+        try {
+            if(data != null && !data.isEmpty()){
+                if(Integer.parseInt(data) < 0){
+                    return ms2;
+                }
+            }else{
+                return ms1;
+            }
+        } catch (NumberFormatException e) {
+            return ms2;
+        }
+        return "";
     }
 
     /**
