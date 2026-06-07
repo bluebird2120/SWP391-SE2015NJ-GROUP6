@@ -269,7 +269,7 @@ public class EmployeeDAO extends DBContext {
         if (status != null) {
             sql.append(" AND isActive = ?");
         }
-        sql.append(" ORDER BY employeeID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        sql.append(" ORDER BY employeeID DESC LIMIT ? OFFSET ?");
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int idx = 1;
@@ -283,8 +283,8 @@ public class EmployeeDAO extends DBContext {
             if (status != null) {
                 ps.setInt(idx++, status);
             }
-            ps.setInt(idx++, (page - 1) * pageSize);
             ps.setInt(idx++, pageSize);
+            ps.setInt(idx++, (page - 1) * pageSize);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
