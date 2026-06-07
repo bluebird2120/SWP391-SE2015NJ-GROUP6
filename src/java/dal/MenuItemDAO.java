@@ -137,7 +137,7 @@ public class MenuItemDAO extends DBContext {
         return null;
     }
     
-    public boolean updateMenuItemById(int id, int categoryId, String itemName, String description, int price,
+    public boolean updateMenuItem(int id, int categoryId, String itemName, String description, int price,
             int discountPercent, String image, int isAvailable, String allergyNotes){
         String sql = "update MenuItem "
                 + "set categoryID = ? , "
@@ -145,11 +145,11 @@ public class MenuItemDAO extends DBContext {
                 + "description = ? , "
                 + "price = ? , "
                 + "discountPercent = ? , "
-                + "discountPrice = ? , "
+                + "discountedPrice = ? , "
                 + "image = ? , "
                 + "isAvailable = ? , "
-                + "allergyNotes = ?  , "
-                + "where itemID = ? ";
+                + "allergyNotes = ? "
+                + "where itemID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, categoryId);
@@ -157,14 +157,14 @@ public class MenuItemDAO extends DBContext {
             ps.setString(3, description);
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
-            //ps.setInt(6, );
+            ps.setInt(6, (int)(price * (1 - (double)discountPercent / 100)));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
             ps.setInt(10, id);
-            
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return true;
     }

@@ -19,14 +19,14 @@
             <input type="hidden" value="${dish.itemID}" name="id"/>
             <div>
                 Nhập tên món ăn:
-                <input type="text" name="name" value="${dish.itemName}"/>
+                <input type="text" name="name" value="${param.name != null ? param.name : dish.itemName}" required/>
                 <div style="color: red">${errorName}</div>
             </div>
             <div>
                 Lựa chọn loại món:
                 <select name="category">
                     <c:forEach var="cat" items="${list}">
-                        <option value="${cat.categoryID}" ${param.categoryID == cat.categoryID ? "selected" : ""}>
+                        <option value="${cat.categoryID}" ${(param.category != null ? param.category == cat.categoryID : dish.categoryID == cat.categoryID) ? "selected" : ""}>                    
                             ${cat.categoryName}
                         </option>
                     </c:forEach>
@@ -34,17 +34,18 @@
             </div>
             <div>
                 Nhập mô tả món ăn:
-                <textarea name="description">${dish.description}</textarea>
+                <textarea name="description" required>${param.description != null ? param.description : dish.description}</textarea>
                 <div style="color: red">${errorDescription}</div>
             </div>
             <div>
                 Nhập giá món ăn:
-                <input type="number" name="price" value="${dish.price}"/>
-                <div style="color: red">${errorDescription}</div>
+                <input type="number" name="price" value="${param.price != null ? param.price : dish.price}" required/>
+                <div style="color: red">${errorPrice}</div>
             </div>
             <div>
                 Nhập giảm giá món ăn:
-                <input type="number" name="discountPercent" value="${dish.discountPercent}"/>
+                <input type="number" name="discountPercent" value="${param.discountPercent != null ? param.discountPercent : dish.discountPercent}" required/>
+                <div style="color: red">${errorDiscountPercent}</div>
             </div>
             <div>
                 Giá món ăn sau khi giảm giá:
@@ -65,7 +66,8 @@
             </div>
             <div>
                 Ghi chú dị ứng:
-                <textarea name="allergyNotes">${dish.allergyNotes}</textarea>
+                <textarea name="allergyNotes" required>${param.allergyNotes != null ? param.allergyNotes : dish.allergyNotes}</textarea>
+                <div style="color: red">${errorAllergyNotes}</div>
             </div>
             <input type="submit" value="CẬP NHẬT"/>
         </form>
