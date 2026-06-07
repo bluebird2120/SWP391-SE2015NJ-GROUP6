@@ -54,11 +54,11 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── 3. Xử lý hiển thị bàn trống / gợi ý trực tiếp ngay bên dưới form ──
+        // ── 3. Xử lý hiển thị nhóm bàn theo số lượng số lượng ──
         if ("choosetable".equals(action) || "choosefood".equals(action)) {
             String dateTimeStr = request.getParameter("orderTime");
             String areaType    = request.getParameter("areaType");
-            String tableID     = request.getParameter("tableID");
+            String selectCapacity = request.getParameter("tableID"); // Nhận quy mô bàn được chọn
 
             String error = validateDateTime(dateTimeStr);
             if (error != null || areaType == null || areaType.isBlank()) {
@@ -70,23 +70,14 @@ public class ReservationController extends HttpServlet {
             }
 
             Timestamp orderTime = parseTimestamp(dateTimeStr);
-            List<Table> tables  = tableDAO.findAvailableTables(areaType, orderTime);
+            List<Table> tableGroups = tableDAO.findAvailableTableGroups(areaType, orderTime);
 
             request.setAttribute("orderTime", dateTimeStr);
             request.setAttribute("areaType",  areaType);
-            request.setAttribute("tableID",   tableID); // Lưu giữ vết bàn được chọn nếu có
-
-            if (tables.isEmpty()) {
-                // Kích hoạt hộp gợi ý đổi vị trí thông minh
-                List<Table> higherTables = tableDAO.findAlternativeTablesHigherCapacity(areaType, orderTime, 2);
-                List<Table> otherAreaTables = tableDAO.findAlternativeTablesOtherArea(areaType, orderTime);
-                request.setAttribute("higherTables", higherTables);
-                request.setAttribute("otherAreaTables", otherAreaTables);
-                request.setAttribute("step", "no-table-suggest"); 
-            } else {
-                request.setAttribute("tables", tables);
-                request.setAttribute("step", "choose-table");
-            }
+            request.setAttribute("tableID",   selectCapacity); // Giữ vết quy mô bàn đã click
+            request.setAttribute("tableGroups", tableGroups);
+            
+            request.setAttribute("step", "choose-table"); 
             request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             forward(request, response);
             return;
@@ -116,16 +107,22 @@ public class ReservationController extends HttpServlet {
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute("customer") != null) {
             String tempOrderTime = (String) session.getAttribute("tempOrderTime");
-            Integer tempTableID  = (Integer) session.getAttribute("tempTableID");
+            Integer tempTableID  = (Integer) session.getAttribute("tempTableID"); 
+            String tempAreaType  = (String) session.getAttribute("tempAreaType");
 
             if (tempOrderTime != null && tempTableID != null && tempTableID > 0) {
-                Table savedTable = tableDAO.getTableByID(tempTableID);
-                if (savedTable != null) {
-                    // Chuyển hướng nội bộ để vẽ lại form kèm trạng thái bàn đã click sẵn trước đó
-                    response.sendRedirect(request.getContextPath() + "/reservation?action=choosefood&orderTime=" 
-                            + tempOrderTime + "&areaType=" + savedTable.getAreaType() + "&tableID=" + tempTableID);
-                    return;
+                session.removeAttribute("tempOrderTime");
+                session.removeAttribute("tempTableID");
+                session.removeAttribute("tempAreaType");
+
+                if (tempAreaType == null || tempAreaType.isBlank()) {
+                    tempAreaType = "public";
                 }
+
+                // Chuyển hướng nạp lại form kèm giữ trạng thái click quy mô cũ
+                response.sendRedirect(request.getContextPath() + "/reservation?action=choosetable&orderTime=" 
+                        + tempOrderTime + "&areaType=" + tempAreaType + "&tableID=" + tempTableID);
+                return;
             }
         }
 
@@ -141,20 +138,22 @@ public class ReservationController extends HttpServlet {
             throws ServletException, IOException {
 
         String dateTimeStr = request.getParameter("orderTime");
-        int    tableID     = toInt(request.getParameter("tableID"), -1);
+        String areaType    = request.getParameter("areaType");
+        int    capacityID  = toInt(request.getParameter("tableID"), -1); 
 
         Customer customer = getCustomer(request);
         if (customer == null) {
-            // Chưa đăng nhập: Cất tạm dữ liệu vào tủ đồ Session chờ khách login quay lại
+            // Chưa đăng nhập: Lưu giữ vết toàn bộ thông tin ngày, giờ, khu vực, quy mô bàn vào session
             HttpSession session = request.getSession(true);
             session.setAttribute("tempOrderTime", dateTimeStr);
-            session.setAttribute("tempTableID", tableID);
+            session.setAttribute("tempTableID", capacityID);
+            session.setAttribute("tempAreaType", areaType);
             goLogin(request, response);
             return;
         }
 
-        if (tableID < 0) {
-            request.setAttribute("error", "Vui lòng chọn vị trí bàn mong muốn.");
+        if (capacityID < 0) {
+            request.setAttribute("error", "Vui lòng chọn quy mô bàn mong muốn.");
             request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             request.setAttribute("step", "pick-time");
             forward(request, response);
@@ -172,7 +171,7 @@ public class ReservationController extends HttpServlet {
 
         Timestamp orderTime = parseTimestamp(dateTimeStr);
         int orderID = orderDAO.createReservation(
-                customer.getCustomerID(), tableID, orderTime, BigDecimal.ZERO);
+                customer.getCustomerID(), capacityID, orderTime, BigDecimal.ZERO);
 
         if (orderID < 0) {
             request.setAttribute("error", "Lỗi tạo đơn hệ thống. Vui lòng thử lại.");
@@ -184,10 +183,11 @@ public class ReservationController extends HttpServlet {
 
         HttpSession session = request.getSession(true);
         session.setAttribute("lastReservation", orderDAO.getOrderByID(orderID));
-        session.setAttribute("assignedTable",   tableDAO.getTableByID(tableID));
+        session.setAttribute("assignedTable",    tableDAO.getTableByID(capacityID));
         
         session.removeAttribute("tempOrderTime");
         session.removeAttribute("tempTableID");
+        session.removeAttribute("tempAreaType");
         
         response.sendRedirect(request.getContextPath() + "/reservation?action=success");
     }
@@ -232,10 +232,4 @@ public class ReservationController extends HttpServlet {
     private int toInt(String value, int def) {
         try { return Integer.parseInt(value); } catch (Exception e) { return def; }
     }
-    
-
-    // update hihi 
-
-    // update
-
 }
