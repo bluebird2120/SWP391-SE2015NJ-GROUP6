@@ -13,7 +13,7 @@ public class Employee {
     private Date dob;                          // DATE
     private String phoneNumber;
     private String email;
-    private BigDecimal salary;
+    private int salary;
     private int isActive;
     private String address;
     private String image;
@@ -24,10 +24,7 @@ public class Employee {
     public Employee() {
     }
 
-    public Employee(int employeeID, int roleID, String password, String fullName, Date dob,
-            String phoneNumber, String email, BigDecimal salary, int isActive,
-            String address, String image, Timestamp createdAt,
-            Timestamp lastPasswordChangedAt, int mustChangePassword) {
+    public Employee(int employeeID, int roleID, String password, String fullName, Date dob, String phoneNumber, String email, int salary, int isActive, String address, String image, Timestamp createdAt, Timestamp lastPasswordChangedAt, int mustChangePassword) {
         this.employeeID = employeeID;
         this.roleID = roleID;
         this.password = password;
@@ -100,11 +97,11 @@ public class Employee {
         this.email = email;
     }
 
-    public BigDecimal getSalary() {
+    public int getSalary() {
         return salary;
     }
 
-    public void setSalary(BigDecimal salary) {
+    public void setSalary(int salary) {
         this.salary = salary;
     }
 
@@ -155,4 +152,5 @@ public class Employee {
     public void setMustChangePassword(int mustChangePassword) {
         this.mustChangePassword = mustChangePassword;
     }
+
 }

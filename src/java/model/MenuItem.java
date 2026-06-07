@@ -8,9 +8,9 @@ public class MenuItem {
     private int categoryID;
     private String itemName;
     private String description;
-    private BigDecimal price;
-    private BigDecimal discountPercent;
-    private BigDecimal discountedPrice;
+    private int price;
+    private int discountPercent;
+    private int discountedPrice;
     private String image;
     private int isAvailable;
     private String allergyNotes;
@@ -19,8 +19,7 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(int itemID, int categoryID, String itemName, String description, BigDecimal price,
-            BigDecimal discountPercent, BigDecimal discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
+    public MenuItem(int itemID, int categoryID, String itemName, String description, int price, int discountPercent, int discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
         this.itemID = itemID;
         this.categoryID = categoryID;
         this.itemName = itemName;
@@ -66,27 +65,27 @@ public class MenuItem {
         this.description = description;
     }
 
-    public BigDecimal getPrice() {
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(BigDecimal price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 
-    public BigDecimal getDiscountPercent() {
+    public int getDiscountPercent() {
         return discountPercent;
     }
 
-    public void setDiscountPercent(BigDecimal discountPercent) {
+    public void setDiscountPercent(int discountPercent) {
         this.discountPercent = discountPercent;
     }
 
-    public BigDecimal getDiscountedPrice() {
+    public int getDiscountedPrice() {
         return discountedPrice;
     }
 
-    public void setDiscountedPrice(BigDecimal discountedPrice) {
+    public void setDiscountedPrice(int discountedPrice) {
         this.discountedPrice = discountedPrice;
     }
 

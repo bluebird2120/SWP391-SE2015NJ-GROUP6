@@ -53,11 +53,11 @@
             <div>
                 Ảnh hiện tại:
                 <img src="${dish.image}"/>
-                <input type="hidden" value="${dish.image}" name="image"/>
+                <input type="hidden" value="${dish.image}" name="oldImage"/>
             </div>
             <div>
                 Đổi ảnh mới:
-                <input type="file" name="image"/>
+                <input type="file" name="newImage"/>
             </div>
             <div>
                 Trạng thái món ăn:

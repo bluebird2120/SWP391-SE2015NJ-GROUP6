@@ -23,9 +23,14 @@ public class LoginController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        //register -> login
+        if ("true".equals(request.getParameter("registered"))) {
+            request.setAttribute("successMessage",
+                    "Đăng ký thành công. Vui lòng đăng nhập.");
+        }
+
         HttpSession session = request.getSession(false);
 
-        // Nếu đã login rồi thì không vào trang login nữa
         if (session != null) {
             if (session.getAttribute("employee") != null) {
                 redirectEmployee(request, response, (Employee) session.getAttribute("employee"));
@@ -36,20 +41,18 @@ public class LoginController extends HttpServlet {
                 return;
             }
         }
-
         request.getRequestDispatcher("/views/login.jsp").forward(request, response);
     }
 
-    // ── POST: xử lý đăng nhập ──────────────────────────────────────────────
+    //POST: xử lý đăng nhập
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String phone = request.getParameter("identifier");
+        String phone = trim(request.getParameter("identifier"));
         String password = request.getParameter("password");
-        String loginType = request.getParameter("loginType"); // "employee" hoặc "customer"
 
-        // ── 1. Validate đầu vào ──────────────────────────────────────────
+        //Validate
         String phoneError = validatePhone(phone);
         String passwordError = validatePassword(password);
 
@@ -57,59 +60,54 @@ public class LoginController extends HttpServlet {
             request.setAttribute("phoneError", phoneError);
             request.setAttribute("passwordError", passwordError);
             request.setAttribute("identifier", phone);
-            request.setAttribute("loginType", loginType);
-
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
             return;
         }
 
-        // ── 2. Xác thực DB theo loại tài khoản ──────────────────────────
+        //Tìm Employee trước, không có thì tìm Customer
         try {
-            if ("employee".equals(loginType)) {
-                handleEmployeeLogin(request, response, phone, password);
-            } else {
-                handleCustomerLogin(request, response, phone, password);
+            Employee employee = employeeDAO.findByPhoneAndPassword(phone, password);
+            if (employee != null) {
+                handleEmployeeLogin(request, response, employee);
+                return;
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.");
-            request.setAttribute("identifier", phone);
-            request.setAttribute("loginType", loginType);
+            Customer customer = customerDAO.findByPhoneAndPassword(phone, password);
+            if (customer != null) {
+                handleCustomerLogin(request, response, customer);
+                return;
+            }
 
+            //nếu cả 2 null -> sai thông tin
+            request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng!");
+            request.setAttribute("identifier", phone);
+            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau");
+            request.setAttribute("identifier", phone);
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
         }
     }
 
-    // ── Xử lý login Employee (Staff / Owner) ─────────────────────────────
     private void handleEmployeeLogin(HttpServletRequest request, HttpServletResponse response,
-            String phone, String password)
-            throws ServletException, IOException, SQLException {
-
-        Employee employee = employeeDAO.findByPhoneAndPassword(phone, password);
-
-        if (employee == null) {
-            request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng.");
-            request.setAttribute("identifier", phone);
-            request.setAttribute("loginType", "employee");
-            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
-            return;
-        }
+            Employee employee) throws IOException {
 
         if (employee.getIsActive() == 0) {
-            request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản lý.");
-            request.setAttribute("identifier", phone);
-            request.setAttribute("loginType", "employee");
-            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+            try {
+                request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản lý.");
+                request.setAttribute("identifier", employee.getPhoneNumber());
+                request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+            } catch (ServletException e) {
+                e.printStackTrace();
+            }
             return;
         }
 
-        // Tạo session — key "employee" cho đồng nhất với header.jsp và AuthenticationFilter
         HttpSession session = request.getSession(true);
         session.setAttribute("employee", employee);
-        session.setMaxInactiveInterval(30 * 60); // 30 phút
+        session.setMaxInactiveInterval(30 * 60);
 
-        // Bắt buộc đổi mật khẩu lần đầu
         if (employee.getMustChangePassword() == 1) {
             response.sendRedirect(request.getContextPath() + "/staff/change-password?first=true");
             return;
@@ -120,18 +118,8 @@ public class LoginController extends HttpServlet {
 
     // ── Xử lý login Customer ─────────────────────────────────────────────
     private void handleCustomerLogin(HttpServletRequest request, HttpServletResponse response,
-            String phone, String password)
+            Customer customer)
             throws ServletException, IOException, SQLException {
-
-        Customer customer = customerDAO.findByPhoneAndPassword(phone, password);
-
-        if (customer == null) {
-            request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng.");
-            request.setAttribute("identifier", phone);
-            request.setAttribute("loginType", "customer");
-            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
-            return;
-        }
 
         HttpSession session = request.getSession(true);
         session.setAttribute("customer", customer);
@@ -152,7 +140,7 @@ public class LoginController extends HttpServlet {
         int roleID = employee.getRoleID();
         // ID 1 for Owner
         if (roleID == 1) {
-            response.sendRedirect(request.getContextPath() + "/staff/dashboard"); // Owner
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard"); // Owner
         } else {
             response.sendRedirect(request.getContextPath() + "/staff/dashboard"); // Staff
         }
@@ -176,5 +164,9 @@ public class LoginController extends HttpServlet {
             return "Mật khẩu phải có ít nhất 6 ký tự.";
         }
         return null;
+    }
+    
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }
