@@ -192,6 +192,67 @@ public class OrderDAO {
         }
         return list;
     }
+    
+    
+     // =========================================================
+    // LẤY DANH SÁCH OrderItem THEO DANH SÁCH orderItemID
+    // Dùng khi checkout: chỉ lấy các món khách đã tích chọn
+    // =========================================================
+    public List<OrderItem> getOrderItemsByIds(List<Integer> orderItemIDs) {
+        List<OrderItem> list = new ArrayList<>();
+        if (orderItemIDs == null || orderItemIDs.isEmpty()) return list;
+ 
+        // Tạo chuỗi "?,?,?" theo số lượng id
+        String placeholders = String.join(",",
+            java.util.Collections.nCopies(orderItemIDs.size(), "?"));
+        String sql = "SELECT * FROM OrderItem "
+                   + "WHERE orderItemID IN (" + placeholders + ") "
+                   + "ORDER BY orderItemID";
+ 
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+ 
+            for (int i = 0; i < orderItemIDs.size(); i++) {
+                ps.setInt(i + 1, orderItemIDs.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapToOrderItem(rs));
+ 
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] getOrderItemsByIds lỗi: " + e.getMessage());
+        }
+        return list;
+    }
+ 
+    // =========================================================
+    // LẤY DANH SÁCH MenuItem THEO DANH SÁCH orderItemID
+    // Thứ tự khớp với getOrderItemsByIds
+    // =========================================================
+    public List<MenuItem> getMenuItemsByOrderItemIds(List<Integer> orderItemIDs) {
+        List<MenuItem> list = new ArrayList<>();
+        if (orderItemIDs == null || orderItemIDs.isEmpty()) return list;
+ 
+        String placeholders = String.join(",",
+            java.util.Collections.nCopies(orderItemIDs.size(), "?"));
+        String sql = "SELECT mi.* FROM OrderItem oi "
+                   + "JOIN MenuItem mi ON mi.itemID = oi.itemID "
+                   + "WHERE oi.orderItemID IN (" + placeholders + ") "
+                   + "ORDER BY oi.orderItemID";
+ 
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+ 
+            for (int i = 0; i < orderItemIDs.size(); i++) {
+                ps.setInt(i + 1, orderItemIDs.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapToMenuItem(rs));
+ 
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] getMenuItemsByOrderItemIds lỗi: " + e.getMessage());
+        }
+        return list;
+    }
 
     // =========================================================
     // HELPER: kiểm tra món đã có trong đơn chưa

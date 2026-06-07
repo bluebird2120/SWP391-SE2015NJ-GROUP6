@@ -101,7 +101,7 @@
             <div class="nav-section-title"><i class="fas fa-cog"></i> Operations</div>
         </li>
 
-        <%-- roleID=3: Staff thấy Orders --%>
+        <%-- roleID=2: Staff thấy Orders --%>
         <c:if test="${sessionScope.employee.roleID == 2}">
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('order-management') ? 'active' : ''}"
