@@ -185,8 +185,8 @@
                                 placeholder="Số điện thoại"
                                 value="${identifier}" required>
 
-                               
-                               
+
+
 
                             <div class="error">${phoneError}</div>
                         </div>
@@ -199,7 +199,7 @@
 
                                 placeholder="Mật khẩu" required>
 
-                           
+
 
                             <div class="error">${passwordError}</div>
 
@@ -277,8 +277,4 @@
         </div>
         <%@include file="/views/includes/footer.jsp" %>  
     </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> ed24e257433c9e0def45854d9ef8149583bfb600
