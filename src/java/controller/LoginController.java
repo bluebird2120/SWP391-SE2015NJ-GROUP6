@@ -134,7 +134,7 @@ public class LoginController extends HttpServlet {
         int roleID = employee.getRoleID();
         // ID 1 for Owner
         if (roleID == 1) {
-            response.sendRedirect(request.getContextPath() + "/staff/dashboard"); // Owner
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard"); // Owner
         } else {
             response.sendRedirect(request.getContextPath() + "/staff/dashboard"); // Staff
         }
