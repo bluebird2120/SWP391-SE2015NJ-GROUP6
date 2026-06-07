@@ -92,12 +92,17 @@
             }
             .status {
                 display: block;
-                background-color: #edf7ed;
-                color: #1e4620;
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 14px;
-
+            }
+            .active{
+                background-color: #edf7ed;
+                color: #1e4620;
+            }
+            .inactive{
+                background-color: #fdeaea;
+                color: #c62828;
             }
             .item-name {
                 font-size: 18px;
@@ -208,7 +213,9 @@
 
                             <img src="${item.image}" alt="${item.itemName}">
 
-                            <span class="status">${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}</span>
+                            <span class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
+                                ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
+                            </span>
 
                             <h3 class="item-name">${item.itemName}</h3>
 
