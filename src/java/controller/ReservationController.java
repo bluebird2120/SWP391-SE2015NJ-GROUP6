@@ -29,7 +29,7 @@ public class ReservationController extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        // ── 1. Lịch sử đặt bàn ─────────────────────────────────────────────
+        //  1. Lịch sử đặt bàn
         if ("history".equals(action)) {
             Customer customer = getCustomer(request);
             if (customer == null) { goLogin(request, response); return; }
@@ -41,7 +41,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── 2. Huỷ đơn ─────────────────────────────────────────────────────
+        // ── 2. Huỷ đơn 
         if ("cancel".equals(action)) {
             Customer customer = getCustomer(request);
             if (customer == null) { goLogin(request, response); return; }
@@ -54,7 +54,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── 3. Xử lý hiển thị nhóm bàn theo số lượng số lượng ──
+        //  3. Xử lý hiển thị nhóm bàn theo số lượng số lượng 
         if ("choosetable".equals(action) || "choosefood".equals(action)) {
             String dateTimeStr = request.getParameter("orderTime");
             String areaType    = request.getParameter("areaType");
@@ -83,7 +83,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── 4. Thành công ──────────────────────────────────────────────────
+        // ── 4 Thành công
         if ("success".equals(action)) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getAttribute("lastReservation") == null) {
@@ -132,7 +132,10 @@ public class ReservationController extends HttpServlet {
         forward(request, response);
     }
 
-    // ── POST: Xử lý chốt đơn cuối cùng (Chỉ chặn đăng nhập tại đây) ──
+    
+    
+    // cần đăng nhập với đặt bàn được 
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -192,16 +195,21 @@ public class ReservationController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/reservation?action=success");
     }
 
+    
+    
     private void forward(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
         req.getRequestDispatcher("/views/customer/reservation.jsp").forward(req, res);
     }
 
+    
     private Customer getCustomer(HttpServletRequest request) {
         HttpSession s = request.getSession(false);
         return s == null ? null : (Customer) s.getAttribute("customer");
     }
 
+    
+    
     private void goLogin(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         request.getSession(true).setAttribute("redirectAfterLogin",
@@ -209,6 +217,9 @@ public class ReservationController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/login");
     }
 
+    
+    
+    
     private String validateDateTime(String s) {
         if (s == null || s.isBlank()) return "Vui lòng chọn ngày và giờ đến.";
         try {
@@ -221,6 +232,8 @@ public class ReservationController extends HttpServlet {
         return null;
     }
 
+    
+    
     private Timestamp parseTimestamp(String s) {
         try {
             return new Timestamp(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm").parse(s).getTime());
@@ -232,6 +245,7 @@ public class ReservationController extends HttpServlet {
     private int toInt(String value, int def) {
         try { return Integer.parseInt(value); } catch (Exception e) { return def; }
     }
+   
     
-    // SonNN
+    
 }
