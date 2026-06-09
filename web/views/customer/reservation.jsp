@@ -48,7 +48,7 @@
 
 <div class="container">
 
-    <%-- TRANG THÀNH CÔNG: Tách riêng biệt nếu đã tạo đơn thành công --%>
+    <%-- TRANG THÀNH CÔNG --%>
     <c:if test="${step == 'success'}">
         <div class="card-wrap text-center py-4">
             <div class="display-3 text-success mb-3">🎉</div>
@@ -56,15 +56,15 @@
             <p class="text-muted">Mã đơn hàng của bạn: <strong>#${order.orderID}</strong></p>
             <div class="bg-light rounded-3 p-3 text-start my-4" style="font-size: .95rem;">
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Vị trí bàn đã chọn:</span>
-                    <span class="fw-bold text-dark">${table.tableName} (${table.areaType == 'public' ? 'Ngoài sảnh' : 'Trong phòng'})</span>
+                    <span class="text-secondary">Loại quy mô đặt giữ chỗ:</span>
+                    <span class="fw-bold text-dark">Nhóm bàn ${table.capacity} chỗ (${areaType == 'public' ? 'Ngoài sảnh' : 'Trong phòng'})</span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-secondary">Thời gian đến:</span>
                     <span class="fw-bold text-dark"><fmt:formatDate value="${order.orderTime}" pattern="HH:mm - dd/MM/yyyy"/></span>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <span class="text-secondary">Trạng thái:</span>
+                    <span class="text-secondary">Trạng thái giữ đơn:</span>
                     <span class="badge bg-warning text-dark">Chờ xác nhận</span>
                 </div>
             </div>
@@ -75,7 +75,7 @@
         </div>
     </c:if>
 
-    <%-- TRANG LỊCH SỬ ĐẶT BÀN: Tách riêng biệt --%>
+    <%-- TRANG LỊCH SỬ ĐẶT BÀN --%>
     <c:if test="${step == 'history'}">
         <div class="card-wrap">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -147,71 +147,42 @@
 
             <form id="mainBookingForm" method="post" action="${pageContext.request.contextPath}/reservation" onsubmit="return validateFinalForm()">
                 <input type="hidden" name="orderTime" value="${orderTime}">
+                <input type="hidden" name="areaType" value="${areaType}">
                 <input type="hidden" name="tableID" id="finalTableID" value="${tableID}">
 
-                <%-- KỊCH BẢN A: CÓ BÀN TRỐNG PHÙ HỢP --%>
+                <%-- HIỂN THỊ SƠ ĐỒ THEO QUY MÔ SỐ LƯỢNG --%>
                 <c:if test="${step == 'choose-table'}">
                     <div class="mb-4">
-                        <div class="section-title">3. Chọn vị trí bàn (${tables.size()} bàn trống)</div>
-                        <div class="row g-2">
-                            <c:forEach var="t" items="${tables}">
+                        <div class="section-title">3. Chọn quy mô sức chứa bàn ăn phù hợp</div>
+                        <div class="row g-3">
+                            <c:forEach var="g" items="${tableGroups}">
                                 <div class="col-6 col-md-4">
-                                    <div class="table-card ${tableID == t.tableID ? 'selected' : ''}" onclick="selectFinalTable(this, '${t.tableID}')">
-                                        <div class="fw-bold small">🪑 ${t.tableName}</div>
-                                        <span class="badge bg-secondary rounded-pill fw-normal" style="font-size: .7rem;">${t.capacity} chỗ</span>
-                                    </div>
+                                    <c:choose>
+                                        <%-- HẾT BÀN CÙNG LOẠI (Số lượng <= 0) --%>
+                                        <c:when test="${g.isActive <= 0}">
+                                            <div class="table-card" style="background: #e2e8f0; color: #94a3b8; border-color: #cbd5e1; cursor: not-allowed; opacity: 0.65;" onclick="alert('⚠️ Rất tiếc, loại bàn quy mô ${g.capacity} chỗ tại khu vực này đã hết sạch phòng trống! Vui lòng chọn bàn lớn hơn hoặc đổi khu vực.')">
+                                                <div class="fw-bold small text-secondary">❌ Bàn ${g.capacity} chỗ</div>
+                                                <span class="badge bg-danger rounded-pill fw-normal" style="font-size: .7rem;">Hết bàn</span>
+                                            </div>
+                                        </c:when>
+
+                                        <%-- CÒN HÀNG TỒN KHO KHẢ DỤNG (> 0 bàn) --%>
+                                        <c:otherwise>
+                                            <div class="table-card ${tableID == g.tableID ? 'selected' : ''}" onclick="selectFinalTable(this, '${g.tableID}')">
+                                                <div class="fw-bold small">🪑 Bàn ${g.capacity} chỗ</div>
+                                                <span class="badge bg-success rounded-pill fw-normal" style="font-size: .7rem;">Còn ${g.isActive} bàn trống</span>
+                                            </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </c:forEach>
                         </div>
-                        <div id="tableError" class="text-danger small mt-2" style="display:none">Vui lòng click chọn một chiếc bàn cụ thể.</div>
+                        <div id="tableError" class="text-danger small mt-2" style="display:none">Vui lòng click chọn một quy mô bàn còn trống màu xanh.</div>
                     </div>
                 </c:if>
 
-                <%-- KỊCH BẢN B: HẾT BÀN 2 CHỖ -> TỰ ĐỘNG HIỂN THỊ HỘP GỢI Ý NGAY TẠI ĐÂY --%>
-                <c:if test="${step == 'no-table-suggest'}">
-                    <div class="mb-4 p-3 bg-light rounded-3 border border-warning">
-                        <div class="text-center mb-3">
-                            <span class="text-danger fw-bold">⚠️ Đã hết bàn trống quy mô nhỏ tại khu vực này!</span>
-                            <p class="text-muted small mb-0">Nhà hàng gợi ý cho bạn các phương án trống sẵn sàng thay thế:</p>
-                        </div>
-
-                        <c:if test="${not empty higherTables}">
-                            <div class="mb-3">
-                                <span class="small fw-bold text-secondary d-block mb-1">✨ Đổi sang bàn rộng rãi hơn (Cùng khu vực):</span>
-                                <div class="row g-2">
-                                    <c:forEach var="t" items="${higherTables}">
-                                        <div class="col-6">
-                                            <div class="table-card ${tableID == t.tableID ? 'selected' : ''}" onclick="selectFinalTable(this, '${t.tableID}')">
-                                                <strong>${t.tableName}</strong>
-                                                <small class="d-block text-muted" style="font-size: .75rem;">Rộng rãi: ${t.capacity} chỗ</small>
-                                            </div>
-                                        </div>
-                                    </c:forEach>
-                                </div>
-                            </div>
-                        </c:if>
-
-                        <c:if test="${not empty otherAreaTables}">
-                            <div>
-                                <span class="small fw-bold text-secondary d-block mb-1">✨ Đổi vị trí sang khu vực lân cận:</span>
-                                <div class="row g-2">
-                                    <c:forEach var="t" items="${otherAreaTables}">
-                                        <div class="col-6">
-                                            <div class="table-card ${tableID == t.tableID ? 'selected' : ''}" onclick="selectFinalTable(this, '${t.tableID}')">
-                                                <strong>${t.tableName}</strong>
-                                                <small class="d-block text-muted" style="font-size: .75rem;">${t.areaType == 'public' ? 'Ngoài sảnh' : 'Trong phòng'} (${t.capacity} chỗ)</small>
-                                            </div>
-                                        </div>
-                                    </c:forEach>
-                                </div>
-                            </div>
-                        </c:if>
-                        <div id="tableError" class="text-danger small mt-2" style="display:none">Vui lòng click chọn một bàn gợi ý để tiếp tục.</div>
-                    </div>
-                </c:if>
-
-                <%-- BƯỚC CHỌN MÓN ĐẶT TRƯỚC (Hiển thị đồng thời nếu đã thực hiện check bàn trống) --%>
-                <c:if test="${step == 'choose-table' || step == 'no-table-suggest'}">
+                <%-- HIỂN THỊ CHỌN MÓN VÀ HOÀN TẤT ĐƠN --%>
+                <c:if test="${step == 'choose-table'}">
                     <div class="mb-4">
                         <div class="section-title">4. Đặt trước thực đơn (Tùy chọn)</div>
                         <div class="menu-placeholder">
@@ -229,7 +200,6 @@
 </div>
 
 <script>
-    // Đồng bộ chọn khu vực ở form GET
     function selectArea(btn, value) {
         document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
@@ -237,7 +207,6 @@
         document.getElementById('areaError').style.display = 'none';
     }
 
-    // Kiểm tra tính hợp lệ khi bấm nút tìm bàn trống
     function validateStep1() {
         if (!document.getElementById('areaType').value) {
             document.getElementById('areaError').style.display = 'block';
@@ -246,7 +215,6 @@
         return true;
     }
 
-    // Xử lý chọn bàn trực quan ngay trên trang (Gán mã bàn vào form POST ẩn)
     function selectFinalTable(card, tableID) {
         document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
@@ -254,7 +222,6 @@
         document.getElementById('tableError').style.display = 'none';
     }
 
-    // Kiểm tra trước khi submit đơn hàng tạo vào DB
     function validateFinalForm() {
         var tableID = document.getElementById('finalTableID').value;
         if (!tableID || tableID === "" || tableID === "-1") {
