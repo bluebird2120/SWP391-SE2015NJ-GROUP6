@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
@@ -28,7 +28,7 @@
 
         .banner-header {
             background: linear-gradient(rgba(255, 248, 231, 0.55), rgba(255, 248, 231, 0.55)), 
-                        url('https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat;
+                        url('https://mia.vn/media/uploads/blog-du-lich/kham-pha-cau-long-bien-bieu-tuong-van-hoa-lich-su-cua-ha-noi-1639844231.jpg') center/cover no-repeat;
             padding: 45px 20px;
             text-align: center;
             border-bottom: 3px solid #8c6239;
@@ -204,7 +204,7 @@
     </style>
 </head>
 <body>
-
+ <%@include file="/views/includes/header.jsp" %>
 <div class="wrapper-fullwidth">
     
     <div class="banner-header">
@@ -214,7 +214,7 @@
 
     <div class="nav-menu">
         <a href="${pageContext.request.contextPath}/">🏠 Trang chủ</a>
-        <a href="${pageContext.request.contextPath}/reservation">🍽️ Đặt bàn nhanh</a>
+       
         <a href="${pageContext.request.contextPath}/reservation?action=history">📅 Lịch sử của tôi</a>
     </div>
 
@@ -382,14 +382,11 @@
         </div>
     </div>
 
-    <div class="footer">
-        Copyright © 2026 Nhà Hàng Ẩm Thực Truyền Thống Hà Nội. All rights reserved.<br>
-        Hotline dịch vụ chăm sóc thực khách: 1900 xxxx
-    </div>
+    
 </div>
 
 <script>
-    // THUẬT TOÁN KEYWORD FILTER: Gõ từ khóa tự động ẩn/hiện các ô vuông bàn ăn cực kỳ dễ hiểu
+    //  Gõ từ khóa tự động ẩn/hiện các ô vuông bàn ăn
     function filterTablesByKeyword() {
         var input = document.getElementById("keywordSearch");
         var filter = input.value.toLowerCase(); // Chuyển chữ hoa thành chữ thường để so sánh
@@ -398,9 +395,9 @@
         for (var i = 0; i < cards.length; i++) {
             var tableNameData = cards[i].getAttribute("data-name");
             if (tableNameData.indexOf(filter) > -1) {
-                cards[i].style.display = ""; // Khớp từ khóa -> hiển thị ô vuông
+                cards[i].style.display = "";  
             } else {
-                cards[i].style.display = "none"; // Không khớp -> ẩn ô vuông đi
+                cards[i].style.display = "none"; 
             }
         }
     }
@@ -436,5 +433,7 @@
         return true;
     }
 </script>
+
+ <%@include file="/views/includes/footer.jsp" %>  
 </body>
 </html>
