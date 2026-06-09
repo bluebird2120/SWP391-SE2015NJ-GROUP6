@@ -132,15 +132,19 @@
 
             <!-- Workforce -->
             <li><div class="nav-section-title"><i class="fas fa-users"></i> Workforce</div></li>
+            
+            <c:if test="${sessionScope.employee.roleID == 1}">
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('shift-management') && param.action == 'templates' ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/shift-management?action=templates">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'templates' ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/shift-templates">
                     <i class="fas fa-calendar-alt"></i> Shift Templates
                 </a>
             </li>
+            </c:if>
+            
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('shift-management') && param.action == 'assignments' ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/shift-management?action=assignments">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'assignments' ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/shift-assignments">
                     <i class="fas fa-user-clock"></i> Shift Assignments
                 </a>
             </li>
@@ -152,7 +156,14 @@
                     </a>
                 </li>
             </c:if>
-
+              <c:if test="${sessionScope.employee.roleID == 1}">
+                <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'assignments' ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/attendance">
+                    <i class="fas fa-clipboard-check"></i> Attendance
+                </a>
+            </li>
+            </c:if>
             <!-- Finance -->
             <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Finance</div></li>
             <li>
