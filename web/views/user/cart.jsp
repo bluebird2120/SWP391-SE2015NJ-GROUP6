@@ -7,52 +7,158 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Giỏ hàng</title>
         <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: Arial, sans-serif; background: #f7f7f7;
-                   display: flex; justify-content: center; padding: 32px 16px; }
-            .container { width: 100%; max-width: 900px; }
-            h2  { color: #c0392b; font-size: 24px; margin-bottom: 8px; }
-            .back { color: #2980b9; text-decoration: none; font-size: 14px; }
-            .back:hover { text-decoration: underline; }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                background: #f7f7f7;
+                display: flex;
+                justify-content: center;
+                padding: 32px 16px;
+            }
+            .container {
+                width: 100%;
+                max-width: 900px;
+            }
+            h2  {
+                color: #c0392b;
+                font-size: 24px;
+                margin-bottom: 8px;
+            }
+            .back {
+                color: #2980b9;
+                text-decoration: none;
+                font-size: 14px;
+            }
+            .back:hover {
+                text-decoration: underline;
+            }
 
-            table { width: 100%; border-collapse: collapse; margin-top: 16px;
-                    background: #fff; border-radius: 8px; overflow: hidden;
-                    box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-            th { background: #f5f5f5; padding: 12px 14px; text-align: left;
-                 font-size: 14px; color: #555; border-bottom: 1px solid #e0e0e0; }
-            td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0;
-                 vertical-align: middle; font-size: 14px; }
-            tr:last-child td { border-bottom: none; }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 16px;
+                background: #fff;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            }
+            th {
+                background: #f5f5f5;
+                padding: 12px 14px;
+                text-align: left;
+                font-size: 14px;
+                color: #555;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            td {
+                padding: 10px 14px;
+                border-bottom: 1px solid #f0f0f0;
+                vertical-align: middle;
+                font-size: 14px;
+            }
+            tr:last-child td {
+                border-bottom: none;
+            }
 
-            input[type=checkbox] { width: 18px; height: 18px;
-                                   cursor: pointer; accent-color: #c0392b; }
+            input[type=checkbox] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+                accent-color: #c0392b;
+            }
 
-            .price-original { text-decoration: line-through; color: #aaa; font-size: 12px; }
-            .price-final    { color: #c0392b; font-weight: bold; }
+            .price-original {
+                text-decoration: line-through;
+                color: #aaa;
+                font-size: 12px;
+            }
+            .price-final    {
+                color: #c0392b;
+                font-weight: bold;
+            }
 
             <%-- Form update số lượng: đứng độc lập, không lồng trong form nào --%>
-            .qty-form { display: flex; gap: 6px; align-items: center; }
-            .qty-form input[type=number] { width: 60px; padding: 5px 8px;
-                border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+            .qty-form {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .qty-form input[type=number] {
+                width: 60px;
+                padding: 5px 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
 
-            .btn { padding: 5px 12px; border: none; border-radius: 4px;
-                   cursor: pointer; font-size: 13px; }
-            .btn-remove { background: #e74c3c; color: #fff; }
-            .btn-remove:hover { background: #c0392b; }
+            .btn {
+                padding: 5px 12px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+            }
+            .btn-remove {
+                background: #e74c3c;
+                color: #fff;
+            }
+            .btn-remove:hover {
+                background: #c0392b;
+            }
 
-            .footer { background: #fff; border-radius: 8px; margin-top: 12px;
-                      padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
-                      display: flex; justify-content: space-between; align-items: center; }
-            .total-wrap { display: flex; flex-direction: column; gap: 4px; }
-            .selected-note { font-size: 13px; color: #888; }
-            .total-amount  { font-size: 22px; font-weight: bold; color: #c0392b; }
-            .btn-checkout  { padding: 12px 28px; background: #27ae60; color: #fff;
-                             border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
-            .btn-checkout:hover    { background: #1e8449; }
-            .btn-checkout:disabled { background: #aaa; cursor: not-allowed; }
+            .footer {
+                background: #fff;
+                border-radius: 8px;
+                margin-top: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 1px 4px rgba(0,0,0,.08);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .total-wrap {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .selected-note {
+                font-size: 13px;
+                color: #888;
+            }
+            .total-amount  {
+                font-size: 22px;
+                font-weight: bold;
+                color: #c0392b;
+            }
+            .btn-checkout  {
+                padding: 12px 28px;
+                background: #27ae60;
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                font-size: 15px;
+                cursor: pointer;
+            }
+            .btn-checkout:hover    {
+                background: #1e8449;
+            }
+            .btn-checkout:disabled {
+                background: #aaa;
+                cursor: not-allowed;
+            }
 
-            .empty { text-align: center; color: #888; padding: 48px 0; }
-            .empty a { color: #2980b9; }
+            .empty {
+                text-align: center;
+                color: #888;
+                padding: 48px 0;
+            }
+            .empty a {
+                color: #2980b9;
+            }
         </style>
     </head>
     <body>
@@ -125,24 +231,30 @@
                                     <c:if test="${mi.discountedPrice > 0}">
                                         <span class="price-original">
                                             <fmt:formatNumber value="${mi.price}"
-                                                type="number" maxFractionDigits="0"/>đ
+                                                              type="number" maxFractionDigits="0"/>đ
                                         </span><br>
                                     </c:if>
                                     <span class="price-final">
                                         <fmt:formatNumber value="${unitPrice}"
-                                            type="number" maxFractionDigits="0"/>đ
+                                                          type="number" maxFractionDigits="0"/>đ
                                     </span>
                                 </td>
 
                                 <%-- Số lượng: form độc lập, KHÔNG lồng trong form nào --%>
+                                <%-- Số lượng: tự submit khi thay đổi --%>
                                 <td>
                                     <form class="qty-form" method="post"
-                                          action="${pageContext.request.contextPath}/cart">
+                                          action="${pageContext.request.contextPath}/order">
                                         <input type="hidden" name="action"      value="update">
                                         <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
-                                        <input type="number" name="quantity"
-                                               value="${oi.quantity}" min="1" max="99"
-                                               onchange="this.form.submit()">
+                                        <div>
+                                            <input type="number" name="quantity"
+                                                   value="${oi.quantity}" min="1" max="99"
+                                                   onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                                   onchange="validateQty(this)">
+                                            <span class="qty-error" style="display:none; color:#e74c3c;
+                                                  font-size:12px;">Số lượng phải từ 1 đến 99</span>
+                                        </div>
                                     </form>
                                 </td>
 
@@ -150,7 +262,7 @@
                                 <td>
                                     <strong>
                                         <fmt:formatNumber value="${lineTotal}"
-                                            type="number" maxFractionDigits="0"/>đ
+                                                          type="number" maxFractionDigits="0"/>đ
                                     </strong>
                                 </td>
 
@@ -160,7 +272,7 @@
                                 <%-- Xóa món: form độc lập --%>
                                 <td>
                                     <form method="post"
-                                          action="${pageContext.request.contextPath}/cart">
+                                          action="${pageContext.request.contextPath}/order">
                                         <input type="hidden" name="action"      value="remove">
                                         <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
                                         <button class="btn btn-remove" type="submit"
@@ -204,15 +316,15 @@
             // Cập nhật tổng tiền theo món được tích
             function updateTotal() {
                 var checked = document.querySelectorAll('.item-checkbox:checked');
-                var total   = 0;
+                var total = 0;
                 checked.forEach(cb => total += parseFloat(cb.getAttribute('data-price')));
 
                 document.getElementById('totalDisplay').innerText =
-                    total.toLocaleString('vi-VN') + 'đ';
+                        total.toLocaleString('vi-VN') + 'đ';
 
                 var count = checked.length;
                 document.getElementById('selectedNote').innerText =
-                    count > 0 ? 'Đã chọn ' + count + ' món' : 'Chưa chọn món nào';
+                        count > 0 ? 'Đã chọn ' + count + ' món' : 'Chưa chọn món nào';
 
                 document.getElementById('btnCheckout').disabled = (count === 0);
 
@@ -235,16 +347,16 @@
 
                 // Thêm orderID
                 var inputOrderID = document.createElement('input');
-                inputOrderID.type  = 'hidden';
-                inputOrderID.name  = 'orderID';
+                inputOrderID.type = 'hidden';
+                inputOrderID.name = 'orderID';
                 inputOrderID.value = '${orderID}';
                 form.appendChild(inputOrderID);
 
                 // Thêm từng orderItemID được tích
-                checked.forEach(function(cb) {
+                checked.forEach(function (cb) {
                     var input = document.createElement('input');
-                    input.type  = 'hidden';
-                    input.name  = 'selectedItems';
+                    input.type = 'hidden';
+                    input.name = 'selectedItems';
                     input.value = cb.value;
                     form.appendChild(input);
                 });
@@ -252,6 +364,31 @@
                 // Gắn vào body rồi submit
                 document.body.appendChild(form);
                 form.submit();
+            }
+
+            function validateQty(input) {
+                var errorSpan = input.nextElementSibling;
+                var val = parseInt(input.value);
+
+                // Nhập chữ hoặc rỗng
+                if (isNaN(val)) {
+                    errorSpan.innerText = 'Vui lòng nhập số hợp lệ';
+                    errorSpan.style.display = 'block';
+                    input.focus();
+                    return;
+                }
+
+                // Nhập số ngoài khoảng 1-99
+                if (val < 1 || val > 99) {
+                    errorSpan.innerText = 'Số lượng phải từ 1 đến 99';
+                    errorSpan.style.display = 'block';
+                    input.focus();
+                    return;
+                }
+
+                // Hợp lệ → ẩn thông báo và submit
+                errorSpan.style.display = 'none';
+                input.form.submit();
             }
         </script>
 
