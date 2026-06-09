@@ -71,6 +71,7 @@ public class MenuItemController extends HttpServlet {
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
     private MenuItemDAO mi = new MenuItemDAO();
+
     /**
      * Handles the HTTP <code>POST</code> method.
      *
@@ -89,12 +90,21 @@ public class MenuItemController extends HttpServlet {
         String maxPrice_raw = request.getParameter("maxPrice");
         String priceType = request.getParameter("price");
         String sort = request.getParameter("sort");
-               
+
         int categoryId = ((category_raw != null) && !(category_raw.isEmpty())) ? Integer.parseInt(category_raw) : 0;
         int status = ((status_raw != null) && !(status_raw.isEmpty())) ? Integer.parseInt(status_raw) : 1;
         int minPrice = ((minPrice_raw != null) && !(minPrice_raw.isEmpty())) ? Integer.parseInt(minPrice_raw) : 0;
         int maxPrice = ((maxPrice_raw != null) && !(maxPrice_raw.isEmpty())) ? Integer.parseInt(maxPrice_raw) : 999999999;
-        
+
+        if (checkPriceInput(minPrice, maxPrice) != null) {
+            List<MenuCategory> list = md.getAllMenuCategory();
+            List<MenuItem> listItem = mi.getAllMenuItem();
+            request.setAttribute("listItem", listItem);
+            request.setAttribute("list", list);
+            request.setAttribute("error", checkPriceInput(minPrice, maxPrice));
+            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+            return;
+        }
         //load lại list category
         List<MenuCategory> list = md.getAllMenuCategory();
         request.setAttribute("list", list);
@@ -102,6 +112,17 @@ public class MenuItemController extends HttpServlet {
         List<MenuItem> listItem = mi.searchMenuItem(search, categoryId, status, minPrice, maxPrice, sort, priceType);
         request.setAttribute("listItem", listItem);
         request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+    }
+
+    private String checkPriceInput(int min, int max) {
+        if (min < 0 || max < 0) {
+            return "Price cannot be negative";
+        } else {
+            if (min > max) {
+                return "Max must be greater than Min";
+            }
+        }
+        return "";
     }
 
     /**
