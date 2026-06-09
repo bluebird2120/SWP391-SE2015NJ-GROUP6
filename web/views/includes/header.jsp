@@ -1,50 +1,46 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%-- KHÔNG cần taglib fn nữa, lấy chữ cái đầu bằng Java scriptlet --%>
 
 <%
-    // Lấy chữ cái đầu của tên để hiển thị avatar chữ
-    String customerInitial  = "";
-    String employeeInitial  = "";
-    model.Customer  cust = (model.Customer)  session.getAttribute("customer");
-    model.Employee  emp  = (model.Employee)  session.getAttribute("employee");
-
-    if (cust != null && cust.getUserName() != null && !cust.getUserName().isEmpty()) {
+    String customerInitial = "";
+    String employeeInitial = "";
+    model.Customer cust = (model.Customer) session.getAttribute("customer");
+    model.Employee emp  = (model.Employee) session.getAttribute("employee");
+    if (cust != null && cust.getUserName() != null && !cust.getUserName().isEmpty())
         customerInitial = String.valueOf(cust.getUserName().charAt(0)).toUpperCase();
-    }
-    if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty()) {
+    if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty())
         employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
-    }
 %>
 
-<!-- Google Font + FontAwesome -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
-    * {
+    *, *::before, *::after {
+        box-sizing: border-box;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
     }
 
     body {
+        font-family: 'Inter', sans-serif;
+        /* padding-top đúng bằng chiều cao header fixed */
         padding-top: 78px;
     }
 
-    /* ── HEADER ── */
+    /* ── HEADER fixed ── */
     .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
         width: 100%;
         height: 78px;
         background: #76493b;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 20px;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        padding: 0 24px;
         z-index: 9999;
     }
 
@@ -57,14 +53,14 @@
     /* ── NAV ── */
     .navbar {
         flex: 1;
-        justify-content: center;
         display: flex;
+        justify-content: center;
         gap: 30px;
     }
     .navbar a {
         text-decoration: none;
         color: #d7bfa4;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         text-transform: uppercase;
         transition: 0.3s;
@@ -107,7 +103,7 @@
         cursor: pointer;
     }
 
-    /* ── CHƯA ĐĂNG NHẬP ── */
+    /* ── AUTH BUTTONS ── */
     .auth-buttons {
         display: flex;
         gap: 10px;
@@ -122,11 +118,11 @@
         font-weight: 500;
         transition: 0.3s;
     }
-    .auth-link:hover           {
+    .auth-link:hover {
         background: #d7bfa4;
         color: #76493b;
     }
-    .auth-link.btn-register    {
+    .auth-link.btn-register {
         background: #d7bfa4;
         color: #76493b;
     }
@@ -138,7 +134,6 @@
     .user-menu {
         position: relative;
     }
-
     .user-trigger {
         display: flex;
         align-items: center;
@@ -151,7 +146,6 @@
     .user-trigger:hover {
         background: rgba(255,255,255,0.1);
     }
-
     .user-avatar {
         width: 38px;
         height: 38px;
@@ -170,18 +164,16 @@
         height: 100%;
         object-fit: cover;
     }
-
     .user-info {
         display: flex;
         flex-direction: column;
     }
-    .user-name  {
+    .user-name {
         color: #f0dcc2;
         font-size: 13px;
         font-weight: 600;
         line-height: 1.2;
     }
-
     .role-badge {
         font-size: 10px;
         font-weight: 600;
@@ -202,7 +194,6 @@
         background: #e74c3c;
         color: #fff;
     }
-
     .fa-chevron-down {
         color: #c9a98a;
         font-size: 11px;
@@ -223,24 +214,22 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         display: none;
         overflow: hidden;
-        z-index: 1000;
+        z-index: 10000;
     }
     .dropdown.show {
         display: block;
         animation: fadeIn 0.15s ease;
     }
-
     @keyframes fadeIn {
         from {
             opacity:0;
             transform: translateY(-6px);
         }
-        to {
+        to   {
             opacity:1;
             transform: translateY(0);
         }
     }
-
     .dd-header {
         padding: 14px 18px 11px;
         border-bottom: 1px solid #f0f0f0;
@@ -255,14 +244,12 @@
         font-size: 11px;
         margin-top: 2px;
     }
-
     .dd-section {
         padding: 5px 0;
     }
     .dd-section + .dd-section {
         border-top: 1px solid #f0f0f0;
     }
-
     .dropdown a {
         display: flex;
         align-items: center;
@@ -278,7 +265,7 @@
         color: #76493b;
         font-size: 13px;
     }
-    .dropdown a:hover  {
+    .dropdown a:hover {
         background: #fdf6f0;
         color: #76493b;
     }
@@ -292,7 +279,7 @@
         background: #fff5f5;
     }
 
-    /* ── NOTIFICATION BELL ── */
+    /* ── BELL ── */
     .notif-btn {
         position: relative;
         width: 38px;
@@ -327,29 +314,49 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Wrapper nằm ngang: sidebar | content */
+    .admin-body-wrapper {
+        display: flex;
+        min-height: calc(100vh - 78px);
+        background: #f8f4f2;
+    }
+
+    /* Sidebar cố định bên trái */
+    .admin-sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: #fff;
+        border-right: 1px solid #ede0d8;
+        overflow-y: auto;
+    }
+
+    /* Vùng nội dung bên phải sidebar */
+    .admin-main-content {
+        flex: 1;
+        padding: 2rem;
+        min-width: 0;
+        overflow-x: auto;
+    }
+
+    .public-content {
+        flex: 1;
+    }
 </style>
 
 <header class="header">
-
-    <!-- LOGO -->
     <a href="${pageContext.request.contextPath}/" class="logo">
         <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
     </a>
 
-    <!-- NAV -->
     <nav class="navbar">
         <a href="#">Giới thiệu</a>
         <a href="#">Thực đơn</a>
-
-        <%-- Đặt bàn: chỉ khách / chưa đăng nhập --%>
         <c:if test="${sessionScope.employee == null}">
             <a href="#">Đặt bàn</a>
         </c:if>
-
         <a href="#">Album ảnh</a>
         <a href="#">Liên hệ</a>
-
-        <%-- Dashboard: chỉ Staff và Owner --%>
         <c:if test="${sessionScope.employee != null}">
             <a href="${pageContext.request.contextPath}/staff/dashboard">
                 <i class="fa-solid fa-gauge-high"></i>Quản lý
@@ -357,10 +364,7 @@
         </c:if>
     </nav>
 
-    <!-- RIGHT SIDE -->
     <div class="right-header">
-
-        <%-- Search: ẩn với staff/owner --%>
         <c:if test="${sessionScope.employee == null}">
             <div class="search-box">
                 <input type="text" placeholder="Tìm kiếm món ăn...">
@@ -368,7 +372,6 @@
             </div>
         </c:if>
 
-        <!-- ========== CHƯA ĐĂNG NHẬP ========== -->
         <c:if test="${sessionScope.customer == null && sessionScope.employee == null}">
             <div class="auth-buttons">
                 <a href="${pageContext.request.contextPath}/login" class="auth-link">
@@ -380,17 +383,13 @@
             </div>
         </c:if>
 
-        <!-- ========== KHÁCH HÀNG ========== -->
         <c:if test="${sessionScope.customer != null}">
-
-            <%-- Chuông thông báo --%>
             <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
                 <c:if test="${sessionScope.unreadCount > 0}">
                     <span class="notif-count">${sessionScope.unreadCount}</span>
                 </c:if>
             </a>
-
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
                     <div class="user-avatar">
@@ -407,51 +406,34 @@
                     </div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
-
                 <div class="dropdown" id="dropCustomer">
                     <div class="dd-header">
                         <div class="dd-name">${sessionScope.customer.userName}</div>
                         <div class="dd-email">${sessionScope.customer.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/customer/profile">
-                            <i class="fa-solid fa-user"></i>Hồ sơ của tôi
-                        </a>
-                        <a href="${pageContext.request.contextPath}/customer/reservations">
-                            <i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn
-                        </a>
-                        <a href="${pageContext.request.contextPath}/customer/orders">
-                            <i class="fa-solid fa-receipt"></i>Lịch sử đặt món
-                        </a>
+                        <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/customer/reservations"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
+                        <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/customer/reviews">
-                            <i class="fa-solid fa-star"></i>Đánh giá của tôi
-                        </a>
-                        <a href="${pageContext.request.contextPath}/customer/feedback">
-                            <i class="fa-solid fa-comment-dots"></i>Phản hồi
-                        </a>
+                        <a href="${pageContext.request.contextPath}/customer/reviews"><i class="fa-solid fa-star"></i>Đánh giá của tôi</a>
+                        <a href="${pageContext.request.contextPath}/customer/feedback"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/logout" class="logout">
-                            <i class="fa-solid fa-right-from-bracket"></i>Đăng xuất
-                        </a>
+                        <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
                     </div>
                 </div>
             </div>
         </c:if>
 
-        <!-- ========== NHÂN VIÊN / OWNER (Employee) ========== -->
         <c:if test="${sessionScope.employee != null}">
-
-            <!--Notification cho staff và owner dùng chung-->
             <a href="${pageContext.request.contextPath}/staff/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
                 <c:if test="${sessionScope.unreadCount > 0}">
                     <span class="notif-count">${sessionScope.unreadCount}</span>
                 </c:if>
             </a>
-
             <div class="user-menu" id="menuEmployee">
                 <div class="user-trigger" onclick="toggleMenu('dropEmployee', 'menuEmployee')">
                     <div class="user-avatar">
@@ -464,7 +446,6 @@
                     </div>
                     <div class="user-info">
                         <span class="user-name">${sessionScope.employee.fullName}</span>
-                        <%-- roleID=1 là Owner, còn lại là Staff. Sửa số này cho đúng với DB. --%>
                         <c:choose>
                             <c:when test="${sessionScope.employee.roleID == 1}">
                                 <span class="role-badge badge-owner">Owner</span>
@@ -476,34 +457,21 @@
                     </div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
-
-                <%--
-                    Dropdown Staff và Owner giống hệt nhau: chỉ có 3 mục.
-                    Các chức năng quản lý (nhân viên, báo cáo...) được đặt trong
-                    trang dashboard riêng, truy cập qua link "Quản lý" trên nav bar.
-                --%>
                 <div class="dropdown" id="dropEmployee">
                     <div class="dd-header">
                         <div class="dd-name">${sessionScope.employee.fullName}</div>
                         <div class="dd-email">${sessionScope.employee.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/staff/profile">
-                            <i class="fa-solid fa-user"></i>Hồ sơ của tôi
-                        </a>
+                        <a href="${pageContext.request.contextPath}/staff/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/staff/change-password">
-                            <i class="fa-solid fa-lock"></i>Đổi mật khẩu
-                        </a>
-                        <a href="${pageContext.request.contextPath}/logout" class="logout">
-                            <i class="fa-solid fa-right-from-bracket"></i>Đăng xuất
-                        </a>
+                        <a href="${pageContext.request.contextPath}/staff/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
+                        <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
                     </div>
                 </div>
             </div>
         </c:if>
-
     </div>
 </header>
 

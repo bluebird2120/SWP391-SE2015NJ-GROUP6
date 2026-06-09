@@ -19,8 +19,11 @@
                 flex: 1;
                 flex-wrap: wrap;
             }
-            .line2{
-                width: 100%;
+            .line2 {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                width: auto;
             }
             .main-content{
                 flex: 1;            /* Tự động húp trọn phần khoảng trống còn lại bên phải */
@@ -32,15 +35,17 @@
                 display: flex;
                 gap: 12px;
                 align-items: center;
-                background: gray;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                color: #475569;
                 padding: 12px;
-                flex-wrap: wrap; /*tự động xuống dòng khi screen nhỏ */
+                flex-wrap: nowrap; /*tự động xuống dòng khi screen nhỏ */
                 border-radius: 12px;
                 margin-bottom: 20px;
                 font-family: Arial, sans-serif;
             }
             .filter-input, .filter-select{
-                padding: 8px 12px;
+                padding: 8px 8px;
                 border: 1px solid #cccccc;
                 border-radius: 8px;
                 font-size: 14px;
@@ -55,7 +60,7 @@
                 color: #555555;
             }
             .filter-price input {
-                width: 100px;
+                width: 80px;
                 border-radius: 6px;
             }
             .btn-submit {
@@ -92,12 +97,17 @@
             }
             .status {
                 display: block;
-                background-color: #edf7ed;
-                color: #1e4620;
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 14px;
-
+            }
+            .active{
+                background-color: #edf7ed;
+                color: #1e4620;
+            }
+            .inactive{
+                background-color: #fdeaea;
+                color: #c62828;
             }
             .item-name {
                 font-size: 18px;
@@ -154,6 +164,19 @@
             .btn:hover {
                 background-color: #f5f5f5;
             }
+            .error-msg {
+                color: #b91c1c;
+                background-color: #fef2f2; 
+                border: 1px solid #fee2e2; 
+                padding: 6px 12px;
+                font-size: 13px;
+                margin-top: 6px;
+                font-weight: 500;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
         </style>
     </head>
     <body>
@@ -163,10 +186,10 @@
             <div class="main-content">
                 <!--Filter to search dish-->
                 <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
-                    <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn" class="filter-input"/>
+                    <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn..." class="filter-input" style="width: 200px;"/>
 
                     <select name="category" class="filter-select">
-                        <option value="">Tất cả các món</option>
+                        <option value="">Tất cả danh mục</option>
                         <c:forEach var="cat" items="${list}">
                             <option value="${cat.categoryID}" ${param.category == cat.categoryID ? "selected" : ""}>
                                 ${cat.categoryName}
@@ -179,27 +202,31 @@
                         <option value="0" ${param.status == 0 ? 'selected' : ''}>Tạm Ngưng</option>
                     </select>
 
-                    Sắp xếp theo:
-                    <select name="price" class="filter-select">
-                        <option value="price" ${param.price == 'price' ? 'selected' : ''}>Giá Gốc</option>
-                        <option value="discountedPrice" ${param.price == 'discountedPrice' ? 'selected' : ''}>Giá Giảm Giá</option>
-                    </select>
-
                     <div class="filter-price">
-                        Giá từ:
-                        <input type="number" name="minPrice" value="${param.minPrice}"/>
-                        đến:
-                        <input type="number" name="maxPrice" value="${param.maxPrice}"/>
+                        <span>Giá từ:</span>
+                        <input type="number" name="minPrice" value="${param.minPrice}" class="filter-input"/>
+                        <span>đến:</span>
+                        <input type="number" name="maxPrice" value="${param.maxPrice}" class="filter-input"/>
                     </div>
+
                     <div class="line2">
-                        Sắp xếp theo thứ tự:
-                        <select name="sort" class="filter-select">
-                            <option value="asc" ${param.sort == 'asc' ? 'selected' : ''}>Tăng Dần</option>
-                            <option value="desc" ${param.sort == 'desc' ? 'selected' : ''}>Giảm Dần</option>
+                        <span>Sắp xếp:</span>
+                        <select name="price" class="filter-select">
+                            <option value="price" ${param.price == 'price' ? 'selected' : ''}>Giá Gốc</option>
+                            <option value="discountedPrice" ${param.price == 'discountedPrice' ? 'selected' : ''}>Giá Thực Tế</option>
                         </select>
+
+                        <select name="sort" class="filter-select">
+                            <option value="asc" ${param.sort == 'asc' ? 'selected' : ''}>Tăng Dần ↑</option>
+                            <option value="desc" ${param.sort == 'desc' ? 'selected' : ''}>Giảm Dần ↓</option>
+                        </select>
+
                         <input type="submit" value="LỌC" class="btn-submit"/>
                     </div>
                 </form>
+                        <c:if test="${not empty error}">
+                        <div class="error-msg">${error}</div>
+                    </c:if>
                 <!--Display dish-->
                 <div class="menu-container">
 
@@ -208,7 +235,9 @@
 
                             <img src="${item.image}" alt="${item.itemName}">
 
-                            <span class="status">${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}</span>
+                            <span class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
+                                ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
+                            </span>
 
                             <h3 class="item-name">${item.itemName}</h3>
 
