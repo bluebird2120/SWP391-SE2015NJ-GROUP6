@@ -10,7 +10,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: #faf6f2; }
-        .main { flex: 1; padding: 28px 36px; }
+        /*.main { flex: 1; padding: 28px 36px; }*/
         .page-title {
             font-family: 'Playfair Display', serif;
             color: #76493b;
@@ -74,9 +74,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <div style="display: flex;">
+    <!--<div style="display: flex;">-->
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <main class="main">
+        <!--<main class="main">-->
             <h1 class="page-title">Owner Dashboard</h1>
             <p class="page-sub">Restaurant operations overview</p>
 
@@ -107,8 +107,8 @@
                     <div class="card-desc">Business analytics</div>
                 </a>
             </div>
-        </main>
-    </div>
+<!--        </main>
+    </div>-->
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>
