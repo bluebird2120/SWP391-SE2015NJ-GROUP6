@@ -172,7 +172,7 @@
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/items?action=list">
+                   href="${pageContext.request.contextPath}/menu">
                     <i class="fas fa-hamburger"></i> Menu Items
                 </a>
             </li>
