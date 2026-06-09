@@ -122,7 +122,7 @@ public class MenuItemController extends HttpServlet {
                 return "Max must be greater than Min";
             }
         }
-        return "";
+        return null;
     }
 
     /**

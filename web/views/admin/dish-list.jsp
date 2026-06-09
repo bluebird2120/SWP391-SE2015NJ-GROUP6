@@ -39,13 +39,13 @@
                 border: 1px solid #e2e8f0;
                 color: #475569;
                 padding: 12px;
-                flex-wrap: wrap; /*tự động xuống dòng khi screen nhỏ */
+                flex-wrap: nowrap; /*tự động xuống dòng khi screen nhỏ */
                 border-radius: 12px;
                 margin-bottom: 20px;
                 font-family: Arial, sans-serif;
             }
             .filter-input, .filter-select{
-                padding: 8px 12px;
+                padding: 8px 8px;
                 border: 1px solid #cccccc;
                 border-radius: 8px;
                 font-size: 14px;
@@ -60,7 +60,7 @@
                 color: #555555;
             }
             .filter-price input {
-                width: 100px;
+                width: 80px;
                 border-radius: 6px;
             }
             .btn-submit {

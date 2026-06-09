@@ -18,7 +18,7 @@
                 background-color: #f3f4f6;
             }
             .form-container{
-                max-width: 1000px;
+                max-width: 100%;
                 background-color: #ffffff;
                 padding: 30px;
                 border-radius: 8px;
