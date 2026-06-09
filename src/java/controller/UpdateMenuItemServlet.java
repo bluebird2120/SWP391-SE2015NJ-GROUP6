@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import java.io.File;
 import java.util.List;
 import model.MenuItem;
 
@@ -53,7 +54,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     }
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
-    private MenuItem mi = new MenuItem();
+
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -68,7 +69,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             throws ServletException, IOException {
         String id_raw = request.getParameter("id");
         int id = ((id_raw != null) && (!id_raw.isEmpty())) ? Integer.parseInt(id_raw) : 0;
-        mi = menuItemDAO.getMenuItemById(id);
+        MenuItem mi = menuItemDAO.getMenuItemById(id);
         List categoryList = menuCategoryDAO.getAllMenuCategory();
         request.setAttribute("dish", mi);
         request.setAttribute("list", categoryList);
@@ -86,7 +87,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
         String categoryId_raw = request.getParameter("category");
@@ -95,33 +96,80 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String discountPercent_raw = request.getParameter("discountPercent");
         String isAvailable_raw = request.getParameter("isAvailable");
         String allergyNotes_raw = request.getParameter("allergyNotes");
-        Part image = request.getPart("image");
-        String oldImage = request.getParameter("image");
-        
-        String errorName = ((itemName != null) && !(itemName.isEmpty())) ? "" : "Tên món ăn rỗng!";
-        String errorDescription = ((description_raw != null) && !(description_raw.isEmpty())) ? "" : "Mô tả món ăn rỗng!";
-        String errorPrice = ((price_raw != null) && !(price_raw.isEmpty())) ? "" : "Giá món ăn rỗng!";  
-        String errorDiscountPercent = ((discountPercent_raw != null) && !(discountPercent_raw.isEmpty())) ? "" : "Giảm giá món ăn rỗng!";
-        String errorAllergyNotes = ((allergyNotes_raw != null) && !(allergyNotes_raw.isEmpty())) ? "" : "Ghi chú dị ứng món ăn rỗng!";
-        
-        int itemId = Integer.parseInt(menuItemId_raw);
-        int categoryId = Integer.parseInt(categoryId_raw);
-        int price = Integer.parseInt(price_raw);
-        errorPrice = (price >= 0) ? "" : "Giá món ăn phải là số nguyên";
-        int discountPercent = Integer.parseInt(discountPercent_raw);
-        int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
-        String fileName = (image != null) ? image.getSubmittedFileName() : oldImage;
-        
-        boolean result = menuItemDAO.updateMenuItemById(itemId, categoryId, itemName, description_raw, price, 
-                discountPercent, fileName, status, allergyNotes_raw);
-        request.setAttribute("errorName", errorName);
-        request.setAttribute("errorDescription", errorDescription);
-        request.setAttribute("errorPrice", errorPrice);
-        request.setAttribute("errorDiscountPercent", errorDiscountPercent);
-        request.setAttribute("errorAllergyNotes", errorAllergyNotes);
-        request.setAttribute("result", result);
-        request.setAttribute("dish", mi);
-        request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+        String oldImage = request.getParameter("oldImage");
+        Part newImage = request.getPart("newImage");
+
+        String errorName = isEmpty(itemName, "Tên món ăn rỗng!");
+        String errorDescription = isEmpty(description_raw, "Mô tả món ăn rỗng!");
+        String errorPrice = isValidPositive(price_raw, "Giá món ăn rỗng!", "Giá món ăn là số nguyên dương!");
+        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn rỗng!", "Giảm giá món ăn là số nguyên dương!");
+        String errorAllergyNotes = isEmpty(allergyNotes_raw, "Mô tả dị ứng ăn rỗng!");
+
+        if (!errorName.isEmpty() || !errorDescription.isEmpty() || !errorPrice.isEmpty()
+                || !errorDiscountPercent.isEmpty() || !errorAllergyNotes.isEmpty()) {
+            int id = ((menuItemId_raw != null) && (!menuItemId_raw.isEmpty())) ? Integer.parseInt(menuItemId_raw) : 0;
+            MenuItem mi = menuItemDAO.getMenuItemById(id);
+            List categoryList = menuCategoryDAO.getAllMenuCategory();
+            request.setAttribute("dish", mi);
+            request.setAttribute("list", categoryList);
+
+            request.setAttribute("errorName", errorName);
+            request.setAttribute("errorDescription", errorDescription);
+            request.setAttribute("errorPrice", errorPrice);
+            request.setAttribute("errorDiscountPercent", errorDiscountPercent);
+            request.setAttribute("errorAllergyNotes", errorAllergyNotes);
+            request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+            return;
+        } else {
+            int itemId = Integer.parseInt(menuItemId_raw);
+            int categoryId = Integer.parseInt(categoryId_raw);
+            int price = Integer.parseInt(price_raw);
+            int discountPercent = Integer.parseInt(discountPercent_raw);
+            int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
+
+            String fileName = oldImage;
+            if(newImage != null && !newImage.getSubmittedFileName().isEmpty()){
+                String imageName = newImage.getSubmittedFileName();
+                fileName = "images/" + imageName;
+                
+                String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\build\\web\\images";
+                File sourceFile = new File(upLoadSource + File.separator + imageName);
+                
+                newImage.write(sourceFile.getAbsolutePath());
+                
+                String upLoadServer = getServletContext().getRealPath("/images");
+                File cachFile = new File(upLoadServer);
+                
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile);
+                     java.io.FileOutputStream fos = new java.io.FileOutputStream(cachFile)){
+                    fis.transferTo(fos);
+                } catch (Exception e) {
+                }
+            }
+            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price,
+                    discountPercent, fileName, status, allergyNotes_raw);
+            response.sendRedirect("update-menu?id=" + itemId);
+        }
+
+    }
+
+    public String isEmpty(String data, String ms) {
+        return ((data != null) && (!data.trim().isEmpty()) ? "" : ms);
+    }
+
+    public String isValidPositive(String data, String ms1, String ms2) {
+        try {
+            if (data != null && !data.trim().isEmpty()) {
+                if (Integer.parseInt(data) < 0) {
+                    return ms2;
+                }
+            } else {
+                return ms1;
+            }
+        } catch (NumberFormatException e) {
+            return ms2;
+        }
+        return "";
     }
 
     /**

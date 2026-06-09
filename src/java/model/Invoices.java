@@ -9,19 +9,17 @@ public class Invoices {
     private int invoiceID;
     private String invoiceNumber;
     private String paymentMethod;        // cash / card / qr
-    private BigDecimal subTotal;
-    private BigDecimal taxAmount;
-    private BigDecimal depositDeducted;
-    private BigDecimal finalAmount;
+    private long subTotal;
+    private long taxAmount;
+    private long depositDeducted;
+    private long finalAmount;
     private Date issuedDate;             // DATE
     private String status;               // unpaid / paid / partial
 
     public Invoices() {
     }
 
-    public Invoices(int invoiceID, String invoiceNumber, String paymentMethod,
-            BigDecimal subTotal, BigDecimal taxAmount, BigDecimal depositDeducted,
-            BigDecimal finalAmount, Date issuedDate, String status) {
+    public Invoices(int invoiceID, String invoiceNumber, String paymentMethod, long subTotal, long taxAmount, long depositDeducted, long finalAmount, Date issuedDate, String status) {
         this.invoiceID = invoiceID;
         this.invoiceNumber = invoiceNumber;
         this.paymentMethod = paymentMethod;
@@ -57,35 +55,35 @@ public class Invoices {
         this.paymentMethod = paymentMethod;
     }
 
-    public BigDecimal getSubTotal() {
+    public long getSubTotal() {
         return subTotal;
     }
 
-    public void setSubTotal(BigDecimal subTotal) {
+    public void setSubTotal(long subTotal) {
         this.subTotal = subTotal;
     }
 
-    public BigDecimal getTaxAmount() {
+    public long getTaxAmount() {
         return taxAmount;
     }
 
-    public void setTaxAmount(BigDecimal taxAmount) {
+    public void setTaxAmount(long taxAmount) {
         this.taxAmount = taxAmount;
     }
 
-    public BigDecimal getDepositDeducted() {
+    public long getDepositDeducted() {
         return depositDeducted;
     }
 
-    public void setDepositDeducted(BigDecimal depositDeducted) {
+    public void setDepositDeducted(long depositDeducted) {
         this.depositDeducted = depositDeducted;
     }
 
-    public BigDecimal getFinalAmount() {
+    public long getFinalAmount() {
         return finalAmount;
     }
 
-    public void setFinalAmount(BigDecimal finalAmount) {
+    public void setFinalAmount(long finalAmount) {
         this.finalAmount = finalAmount;
     }
 
@@ -104,4 +102,5 @@ public class Invoices {
     public void setStatus(String status) {
         this.status = status;
     }
+
 }

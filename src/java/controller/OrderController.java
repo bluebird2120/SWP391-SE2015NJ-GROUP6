@@ -107,6 +107,7 @@ throws ServletException, IOException {
 
         // Tạm thời fix cứng bằng 2 để test
         Integer orderID = 2; 
+        session.setAttribute("orderID", orderID); // ← thêm dòng này
         
         if (orderID == null) {
                 request.setAttribute("orderItems", null);

@@ -44,7 +44,7 @@ public class EmployeeDAO extends DBContext {
                 emp.setFullName(rs.getString("fullName"));
                 emp.setPhoneNumber(rs.getString("phoneNumber"));
                 emp.setEmail(rs.getString("email"));
-                emp.setSalary(rs.getBigDecimal("salary"));
+                emp.setSalary(rs.getInt("salary"));
                 emp.setIsActive(rs.getInt("isActive"));
                 emp.setAddress(rs.getString("address"));
                 emp.setImage(rs.getString("image"));
@@ -142,11 +142,7 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(5, e.getPhoneNumber());
             ps.setString(6, e.getEmail());
-            if (e.getSalary() != null) {
-                ps.setBigDecimal(7, e.getSalary());
-            } else {
-                ps.setNull(7, java.sql.Types.DECIMAL);
-            }
+            ps.setInt(7, e.getSalary());
             ps.setInt(8, e.getIsActive());
             ps.setString(9, e.getAddress());
             ps.setString(10, e.getImage());
@@ -180,11 +176,7 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(3, e.getPhoneNumber());
             ps.setString(4, e.getEmail());
-            if (e.getSalary() != null) {
-                ps.setBigDecimal(5, e.getSalary());
-            } else {
-                ps.setNull(5, java.sql.Types.DECIMAL);
-            }
+            ps.setInt(5, e.getSalary());
             ps.setInt(6, e.getIsActive());
             ps.setString(7, e.getAddress());
             ps.setString(8, e.getImage());
@@ -277,7 +269,7 @@ public class EmployeeDAO extends DBContext {
         if (status != null) {
             sql.append(" AND isActive = ?");
         }
-        sql.append(" ORDER BY employeeID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        sql.append(" ORDER BY employeeID DESC LIMIT ? OFFSET ?");
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int idx = 1;
@@ -291,8 +283,8 @@ public class EmployeeDAO extends DBContext {
             if (status != null) {
                 ps.setInt(idx++, status);
             }
-            ps.setInt(idx++, (page - 1) * pageSize);
             ps.setInt(idx++, pageSize);
+            ps.setInt(idx++, (page - 1) * pageSize);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -359,7 +351,7 @@ public class EmployeeDAO extends DBContext {
         e.setDob(rs.getDate("dob"));
         e.setPhoneNumber(rs.getString("phoneNumber"));
         e.setEmail(rs.getString("email"));
-        e.setSalary(rs.getBigDecimal("salary"));
+        e.setSalary(rs.getInt("salary"));
         e.setIsActive(rs.getInt("isActive"));
         e.setAddress(rs.getString("address"));
         e.setImage(rs.getString("image"));
