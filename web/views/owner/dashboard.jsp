@@ -10,7 +10,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: #faf6f2; }
-        /*.main { flex: 1; padding: 28px 36px; }*/
+/*        .main { flex: 1; padding: 28px 36px; }*/
         .page-title {
             font-family: 'Playfair Display', serif;
             color: #76493b;
@@ -90,6 +90,21 @@
                     <div class="card-icon"><i class="fas fa-user-tie"></i></div>
                     <div class="card-title">Manage Staff</div>
                     <div class="card-desc">Add, edit, deactivate staff</div>
+                </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/shift-templates">
+                    <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="card-title">Shift Templates</div>
+                    <div class="card-desc">Quản lý ca làm việc cố định</div>
+                </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/shift-assignments">
+                    <div class="card-icon"><i class="fas fa-user-clock"></i></div>
+                    <div class="card-title">Shift Assignments</div>
+                    <div class="card-desc">Phân ca theo ngày cho nhân viên</div>
+                </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/attendance">
+                    <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="card-title">Attendance</div>
+                    <div class="card-desc">Điểm danh ca làm trong ngày</div>
                 </a>
                 <a class="card" href="${pageContext.request.contextPath}/owner/order-history">
                     <div class="card-icon"><i class="fas fa-history"></i></div>
