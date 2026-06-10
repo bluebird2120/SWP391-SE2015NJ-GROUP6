@@ -5,169 +5,430 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Xác nhận thanh toán</title>
+        <title>Xác nhận thanh toán - Vị An Restaurant</title>
         <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: Arial, sans-serif; background: #f7f7f7;
-                   display: flex; justify-content: center; padding: 32px 16px; }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #f7f5f0;
+                color: #2c2520;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                width: 100%;
+                max-width: 1100px;
+                margin: 32px auto;
+                padding: 0 16px;
+                min-height: 65vh;
+            }
+            
+            /* Header tiêu đề */
+            .checkout-header {
+                margin-bottom: 24px;
+                border-bottom: 2px solid #e5dfd3;
+                padding-bottom: 16px;
+            }
+            .checkout-header h2 {
+                font-size: 26px;
+                color: #1c4332;
+                font-weight: bold;
+            }
+            .checkout-header p {
+                font-size: 14px;
+                color: #7a6e65;
+                margin-top: 4px;
+            }
 
-            /* Khung hóa đơn giống receipt */
-            .receipt { background: #fff; width: 100%; max-width: 520px;
-                       border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1);
-                       padding: 32px 28px; }
+            /* Bố cục lưới */
+            .checkout-layout {
+                display: flex;
+                gap: 24px;
+                align-items: flex-start;
+            }
 
-            /* Header */
-            .receipt-header { text-align: center; margin-bottom: 24px; }
-            .receipt-header h2 { font-size: 22px; color: #c0392b; }
-            .receipt-header p  { font-size: 13px; color: #888; margin-top: 4px; }
+            /* Cột trái */
+            .checkout-info-column {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
 
-            /* Divider */
-            .divider { border: none; border-top: 1px dashed #ddd; margin: 16px 0; }
+            /* Các khối bo góc */
+            .checkout-box {
+                background: #ffffff;
+                border: 1px solid #eae5da;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(44, 37, 32, 0.04);
+            }
+            .box-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1c4332;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                border-bottom: 1px solid #f5f2eb;
+                padding-bottom: 10px;
+            }
 
-            /* Danh sách món */
-            .item-list { width: 100%; border-collapse: collapse; }
-            .item-list th { font-size: 13px; color: #888; font-weight: normal;
-                            padding: 4px 0; text-align: left; }
-            .item-list th:last-child { text-align: right; }
-            .item-list td { font-size: 14px; padding: 6px 0;
-                            border-bottom: 1px solid #f5f5f5; }
-            .item-list td:last-child { text-align: right; font-weight: bold; }
-            .item-name { font-weight: bold; }
-            .item-qty  { font-size: 12px; color: #888; }
+            /* CSS Form thông tin */
+            .form-group {
+                margin-bottom: 14px;
+            }
+            .form-group label {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                color: #5e5550;
+                margin-bottom: 6px;
+            }
+            .form-control-static {
+                padding: 10px 12px;
+                background: #fbf9f6;
+                border: 1px solid #eadecf;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #2c2520;
+            }
 
-            /* Bảng phân rã chi phí */
-            .cost-table { width: 100%; margin-top: 8px; }
-            .cost-table td { padding: 5px 0; font-size: 14px; }
-            .cost-table td:last-child { text-align: right; }
-            .cost-table .label { color: #555; }
+            /* Khu vực chọn Phương thức thanh toán */
+            .payment-methods-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .payment-method-card {
+                border: 1px solid #eae5da;
+                border-radius: 8px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                background: #fbf9f6;
+            }
+            .payment-method-card:hover {
+                border-color: #bc945c;
+                background: #fdfcfb;
+            }
+            .payment-method-card.active {
+                border-color: #1c4332;
+                background: #f4f5f1;
+                box-shadow: 0 2px 8px rgba(28, 67, 50, 0.06);
+            }
+            .payment-method-card input[type="radio"] {
+                width: 18px;
+                height: 18px;
+                accent-color: #1c4332;
+                cursor: pointer;
+            }
+            .payment-method-info {
+                flex: 1;
+            }
+            .payment-method-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #2c2520;
+            }
+            .payment-method-desc {
+                font-size: 12px;
+                color: #7a6e65;
+                margin-top: 2px;
+            }
+            .payment-logo {
+                width: 40px;
+                height: 40px;
+                object-fit: contain;
+                border-radius: 4px;
+            }
 
-            /* Tổng tiền cuối */
-            .total-row td { padding-top: 12px; font-size: 18px;
-                            font-weight: bold; color: #c0392b; }
+            /* Cột phải: Tóm tắt món */
+            .checkout-summary-sidebar {
+                width: 380px;
+                background: #ffffff;
+                border: 1px solid #eae5da;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(44, 37, 32, 0.04);
+                position: sticky;
+                top: 32px;
+            }
+            .checkout-items-list {
+                max-height: 280px;
+                overflow-y: auto;
+                margin-bottom: 16px;
+                padding-right: 4px;
+            }
+            .checkout-items-list::-webkit-scrollbar {
+                width: 4px;
+            }
+            .checkout-items-list::-webkit-scrollbar-thumb {
+                background: #eadecf;
+                border-radius: 4px;
+            }
+            .checkout-item-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 0;
+                border-bottom: 1px solid #f5f2eb;
+                font-size: 14px;
+            }
+            .checkout-item-name {
+                font-weight: 600;
+                color: #2c2520;
+            }
+            .checkout-item-qty {
+                font-size: 12px;
+                color: #8a7e75;
+                margin-top: 2px;
+            }
+            .checkout-item-price {
+                font-weight: 700;
+                color: #1c4332;
+            }
 
-            /* Ghi chú */
-            .note { font-size: 12px; color: #aaa; text-align: center;
-                    margin-top: 16px; }
+            /* Khối tính tiền */
+            .summary-divider {
+                border-top: 1px dashed #dcd5c5;
+                margin: 16px 0;
+            }
+            .summary-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: 14px;
+                margin-bottom: 10px;
+                color: #5e5550;
+            }
+            .summary-row.total-row {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1c4332;
+                margin-top: 6px;
+            }
+            .summary-total-amount {
+                font-size: 22px;
+                color: #1c4332;
+                font-weight: 800;
+            }
 
-            /* Nút */
-            .btn-payment { display: block; width: 100%; margin-top: 24px;
-                           padding: 14px; background: #27ae60; color: #fff;
-                           border: none; border-radius: 6px; font-size: 16px;
-                           cursor: pointer; text-align: center; text-decoration: none; }
-            .btn-payment:hover { background: #1e8449; }
-            .btn-back { display: block; text-align: center; margin-top: 12px;
-                        color: #2980b9; text-decoration: none; font-size: 13px; }
-            .btn-back:hover { text-decoration: underline; }
+            /* Nút hành động */
+            .btn-checkout-submit {
+                width: 100%;
+                padding: 15px;
+                background: #1c4332;
+                border: none;
+                border-radius: 8px;
+                color: #ffffff;
+                font-size: 16px;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 4px 10px rgba(28, 67, 50, 0.2);
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin-top: 16px;
+            }
+            .btn-checkout-submit:hover {
+                background: #275d46;
+                box-shadow: 0 4px 12px rgba(28, 67, 50, 0.3);
+            }
+            .btn-checkout-back {
+                width: 100%;
+                padding: 12px;
+                background: #fbf9f6;
+                border: 1px solid #dcd5c5;
+                border-radius: 8px;
+                color: #5e5550;
+                font-size: 14px;
+                font-weight: 600;
+                text-align: center;
+                text-decoration: none;
+                display: block;
+                margin-top: 12px;
+                transition: all 0.2s;
+            }
+            .btn-checkout-back:hover {
+                background: #f5f2eb;
+                color: #1c4332;
+            }
         </style>
     </head>
     <body>
-        <div class="receipt">
-
-            <%-- ===== HEADER ===== --%>
-            <div class="receipt-header">
-                <h2>🧾 Hóa đơn tạm tính</h2>
-                <p>Mã hóa đơn: <strong>${invoice.invoiceNumber}</strong></p>
-                <p>Ngày: <fmt:formatDate value="${invoice.issuedDate}" pattern="dd/MM/yyyy"/></p>
+        <%@ include file="/views/includes/header.jsp" %>
+        
+        <div class="container">
+            <div class="checkout-header">
+                <h2>Xác nhận đơn hàng</h2>
+                <p>Vui lòng rà soát lại danh sách món và chọn phương thức thanh toán phù hợp</p>
             </div>
 
-            <hr class="divider">
+            <form id="checkoutForm" method="post">
+                <input type="hidden" name="action" value="confirm">
+                <input type="hidden" name="orderID" value="${orderID}">
+                
+                <div class="checkout-layout">
+                    
+                    <div class="checkout-info-column">
+                        <div class="checkout-box">
+                            <div class="box-title">📍 Thông tin phục vụ</div>
+                            <div class="form-group">
+                                <label>Mã đơn hàng xử lý</label>
+                                <div class="form-control-static">#Order-${orderID}</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Vị trí phục vụ</label>
+                                <div class="form-control-static">
+                                    <c:choose>
+                                        <c:when test="${not empty sessionScope.tableID && sessionScope.tableID > 0}">
+                                            Bàn số ${sessionScope.tableID} (Phục vụ tại chỗ)
+                                        </c:when>
+                                        <c:otherwise>
+                                            Đơn hàng mang về (Take-away)
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </div>
+                        </div>
 
-            <%-- ===== DANH SÁCH MÓN ===== --%>
-            <table class="item-list">
-                <thead>
-                    <tr>
-                        <th>Món</th>
-                        <th style="text-align:center">SL</th>
-                        <th>Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <c:forEach var="oi" items="${orderItems}" varStatus="loop">
-                        <c:set var="mi" value="${menuItems[loop.index]}"/>
-                        <c:choose>
-                            <c:when test="${mi.discountedPrice > 0}">
-                                <c:set var="unitPrice" value="${mi.discountedPrice}"/>
-                            </c:when>
-                            <c:otherwise>
-                                <c:set var="unitPrice" value="${mi.price}"/>
-                            </c:otherwise>
-                        </c:choose>
-                        <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
+                        <div class="checkout-box">
+                            <div class="box-title">💳 Phương thức thanh toán</div>
+                            <div class="payment-methods-grid">
+                                
+                                <label class="payment-method-card active" onclick="selectPayment(this)">
+                                    <input type="radio" name="paymentGateway" value="cash" checked>
+                                    <div class="payment-method-info">
+                                        <div class="payment-method-title">Thanh toán tại quầy</div>
+                                        <div class="payment-method-desc">Quý khách vui lòng thanh toán bằng tiền mặt hoặc quẹt thẻ tại quầy sau khi dùng bữa</div>
+                                    </div>
+                                    <svg class="payment-logo" viewBox="0 0 24 24" style="fill: #bc945c; width:32px; height:32px;">
+                                        <path d="M21,18H3V6H21M21,4H3C1.89,4 1,4.89 1,6V18C1,19.1 1.89,20 3,20H21C22.1,20 23,19.1 23,18V6C23,4.89 22.1,4 21,4M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>
+                                    </svg>
+                                </label>
 
-                        <tr>
-                            <td>
-                                <span class="item-name">${mi.itemName}</span><br>
-                                <span class="item-qty">
-                                    <fmt:formatNumber value="${unitPrice}" type="number" maxFractionDigits="0"/>đ
-                                    × ${oi.quantity}
-                                </span>
-                            </td>
-                            <td style="text-align:center">${oi.quantity}</td>
-                            <td>
-                                <fmt:formatNumber value="${lineTotal}"
-                                    type="number" maxFractionDigits="0"/>đ
-                            </td>
-                        </tr>
-                    </c:forEach>
-                </tbody>
-            </table>
+                                <label class="payment-method-card" onclick="selectPayment(this)">
+                                    <input type="radio" name="paymentGateway" value="vnpay">
+                                    <div class="payment-method-info">
+                                        <div class="payment-method-title">Thanh toán Online qua VNPay</div>
+                                        <div class="payment-method-desc">Chuyển hướng an toàn qua cổng VNPay hỗ trợ ATM, Visa, Master hoặc quét mã QR Code</div>
+                                    </div>
+                                    <img class="payment-logo" src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg" alt="VNPay Logo" style="width: 55px;">
+                                </label>
+                                
+                            </div>
+                        </div>
+                    </div>
 
-            <hr class="divider">
+                    <div class="checkout-summary-sidebar">
+                        <div class="box-title" style="border-bottom:none; margin-bottom:0; padding-bottom:0;">
+                            🍽️ Món ăn đã chọn
+                        </div>
+                        <div class="summary-divider"></div>
+                        
+                        <div class="checkout-items-list">
+                            <c:set var="checkoutTotal" value="0"/>
+                            <c:forEach var="oi" items="${orderItems}" varStatus="loop">
+                                <c:set var="mi" value="${menuItems[loop.index]}"/>
+                                
+                                <c:choose>
+                                    <c:when test="${mi.discountedPrice > 0}">
+                                        <c:set var="unitPrice" value="${mi.discountedPrice}"/>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:set var="unitPrice" value="${mi.price}"/>
+                                    </c:otherwise>
+                                </c:choose>
+                                <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
+                                <c:set var="checkoutTotal" value="${checkoutTotal + lineTotal}"/>
 
-            <%-- ===== BẢNG PHÂN RÃ CHI PHÍ ===== --%>
-            <table class="cost-table">
-                <tr>
-                    <td class="label">Tiền món ăn</td>
-                    <td>
-                        <fmt:formatNumber value="${invoice.subTotal}"
-                            type="number" maxFractionDigits="0"/>đ
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">Thuế VAT (10%)</td>
-                    <td>
-                        <fmt:formatNumber value="${invoice.taxAmount}"
-                            type="number" maxFractionDigits="0"/>đ
-                    </td>
-                </tr>
+                                <div class="checkout-item-row">
+                                    <div>
+                                        <div class="checkout-item-name">${mi.itemName}</div>
+                                        <div class="checkout-item-qty">Số lượng: ${oi.quantity} x <fmt:formatNumber value="${unitPrice}" type="number"/> VNĐ</div>
+                                    </div>
+                                    <div class="checkout-item-price">
+                                        <fmt:formatNumber value="${lineTotal}" type="number" maxFractionDigits="0"/> VNĐ
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
 
-                <%-- Chỉ hiện dòng đặt cọc nếu có --%>
-                <c:if test="${invoice.depositDeducted > 0}">
-                    <tr>
-                        <td class="label">Đã đặt cọc</td>
-                        <td style="color: #27ae60">
-                            - <fmt:formatNumber value="${invoice.depositDeducted}"
-                                type="number" maxFractionDigits="0"/>đ
-                        </td>
-                    </tr>
-                </c:if>
+                        <div class="summary-row">
+                            <span>Tạm tính đơn chọn:</span>
+                            <span><fmt:formatNumber value="${checkoutTotal}" type="number"/> VNĐ</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Phí dịch vụ nhà hàng:</span>
+                            <span>0 VNĐ</span>
+                        </div>
+                        
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-row total-row">
+                            <span>Tổng thanh toán:</span>
+                            <div class="summary-total-amount">
+                                <fmt:formatNumber value="${checkoutTotal}" type="number" maxFractionDigits="0"/> VNĐ
+                            </div>
+                        </div>
 
-                <%-- Tổng cuối --%>
-                <tr class="total-row">
-                    <td>Tổng thanh toán</td>
-                    <td>
-                        <fmt:formatNumber value="${invoice.finalAmount}"
-                            type="number" maxFractionDigits="0"/>đ
-                    </td>
-                </tr>
-            </table>
-
-            <hr class="divider">
-
-            <p class="note">
-                ⚠️ Hóa đơn này chỉ là tạm tính. Vui lòng không rời bàn trước khi nhân viên xác nhận.
-            </p>
-
-            <%-- ===== NÚT CHUYỂN SANG PAYMENT ===== --%>
-            <a class="btn-payment"
-               href="${pageContext.request.contextPath}/payment?invoiceID=${invoice.invoiceID}&orderID=${orderID}">
-                Chọn phương thức thanh toán →
-            </a>
-            <a class="btn-back"
-               href="${pageContext.request.contextPath}/order?action=cart">
-                ← Quay lại giỏ hàng
-            </a>
-
+                        <button type="button" class="btn-checkout-submit" onclick="processCheckoutRouting()">
+                            🔔 Xác nhận & Hoàn tất đơn ↗
+                        </button>
+                        
+                        <a href="${pageContext.request.contextPath}/order?action=cart" class="btn-checkout-back">
+                            ← Quay lại sửa giỏ hàng
+                        </a>
+                    </div>
+                    
+                </div>
+            </form>
         </div>
+
+        <%@ include file="/views/includes/footer.jsp" %>
+
+        <script>
+            // Đổi hiệu ứng màu sắc khi chọn thẻ thanh toán
+            function selectPayment(element) {
+                document.querySelectorAll('.payment-method-card').forEach(function(card) {
+                    card.classList.remove('active');
+                });
+                element.classList.add('active');
+                var radio = element.querySelector('input[type="radio"]');
+                if(radio) {
+                    radio.checked = true;
+                }
+            }
+
+            // XỬ LÝ ĐỊNH TUYẾN FORM DỰA VÀO PHƯƠNG THỨC ĐƯỢC CHỌN
+            function processCheckoutRouting() {
+                var paymentMethod = document.querySelector('input[name="paymentGateway"]:checked').value;
+                var form = document.getElementById('checkoutForm');
+
+                if (paymentMethod === 'cash') {
+                    // Hiển thị thông báo ngay lập tức
+                    alert("🎉 Hoàn tất đơn hàng! Vui lòng thanh toán tại quầy sau khi dùng bữa.");
+                    // Đổi đường dẫn form về trang home
+                    form.action = '${pageContext.request.contextPath}/home';
+                } else if (paymentMethod === 'vnpay') {
+                    // Đổi đường dẫn form về trang payment (thanh toán online)
+                    form.action = '${pageContext.request.contextPath}/payment';
+                }
+
+                // Gửi form đi
+                form.submit();
+            }
+        </script>
     </body>
 </html>

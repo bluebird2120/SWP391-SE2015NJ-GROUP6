@@ -107,6 +107,9 @@ public class OrderController extends HttpServlet {
             // Tạm thời fix cứng bằng 2 để test
             Integer orderID = 2;
             session.setAttribute("orderID", orderID); // thêm dòng này
+            // Tạm thời fix cứng bằng 2 để test
+            session.setAttribute("orderID", orderID);
+            session.setAttribute("tableID", 2); // Thêm dòng này để JSP nhận diện được bàn số 2
 
             if (orderID == null) {
                 request.setAttribute("orderItems", null);
@@ -133,7 +136,6 @@ public class OrderController extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-
     // =========================================================
     // POST /order?action=add
     // Thêm món vào giỏ hàng
