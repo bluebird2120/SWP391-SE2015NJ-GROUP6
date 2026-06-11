@@ -407,10 +407,24 @@
                                        data-price="${lineTotal}" 
                                        onchange="updateTotal()">
 
-                                <div class="item-image-placeholder">
-                                    <svg viewBox="0 0 24 24">
-                                    <path d="M22,9C22,11 20.4,12.6 18.5,12.9L19.8,20.2C20,21.2 19.2,22 18.2,22H5.8C4.8,22 4,21.2 4.2,20.2L5.5,12.9C3.6,12.6 2,11 2,9H22M12,2A3,3 0 0,1 15,5V7H9V5A3,3 0 0,1 12,2M12,14A2,2 0 0,0 10,16V18A2,2 0 0,0 12,20A2,2 0 0,0 14,18V16A2,2 0 0,0 12,14Z"/>
-                                    </svg>
+                                <div class="item-image-placeholder" style="padding: 0; overflow: hidden; background: transparent; border: none;">
+                                    <c:choose>
+                                        <%-- Nếu món ăn có đường dẫn ảnh --%>
+                                        <c:when test="${not empty mi.image}">
+                                            <img src="${mi.image}" 
+                                                 alt="${mi.itemName}" 
+                                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                                        </c:when>
+
+                                        <%-- Nếu không có ảnh, dùng lại Icon dự phòng --%>
+                                        <c:otherwise>
+                                            <div style="width: 100%; height: 100%; background: #fdfcfb; border: 1px solid #ede8de; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                                <svg viewBox="0 0 24 24" style="width: 42px; height: 42px; fill: #bc945c;">
+                                                <path d="M22,9C22,11 20.4,12.6 18.5,12.9L19.8,20.2C20,21.2 19.2,22 18.2,22H5.8C4.8,22 4,21.2 4.2,20.2L5.5,12.9C3.6,12.6 2,11 2,9H22M12,2A3,3 0 0,1 15,5V7H9V5A3,3 0 0,1 12,2M12,14A2,2 0 0,0 10,16V18A2,2 0 0,0 12,20A2,2 0 0,0 14,18V16A2,2 0 0,0 12,14Z"/>
+                                                </svg>
+                                            </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
 
                                 <div class="item-details">
