@@ -108,6 +108,39 @@ public class CustomerDAO extends DBContext {
             //trả về true / false
             return ps.executeUpdate() > 0;
         }
-
+    }
+    
+        /**
+     * Tìm Customer theo customerID
+     */
+    public Customer findByID(int id) throws SQLException {
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
+                + "FROM Customer WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        }
+        return null;
+    }
+    
+        /**
+     * Tìm Customer theo email
+     */
+    public Customer findByEmail(String email) throws SQLException {
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
+                + "FROM Customer WHERE email = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        }
+        return null;
     }
 }
