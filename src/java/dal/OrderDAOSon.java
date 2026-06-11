@@ -1,4 +1,3 @@
-
 package dal;
 
 import java.math.BigDecimal;
@@ -12,18 +11,29 @@ import model.Order;
 
 public class OrderDAOSon extends DBContext {
 
-    public int createReservation(int customerID, int tableID,
-                                  Timestamp orderTime, BigDecimal depositAmount) {
-        String sql = "INSERT INTO `Order` "
-                   + "(customerID, tableID, orderType, orderStatus, "
-                   + " orderTime, depositAmount, createdAt) "
-                   + "VALUES (?, ?, 1, 'pending', ?, ?, NOW())";
+    /**
+     * Tạo đơn đặt bàn trước (orderType = 1).
+     * tableID = NULL — nhân viên gán bàn thực khi khách đến.
+     * Lưu areaType + capacity để tính bàn trống chính xác.
+     * orderStatus = 'reserved', tableStatus = 'reserved' ngay khi xác nhận.
+     *
+     * @return orderID nếu thành công, -1 nếu lỗi
+     */
+    public int createReservation(int customerID, int capacity,
+                                 String areaType, Timestamp orderTime,
+                                 BigDecimal depositAmount) {
+        String sql =
+            "INSERT INTO `Order` " +
+            "(customerID, tableID, orderType, orderStatus, tableStatus, " +
+            " areaType, capacity, orderTime, depositAmount, createdAt) " +
+            "VALUES (?, NULL, 1, 'reserved', 'reserved', ?, ?, ?, ?, NOW())";
 
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, customerID);
-            ps.setInt(2, tableID);
-            ps.setTimestamp(3, orderTime);
-            ps.setBigDecimal(4, depositAmount != null ? depositAmount : BigDecimal.ZERO);
+            ps.setString(2, areaType);
+            ps.setInt(3, capacity);
+            ps.setTimestamp(4, orderTime);
+            ps.setBigDecimal(5, depositAmount != null ? depositAmount : BigDecimal.ZERO);
 
             int affected = ps.executeUpdate();
             if (affected == 0) return -1;
@@ -35,6 +45,45 @@ public class OrderDAOSon extends DBContext {
             e.printStackTrace();
         }
         return -1;
+    }
+
+    /**
+     * Hủy đơn đặt bàn — chỉ hủy được khi đang reserved.
+     * Đồng thời trả tableStatus về 'available'.
+     */
+    public boolean cancelReservation(int orderID, int customerID) {
+        String sql =
+            "UPDATE `Order` SET orderStatus = 'cancelled', tableStatus = 'available' " +
+            "WHERE orderID = ? AND customerID = ? " +
+            "AND orderStatus = 'reserved'";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, customerID);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Auto-cancel các đơn reserved quá 30 phút mà khách chưa đến check-in.
+     * Gọi từ background job hoặc lazy-check khi query bàn trống.
+     * Chỉ hủy đơn có orderTime đã qua (khách trễ hẹn).
+     */
+    public int autoExpireReservations() {
+        String sql =
+            "UPDATE `Order` " +
+            "SET orderStatus = 'cancelled', tableStatus = 'available' " +
+            "WHERE orderType = 1 " +
+            "AND orderStatus = 'reserved' " +
+            "AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public Order getOrderByID(int orderID) {
@@ -52,9 +101,10 @@ public class OrderDAOSon extends DBContext {
 
     public List<Order> getReservationsByCustomer(int customerID) {
         List<Order> list = new ArrayList<>();
-        String sql = "SELECT * FROM `Order` "
-                   + "WHERE customerID = ? AND orderType = 1 "
-                   + "ORDER BY createdAt DESC";
+        String sql =
+            "SELECT * FROM `Order` " +
+            "WHERE customerID = ? AND orderType = 1 " +
+            "ORDER BY createdAt DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, customerID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -64,20 +114,6 @@ public class OrderDAOSon extends DBContext {
             e.printStackTrace();
         }
         return list;
-    }
-
-    public boolean cancelReservation(int orderID, int customerID) {
-        String sql = "UPDATE `Order` SET orderStatus = 'cancelled' "
-                   + "WHERE orderID = ? AND customerID = ? "
-                   + "  AND orderStatus IN ('pending', 'reserved')";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, orderID);
-            ps.setInt(2, customerID);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 
     private Order mapRow(ResultSet rs) throws Exception {
@@ -95,6 +131,9 @@ public class OrderDAOSon extends DBContext {
         o.setOrderTime(rs.getTimestamp("orderTime"));
         o.setDepositAmount(rs.getLong("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
+       
+        o.setCapacity(rs.getInt("capacity"));// thêm thuôc tinh moi 
+        o.setAreaType(rs.getString("areaType"));
         return o;
     }
 }

@@ -293,7 +293,11 @@ public class OrderDAO {
                 rs.getInt("orderType"),
                 rs.getTimestamp("orderTime"),
                 rs.getLong("depositAmount"),
-                rs.getString("orderStatus"));
+                rs.getString("orderStatus"),
+                rs.getString("areaType"),// thêm 
+                rs.getInt("capacity")// thêm 
+        
+        );
 
     }
 

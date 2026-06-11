@@ -204,7 +204,7 @@
     </style>
 </head>
 <body>
- <%@include file="/views/includes/header.jsp" %>
+
 <div class="wrapper-fullwidth">
     
     <div class="banner-header">
@@ -434,6 +434,6 @@
     }
 </script>
 
- <%@include file="/views/includes/footer.jsp" %>  
+ 
 </body>
 </html>
