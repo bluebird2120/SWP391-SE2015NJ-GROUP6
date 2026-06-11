@@ -341,6 +341,27 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
+    /** Dropdown roster: chỉ lấy staff active (roleID=2, isActive=1), trả ID + fullName. */
+    public List<Employee> listActiveStaff() {
+        List<Employee> list = new ArrayList<>();
+        String sql = "SELECT employeeID, fullName FROM Employee "
+                + "WHERE roleID = ? AND isActive = 1 ORDER BY fullName";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Employee e = new Employee();
+                    e.setEmployeeID(rs.getInt("employeeID"));
+                    e.setFullName(rs.getString("fullName"));
+                    list.add(e);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+    
 
     private Employee mapRow(ResultSet rs) throws SQLException {
         Employee e = new Employee();
