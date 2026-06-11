@@ -8,12 +8,23 @@
 <%@ page import="java.util.List" %>
 <%@ page import="model.MenuCategory" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
+            h2{
+                margin-top: 0;
+                margin-bottom: 25px;
+                color: #111827;
+                font-size: 24px;
+                font-weight: 600;
+                border-bottom: 2px solid #e5e7eb;
+                padding-bottom: 10px;
+                text-align: center;
+            }
             .admin-layout{
                 display: flex;
                 flex: 1;
@@ -181,11 +192,13 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
+        <%@ include file="/views/includes/dashboard.jsp" %>
         <div class="admin-layout">
-            <%@ include file="/views/includes/dashboard.jsp" %>
+            
             <div class="main-content">
+                <h2>Danh sách món ăn</h2>
                 <!--Filter to search dish-->
-                <form action="${pageContext.request.contextPath}/menu" method="post" class="filter-form">
+                <form action="${pageContext.request.contextPath}/menu-management" method="get" class="filter-form">
                     <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn..." class="filter-input" style="width: 200px;"/>
 
                     <select name="category" class="filter-select">
@@ -224,9 +237,12 @@
                         <input type="submit" value="LỌC" class="btn-submit"/>
                     </div>
                 </form>
-                        <c:if test="${not empty error}">
-                        <div class="error-msg">${error}</div>
-                    </c:if>
+                        <c:if test="${not empty errorPrice}">
+                            <div class="error-msg">${errorPrice}</div>
+                        </c:if>
+                        <c:if test="${not empty errorSearch}">
+                            <div class="error-msg">${errorSearch}</div>
+                        </c:if>
                 <!--Display dish-->
                 <div class="menu-container">
 
@@ -244,11 +260,11 @@
                             <p class="category">🏷️ ${item.categoryName}</p>
 
                             <div class="price-container">
-                                <div class="discount-price">${item.discountedPrice}</div>
+                                <div class="discount-price"><fmt:formatNumber value="${item.discountedPrice}" type="number" groupingUsed="true"/>đ</div>
 
-                                <div class="price">${item.price}</div>
+                                <div class="price"><fmt:formatNumber value="${item.price}" type="number" groupingUsed="true"/>đ</div>
 
-                                <div class="discount-percent">${item.discountPercent}%</div>
+                                <div class="discount-percent"><fmt:formatNumber value="${item.discountPercent}" type="number" groupingUsed="true"/>%</div>
                             </div>
 
                             <p>Chi tiết: ${item.allergyNotes}</p>
@@ -262,6 +278,7 @@
                 </div>
             </div>
         </div>
+        
         <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>

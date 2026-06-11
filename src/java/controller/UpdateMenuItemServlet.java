@@ -99,11 +99,11 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String oldImage = request.getParameter("oldImage");
         Part newImage = request.getPart("newImage");
 
-        String errorName = isEmpty(itemName, "Tên món ăn rỗng!");
-        String errorDescription = isEmpty(description_raw, "Mô tả món ăn rỗng!");
-        String errorPrice = isValidPositive(price_raw, "Giá món ăn rỗng!", "Giá món ăn là số nguyên dương!");
-        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn rỗng!", "Giảm giá món ăn là số nguyên dương!");
-        String errorAllergyNotes = isEmpty(allergyNotes_raw, "Mô tả dị ứng ăn rỗng!");
+        String errorName = isValidString(itemName, 150,"Tên món ăn không được để trống", "Tên món ăn không được vượt quá 150 ký tự");
+        String errorDescription = isValidString(description_raw, 500, "Mô tả món ăn không được để trống", "Mô tả món ăn không được vượt quá 500 ký tự");
+        String errorPrice = isValidPositive(price_raw, "Giá món ăn không được để trống", "Giá món ăn từ 0-1000000000");
+        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-1000000000");
+        String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
 
         if (!errorName.isEmpty() || !errorDescription.isEmpty() || !errorPrice.isEmpty()
                 || !errorDiscountPercent.isEmpty() || !errorAllergyNotes.isEmpty()) {
@@ -128,22 +128,41 @@ public class UpdateMenuItemServlet extends HttpServlet {
             int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
 
             String fileName = oldImage;
-            if(newImage != null && !newImage.getSubmittedFileName().isEmpty()){
+            if (newImage != null && !newImage.getSubmittedFileName().isEmpty()) {
                 String imageName = newImage.getSubmittedFileName();
-                fileName = "images/" + imageName;
                 
-                String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\build\\web\\images";
-                File sourceFile = new File(upLoadSource + File.separator + imageName);
-                
-                newImage.write(sourceFile.getAbsolutePath());
-                
-                String upLoadServer = getServletContext().getRealPath("/images");
-                File cachFile = new File(upLoadServer);
-                
-                try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile);
-                     java.io.FileOutputStream fos = new java.io.FileOutputStream(cachFile)){
-                    fis.transferTo(fos);
-                } catch (Exception e) {
+                if(isValidImageFile(imageName)){
+                    fileName = "images/" + imageName;
+                    String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\web\\images";
+                    File sourceFolder = new File(upLoadSource);
+                    if(!sourceFolder.exists()){
+                        sourceFolder.mkdirs();
+                    }
+                    File sourceFile = new File(upLoadSource + File.separator + imageName);
+                    
+                    newImage.write(sourceFile.getAbsolutePath());
+                    
+                    String upLoadServer = getServletContext().getRealPath("/images");
+                    File serverFolder = new File(upLoadServer);
+                    if(!serverFolder.exists()){
+                        serverFolder.mkdirs();
+                    }
+                    File cacheFile = new File(upLoadServer + File.separator + imageName);
+                    
+                    try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile); 
+                            java.io.FileOutputStream fos = new java.io.FileOutputStream(cacheFile)){
+                        fis.transferTo(fos);
+                    } catch (Exception e) {
+                    }
+                }else{
+                    int id = ((menuItemId_raw != null) && (!menuItemId_raw.isEmpty())) ? Integer.parseInt(menuItemId_raw) : 0;
+                    MenuItem mi = menuItemDAO.getMenuItemById(id);
+                    List categoryList = menuCategoryDAO.getAllMenuCategory();
+                    request.setAttribute("dish", mi);
+                    request.setAttribute("list", categoryList);
+                    request.setAttribute("errorImageFile", "Vui lòng nhập file ảnh (file có đuôi .jpg, .png, .webp, .jpeg)");
+                    request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+                    return;
                 }
             }
             menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price,
@@ -153,14 +172,25 @@ public class UpdateMenuItemServlet extends HttpServlet {
 
     }
 
-    public String isEmpty(String data, String ms) {
-        return ((data != null) && (!data.trim().isEmpty()) ? "" : ms);
+    private String isValidString(String data, int length, String ms1, String ms2) {
+        if (data == null || data.trim().isEmpty()) {
+            return ms1; 
+        }
+        if (data.length() > length) {
+            return ms2; 
+        }
+        return ""; 
     }
-
-    public String isValidPositive(String data, String ms1, String ms2) {
+    
+    private boolean isValidImageFile(String imageName){
+        String image = imageName.toLowerCase();
+        return (image.endsWith(".webp") || image.endsWith(".jpg") || image.endsWith(".jpeg") || image.endsWith(".png"));
+    }
+    
+    private String isValidPositive(String data, String ms1, String ms2) {
         try {
             if (data != null && !data.trim().isEmpty()) {
-                if (Integer.parseInt(data) < 0) {
+                if (Integer.parseInt(data) < 0 || Integer.parseInt(data) > 1000000000) {
                     return ms2;
                 }
             } else {

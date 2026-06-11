@@ -21,7 +21,7 @@ import model.MenuItem;
  *
  * @author Admin
  */
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu-management"})
 public class MenuItemController extends HttpServlet {
 
     /**
@@ -62,11 +62,47 @@ public class MenuItemController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<MenuCategory> list = md.getAllMenuCategory();
-        List<MenuItem> listItem = mi.getAllMenuItem();
-        request.setAttribute("listItem", listItem);
-        request.setAttribute("list", list);
-        request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        String search = request.getParameter("search");
+        String category_raw = request.getParameter("category");
+        String status_raw = request.getParameter("status");
+        String minPrice_raw = request.getParameter("minPrice");
+        String maxPrice_raw = request.getParameter("maxPrice");
+        String priceType = request.getParameter("price");
+        String sort = request.getParameter("sort");
+
+        if (!checkEmpty(priceType)) {
+            List<MenuCategory> list = md.getAllMenuCategory();
+            List<MenuItem> listItem = mi.getAllMenuItem();
+            request.setAttribute("listItem", listItem);
+            request.setAttribute("list", list);
+            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+            return;
+        } else {
+            int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
+            int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
+            int minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
+            int maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : 999999999;
+
+            if (checkPriceInput(minPrice, maxPrice) != null || isValidString(search, 100, 
+                    "Tìm kiếm không vượt quá 100 kí tự") != null) {
+                List<MenuCategory> list = md.getAllMenuCategory();
+                List<MenuItem> listItem = mi.getAllMenuItem();
+                request.setAttribute("listItem", listItem);
+                request.setAttribute("list", list);
+                request.setAttribute("errorPrice", checkPriceInput(minPrice, maxPrice));
+                request.setAttribute("errorSearch", isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự"));
+                request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+                return;
+            }
+            //load lại list category
+            List<MenuCategory> list = md.getAllMenuCategory();
+            request.setAttribute("list", list);
+            //load ra search list
+            List<MenuItem> listItem = mi.searchMenuItem(search, categoryId, status, minPrice, maxPrice, sort, priceType);
+            request.setAttribute("listItem", listItem);
+            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        }
+
     }
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
@@ -83,46 +119,29 @@ public class MenuItemController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String search = request.getParameter("search");
-        String category_raw = request.getParameter("category");
-        String status_raw = request.getParameter("status");
-        String minPrice_raw = request.getParameter("minPrice");
-        String maxPrice_raw = request.getParameter("maxPrice");
-        String priceType = request.getParameter("price");
-        String sort = request.getParameter("sort");
 
-        int categoryId = ((category_raw != null) && !(category_raw.isEmpty())) ? Integer.parseInt(category_raw) : 0;
-        int status = ((status_raw != null) && !(status_raw.isEmpty())) ? Integer.parseInt(status_raw) : 1;
-        int minPrice = ((minPrice_raw != null) && !(minPrice_raw.isEmpty())) ? Integer.parseInt(minPrice_raw) : 0;
-        int maxPrice = ((maxPrice_raw != null) && !(maxPrice_raw.isEmpty())) ? Integer.parseInt(maxPrice_raw) : 999999999;
-
-        if (checkPriceInput(minPrice, maxPrice) != null) {
-            List<MenuCategory> list = md.getAllMenuCategory();
-            List<MenuItem> listItem = mi.getAllMenuItem();
-            request.setAttribute("listItem", listItem);
-            request.setAttribute("list", list);
-            request.setAttribute("error", checkPriceInput(minPrice, maxPrice));
-            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
-            return;
+    }
+    
+    private String isValidString(String data, int length, String ms) {
+        if (data.length() > length) {
+            return ms;
         }
-        //load lại list category
-        List<MenuCategory> list = md.getAllMenuCategory();
-        request.setAttribute("list", list);
-        //load ra search list
-        List<MenuItem> listItem = mi.searchMenuItem(search, categoryId, status, minPrice, maxPrice, sort, priceType);
-        request.setAttribute("listItem", listItem);
-        request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        return null; 
     }
 
     private String checkPriceInput(int min, int max) {
         if (min < 0 || max < 0) {
-            return "Price cannot be negative";
+            return "Giá món ăn không được là số âm";
         } else {
             if (min > max) {
-                return "Max must be greater than Min";
+                return "Giá max phải lớn hơn giá Min";
             }
         }
         return null;
+    }
+
+    private boolean checkEmpty(String data) {
+        return (data != null && !data.isEmpty());
     }
 
     /**

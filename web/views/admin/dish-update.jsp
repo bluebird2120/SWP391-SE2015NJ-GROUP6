@@ -179,12 +179,14 @@
                         <div class="form-image">
                             <label class="form-label">Ảnh hiện tại:</label>
                             <img src="${dish.image}"/>
-                            <input type="hidden" value="${dish.image}" name="oldImage"/>
+                            <input type="hidden" value="${dish.image}" name="oldImage"/>  
                         </div>
                         <div class="form-changeImage">
                             <label class="form-label">Đổi ảnh mới:</label>
                             <input type="file" name="newImage"/>
                         </div>
+                        <div class="error-message">${errorImageFile}</div>
+                        
                         <div class="form-checkbox">
                             <label class="form-label">Trạng thái món ăn:</label>
                             <input type="checkbox" name="isAvailable" value="1" ${dish.isAvailable == 1 ? "checked" : ""}/>Hoạt Động
