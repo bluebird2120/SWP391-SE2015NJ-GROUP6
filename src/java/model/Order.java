@@ -5,24 +5,26 @@ import java.sql.Timestamp;
 
 public class Order {
 
-    private int orderID;
-    private int customerID;
-    private int tableID;
-    private int invoiceID;
-    private String tableStatus;
-    private long totalAmount;
-    private Timestamp checkoutRequestAt;
-    private int isStaffConfirmed;
-    private Timestamp createdAt;
-    private int orderType;
-    private Timestamp orderTime;
-    private long depositAmount;
-    private String orderStatus;
+private int orderID;
+private int customerID;
+private int tableID;
+private int invoiceID;
+private String tableStatus;
+private long totalAmount;
+private Timestamp checkoutRequestAt;
+private int isStaffConfirmed;
+private Timestamp createdAt;
+private int orderType;
+private Timestamp orderTime;
+private long depositAmount;
+private String orderStatus;
+private String areaType;   // thêm thuộc tính 
+private int capacity;     //  thêm thuộc tính 
 
     public Order() {
     }
 
-    public Order(int orderID, int customerID, int tableID, int invoiceID, String tableStatus, long totalAmount, Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt, int orderType, Timestamp orderTime, long depositAmount, String orderStatus) {
+    public Order(int orderID, int customerID, int tableID, int invoiceID, String tableStatus, long totalAmount, Timestamp checkoutRequestAt, int isStaffConfirmed, Timestamp createdAt, int orderType, Timestamp orderTime, long depositAmount, String orderStatus, String areaType, int capacity) {
         this.orderID = orderID;
         this.customerID = customerID;
         this.tableID = tableID;
@@ -36,6 +38,8 @@ public class Order {
         this.orderTime = orderTime;
         this.depositAmount = depositAmount;
         this.orderStatus = orderStatus;
+        this.areaType = areaType;
+        this.capacity = capacity;
     }
 
     public int getOrderID() {
@@ -141,5 +145,23 @@ public class Order {
     public void setOrderStatus(String orderStatus) {
         this.orderStatus = orderStatus;
     }
+
+    public String getAreaType() {
+        return areaType;
+    }
+
+    public void setAreaType(String areaType) {
+        this.areaType = areaType;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    
 
 }

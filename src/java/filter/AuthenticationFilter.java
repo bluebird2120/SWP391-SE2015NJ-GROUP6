@@ -54,6 +54,10 @@ public class AuthenticationFilter implements Filter {
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }
+            if (employee.getRoleID() == 1) { // Owner không được vào staff routes
+                response.sendRedirect(ctx + "/owner/dashboard");
+                return;
+            }
             // Bắt buộc đổi mật khẩu lần đầu
             if (employee.getMustChangePassword() == 1
                     && !uri.contains("/staff/change-password")) {
