@@ -15,15 +15,34 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
-            h2{
-                margin-top: 0;
-                margin-bottom: 25px;
-                color: #111827;
-                font-size: 24px;
-                font-weight: 600;
+            .page-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
                 border-bottom: 2px solid #e5e7eb;
                 padding-bottom: 10px;
-                text-align: center;
+                margin-bottom: 25px;
+            }
+            .main-content h2 {
+                margin: 0;
+                border-bottom: none;
+                padding-bottom: 0;
+                font-size: 24px;
+                font-weight: 600;
+                color: #111827;
+                justify-content: center;
+            }
+            .btn-add-new {              
+                background-color: #10b981; /* Màu xanh lá cây hiện đại */
+                color: white;
+                text-decoration: none;
+                padding: 10px 18px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
             .admin-layout{
                 display: flex;
@@ -177,8 +196,8 @@
             }
             .error-msg {
                 color: #b91c1c;
-                background-color: #fef2f2; 
-                border: 1px solid #fee2e2; 
+                background-color: #fef2f2;
+                border: 1px solid #fee2e2;
                 padding: 6px 12px;
                 font-size: 13px;
                 margin-top: 6px;
@@ -188,15 +207,67 @@
                 align-items: center;
                 gap: 6px;
             }
+            .pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 5px;
+                margin: 30px 0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .pagination a, .pagination span {
+                padding: 6px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 4px;
+                text-decoration: none;
+                color: #334155;
+                font-size: 14px;
+                font-weight: 500;
+                background-color: #ffffff;
+                transition: all 0.2s ease;
+            }
+
+            .pagination a:hover {
+                background-color: #f8fafc;
+                border-color: #94a3b8;
+                color: #0f172a;
+            }
+
+            /* Kiểu dáng cho ô hiển thị thông tin số trang ở giữa */
+            .pagination .page-info {
+                background-color: #f1f5f9;
+                border-color: #cbd5e1;
+                color: #1e293b;
+                cursor: default;
+            }
+
+            .pagination .page-info b {
+                color: #007bff;
+            }
+
+            /* Trạng thái nút bị vô hiệu hóa khi ở trang đầu hoặc trang cuối */
+            .pagination .disabled {
+                color: #94a3b8;
+                background-color: #f8fafc;
+                border-color: #e2e8f0;
+                pointer-events: none; /* Khóa không cho click */
+                cursor: not-allowed;
+            }
         </style>
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
         <%@ include file="/views/includes/dashboard.jsp" %>
         <div class="admin-layout">
-            
+
             <div class="main-content">
-                <h2>Danh sách món ăn</h2>
+                <div class="page-header">
+                    <h2>Danh sách món ăn</h2>
+                    <a href="${pageContext.request.contextPath}/update-menu" class="btn-add-new">
+                        Thêm món ăn mới
+                    </a>
+                </div>
                 <!--Filter to search dish-->
                 <form action="${pageContext.request.contextPath}/menu-management" method="get" class="filter-form">
                     <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm món ăn..." class="filter-input" style="width: 200px;"/>
@@ -237,12 +308,12 @@
                         <input type="submit" value="LỌC" class="btn-submit"/>
                     </div>
                 </form>
-                        <c:if test="${not empty errorPrice}">
-                            <div class="error-msg">${errorPrice}</div>
-                        </c:if>
-                        <c:if test="${not empty errorSearch}">
-                            <div class="error-msg">${errorSearch}</div>
-                        </c:if>
+                <c:if test="${not empty errorPrice}">
+                    <div class="error-msg">${errorPrice}</div>
+                </c:if>
+                <c:if test="${not empty errorSearch}">
+                    <div class="error-msg">${errorSearch}</div>
+                </c:if>
                 <!--Display dish-->
                 <div class="menu-container">
 
@@ -278,7 +349,35 @@
                 </div>
             </div>
         </div>
-        
+        <c:if test="${totalPage > 1}">
+            <div class="pagination">
+
+                <c:choose>
+                    <c:when test="${currentPage > 1}">
+                        <a href="${pageContext.request.contextPath}/menu-management?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/menu-management?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang trước">Trước</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Đầu</span>
+                        <span class="disabled">Trước</span>
+                    </c:otherwise>
+                </c:choose>
+
+                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+
+                <c:choose>
+                    <c:when test="${currentPage < totalPage}">
+                        <a href="${pageContext.request.contextPath}/menu-management?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/menu-management?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Đến trang cuối">Cuối</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Sau</span>
+                        <span class="disabled">Cuối</span>
+                    </c:otherwise>
+                </c:choose>
+
+            </div>
+        </c:if>
         <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>

@@ -130,7 +130,7 @@
         <%@ include file="/views/includes/header.jsp" %>
         <%@ include file="/views/includes/dashboard.jsp" %>
         <div class="form-container">  
-            <h2>Quản lý thông tin món ăn</h2>
+            <h2>${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}</h2>
             <form action="${pageContext.request.contextPath}/update-menu" method="post" enctype="multipart/form-data">
                 <input type="hidden" value="${dish.itemID}" name="id"/>
                 <div class="form-layout">
@@ -192,7 +192,7 @@
                             <input type="checkbox" name="isAvailable" value="1" ${dish.isAvailable == 1 ? "checked" : ""}/>Hoạt Động
                         </div>
 
-                        <input class="form-submit" type="submit" value="CẬP NHẬT"/>
+                        <input class="form-submit" type="submit" value="${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}"/>
                     </div>
                 </div>
             </form>
