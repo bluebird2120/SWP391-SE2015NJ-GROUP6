@@ -98,8 +98,52 @@ public class CheckoutController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
+        String action = request.getParameter("action"); // Đọc thuộc tính action gửi lên
+
+        System.out.println("DEBUG action = " + action);
         System.out.println("DEBUG orderID = " + session.getAttribute("orderID"));
         System.out.println("DEBUG tableID = " + session.getAttribute("tableID"));
+
+        // =================================================================
+        // NHÁNH 1: XỬ LÝ KHI KHÁCH HÀNG NHẤN NÚT "XÁC NHẬN & HOÀN TẤT ĐƠN" TRÊN CHECKOUT.JSP
+        // =================================================================
+        if ("confirm".equals(action)) {
+            String paymentGateway = request.getParameter("paymentGateway"); // Nhận "cash" hoặc "vnpay"
+            String orderIDParam = request.getParameter("orderID");
+            
+            System.out.println("DEBUG confirm - paymentGateway = " + paymentGateway);
+            System.out.println("DEBUG confirm - orderIDParam = " + orderIDParam);
+
+            if (orderIDParam != null) {
+                int orderID = Integer.parseInt(orderIDParam);
+                
+                // 1. CẬP NHẬT TRẠNG THÁI CHO ĐƠN HÀNG TRONG DB
+                // Bạn có thể viết thêm hàm này trong OrderDAO nếu cần: ví dụ thay đổi orderStatus từ 'pending' sang 'checkout'
+                // orderDAO.updateOrderStatus(orderID, "checkout");
+
+                // 2. PHÂN NHÁNH ĐIỀU HƯỚNG THEO PHƯƠNG THỨC THANH TOÁN
+                if ("cash".equals(paymentGateway)) {
+                    // Thanh toán tại quầy: Hủy lượt đặt cũ trong session để có thể test đơn mới
+                    session.removeAttribute("orderID");
+                    session.removeAttribute("invoiceID");
+                    
+                    // Chuyển hướng thẳng về trang chủ (hoặc /home nếu bạn cấu hình định tuyến)
+                    response.sendRedirect(request.getContextPath() + "/home?status=order_success");
+                    return;
+                } else if ("vnpay".equals(paymentGateway)) {
+                    // Thanh toán qua VNPay: Chuyển hướng sang servlet xử lý cổng thanh toán
+                    response.sendRedirect(request.getContextPath() + "/payment?orderID=" + orderID);
+                    return;
+                }
+            }
+            
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        }
+
+        // =================================================================
+        // NHÁNH 2: LOGIC GỐC - XỬ LÝ KHI ĐI TỪ TRANG CART.JSP SANG CHECKOUT.JSP
+        // =================================================================
         System.out.println("DEBUG selectedItems = "
                 + java.util.Arrays.toString(request.getParameterValues("selectedItems")));
 
@@ -126,10 +170,10 @@ public class CheckoutController extends HttpServlet {
         List<OrderItem> orderItems = orderDAO.getOrderItemsByIds(selectedIDs);
         List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderItemIds(selectedIDs);
 
-//        // --- Lấy Order để lấy depositAmount ---
-//        Order order = orderDAO.getActiveOrderByTableId(
-//                (Integer) session.getAttribute("tableID")
-//        );
+//         // --- Lấy Order để lấy depositAmount ---
+//         Order order = orderDAO.getActiveOrderByTableId(
+//                 (Integer) session.getAttribute("tableID")
+//         );
         Integer tableID = (Integer) session.getAttribute("tableID");
         Order order = null;
         if (tableID != null) {

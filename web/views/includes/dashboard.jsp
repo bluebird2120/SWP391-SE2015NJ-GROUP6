@@ -183,7 +183,7 @@
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/menu">
+                   href="${pageContext.request.contextPath}/menu-management">
                     <i class="fas fa-hamburger"></i> Menu Items
                 </a>
             </li>

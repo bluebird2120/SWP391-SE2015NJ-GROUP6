@@ -17,11 +17,12 @@ public class OrderDAO {
     // 1. TẠO ORDER MỚI
     // =========================================================
     public int createOrder(Order order) {
+        // MỚI THÊM: Cập nhật câu lệnh SQL chèn thêm cột areaType và capacity
         String sql = "INSERT INTO `Order` "
                 + "(customerID, tableID, invoiceID, orderType, tableStatus, "
                 + " totalAmount, checkoutRequestAt, isStaffConfirmed, "
-                + " createdAt, orderTime, depositAmount, orderStatus) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + " createdAt, orderTime, depositAmount, orderStatus, areaType, capacity) " 
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // MỚI THÊM: tăng lên 14 dấu ?
 
         try (Connection conn = getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -40,8 +41,11 @@ public class OrderDAO {
             ps.setTimestamp(10, order.getOrderTime());
             ps.setLong(11, order.getDepositAmount());
             ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "pending");
+            
+            // MỚI THÊM: Truyền giá trị cho 2 cột mới
+            ps.setString(13, order.getAreaType());
+            ps.setInt(14, order.getCapacity());
 
-      
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
             if (rs.next())
@@ -73,6 +77,27 @@ public class OrderDAO {
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] getActiveOrderByTableId lỗi: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // MỚI THÊM HÀM NÀY: Dùng để lấy thông tin đơn hàng đầy đủ theo ID (phục vụ trang checkout.jsp)
+    // =========================================================
+    // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER (orderID)
+    // =========================================================
+    public Order getOrderById(int orderID) {
+        String sql = "SELECT * FROM `Order` WHERE orderID = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            ps.setInt(1, orderID);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return mapToOrder(rs);
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] getOrderById lỗi: " + e.getMessage());
         }
         return null;
     }
@@ -293,7 +318,10 @@ public class OrderDAO {
                 rs.getInt("orderType"),
                 rs.getTimestamp("orderTime"),
                 rs.getLong("depositAmount"),
-                rs.getString("orderStatus"));
+                rs.getString("orderStatus"),
+                rs.getString("areaType"),  // MỚI THÊM
+                rs.getInt("capacity")      // MỚI THÊM
+        );
 
     }
 
