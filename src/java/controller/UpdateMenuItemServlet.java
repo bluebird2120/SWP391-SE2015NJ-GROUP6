@@ -95,7 +95,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         MenuItem mi;
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
@@ -114,13 +113,19 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-1000000000");
         String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
 
+        int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
+        if(!checkEmpty(errorName)){
+            if(menuItemDAO.checkDuplicateMenuItem(itemName, itemId)){
+                errorName = "Tên món ăn đã tồn tại";
+            }
+        }
         String errorImage = "";
         if (newImage != null && !newImage.getSubmittedFileName().isEmpty()) {
             if (!isValidImageFile(newImage.getSubmittedFileName())) {
                 errorImage = "Vui lòng nhập file ảnh (file có đuôi .jpg, .png, .webp, .jpeg)";
             }
         } else {
-            if ("0".equals(menuItemId_raw) || !checkEmpty(menuItemId_raw)) {
+            if (itemId == 0) {
                 errorImage = "Vui lòng tải ảnh cho món ăn";
             }
         }
@@ -145,7 +150,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
             return;
         }
-        int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
         int categoryId = Integer.parseInt(categoryId_raw);
         int price = Integer.parseInt(price_raw);
         int discountPercent = Integer.parseInt(discountPercent_raw);
@@ -210,7 +214,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     private String isValidPositive(String data, String ms1, String ms2) {
         try {
             if (data != null && !data.trim().isEmpty()) {
-                if (Integer.parseInt(data) < 0 || Integer.parseInt(data) > 1000000000) {
+                if (Integer.parseInt(data) < 0 || Integer.parseInt(data) > Integer.MAX_VALUE) {
                     return ms2;
                 }
             } else {

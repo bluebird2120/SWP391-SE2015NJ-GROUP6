@@ -37,4 +37,60 @@ public class MenuCategoryDAO extends DBContext{
         }
         return list;
     }
+    
+    public int countDishByStatus(int categoryID, int isAvailable){
+        String sql = "select count(*) from MenuItem "
+                + "where categoryID = ? and isAvailable = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, categoryID);
+            ps.setInt(2, isAvailable);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return rs.getInt(1);   
+            }
+        } catch (Exception e) {
+        }
+        return 0;
+    }
+    
+    public int countDishByCategory(int categoryID){
+        String sql = "select count(*) from MenuItem "
+                + "where categoryID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, categoryID);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return rs.getInt(1);   
+            }
+        } catch (Exception e) {
+        }
+        return 0;
+    }
+    
+    public boolean updateCategory(String categoryName, int categoryID){
+        String sql = "update MenuCategory set categoryName = ? "
+                + "where categoryID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, categoryName);
+            ps.setInt(2, categoryID);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+        }
+        return false;
+    }
+    
+    public boolean insertCategory(String categoryName){
+        String sql = "insert into MenuCategory (categoryName) "
+                + "values(?)";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, categoryName);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+        }
+        return false;
+    }
 }

@@ -226,7 +226,7 @@
             <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Menu</div></li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/categories?action=list">
+                   href="${pageContext.request.contextPath}/category-management">
                     <i class="fas fa-list"></i> Categories
                 </a>
             </li>
