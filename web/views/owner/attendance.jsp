@@ -174,8 +174,8 @@
                     </tbody>
                 </table>
             </div>
-<!--        </main>
-    </div>-->
+        </main>
+    </div>
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>

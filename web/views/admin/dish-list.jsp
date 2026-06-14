@@ -47,7 +47,9 @@
             .admin-layout{
                 display: flex;
                 flex: 1;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
+                min-height: calc(100vh - 78px);
+                align-items: flex-start;
             }
             .line2 {
                 display: flex;
@@ -69,7 +71,7 @@
                 border: 1px solid #e2e8f0;
                 color: #475569;
                 padding: 12px;
-                flex-wrap: nowrap; /*tự động xuống dòng khi screen nhỏ */
+                flex-wrap: wrap; /*tự động xuống dòng khi screen nhỏ */
                 border-radius: 12px;
                 margin-bottom: 20px;
                 font-family: Arial, sans-serif;
@@ -258,8 +260,8 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        <%@ include file="/views/includes/dashboard.jsp" %>
         <div class="admin-layout">
+            <%@ include file="/views/includes/dashboard.jsp" %>
 
             <div class="main-content">
                 <div class="page-header">

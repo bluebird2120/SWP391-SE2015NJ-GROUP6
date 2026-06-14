@@ -15,10 +15,8 @@
             .layout{
                 background-color: white;
                 padding: 40px;
-                max-width: 1000px;
-                margin: 30px auto;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
                 border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }
             .page-header{
                 display: flex;
@@ -155,10 +153,12 @@
 
         </style>
     </head>
-    <%@ include file="/views/includes/header.jsp" %>
-    <%@ include file="/views/includes/dashboard.jsp" %>
     <body>
-        <div class="layout">
+        <%@ include file="/views/includes/header.jsp" %>
+        <div style="display:flex; min-height:calc(100vh - 78px); align-items:flex-start;">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <div style="flex:1; padding:32px; background:#f8f9fa; min-width:0;">
+                <div class="layout">
             <div class="page-header">
                 <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
                 <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
@@ -187,7 +187,10 @@
                     </tr>
                 </c:forEach>
             </table>
-        </div>
+        </div><!-- /.layout -->
+            </div><!-- /flex:1 content wrapper -->
+        </div><!-- /flex row -->
+
 
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
