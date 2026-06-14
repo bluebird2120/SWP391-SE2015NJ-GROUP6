@@ -11,14 +11,6 @@ import model.Order;
 
 public class OrderDAOSon extends DBContext {
 
-    /**
-     * Tạo đơn đặt bàn trước (orderType = 1).
-     * tableID = NULL — nhân viên gán bàn thực khi khách đến.
-     * Lưu areaType + capacity để tính bàn trống chính xác.
-     * orderStatus = 'reserved', tableStatus = 'reserved' ngay khi xác nhận.
-     *
-     * @return orderID nếu thành công, -1 nếu lỗi
-     */
     public int createReservation(int customerID, int capacity,
                                  String areaType, Timestamp orderTime,
                                  BigDecimal depositAmount) {
@@ -47,10 +39,6 @@ public class OrderDAOSon extends DBContext {
         return -1;
     }
 
-    /**
-     * Hủy đơn đặt bàn — chỉ hủy được khi đang reserved.
-     * Đồng thời trả tableStatus về 'available'.
-     */
     public boolean cancelReservation(int orderID, int customerID) {
         String sql =
             "UPDATE `Order` SET orderStatus = 'cancelled', tableStatus = 'available' " +
@@ -66,11 +54,6 @@ public class OrderDAOSon extends DBContext {
         return false;
     }
 
-    /**
-     * Auto-cancel các đơn reserved quá 30 phút mà khách chưa đến check-in.
-     * Gọi từ background job hoặc lazy-check khi query bàn trống.
-     * Chỉ hủy đơn có orderTime đã qua (khách trễ hẹn).
-     */
     public int autoExpireReservations() {
         String sql =
             "UPDATE `Order` " +
@@ -131,8 +114,7 @@ public class OrderDAOSon extends DBContext {
         o.setOrderTime(rs.getTimestamp("orderTime"));
         o.setDepositAmount(rs.getLong("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
-       
-        o.setCapacity(rs.getInt("capacity"));// thêm thuôc tinh moi 
+        o.setCapacity(rs.getInt("capacity"));
         o.setAreaType(rs.getString("areaType"));
         return o;
     }

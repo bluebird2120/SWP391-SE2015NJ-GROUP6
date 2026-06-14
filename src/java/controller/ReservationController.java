@@ -70,6 +70,11 @@ public class ReservationController extends HttpServlet {
             String areaType = request.getParameter("areaType");
             String capacityStr = request.getParameter("capacity");
 
+            
+                
+            
+            
+            
             if (dateTimeStr == null || dateTimeStr.isBlank()
                     || areaType == null || areaType.isBlank()) {
                 request.setAttribute("error", "Vui lòng chọn ngày giờ và khu vực.");
