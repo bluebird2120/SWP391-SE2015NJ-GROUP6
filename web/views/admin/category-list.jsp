@@ -12,6 +12,25 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>JSP Page</title>
         <style>
+            .layout{
+                background-color: white;
+                padding: 40px;
+                max-width: 1000px;
+                margin: 30px auto;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                border-radius: 12px;
+            }
+            .page-header{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #e5e7eb;
+                padding-bottom: 15px;
+                margin-bottom: 25px;
+
+                width: 100%;
+                max-width: 900px;
+            }
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background-color: #f8f9fa;
@@ -28,9 +47,8 @@
                 padding: 10px 20px;
                 font-size: 14px;
                 font-weight: 600;
-                border-radius: 4px;
+                border-radius: 6px;
                 cursor: pointer;
-                margin-bottom: 15px;
             }
             table {
                 width: 100%;
@@ -102,6 +120,10 @@
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                 position: relative;
             }
+            h3{
+                border-bottom: 2px solid #e5e7eb;
+                margin-bottom: 5px;
+            }
             .close-icon {
                 position: absolute;
                 right: 20px;
@@ -133,36 +155,39 @@
 
         </style>
     </head>
-
+    <%@ include file="/views/includes/header.jsp" %>
+    <%@ include file="/views/includes/dashboard.jsp" %>
     <body>
-        <%@ include file="/views/includes/header.jsp" %>
-        <%@ include file="/views/includes/dashboard.jsp" %>
-        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
-        <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
-            <table border="1">
-                <thead>
+        <div class="layout">
+            <div class="page-header">
+                <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
+                <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
+            </div>
+            <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>Tên Loại Món</th>
+                            <th>Tổng Số món</th>
+                            <th>Hoạt Động</th>
+                            <th>Tạm Ngưng</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                <c:forEach var="cat" items="${categoryList}">
                     <tr>
-                        <th>Tên Loại Món</th>
-                        <th>Tổng Số món</th>
-                        <th>Hoạt Động</th>
-                        <th>Tạm Ngưng</th>
-                        <th>Hành Động</th>
+                        <td><div>${cat.categoryName}</div></td>
+                        <td><div>${cat.totalDish}</div></td>
+                        <td><div>${cat.activeMenuItem}</div></td>
+                        <td><div>${cat.inactiveMenuItem}</div></td>
+                        <td>
+                            <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
+                            <input class="btn-table btn-disable" type="button" value="VÔ HIỆU HÓA"/>
+                        </td>
                     </tr>
-                </thead>
-            <c:forEach var="cat" items="${categoryList}">
-                <tr>
-                    <td><div>${cat.categoryName}</div></td>
-                    <td><div>${cat.totalDish}</div></td>
-                    <td><div>${cat.activeMenuItem}</div></td>
-                    <td><div>${cat.inactiveMenuItem}</div></td>
-                    <td>
-                        <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                        <input class="btn-table btn-disable" type="button" value="VÔ HIỆU HÓA"/>
-                    </td>
-                </tr>
-            </c:forEach>
-        </table>
+                </c:forEach>
+            </table>
+        </div>
 
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
