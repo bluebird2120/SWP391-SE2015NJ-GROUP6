@@ -10,7 +10,6 @@ import java.util.List;
 import model.MenuItem;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
-
 /**
  *
  * @author Admin
@@ -63,24 +62,24 @@ public class MenuItemDAO extends DBContext {
             sql += "and mi.isAvailable = ? "
                     + "and mi.price >= ? "
                     + "and mi.price <= ? "
-                    + "order by price " + sort;           
+                    + "order by price " + sort;
         } else {
             sql += "and mi.isAvailable = ? "
                     + "and mi.discountedPrice >= ? "
                     + "and mi.discountedPrice <= ? "
-                    + "order by discountedPrice " + sort;       
+                    + "order by discountedPrice " + sort;
         }
         System.out.println(sql);
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
-            if(categoryId > 0){
+            if (categoryId > 0) {
                 ps.setString(1, "%" + search + "%");
                 ps.setInt(2, categoryId);
                 ps.setInt(3, status);
                 ps.setInt(4, minPrice);
                 ps.setInt(5, maxPrice);
-            }else{
-                ps.setString(1,  "%" + search + "%");
+            } else {
+                ps.setString(1, "%" + search + "%");
                 ps.setInt(2, status);
                 ps.setInt(3, minPrice);
                 ps.setInt(4, maxPrice);
@@ -108,17 +107,17 @@ public class MenuItemDAO extends DBContext {
         }
         return list;
     }
-    
-    public MenuItem getMenuItemById(int id){
+
+    public MenuItem getMenuItemById(int id) {
         MenuItem mi;
         String sql = "select * from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
                 + "where mi.itemID = ?";
-        try { 
+        try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();  
-            if(rs.next()){
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
                 mi = new MenuItem(rs.getInt("itemID"),
                         rs.getInt("categoryID"),
                         rs.getString("itemName"),
@@ -136,9 +135,9 @@ public class MenuItemDAO extends DBContext {
         }
         return null;
     }
-    
+
     public boolean updateMenuItem(int id, int categoryId, String itemName, String description, int price,
-            int discountPercent, String image, int isAvailable, String allergyNotes){
+            int discountPercent, String image, int isAvailable, String allergyNotes) {
         String sql = "update MenuItem "
                 + "set categoryID = ? , "
                 + "itemName = ? , "
@@ -157,7 +156,7 @@ public class MenuItemDAO extends DBContext {
             ps.setString(3, description);
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
-            ps.setInt(6, (int)(price * (1 - (double)discountPercent / 100)));
+            ps.setInt(6, (int) (price * (1 - (double) discountPercent / 100)));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);

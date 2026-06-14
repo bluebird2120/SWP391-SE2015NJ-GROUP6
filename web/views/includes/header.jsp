@@ -393,12 +393,7 @@
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
                     <div class="user-avatar">
-                        <c:choose>
-                            <c:when test="${not empty sessionScope.customer.image}">
-                                <img src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">
-                            </c:when>
-                            <c:otherwise><%= customerInitial %></c:otherwise>
-                        </c:choose>
+                        <%= customerInitial %>
                     </div>
                     <div class="user-info">
                         <span class="user-name">${sessionScope.customer.userName}</span>

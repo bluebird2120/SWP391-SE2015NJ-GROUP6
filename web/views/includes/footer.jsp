@@ -136,9 +136,9 @@
             <h3 class="footer-title">Liên hệ</h3>
             <div class="contact-item"><i class="fas fa-location-dot"></i><span>Đại học FPT, Hòa Lạc, Hà Nội</span></div>
             <div class="contact-item"><i class="fas fa-phone"></i><span>0123 456 789</span></div>
-            <div class="contact-item"><i class="fas fa-envelope"></i><span>lachtachrestaurant@gmail.com</span></div>
+            <div class="contact-item"><i class="fas fa-envelope"></i><span>vianrestaurant@gmail.com</span></div>
         </div>
 
     </div>
-    <div class="footer-bottom">© 2026 Lách Tách Restaurant. All rights reserved.</div>
+    <div class="footer-bottom">© 2026 Vị An Restaurant. All rights reserved.</div>
 </footer>
