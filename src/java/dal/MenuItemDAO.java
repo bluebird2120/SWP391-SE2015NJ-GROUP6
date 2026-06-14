@@ -120,6 +120,19 @@ public class MenuItemDAO extends DBContext {
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
+            if (categoryId > 0) {
+                ps.setString(1, "%" + search + "%");
+                ps.setInt(2, categoryId);
+                ps.setInt(3, status);
+                ps.setInt(4, minPrice);
+                ps.setInt(5, maxPrice);
+            } else {
+                ps.setString(1, "%" + search + "%");
+                ps.setInt(2, status);
+                ps.setInt(3, minPrice);
+                ps.setInt(4, maxPrice);
+            }
+            ResultSet rs = ps.executeQuery();
             int index = 1;
 
             ps.setString(index++, "%" + search + "%");
@@ -134,7 +147,7 @@ public class MenuItemDAO extends DBContext {
             ps.setInt(index++, offSet);
             ps.setInt(index++, pageSize);
 
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
             while (rs.next()) {
                 MenuItem item = new MenuItem(rs.getInt("itemID"),
                         rs.getInt("categoryID"),
@@ -203,6 +216,7 @@ public class MenuItemDAO extends DBContext {
             ps.setString(3, description);
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
+            ps.setInt(6, (int) (price * (1 - (double) discountPercent / 100)));
             ps.setInt(6, (int)Math.round((price * (1 - (double) discountPercent / 100))));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
