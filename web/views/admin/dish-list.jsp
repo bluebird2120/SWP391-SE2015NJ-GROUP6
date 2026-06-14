@@ -46,8 +46,9 @@
             }
             .admin-layout{
                 display: flex;
-                flex: 1;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
+                min-height: calc(100vh - 78px);
+                align-items: flex-start;
             }
             .line2 {
                 display: flex;
@@ -258,8 +259,8 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        <%@ include file="/views/includes/dashboard.jsp" %>
         <div class="admin-layout">
+            <%@ include file="/views/includes/dashboard.jsp" %>
 
             <div class="main-content">
                 <div class="page-header">
