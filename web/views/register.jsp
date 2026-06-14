@@ -5,7 +5,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Đăng ký – Lách Tách Restaurant</title>
+        <title>Đăng ký – Vị An Restaurant</title>
 
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -285,7 +285,7 @@
                         <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
                     </a>
                     <h2 class="welcome-text">Chào mừng đến với</h2>
-                    <h3 class="brand-text">Lách Tách Restaurant</h3>
+                    <h3 class="brand-text">Vị An Restaurant</h3>
                 </div>
 
                 <!-- RIGHT -->

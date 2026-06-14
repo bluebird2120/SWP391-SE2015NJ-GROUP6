@@ -11,9 +11,6 @@ import model.Table;
 
 public class TableDAO extends DBContext {
 
-    /**
-     * Lấy danh sách khu vực có sẵn.
-     */
     public List<String> getAllAreaTypes() {
         List<String> list = new ArrayList<>();
         String sql = "SELECT DISTINCT areaType FROM `Table` WHERE isActive = 1 ORDER BY areaType";
@@ -31,38 +28,28 @@ public class TableDAO extends DBContext {
      *
      * Công thức:
      *   Còn trống = Tổng bàn (capacity=X, khu=Y)
-     *             - Bàn bận có tableStatus IN ('reserved', 'serving', 'cleaning')
+     *             - Bàn bận có tableStatus IN ('reserved','serving','cleaning')
      *
      * Bàn bận gồm 2 loại:
-     *   1. Đơn đặt trước online (tableID IS NULL):
-     *      đếm theo Order.capacity + Order.areaType
-     *      tableStatus IN ('reserved','serving','cleaning')
-     *      Loại trừ đơn reserved quá 30 phút mà orderTime đã qua (hết hạn giữ bàn).
+     *   1. Đơn đặt online (tableID IS NULL): đếm theo capacity + areaType trong Order
+     *   2. Khách walk-in (tableID IS NOT NULL): JOIN Table lấy capacity + areaType thực tế
      *
-     *   2. Khách walk-in (tableID IS NOT NULL):
-     *      đếm theo tableStatus IN ('reserved','serving','cleaning')
-     *      JOIN Table để lấy capacity + areaType thực tế.
-     *
-     * Trước khi tính, tự động hủy các đơn reserved hết hạn (lazy expire).
+     * Trước khi tính, lazy-expire các đơn reserved quá 30 phút.
      */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
 
-        // Lazy expire: hủy đơn reserved quá 30 phút trước khi tính toán
         autoExpireReservations();
 
         List<Table> resultList = new ArrayList<>();
 
-        // ── Query 1: Tổng số bàn theo capacity trong khu vực ──
+        // Query 1: Tổng số bàn theo capacity trong khu vực
         String sqlTotal =
             "SELECT capacity, COUNT(*) AS total " +
             "FROM `Table` " +
             "WHERE isActive = 1 AND areaType = ? " +
             "GROUP BY capacity";
 
-        // ── Query 2: Bàn bận — đơn online (tableID IS NULL) ──
-        // Đếm các đơn có tableStatus bận, trừ đơn reserved đã hết 30 phút giữ bàn.
-        // Không giới hạn cửa sổ thời gian vì reserved là trạng thái thực — bàn
-        // chỉ trả về available khi hủy hoặc khách đến check-in.
+        // Query 2: Bàn bận — đơn online (tableID IS NULL)
         String sqlBusyOnline =
             "SELECT capacity, COUNT(*) AS busy " +
             "FROM `Order` " +
@@ -75,7 +62,7 @@ public class TableDAO extends DBContext {
             "      ) " +
             "GROUP BY capacity";
 
-        // ── Query 3: Bàn bận — walk-in (tableID IS NOT NULL) ──
+        // Query 3: Bàn bận — walk-in (tableID IS NOT NULL)
         String sqlBusyWalkin =
             "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy " +
             "FROM `Order` o " +
@@ -138,15 +125,12 @@ public class TableDAO extends DBContext {
             e.printStackTrace();
         }
 
-        // Sắp xếp theo capacity tăng dần
         resultList.sort((a, b) -> Integer.compare(a.getCapacity(), b.getCapacity()));
-
         return resultList;
     }
 
     /**
-     * Lazy expire: hủy các đơn reserved đã quá 30 phút mà khách chưa đến.
-     * Gọi tự động trước mỗi lần tính bàn trống.
+     * Lazy expire: hủy các đơn reserved quá 30 phút mà khách chưa đến.
      */
     private void autoExpireReservations() {
         String sql =
@@ -157,18 +141,13 @@ public class TableDAO extends DBContext {
             "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int expired = ps.executeUpdate();
-            if (expired > 0) {
+            if (expired > 0)
                 System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");
-            }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[TableDAO] autoExpire error: " + e.getMessage());
         }
     }
 
-    /**
-     * Lấy thông tin bàn theo tableID — dùng sau khi nhân viên gán bàn thực.
-     */
-    
     public Table getTableByTableID(int tableID) {
         String sql = "SELECT * FROM `Table` WHERE tableID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -182,7 +161,6 @@ public class TableDAO extends DBContext {
         return null;
     }
 
-    
     public List<Table> getAllActiveTables() {
         List<Table> list = new ArrayList<>();
         String sql = "SELECT * FROM `Table` WHERE isActive = 1 ORDER BY areaType, capacity";
@@ -195,8 +173,6 @@ public class TableDAO extends DBContext {
         return list;
     }
 
-    
-    
     private Table mapRow(ResultSet rs) throws Exception {
         Table t = new Table();
         t.setTableID(rs.getInt("tableID"));
