@@ -120,19 +120,6 @@ public class MenuItemDAO extends DBContext {
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
-            if (categoryId > 0) {
-                ps.setString(1, "%" + search + "%");
-                ps.setInt(2, categoryId);
-                ps.setInt(3, status);
-                ps.setInt(4, minPrice);
-                ps.setInt(5, maxPrice);
-            } else {
-                ps.setString(1, "%" + search + "%");
-                ps.setInt(2, status);
-                ps.setInt(3, minPrice);
-                ps.setInt(4, maxPrice);
-            }
-            ResultSet rs = ps.executeQuery();
             int index = 1;
 
             ps.setString(index++, "%" + search + "%");
@@ -146,7 +133,7 @@ public class MenuItemDAO extends DBContext {
             ps.setInt(index++, maxPrice);
             ps.setInt(index++, offSet);
             ps.setInt(index++, pageSize);
-
+            ResultSet rs = ps.executeQuery();
             rs = ps.executeQuery();
             while (rs.next()) {
                 MenuItem item = new MenuItem(rs.getInt("itemID"),
@@ -217,7 +204,7 @@ public class MenuItemDAO extends DBContext {
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
             ps.setInt(6, (int) (price * (1 - (double) discountPercent / 100)));
-            ps.setInt(6, (int)Math.round((price * (1 - (double) discountPercent / 100))));
+            ps.setInt(6, (int) Math.round((price * (1 - (double) discountPercent / 100))));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
@@ -228,24 +215,41 @@ public class MenuItemDAO extends DBContext {
         }
         return false;
     }
-    
+
     public boolean insertMenuItem(int categoryId, String itemName, String description, int price,
-            int discountPercent, String image, int isAvailable, String allergyNotes){
+            int discountPercent, String image, int isAvailable, String allergyNotes) {
         String sql = "insert into MenuItem (categoryID, itemName, description, price, discountPercent, discountedPrice, image, isAvailable, allergyNotes) "
                 + "values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, categoryId);
-            ps.setString(2,itemName);
-            ps.setString(3,description);
+            ps.setString(2, itemName);
+            ps.setString(3, description);
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
-            ps.setInt(6, (int)Math.round((price * (1 - (double) discountPercent / 100))));
+            ps.setInt(6, (int) Math.round((price * (1 - (double) discountPercent / 100))));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
+        }
+        return false;
+    }
+
+    public boolean checkDuplicateMenuItem(String name, int itemID) {
+        String sql = "select count(*) from MenuItem "
+                + "where itemName = ? and itemID != ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setInt(2, itemID);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                int total = rs.getInt(1);
+                return total > 0;
+            }
+        } catch (Exception e) {
         }
         return false;
     }
