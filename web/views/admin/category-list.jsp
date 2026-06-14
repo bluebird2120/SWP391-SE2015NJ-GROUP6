@@ -155,39 +155,43 @@
 
         </style>
     </head>
-    <%@ include file="/views/includes/header.jsp" %>
-    <%@ include file="/views/includes/dashboard.jsp" %>
     <body>
-        <div class="layout">
-            <div class="page-header">
-                <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-                <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
-            </div>
-            <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
-                <table border="1">
-                    <thead>
-                        <tr>
-                            <th>Tên Loại Món</th>
-                            <th>Tổng Số món</th>
-                            <th>Hoạt Động</th>
-                            <th>Tạm Ngưng</th>
-                            <th>Hành Động</th>
-                        </tr>
-                    </thead>
-                <c:forEach var="cat" items="${categoryList}">
-                    <tr>
-                        <td><div>${cat.categoryName}</div></td>
-                        <td><div>${cat.totalDish}</div></td>
-                        <td><div>${cat.activeMenuItem}</div></td>
-                        <td><div>${cat.inactiveMenuItem}</div></td>
-                        <td>
-                            <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                            <input class="btn-table btn-disable" type="button" value="VÔ HIỆU HÓA"/>
-                        </td>
-                    </tr>
-                </c:forEach>
-            </table>
-        </div>
+        <%@ include file="/views/includes/header.jsp" %>
+        <div style="display:flex; flex-wrap:nowrap; min-height:calc(100vh - 78px); align-items:flex-start;">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <div style="flex:1; padding:32px; background:#f8f9fa; min-width:0;">
+                <div class="layout">
+                    <div class="page-header">
+                        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
+                        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
+                    </div>
+                    <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
+                    <table border="1">
+                        <thead>
+                            <tr>
+                                <th>Tên Loại Món</th>
+                                <th>Tổng Số món</th>
+                                <th>Hoạt Động</th>
+                                <th>Tạm Ngưng</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <c:forEach var="cat" items="${categoryList}">
+                            <tr>
+                                <td><div>${cat.categoryName}</div></td>
+                                <td><div>${cat.totalDish}</div></td>
+                                <td><div>${cat.activeMenuItem}</div></td>
+                                <td><div>${cat.inactiveMenuItem}</div></td>
+                                <td>
+                                    <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
+                                    <input class="btn-table btn-disable" type="button" value="VÔ HIỆU HÓA"/>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                    </table>
+                </div><!-- /.layout -->
+            </div><!-- /flex:1 content area -->
+        </div><!-- /flex row -->
 
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
