@@ -235,4 +235,21 @@ public class MenuItemDAO extends DBContext {
         }
         return false;
     }
+    
+    public boolean checkDuplicateMenuItem(String name, int itemID){ 
+        String sql = "select count(*) from MenuItem "
+                + "where itemName = ? and itemID != ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setInt(2, itemID);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                int total = rs.getInt(1);
+                return total > 0;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
 }
