@@ -3,6 +3,8 @@ package dal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import model.Customer;
 
 public class CustomerDAO extends DBContext {
@@ -196,4 +198,104 @@ public class CustomerDAO extends DBContext {
 
         return null;
     }
+    
+    
+    
+    public List<Customer> getCustomerList(String search, String loginProvider, int page, int pageSize)
+        throws SQLException {
+
+    List<Customer> list = new ArrayList<>();
+
+    StringBuilder sql = new StringBuilder();
+    sql.append("SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider ");
+    sql.append("FROM Customer ");
+    sql.append("WHERE 1 = 1 ");
+
+    List<Object> params = new ArrayList<>();
+
+    if (search != null && !search.trim().isEmpty()) {
+        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+        String keyword = "%" + search.trim() + "%";
+        params.add(keyword);
+        params.add(keyword);
+        params.add(keyword);
+    }
+
+    if (loginProvider != null 
+            && !loginProvider.trim().isEmpty() 
+            && !"all".equalsIgnoreCase(loginProvider)) {
+        sql.append("AND loginProvider = ? ");
+        params.add(loginProvider.trim());
+    }
+
+    sql.append("ORDER BY createdAt DESC ");
+    sql.append("LIMIT ? OFFSET ? ");
+
+    params.add(pageSize);
+    params.add((page - 1) * pageSize);
+
+    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRow(rs));
+            }
+        }
+    }
+
+    return list;
+}
+
+public int countCustomerList(String search, String loginProvider)
+        throws SQLException {
+
+    StringBuilder sql = new StringBuilder();
+    sql.append("SELECT COUNT(*) ");
+    sql.append("FROM Customer ");
+    sql.append("WHERE 1 = 1 ");
+
+    List<Object> params = new ArrayList<>();
+
+    if (search != null && !search.trim().isEmpty()) {
+        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+        String keyword = "%" + search.trim() + "%";
+        params.add(keyword);
+        params.add(keyword);
+        params.add(keyword);
+    }
+
+    if (loginProvider != null 
+            && !loginProvider.trim().isEmpty() 
+            && !"all".equalsIgnoreCase(loginProvider)) {
+        sql.append("AND loginProvider = ? ");
+        params.add(loginProvider.trim());
+    }
+
+    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    return 0;
+}
+    
+    
+    
+    
+    
+    
+    
+    
 }
