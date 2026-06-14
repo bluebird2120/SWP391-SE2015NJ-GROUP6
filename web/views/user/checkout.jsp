@@ -26,7 +26,7 @@
                 padding: 0 16px;
                 min-height: 65vh;
             }
-            
+
             /* Header tiêu đề */
             .checkout-header {
                 margin-bottom: 24px;
@@ -268,7 +268,7 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        
+
         <div class="container">
             <div class="checkout-header">
                 <h2>Xác nhận đơn hàng</h2>
@@ -278,9 +278,9 @@
             <form id="checkoutForm" method="post">
                 <input type="hidden" name="action" value="confirm">
                 <input type="hidden" name="orderID" value="${orderID}">
-                
+
                 <div class="checkout-layout">
-                    
+
                     <div class="checkout-info-column">
                         <div class="checkout-box">
                             <div class="box-title">📍 Thông tin phục vụ</div>
@@ -291,9 +291,17 @@
                             <div class="form-group">
                                 <label>Vị trí phục vụ</label>
                                 <div class="form-control-static">
+                                    <%-- ĐÃ CHỈNH SỬA: Kiểm tra dựa trên dữ liệu test của session (tableID = 2) --%>
                                     <c:choose>
                                         <c:when test="${not empty sessionScope.tableID && sessionScope.tableID > 0}">
-                                            Bàn số ${sessionScope.tableID} (Phục vụ tại chỗ)
+                                            Bàn số ${sessionScope.tableID} (Phục vụ tại chỗ) 
+                                            <%-- Hiển thị thêm thông tin thuộc tính mới nếu có dữ liệu thực tế --%>
+                                            <c:if test="${not empty sessionScope.areaType}">
+                                                - Khu vực: ${sessionScope.areaType}
+                                            </c:if>
+                                            <c:if test="${not empty sessionScope.capacity && sessionScope.capacity > 0}">
+                                                (${sessionScope.capacity} chỗ)
+                                            </c:if>
                                         </c:when>
                                         <c:otherwise>
                                             Đơn hàng mang về (Take-away)
@@ -306,7 +314,7 @@
                         <div class="checkout-box">
                             <div class="box-title">💳 Phương thức thanh toán</div>
                             <div class="payment-methods-grid">
-                                
+
                                 <label class="payment-method-card active" onclick="selectPayment(this)">
                                     <input type="radio" name="paymentGateway" value="cash" checked>
                                     <div class="payment-method-info">
@@ -314,7 +322,7 @@
                                         <div class="payment-method-desc">Quý khách vui lòng thanh toán bằng tiền mặt hoặc quẹt thẻ tại quầy sau khi dùng bữa</div>
                                     </div>
                                     <svg class="payment-logo" viewBox="0 0 24 24" style="fill: #bc945c; width:32px; height:32px;">
-                                        <path d="M21,18H3V6H21M21,4H3C1.89,4 1,4.89 1,6V18C1,19.1 1.89,20 3,20H21C22.1,20 23,19.1 23,18V6C23,4.89 22.1,4 21,4M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>
+                                    <path d="M21,18H3V6H21M21,4H3C1.89,4 1,4.89 1,6V18C1,19.1 1.89,20 3,20H21C22.1,20 23,19.1 23,18V6C23,4.89 22.1,4 21,4M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>
                                     </svg>
                                 </label>
 
@@ -326,7 +334,7 @@
                                     </div>
                                     <img class="payment-logo" src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg" alt="VNPay Logo" style="width: 55px;">
                                 </label>
-                                
+
                             </div>
                         </div>
                     </div>
@@ -336,12 +344,12 @@
                             🍽️ Món ăn đã chọn
                         </div>
                         <div class="summary-divider"></div>
-                        
+
                         <div class="checkout-items-list">
                             <c:set var="checkoutTotal" value="0"/>
                             <c:forEach var="oi" items="${orderItems}" varStatus="loop">
                                 <c:set var="mi" value="${menuItems[loop.index]}"/>
-                                
+
                                 <c:choose>
                                     <c:when test="${mi.discountedPrice > 0}">
                                         <c:set var="unitPrice" value="${mi.discountedPrice}"/>
@@ -373,9 +381,9 @@
                             <span>Phí dịch vụ nhà hàng:</span>
                             <span>0 VNĐ</span>
                         </div>
-                        
+
                         <div class="summary-divider"></div>
-                        
+
                         <div class="summary-row total-row">
                             <span>Tổng thanh toán:</span>
                             <div class="summary-total-amount">
@@ -386,12 +394,12 @@
                         <button type="button" class="btn-checkout-submit" onclick="processCheckoutRouting()">
                             🔔 Xác nhận & Hoàn tất đơn ↗
                         </button>
-                        
+
                         <a href="${pageContext.request.contextPath}/order?action=cart" class="btn-checkout-back">
                             ← Quay lại sửa giỏ hàng
                         </a>
                     </div>
-                    
+
                 </div>
             </form>
         </div>
@@ -401,12 +409,12 @@
         <script>
             // Đổi hiệu ứng màu sắc khi chọn thẻ thanh toán
             function selectPayment(element) {
-                document.querySelectorAll('.payment-method-card').forEach(function(card) {
+                document.querySelectorAll('.payment-method-card').forEach(function (card) {
                     card.classList.remove('active');
                 });
                 element.classList.add('active');
                 var radio = element.querySelector('input[type="radio"]');
-                if(radio) {
+                if (radio) {
                     radio.checked = true;
                 }
             }
@@ -416,14 +424,12 @@
                 var paymentMethod = document.querySelector('input[name="paymentGateway"]:checked').value;
                 var form = document.getElementById('checkoutForm');
 
+                // LUÔN LUÔN GỬI FORM VỀ CHECKOUT ĐỂ JAVA XỬ LÝ DATABASE TRƯỚC
+                form.action = '${pageContext.request.contextPath}/checkout';
+
                 if (paymentMethod === 'cash') {
-                    // Hiển thị thông báo ngay lập tức
+                    // Chỉ hiện thông báo, không được tự ý đổi form.action ở đây nữa
                     alert("🎉 Hoàn tất đơn hàng! Vui lòng thanh toán tại quầy sau khi dùng bữa.");
-                    // Đổi đường dẫn form về trang home
-                    form.action = '${pageContext.request.contextPath}/home';
-                } else if (paymentMethod === 'vnpay') {
-                    // Đổi đường dẫn form về trang payment (thanh toán online)
-                    form.action = '${pageContext.request.contextPath}/payment';
                 }
 
                 // Gửi form đi

@@ -3,7 +3,7 @@
 <html lang="vi">
     <head>
         <meta charset="UTF-8">
-        <title>Đăng nhập – Lách Tách Restaurant</title>
+        <title>Đăng nhập – Vị An Restaurant</title>
 
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -153,7 +153,7 @@
                         <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
                     </a>
                     <h2 class="welcome-text">Chào mừng đến với</h2>
-                    <h3 class="brand-text">Lách Tách Restaurant</h3>
+                    <h3 class="brand-text">Vị An Restaurant</h3>
                 </div>
 
                 <!-- RIGHT -->
@@ -162,14 +162,36 @@
                     <h2>Đăng nhập</h2>
                     <p>Nhập số điện thoại và mật khẩu</p>
 
+                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
+                    <c:if test="${param.error == 'google_denied'}">
+                        <div class="error" style="margin-bottom:15px;">
+                            Bạn đã từ chối đăng nhập bằng Google.
+                        </div>
+                    </c:if>
+
+                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
+                    <c:if test="${param.error == 'state_mismatch'}">
+                        <div class="error" style="margin-bottom:15px;">
+                            Phiên đăng nhập Google không hợp lệ.
+                        </div>
+                    </c:if>
+
+                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
+                    <c:if test="${param.error == 'no_code'}">
+                        <div class="error" style="margin-bottom:15px;">
+                            Không nhận được mã xác thực từ Google.
+                        </div>
+                    </c:if>
+
                     <!-- Lỗi tổng -->
                     <c:if test="${not empty loginError}">
                         <div class="error" style="margin-bottom:15px;">
                             ${loginError}
                         </div>
                     </c:if>
+                    
                     <c:if test="${not empty successMessage}">
-                        <div style="color: green; font-size: 14px; margin-bottom: 15px; text-align: center; font-weight: 600;">
+                        <div style="color: green; font-size: 14px; margin-bottom: 15px; font-weight: 600;">
                             <i class="fas fa-circle-check"></i> ${successMessage}
                         </div>
                     </c:if>

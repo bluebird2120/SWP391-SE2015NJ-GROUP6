@@ -53,8 +53,8 @@
                     <div class="card-desc">Thông báo lịch ca tháng và các cập nhật từ quản lý.</div>
                 </a>
             </div>
-<!--        </main>
-    </div>-->
+        </main>
+    </div>
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>

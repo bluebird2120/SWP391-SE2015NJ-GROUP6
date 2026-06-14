@@ -39,8 +39,8 @@ public class AuthenticationFilter implements Filter {
             //kiểm tra đăng nhập chưa
             if (customer == null) {
                 //tạo mới session nếu session đó chưa có
-                HttpSession s = request.getSession(true);
-                s.setAttribute("redirectAfterLogin", uri);
+                HttpSession newSession = request.getSession(true);
+                newSession.setAttribute("redirectAfterLogin", uri);
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }

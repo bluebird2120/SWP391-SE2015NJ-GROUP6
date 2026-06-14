@@ -165,6 +165,11 @@ public class OrderController extends HttpServlet {
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("pending");
                 newOrder.setIsStaffConfirmed(0);
+                
+                String areaType = (String) session.getAttribute("areaType");
+                Integer capacity = (Integer) session.getAttribute("capacity");
+                newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");
+                newOrder.setCapacity(capacity != null ? capacity : 0);
 
                 int newOrderID = orderDAO.createOrder(newOrder);
                 if (newOrderID == -1) {

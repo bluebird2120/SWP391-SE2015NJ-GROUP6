@@ -3,6 +3,8 @@ package dal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import model.Customer;
 
 public class CustomerDAO extends DBContext {
@@ -28,7 +30,7 @@ public class CustomerDAO extends DBContext {
                 if (!storedPassword.equals(rawPassword)) {
                     return null;
                 }
-                
+
                 return mapRow(rs);
             }
         }
@@ -109,8 +111,8 @@ public class CustomerDAO extends DBContext {
             return ps.executeUpdate() > 0;
         }
     }
-    
-        /**
+
+    /**
      * Tìm Customer theo customerID
      */
     public Customer findByID(int id) throws SQLException {
@@ -126,8 +128,8 @@ public class CustomerDAO extends DBContext {
         }
         return null;
     }
-    
-        /**
+
+    /**
      * Tìm Customer theo email
      */
     public Customer findByEmail(String email) throws SQLException {
@@ -143,4 +145,157 @@ public class CustomerDAO extends DBContext {
         }
         return null;
     }
+
+    /**
+     * Tạo userName không trùng
+     */
+    private String generateUniqueUserName(String base) throws SQLException {
+        String candidate = base;
+        int attempt = 0;
+        while (isUserNameExists(candidate, 0)) {
+            attempt++;
+            candidate = base + attempt;
+        }
+        return candidate;
+    }
+
+    public Customer findOrCreateByGoogle(String email, String fullName)
+            throws SQLException {
+
+        Customer existing = findByEmail(email);
+
+        if (existing != null) {
+
+            //Nếu account là local thì KHÔNG cho login Google
+            if ("local".equalsIgnoreCase(existing.getLoginProvider())) {
+                return null; // hoặc throw Exception
+            }
+
+            // Nếu đã là google account → cho login
+            return existing;
+        }
+
+        // Chưa có → tạo mới Google account
+        String baseUserName = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_");
+        String userName = generateUniqueUserName(baseUserName);
+
+        String sql = "INSERT INTO Customer (userName, email, password, loginProvider) "
+                + "VALUES (?, ?, NULL, 'google')";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql,
+                java.sql.Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, userName);
+            ps.setString(2, email);
+            ps.executeUpdate();
+
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return findByID(keys.getInt(1));
+                }
+            }
+        }
+
+        return null;
+    }
+    
+    
+    
+    public List<Customer> getCustomerList(String search, String loginProvider, int page, int pageSize)
+        throws SQLException {
+
+    List<Customer> list = new ArrayList<>();
+
+    StringBuilder sql = new StringBuilder();
+    sql.append("SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider ");
+    sql.append("FROM Customer ");
+    sql.append("WHERE 1 = 1 ");
+
+    List<Object> params = new ArrayList<>();
+
+    if (search != null && !search.trim().isEmpty()) {
+        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+        String keyword = "%" + search.trim() + "%";
+        params.add(keyword);
+        params.add(keyword);
+        params.add(keyword);
+    }
+
+    if (loginProvider != null 
+            && !loginProvider.trim().isEmpty() 
+            && !"all".equalsIgnoreCase(loginProvider)) {
+        sql.append("AND loginProvider = ? ");
+        params.add(loginProvider.trim());
+    }
+
+    sql.append("ORDER BY createdAt DESC ");
+    sql.append("LIMIT ? OFFSET ? ");
+
+    params.add(pageSize);
+    params.add((page - 1) * pageSize);
+
+    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRow(rs));
+            }
+        }
+    }
+
+    return list;
+}
+
+public int countCustomerList(String search, String loginProvider)
+        throws SQLException {
+
+    StringBuilder sql = new StringBuilder();
+    sql.append("SELECT COUNT(*) ");
+    sql.append("FROM Customer ");
+    sql.append("WHERE 1 = 1 ");
+
+    List<Object> params = new ArrayList<>();
+
+    if (search != null && !search.trim().isEmpty()) {
+        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+        String keyword = "%" + search.trim() + "%";
+        params.add(keyword);
+        params.add(keyword);
+        params.add(keyword);
+    }
+
+    if (loginProvider != null 
+            && !loginProvider.trim().isEmpty() 
+            && !"all".equalsIgnoreCase(loginProvider)) {
+        sql.append("AND loginProvider = ? ");
+        params.add(loginProvider.trim());
+    }
+
+    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    return 0;
+}
+    
+    
+    
+    
+    
+    
+    
+    
 }

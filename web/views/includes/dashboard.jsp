@@ -202,18 +202,14 @@
                     <i class="fas fa-user-tie"></i> Manage Staff
                 </a>
             </li>
+        </c:if>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/attendance">
                     <i class="fas fa-clipboard-check"></i> Attendance
                 </a>
             </li>
-        </c:if>
-
-
-
-
-
+            
         <!-- Finance -->
         <li class="nav-item">
             <div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Finance</div>
@@ -226,21 +222,20 @@
         </li>
 
         <!-- Menu -->
-        <li class="nav-item">
-            <div class="nav-section-title"><i class="fas fa-utensils"></i> Menu</div>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/categories?action=list">
-                <i class="fas fa-list"></i> Categories
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/items?action=list">
-                <i class="fas fa-hamburger"></i> Menu Items
-            </a>
-        </li>
+        <!-- Menu -->
+            <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Menu</div></li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/categories?action=list">
+                    <i class="fas fa-list"></i> Categories
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/menu-management">
+                    <i class="fas fa-hamburger"></i> Menu Items
+                </a>
+            </li>
 
         <!-- Analytics — chỉ Owner -->
         <c:if test="${sessionScope.employee.roleID == 1}">
