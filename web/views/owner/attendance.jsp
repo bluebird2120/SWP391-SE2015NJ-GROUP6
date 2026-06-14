@@ -11,7 +11,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin:0; font-family:'Inter',sans-serif; background:#faf6f2; }
-        /*.main { flex:1; padding:24px 32px; }*/
+        .main { flex:1; padding:24px 32px; }
         .page-title { font-family:'Playfair Display',serif; color:#76493b; font-size:1.6rem; margin:0 0 4px; }
         .page-sub { color:#a0714f; font-size:0.9rem; margin-bottom:18px; }
         .card { background:#fff; border:1px solid #ede0d8; border-radius:12px; padding:18px; margin-bottom:16px; }
@@ -43,9 +43,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display:flex;">-->
+    <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <h1 class="page-title">Attendance</h1>
             <p class="page-sub">Điểm danh nhân viên theo ca</p>
 

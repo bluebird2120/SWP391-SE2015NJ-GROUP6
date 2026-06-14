@@ -128,8 +128,10 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        <%@ include file="/views/includes/dashboard.jsp" %>
-        <div class="form-container">  
+        <div style="display: flex;">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <main style="flex: 1; padding: 30px; min-width: 0;">
+                <div class="form-container">  
             <h2>Quản lý thông tin món ăn</h2>
             <form action="${pageContext.request.contextPath}/update-menu" method="post" enctype="multipart/form-data">
                 <input type="hidden" value="${dish.itemID}" name="id"/>
