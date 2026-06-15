@@ -175,7 +175,8 @@ public class CustomerDAO extends DBContext {
             return existing;
         }
 
-        // Chưa có → tạo mới Google account
+        // Chưa có → tạo mới Google account 
+        //Thay thế bất kì kí tự nào ko phải a-zA-Z0-9_ thành _
         String baseUserName = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_");
         String userName = generateUniqueUserName(baseUserName);
 
