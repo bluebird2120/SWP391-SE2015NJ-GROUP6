@@ -15,7 +15,6 @@
         padding: 0 1.25rem 1rem;
         border-bottom: 1px solid #ede0d8;
     }
-
     .sidebar-header h5 {
         color: #76493b;
         font-weight: 700;

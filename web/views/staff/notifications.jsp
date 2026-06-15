@@ -39,9 +39,6 @@
     <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
-    <div style="display:flex;">
-        <%@ include file="/views/includes/dashboard.jsp" %>
-        <main class="main">
             <h1 class="page-title">Notifications</h1>
             <p class="page-sub">Thông báo lịch ca và cập nhật từ quản lý</p>
 
