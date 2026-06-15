@@ -109,6 +109,7 @@ public class EmployeeShiftDAO extends DBContext {
         }
     }
 
+
     /**
      * Batch insert ca cho các ngày CHƯA có ca trong tháng.
      * Skip ngày đã có bất kỳ ca nào → cho phép owner gán thêm phần còn lại.
@@ -239,6 +240,7 @@ public class EmployeeShiftDAO extends DBContext {
             try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
         }
     }
+    /** Có bất kỳ ca nào của nhân viên trong tháng (year/month)? */
     public boolean hasAnyShiftInMonth(int employeeID, int year, int month) {
         String sql = "SELECT 1 FROM EmployeeShifts "
                 + "WHERE employeeID = ? "

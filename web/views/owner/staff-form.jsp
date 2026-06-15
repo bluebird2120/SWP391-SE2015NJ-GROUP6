@@ -10,7 +10,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: #faf6f2; }
-        /*.main { flex: 1; padding: 24px 32px; min-width: 0; }*/
+        .main { flex: 1; padding: 24px 32px; min-width: 0; }
         .page-title { font-family: 'Playfair Display', serif; color: #76493b; font-size: 1.6rem; margin: 0 0 6px; }
         .breadcrumb { color: #a0714f; font-size: 0.85rem; margin-bottom: 18px; }
         .breadcrumb a { color: #76493b; text-decoration: none; }
@@ -51,9 +51,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display: flex;">-->
+    <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <div class="breadcrumb">
                 <a href="${pageContext.request.contextPath}/owner/staff?action=list">Staff Management</a>
                 &raquo; <span>${mode == 'edit' ? 'Edit' : 'Add New'}</span>

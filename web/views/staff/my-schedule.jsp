@@ -49,6 +49,10 @@
     <!--<div style="display:flex;">-->
         <%@ include file="/views/includes/dashboard.jsp" %>
         <!--<main class="main">-->
+    <div style="display:flex;">
+        <%@ include file="/views/includes/dashboard.jsp" %>
+        <main class="main">
+
             <h1 class="page-title">My Schedule</h1>
             <p class="page-sub">Lịch ca làm việc theo tháng — cập nhật trạng thái điểm danh</p>
 

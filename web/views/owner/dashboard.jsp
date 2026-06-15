@@ -10,7 +10,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: #faf6f2; }
-/*        .main { flex: 1; padding: 28px 36px; }*/
+        .main { flex: 1; padding: 28px 36px; }
         .page-title {
             font-family: 'Playfair Display', serif;
             color: #76493b;
@@ -74,9 +74,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display: flex;">-->
+    <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <h1 class="page-title">Owner Dashboard</h1>
             <p class="page-sub">Restaurant operations overview</p>
 
@@ -96,9 +96,9 @@
                     <div class="card-title">Shift Templates</div>
                     <div class="card-desc">Quản lý ca làm việc cố định</div>
                 </a>
-                <a class="card" href="${pageContext.request.contextPath}/owner/shift-assignments">
+                <a class="card" href="${pageContext.request.contextPath}/owner/shift-roster">
                     <div class="card-icon"><i class="fas fa-user-clock"></i></div>
-                    <div class="card-title">Shift Assignments</div>
+                    <div class="card-title">Shift Roster</div>
                     <div class="card-desc">Phân ca theo ngày cho nhân viên</div>
                 </a>
                 <a class="card" href="${pageContext.request.contextPath}/owner/attendance">
