@@ -99,4 +99,23 @@ public class InvoicesDAO {
             rs.getString("status")
         );
     }
+    
+    // =========================================================
+    // 4. CẬP NHẬT TRẠNG THÁI VÀ PHƯƠNG THỨC THANH TOÁN
+    // =========================================================
+    public boolean updateInvoiceStatus(int invoiceID, String status, String paymentMethod) {
+        String sql = "UPDATE Invoices SET status = ?, paymentMethod = ? WHERE invoiceID = ?";
+
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, status);
+            ps.setString(2, paymentMethod);
+            ps.setInt(3, invoiceID);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] updateInvoiceStatus lỗi: " + e.getMessage());
+        }
+        return false;
+    }
 }

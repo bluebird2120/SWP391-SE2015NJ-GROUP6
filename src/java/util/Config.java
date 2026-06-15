@@ -1,4 +1,4 @@
-package utils; // Tùy bạn đặt tên package
+package util; // Tùy bạn đặt tên package
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
@@ -16,8 +16,8 @@ import javax.crypto.spec.SecretKeySpec;
 public class Config {
 
     // KHI CÓ TÀI KHOẢN, BẠN THAY 2 DÒNG NÀY BẰNG MÃ CỦA BẠN NHÉ
-    public static String vnp_TmnCode = "8XBSDKNY";
-    public static String vnp_HashSecret = "PSPWHMGGTTAJT9V5CI32HQVXU1FE0VDA";
+    public static String vnp_TmnCode = "KHBHOA1R";
+    public static String vnp_HashSecret = "W5RIAI7GZL1UOOJC1M74DLKUKEFIW3HM";
     
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     
