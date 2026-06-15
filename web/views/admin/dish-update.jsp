@@ -1,9 +1,3 @@
-<%-- 
-    Document   : dish-update
-    Created on : Jun 3, 2026, 9:11:40 PM
-    Author     : Admin
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page import="java.util.List" %>
@@ -199,8 +193,8 @@
                 </div>
             </form>
         </div><!-- /.form-container -->
-            </div><!-- /flex:1 content area -->
-        </div><!-- /flex row -->
+            </div><!-- /flex:1 -->
+        </div><!-- /flex-row -->
         <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>
