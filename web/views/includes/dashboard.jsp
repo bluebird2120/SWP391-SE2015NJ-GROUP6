@@ -79,6 +79,7 @@
     .admin-sidebar .nav-link.active i {
         color: #76493b;
     }
+
 </style>
 
 <%-- ── BƯỚC 1: Mở wrapper nằm ngang ── --%>
@@ -95,13 +96,42 @@
 
             <c:if test="${sessionScope.employee.roleID == 2}">
                 <li>
+                    <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/staff/dashboard">
+                        <i class="fas fa-house"></i> My Dashboard
+                    </a>
+                </li>
+                <li>
                     <a class="nav-link ${pageContext.request.requestURI.contains('order-management') ? 'active' : ''}"
                        href="${pageContext.request.contextPath}/order-management">
                         <i class="fas fa-clipboard-list"></i> Orders
                     </a>
                 </li>
             </c:if>
+                
+                <%-- Staff: My Workspace (lịch ca + thông báo) --%>
+        <c:if test="${sessionScope.employee.roleID == 2}">
+            <li>
+                <div class="nav-section-title"><i class="fas fa-user-clock"></i> My Workspace</div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/my-schedule">
+                    <i class="fas fa-calendar-week"></i> My Schedule
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/notifications">
+                    <i class="fas fa-bell"></i> Notifications
+                    <c:if test="${sessionScope.unreadCount > 0}">
+                        <span style="background:#dc3545; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; margin-left:auto;">${sessionScope.unreadCount}</span>
+                    </c:if>
+                </a>
+            </li>
+        </c:if>
 
+            <%-- roleID=1: Owner thấy Order History (đã sửa từ roleID==2 sang 1) --%>
             <c:if test="${sessionScope.employee.roleID == 1}">
                 <li>
                     <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
@@ -130,40 +160,37 @@
                 </a>
             </li>
 
-            <!-- Workforce -->
-            <li><div class="nav-section-title"><i class="fas fa-users"></i> Workforce</div></li>
-            
-            <c:if test="${sessionScope.employee.roleID == 1}">
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'templates' ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/shift-templates">
-                    <i class="fas fa-calendar-alt"></i> Shift Templates
-                </a>
-            </li>
-            </c:if>
-            
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'assignments' ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/shift-assignments">
-                    <i class="fas fa-user-clock"></i> Shift Assignments
-                </a>
-            </li>
+            <!-- Workforce — chỉ Owner quản lý nhân sự và phân ca -->
             <c:if test="${sessionScope.employee.roleID == 1}">
                 <li>
+                    <div class="nav-section-title"><i class="fas fa-users"></i> Workforce</div>
+                </li>
+                <li>
+                    <a class="nav-link ${pageContext.request.requestURI.contains('shift-template') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/owner/shift-templates">
+                        <i class="fas fa-calendar-alt"></i> Shift Templates
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-link ${pageContext.request.requestURI.contains('owner/shift-roster') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/owner/shift-roster">
+                        <i class="fas fa-user-clock"></i> Shift Assignments
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') ? 'active' : ''}"
                        href="${pageContext.request.contextPath}/owner/staff?action=list">
                         <i class="fas fa-user-tie"></i> Manage Staff
                     </a>
                 </li>
-            </c:if>
-              <c:if test="${sessionScope.employee.roleID == 1}">
                 <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') && param.action == 'assignments' ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/attendance">
-                    <i class="fas fa-clipboard-check"></i> Attendance
-                </a>
-            </li>
+                    <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/owner/attendance">
+                        <i class="fas fa-clipboard-check"></i> Attendance
+                    </a>
+                </li>
             </c:if>
+
             <!-- Finance -->
             <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Finance</div></li>
             <li>
