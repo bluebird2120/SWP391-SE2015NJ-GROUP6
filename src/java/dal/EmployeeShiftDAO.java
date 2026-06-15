@@ -74,6 +74,267 @@ public class EmployeeShiftDAO extends DBContext {
         }
     }
 
+    /**
+     * Batch insert ca cho mọi ngày trong tháng (calendar).
+     * Phải gọi hasAnyShiftInMonth trước để chặn duplicate.
+     * Dùng transaction; rollback nếu lỗi 1 row → trả -1.
+     */
+    public int assignMonth(int employeeID, int templateID, int year, int month) {
+        java.time.LocalDate first = java.time.LocalDate.of(year, month, 1);
+        int days = first.lengthOfMonth();
+        String sql = "INSERT INTO EmployeeShifts (templateID, employeeID, workDate, status) "
+                + "VALUES (?, ?, ?, 'scheduled')";
+        boolean originalAuto = true;
+        try {
+            originalAuto = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                for (int d = 1; d <= days; d++) {
+                    Date workDate = Date.valueOf(first.withDayOfMonth(d));
+                    ps.setInt(1, templateID);
+                    ps.setInt(2, employeeID);
+                    ps.setDate(3, workDate);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            connection.commit();
+            return days;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ignore) {}
+            return -1;
+        } finally {
+            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+        }
+    }
+
+
+    /**
+     * Batch insert ca cho các ngày CHƯA có ca trong tháng.
+     * Skip ngày đã có bất kỳ ca nào → cho phép owner gán thêm phần còn lại.
+     * Trả về số ngày đã insert, 0 nếu tất cả ngày đã có ca, -1 nếu lỗi.
+     */
+    public int assignMonthSkipExisting(int employeeID, int templateID, int year, int month) {
+        java.time.LocalDate first = java.time.LocalDate.of(year, month, 1);
+        int days = first.lengthOfMonth();
+
+        // Query ngày đã có ca
+        java.util.Set<Integer> existingDays = new java.util.HashSet<>();
+        String findSql = "SELECT DISTINCT DAY(workDate) AS d FROM EmployeeShifts "
+                + "WHERE employeeID = ? AND YEAR(workDate) = ? AND MONTH(workDate) = ?";
+        try (PreparedStatement ps = connection.prepareStatement(findSql)) {
+            ps.setInt(1, employeeID);
+            ps.setInt(2, year);
+            ps.setInt(3, month);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    existingDays.add(rs.getInt("d"));
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return -1;
+        }
+
+        if (existingDays.size() >= days) return 0;
+
+        String insertSql = "INSERT INTO EmployeeShifts (templateID, employeeID, workDate, status) "
+                + "VALUES (?, ?, ?, 'scheduled')";
+        boolean originalAuto = true;
+        int count = 0;
+        try {
+            originalAuto = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+                for (int d = 1; d <= days; d++) {
+                    if (existingDays.contains(d)) continue;
+                    Date workDate = Date.valueOf(first.withDayOfMonth(d));
+                    ps.setInt(1, templateID);
+                    ps.setInt(2, employeeID);
+                    ps.setDate(3, workDate);
+                    ps.addBatch();
+                    count++;
+                }
+                if (count > 0) ps.executeBatch();
+            }
+            connection.commit();
+            return count;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ignore) {}
+            return -1;
+        } finally {
+            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+        }
+    }
+
+    /**
+     * Xóa tất cả ca 'scheduled' của nhân viên trong tháng, rồi insert lại cả tháng với template mới.
+     * Chỉ xóa ca chưa điểm danh (status='scheduled') — ca đã present/late/absent giữ nguyên.
+     * Trả về số ngày đã insert, -1 nếu lỗi.
+     */
+    public int replaceMonth(int employeeID, int templateID, int year, int month) {
+        java.time.LocalDate first = java.time.LocalDate.of(year, month, 1);
+        int days = first.lengthOfMonth();
+
+        String deleteSql = "DELETE FROM EmployeeShifts "
+                + "WHERE employeeID = ? AND YEAR(workDate) = ? AND MONTH(workDate) = ? "
+                + "AND status = 'scheduled'";
+        String insertSql = "INSERT INTO EmployeeShifts (templateID, employeeID, workDate, status) "
+                + "VALUES (?, ?, ?, 'scheduled')";
+
+        // Query ngày đã điểm danh (không xóa được) để skip khi insert
+        java.util.Set<Integer> attendedDays = new java.util.HashSet<>();
+        String findAttended = "SELECT DISTINCT DAY(workDate) AS d FROM EmployeeShifts "
+                + "WHERE employeeID = ? AND YEAR(workDate) = ? AND MONTH(workDate) = ? "
+                + "AND status != 'scheduled'";
+
+        boolean originalAuto = true;
+        try {
+            // Tìm ngày đã điểm danh
+            try (PreparedStatement ps = connection.prepareStatement(findAttended)) {
+                ps.setInt(1, employeeID);
+                ps.setInt(2, year);
+                ps.setInt(3, month);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        attendedDays.add(rs.getInt("d"));
+                    }
+                }
+            }
+
+            originalAuto = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            // Xóa ca scheduled
+            try (PreparedStatement ps = connection.prepareStatement(deleteSql)) {
+                ps.setInt(1, employeeID);
+                ps.setInt(2, year);
+                ps.setInt(3, month);
+                ps.executeUpdate();
+            }
+
+            // Insert lại cho ngày chưa điểm danh
+            int count = 0;
+            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+                for (int d = 1; d <= days; d++) {
+                    if (attendedDays.contains(d)) continue;
+                    Date workDate = Date.valueOf(first.withDayOfMonth(d));
+                    ps.setInt(1, templateID);
+                    ps.setInt(2, employeeID);
+                    ps.setDate(3, workDate);
+                    ps.addBatch();
+                    count++;
+                }
+                if (count > 0) ps.executeBatch();
+            }
+
+            connection.commit();
+            return count;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ignore) {}
+            return -1;
+        } finally {
+            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+        }
+    }
+    /** Có bất kỳ ca nào của nhân viên trong tháng (year/month)? */
+    public boolean hasAnyShiftInMonth(int employeeID, int year, int month) {
+        String sql = "SELECT 1 FROM EmployeeShifts "
+                + "WHERE employeeID = ? "
+                + "  AND YEAR(workDate) = ? AND MONTH(workDate) = ? "
+                + "LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            ps.setInt(2, year);
+            ps.setInt(3, month);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return true; // fail-safe: chặn batch nếu query lỗi
+        }
+    }
+
+    /** Liệt kê ca theo tháng (cho UI calendar tháng). */
+    public List<ShiftRow> listByMonth(int year, int month) {
+        List<ShiftRow> list = new ArrayList<>();
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, "
+                + "       es.templateID, st.shiftName, st.startTime, st.endTime, "
+                + "       es.workDate, es.checkInTime, es.checkOutTime, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e        ON e.employeeID = es.employeeID "
+                + "JOIN ShiftTemplates st ON st.templateID = es.templateID "
+                + "WHERE YEAR(es.workDate) = ? AND MONTH(es.workDate) = ? "
+                + "ORDER BY es.workDate, st.startTime, e.fullName";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setCheckInTime(rs.getTimestamp("checkInTime"));
+                    r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
+                    r.setStatus(rs.getString("status"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    /** Liệt kê ca của 1 nhân viên trong tháng — dùng cho Staff My Schedule. */
+    public List<ShiftRow> listByEmployeeAndMonth(int employeeID, int year, int month) {
+        List<ShiftRow> list = new ArrayList<>();
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, "
+                + "       es.templateID, st.shiftName, st.startTime, st.endTime, "
+                + "       es.workDate, es.checkInTime, es.checkOutTime, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e        ON e.employeeID = es.employeeID "
+                + "JOIN ShiftTemplates st ON st.templateID = es.templateID "
+                + "WHERE es.employeeID = ? "
+                + "  AND YEAR(es.workDate) = ? AND MONTH(es.workDate) = ? "
+                + "ORDER BY es.workDate, st.startTime";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            ps.setInt(2, year);
+            ps.setInt(3, month);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setCheckInTime(rs.getTimestamp("checkInTime"));
+                    r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
+                    r.setStatus(rs.getString("status"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
     /** Chỉ cho unassign khi status='scheduled' (chưa xử lý). */
     public boolean unassign(int shiftID) {
         String sql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";

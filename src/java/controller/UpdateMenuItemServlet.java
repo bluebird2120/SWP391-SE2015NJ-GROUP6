@@ -95,7 +95,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
         MenuItem mi;
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
@@ -113,7 +112,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String errorPrice = isValidPositive(price_raw, "Giá món ăn không được để trống", "Giá món ăn từ 0-1000000000");
         String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-1000000000");
         String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
-        
+
         int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
         if(!checkEmpty(errorName)){
             if(menuItemDAO.checkDuplicateMenuItem(itemName, itemId)){
@@ -151,7 +150,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
             return;
         }
-        
         int categoryId = Integer.parseInt(categoryId_raw);
         int price = Integer.parseInt(price_raw);
         int discountPercent = Integer.parseInt(discountPercent_raw);

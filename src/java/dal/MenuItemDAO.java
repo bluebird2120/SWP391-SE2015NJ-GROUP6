@@ -215,7 +215,6 @@ public class MenuItemDAO extends DBContext {
         }
         return false;
     }
-
     public boolean insertMenuItem(int categoryId, String itemName, String description, int price,
             int discountPercent, String image, int isAvailable, String allergyNotes) {
         String sql = "insert into MenuItem (categoryID, itemName, description, price, discountPercent, discountedPrice, image, isAvailable, allergyNotes) "
