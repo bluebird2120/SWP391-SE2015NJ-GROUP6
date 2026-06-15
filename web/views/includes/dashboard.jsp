@@ -202,13 +202,13 @@
                     <i class="fas fa-user-tie"></i> Manage Staff
                 </a>
             </li>
-        </c:if>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/attendance">
                     <i class="fas fa-clipboard-check"></i> Attendance
                 </a>
             </li>
+        </c:if>
             
         <!-- Finance -->
         <li class="nav-item">
