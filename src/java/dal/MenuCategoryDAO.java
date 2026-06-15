@@ -93,4 +93,17 @@ public class MenuCategoryDAO extends DBContext{
         }
         return false;
     }
+    
+    public boolean changeStatusCategory(int categoryID, int status){
+        String sql = "update MenuItem set isAvailable = ? "
+                + "where categoryID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, status);
+            ps.setInt(2, categoryID);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+        }
+        return false;
+    }
 }

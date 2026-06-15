@@ -89,8 +89,15 @@ public class CategoryController extends HttpServlet {
             throws ServletException, IOException {
         String categoryID = request.getParameter("categoryID");
         String categoryName = request.getParameter("categoryName");
+        String status_raw = request.getParameter("status");
         int id = checkEmpty(categoryID) ? Integer.parseInt(categoryID) : 0;
-
+              
+        if(checkEmpty(status_raw) && id > 0){
+            int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 0;
+            menuCategoryDAO.changeStatusCategory(id, status);
+            response.sendRedirect(request.getContextPath() + "/category-management");
+            return;
+        }
         //validate
         String errorName = isValidString(categoryName, 100, "Tên loại không được để trống", "Tên loại phải ít hơn 100 kí tự");
         if (!errorName.isEmpty()) {
@@ -98,9 +105,10 @@ public class CategoryController extends HttpServlet {
             for (MenuCategory mc : categoryList) {
                 int activeDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 1);
                 int inactiveDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 0);
-
+                int totalDish = menuCategoryDAO.countDishByCategory(id);
                 mc.setActiveMenuItem(activeDish);
                 mc.setInactiveMenuItem(inactiveDish);
+                mc.setTotalDish(totalDish);
             }
             request.setAttribute("categoryList", categoryList);
             request.setAttribute("errorName", errorName);

@@ -29,7 +29,7 @@
                 margin-bottom: 25px;
 
                 width: 100%;
-                max-width: 900px;
+                max-width: 100%;
             }
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -52,7 +52,7 @@
             }
             table {
                 width: 100%;
-                max-width: 900px;
+                max-width: 100%;
                 border-collapse: collapse;
                 background-color: white;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -88,6 +88,10 @@
             }
             .btn-disable {
                 background-color: #dc3545;
+                color: white;
+            }
+            .btn-enable{
+                background-color: #28a745;
                 color: white;
             }
             .error-message {
@@ -161,9 +165,10 @@
         <div class="layout">
             <div class="page-header">
                 <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-                <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/><br/>
+                <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
             </div>
             <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
+            <form action="${pageContext.request.contextPath}/category-management" method="post">
                 <table border="1">
                     <thead>
                         <tr>
@@ -182,11 +187,20 @@
                         <td><div>${cat.inactiveMenuItem}</div></td>
                         <td>
                             <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                            <input class="btn-table btn-disable" type="button" value="VÔ HIỆU HÓA"/>
+                            <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
+                            <c:choose>
+                                <c:when test="${cat.activeMenuItem > 0}">
+                                    <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
+                                </c:when>
+                                <c:otherwise>
+                                    <button class="btn-table btn-enable" type="submit" name="status" value="1">KÍCH HOẠT</button>
+                                </c:otherwise>
+                            </c:choose>
                         </td>
                     </tr>
                 </c:forEach>
             </table>
+            </form>
         </div>
 
         <div id="editModal" class="modal-wrapper">
@@ -196,7 +210,7 @@
                 <form action="category-management" method="post">
                     <input type="hidden" id="modalCategoryID" name="categoryID"/>
                     <label>Tên loại:</label><br/>
-                    <input type="text" id="modalCategoryName" name="categoryName"/><br/>
+                    <input type="text" id="modalCategoryName" name="categoryName" required/><br/>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -209,7 +223,7 @@
                 <form action="category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
                     <label>Nhập loại mới:</label><br/>
-                    <input type="text" name="categoryName"/><br/>
+                    <input type="text" name="categoryName" required/><br/>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
