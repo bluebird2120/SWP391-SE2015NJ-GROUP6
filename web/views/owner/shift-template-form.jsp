@@ -11,7 +11,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin:0; font-family:'Inter',sans-serif; background:#faf6f2; }
-        /*.main { flex:1; padding:24px 32px; }*/
+        .main { flex:1; padding:24px 32px; }
         .page-title { font-family:'Playfair Display',serif; color:#76493b; font-size:1.6rem; margin:0 0 18px; }
         .form-card { background:#fff; border:1px solid #ede0d8; border-radius:12px; padding:24px; max-width:560px; }
         .form-group { margin-bottom:16px; }
