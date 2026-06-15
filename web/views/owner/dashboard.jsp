@@ -122,8 +122,8 @@
                     <div class="card-desc">Business analytics</div>
                 </a>
             </div>
-        </main>
-    </div>
+<!--        </main>
+    </div>-->
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>
