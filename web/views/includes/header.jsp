@@ -392,13 +392,8 @@
             </a>
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
-                    <div class="user-avatar">
-                        <c:choose>
-                            <c:when test="${not empty sessionScope.customer.image}">
-                                <img src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">
-                            </c:when>
-                            <c:otherwise><%= customerInitial %></c:otherwise>
-                        </c:choose>
+                  <div class="user-avatar">
+                        <%= customerInitial %>
                     </div>
                     <div class="user-info">
                         <span class="user-name">${sessionScope.customer.userName}</span>
@@ -413,7 +408,7 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
-                        <a href="${pageContext.request.contextPath}/customer/reservations"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
+                        <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                         <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">

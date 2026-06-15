@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.List;
 import model.Customer;
 
-@WebServlet(name = "CustomerListController", urlPatterns = {"/owner/customers"})
+@WebServlet(name = "CustomerListController", urlPatterns = {"/owner/customers-list"})
 public class CustomerListController extends HttpServlet {
 
     private final CustomerDAO customerDAO = new CustomerDAO();
@@ -78,4 +78,8 @@ public class CustomerListController extends HttpServlet {
             return defaultValue;
         }
     }
+    
+    
+    // test 
+    
 }

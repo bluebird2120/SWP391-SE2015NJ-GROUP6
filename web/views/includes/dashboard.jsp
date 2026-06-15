@@ -115,6 +115,14 @@
                         <i class="fas fa-chair"></i> Restaurant Tables
                     </a>
                 </li>
+
+                <li> 
+                    <a class="nav-link ${pageContext.request.requestURI.contains('/owner/customers-list') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/owner/customers-list">
+                        <i class="fas fa-users"></i> Customer List
+                    </a>
+                </li>
+
             </c:if>
 
             <li>
@@ -198,6 +206,11 @@
                         <i class="fas fa-clock"></i> Peak Hours
                     </a>
                 </li>
+
+
+
+
+
             </c:if>
         </ul>
     </nav>
