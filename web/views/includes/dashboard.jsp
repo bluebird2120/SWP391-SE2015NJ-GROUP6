@@ -169,21 +169,8 @@
                 <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/business-hours?action=list">
                     <i class="fas fa-clock"></i> Business Hours
-        <%-- roleID=2: Staff thấy Orders --%>
-        <c:if test="${sessionScope.employee.roleID == 2}">
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/staff/dashboard">
-                    <i class="fas fa-house"></i> My Dashboard
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('order-management') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/order-management">
-                    <i class="fas fa-clipboard-list"></i> Orders
-                </a>
-            </li>
-        </c:if>
             <!-- Workforce — chỉ Owner quản lý nhân sự và phân ca -->
             <c:if test="${sessionScope.employee.roleID == 1}">
                 <li>
@@ -222,100 +209,7 @@
                    href="${pageContext.request.contextPath}/invoice?action=list">
                     <i class="fas fa-file-invoice"></i> Invoices
                 </a>
-            </li>
-        <%-- Staff: My Workspace (lịch ca + thông báo) --%>
-        <c:if test="${sessionScope.employee.roleID == 2}">
-            <li class="nav-item">
-                <div class="nav-section-title"><i class="fas fa-user-clock"></i> My Workspace</div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/staff/my-schedule">
-                    <i class="fas fa-calendar-week"></i> My Schedule
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/staff/notifications">
-                    <i class="fas fa-bell"></i> Notifications
-                    <c:if test="${sessionScope.unreadCount > 0}">
-                        <span style="background:#dc3545; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; margin-left:auto;">${sessionScope.unreadCount}</span>
-                    </c:if>
-                </a>
-            </li>
-        </c:if>
-
-        <%-- roleID=1: Owner thấy Order History (đã sửa từ roleID==2 sang 1) --%>
-        <c:if test="${sessionScope.employee.roleID == 1}">
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/order-history">
-                    <i class="fas fa-history"></i> Order History
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/tables') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/tables">
-                    <i class="fas fa-chair"></i> Restaurant Tables
-                </a>
-            </li>
-        </c:if>
-
-        <li class="nav-item">
-            <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/business-hours?action=list">
-                <i class="fas fa-clock"></i> Business Hours
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link ${pageContext.request.requestURI.contains('temporary-closure') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/temporary-closure?action=list">
-                <i class="fas fa-door-closed"></i> Temporary Closure
-            </a>
-        </li>
-
-        <!-- Workforce — chỉ Owner quản lý nhân sự và phân ca -->
-        <c:if test="${sessionScope.employee.roleID == 1}">
-            <li class="nav-item">
-                <div class="nav-section-title"><i class="fas fa-users"></i> Workforce</div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/shift-templates') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/shift-templates">
-                    <i class="fas fa-calendar-alt"></i> Shift Templates
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/shift-roster') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/shift-roster">
-                    <i class="fas fa-user-clock"></i> Shift Assignments
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/staff?action=list">
-                    <i class="fas fa-user-tie"></i> Manage Staff
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/attendance">
-                    <i class="fas fa-clipboard-check"></i> Attendance
-                </a>
-            </li>
-        </c:if>
-            
-        <!-- Finance -->
-        <li class="nav-item">
-            <div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Finance</div>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/invoice?action=list">
-                <i class="fas fa-file-invoice"></i> Invoices
-            </a>
-        </li>
-
+            </li>      
         <!-- Menu -->
         <!-- Menu -->
             <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Menu</div></li>

@@ -10,7 +10,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin:0; font-family:'Inter',sans-serif; background:#faf6f2; }
-        /*.main { flex:1; padding:24px 32px; }*/
+        .main { flex:1; padding:24px 32px; }
         .page-title { font-family:'Playfair Display',serif; color:#76493b; font-size:1.6rem; margin:0 0 4px; }
         .page-sub { color:#a0714f; font-size:0.95rem; margin-bottom:22px; }
         .greeting { color:#5d3a2e; font-size:1.05rem; margin-bottom:18px; }
@@ -29,9 +29,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display:flex;">-->
+    <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <h1 class="page-title">Staff Dashboard</h1>
             <p class="page-sub">Khu vực làm việc của bạn</p>
             <p class="greeting">Xin chào, <b>${sessionScope.employee.fullName}</b>!</p>
@@ -53,8 +53,8 @@
                     <div class="card-desc">Thông báo lịch ca tháng và các cập nhật từ quản lý.</div>
                 </a>
             </div>
-<!--        </main>
-    </div>-->
+        </main>
+    </div>
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>

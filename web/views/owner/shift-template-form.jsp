@@ -30,9 +30,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display:flex;">-->
+    <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <h1 class="page-title">
                 <c:choose><c:when test="${mode == 'edit'}">Edit Template</c:when><c:otherwise>New Template</c:otherwise></c:choose>
             </h1>
@@ -79,8 +79,8 @@
                     </div>
                 </form>
             </div>
-<!--        </main>
-    </div>-->
+        </main>
+    </div>
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>
