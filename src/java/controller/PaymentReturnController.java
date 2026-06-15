@@ -42,7 +42,7 @@ public class PaymentReturnController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         // 1. LẤY TẤT CẢ DỮ LIỆU VNPAY TRẢ VỀ TRÊN URL ĐƯA VÀO MAP
         Map<String, String> fields = new HashMap<>();
         for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
@@ -72,23 +72,25 @@ public class PaymentReturnController extends HttpServlet {
         if (signValue.equals(vnp_SecureHash)) {
             // Chữ ký hợp lệ -> Kiểm tra trạng thái giao dịch
             if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                
+
                 // === THANH TOÁN THÀNH CÔNG ===
                 HttpSession session = request.getSession();
                 Integer invoiceID = (Integer) session.getAttribute("invoiceID");
-                
-                // TODO: Gọi DAO cập nhật trạng thái hóa đơn thành 'paid' trong Database
-                // Ví dụ: invoicesDAO.updateInvoiceStatus(invoiceID, "paid");
+
+                // CHÍNH THỨC CẬP NHẬT DATABASE TẠI ĐÂY
+                if (invoiceID != null) {
+                    invoicesDAO.updateInvoiceStatus(invoiceID, "paid", "vnpay");
+                }
 
                 // Dọn dẹp session để khách có thể đặt đơn mới
                 session.removeAttribute("orderID");
                 session.removeAttribute("invoiceID");
-                
+
                 // In ra thông báo thành công (Bạn có thể sửa thành response.sendRedirect sang 1 trang JSP đẹp hơn)
                 out.println("<h2 style='color: green; text-align: center; margin-top: 50px;'>🎉 THANH TOÁN THÀNH CÔNG!</h2>");
                 out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
                 out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Quay lại Menu</a></div>");
-                
+
             } else {
                 // === GIAO DỊCH LỖI HOẶC BỊ HỦY ===
                 out.println("<h2 style='color: red; text-align: center; margin-top: 50px;'>❌ THANH TOÁN THẤT BẠI HOẶC BỊ HỦY!</h2>");
