@@ -1,12 +1,10 @@
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
-<c:if test="${param.layout == 'dashboard'}">
-    </main>
-    </div>
-</c:if>
-    
+</main>
+</div>
+
 <style>
     .footer {
         background: #76493b;
