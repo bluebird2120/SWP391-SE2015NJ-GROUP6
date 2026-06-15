@@ -21,7 +21,6 @@
                 border-bottom: 2px solid #e5e7eb;
                 padding-bottom: 15px;
                 margin-bottom: 25px;
-
                 width: 100%;
                 max-width: 100%;
             }
@@ -29,6 +28,7 @@
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background-color: #f8f9fa;
                 color: #333;
+                margin: 0;
             }
             h2 {
                 color: #2c3e50;
@@ -51,7 +51,7 @@
                 background-color: white;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                 border-radius: 10px;
-                overflow: hidden; /* Khi bo vẫn còn đường kẻ cái này để làm mất */
+                overflow: hidden;
                 border: none;
             }
             th {
@@ -103,14 +103,14 @@
                 font-size: 12px
             }
             .modal-wrapper{
-                display: none; /* Mặc định ẩn */
+                display: none;
                 position: fixed;
                 z-index: 1000;
                 left: 0;
                 top: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(0, 0, 0, 0.4); /* Làm tối nền phía sau */
+                background-color: rgba(0, 0, 0, 0.4);
             }
             .modal-box {
                 background-color: white;
@@ -120,6 +120,7 @@
                 border-radius: 8px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                 position: relative;
+                box-sizing: border-box; 
             }
             h3{
                 border-bottom: 2px solid #e5e7eb;
@@ -135,12 +136,13 @@
                 cursor: pointer;
             }
             .modal-box input[type="text"] {
-                width: 93%;
+                width: 100%;
                 padding: 10px;
                 margin: 12px 0 20px 0;
                 border: 1px solid #ccc;
                 border-radius: 4px;
                 font-size: 14px;
+                box-sizing: border-box;
             }
             .btn-submit {
                 width: 100%;
@@ -153,53 +155,57 @@
                 border-radius: 4px;
                 cursor: pointer;
             }
-
         </style>
     </head>
-    <%@ include file="/views/includes/header.jsp" %>
-    <%@ include file="/views/includes/dashboard.jsp" %>
     <body>
-        <div class="layout">
-            <div class="page-header">
-                <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-                <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
+        <%@ include file="/views/includes/header.jsp" %>
+
+        <div style="display: flex; align-items: flex-start;">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+
+            <div style="flex: 1; min-width: 0;">
+                <div class="layout">
+                    <div class="page-header">
+                        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
+                        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
+                    </div>
+                    <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
+
+                    <table border="1">
+                        <thead>
+                            <tr>
+                                <th>Tên Loại Món</th>
+                                <th>Tổng Số món</th>
+                                <th>Hoạt Động</th>
+                                <th>Tạm Ngưng</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <c:forEach var="cat" items="${categoryList}">
+                            <tr>
+                                <td><div>${cat.categoryName}</div></td>
+                                <td><div>${cat.totalDish}</div></td>
+                                <td><div>${cat.activeMenuItem}</div></td>
+                                <td><div>${cat.inactiveMenuItem}</div></td>
+                                <td>
+                                    <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
+                                    <form action="${pageContext.request.contextPath}/category-management" method="post">
+                                        <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
+                                        <c:choose>
+                                            <c:when test="${cat.activeMenuItem > 0}">
+                                                <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <button class="btn-table btn-enable" type="submit" name="status" value="1">KÍCH HOẠT</button>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </form>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                    </table>
+                </div>
             </div>
-            <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
-
-                <table border="1">
-                    <thead>
-                        <tr>
-                            <th>Tên Loại Món</th>
-                            <th>Tổng Số món</th>
-                            <th>Hoạt Động</th>
-                            <th>Tạm Ngưng</th>
-                            <th>Hành Động</th>
-                        </tr>
-                    </thead>
-                <c:forEach var="cat" items="${categoryList}">
-                    <tr>
-                        <td><div>${cat.categoryName}</div></td>
-                        <td><div>${cat.totalDish}</div></td>
-                        <td><div>${cat.activeMenuItem}</div></td>
-                        <td><div>${cat.inactiveMenuItem}</div></td>
-                        <td>
-                            <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                            <form action="${pageContext.request.contextPath}/category-management" method="post">
-                                <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
-                                <c:choose>
-                                    <c:when test="${cat.activeMenuItem > 0}">
-                                        <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <button class="btn-table btn-enable" type="submit" name="status" value="1">KÍCH HOẠT</button>
-                                    </c:otherwise>
-                                </c:choose>
-                            </form>
-                        </td>
-                    </tr>
-                </c:forEach>
-            </table>
-
         </div>
 
         <div id="editModal" class="modal-wrapper">
@@ -227,6 +233,7 @@
                 </form>
             </div>
         </div>
+
         <script>
             function openEditModal(id, name) {
                 document.getElementById('modalCategoryID').value = id;

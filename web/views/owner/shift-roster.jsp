@@ -17,11 +17,11 @@
                 font-family:'Inter',sans-serif;
                 background:#faf6f2;
             }
-/*            .main {
+            .main {
                 flex:1;
                 padding:24px 32px;
                 min-width:0;
-            }*/
+            }
             .page-title {
                 font-family:'Playfair Display',serif;
                 color:#76493b;
@@ -234,9 +234,9 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        <!--<div style="display:flex;">-->
+        <div style="display:flex;">
             <%@ include file="/views/includes/dashboard.jsp" %>
-            <!--<main class="main">-->
+            <main class="main">
                 <h1 class="page-title">Shift Roster</h1>
                 <p class="page-sub">Quản lý phân ca nhân viên</p>
 
@@ -530,8 +530,8 @@
                     </c:if>
                 </div>
 
-<!--            </main>
-        </div>-->
+            </main>
+        </div>
         <%@ include file="/views/includes/footer.jsp" %>
 
         <script>

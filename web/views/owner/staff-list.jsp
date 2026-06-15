@@ -11,7 +11,7 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: #faf6f2; }
-        /*.main { flex: 1; padding: 24px 32px; min-width: 0; }*/
+        .main { flex: 1; padding: 24px 32px; min-width: 0; }
         .page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
         .page-title { font-family: 'Playfair Display', serif; color: #76493b; font-size: 1.6rem; margin: 0; }
         .page-sub { color: #a0714f; font-size: 0.9rem; margin-top: 4px; }
@@ -65,9 +65,9 @@
 </head>
 <body>
     <%@ include file="/views/includes/header.jsp" %>
-    <!--<div style="display: flex;">-->
+    <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
-        <!--<main class="main">-->
+        <main class="main">
             <div class="page-head">
                 <div>
                     <h1 class="page-title">Staff Management</h1>
@@ -237,8 +237,8 @@
                     </div>
                 </c:if>
             </div>
-                    <!--        </main>
-                        </div>-->
+                            </main>
+                        </div>
     <%@ include file="/views/includes/footer.jsp" %>
 </body>
 </html>
