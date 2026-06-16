@@ -109,6 +109,7 @@
                         <i class="fas fa-history"></i> Order History
                     </a>
                 </li>
+                
                 <li>
                     <a class="nav-link ${pageContext.request.requestURI.contains('owner/tables') ? 'active' : ''}"
                        href="${pageContext.request.contextPath}/owner/tables">

@@ -3,6 +3,7 @@ package dal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,44 +14,63 @@ public class TableDAO extends DBContext {
 
     public List<String> getAllAreaTypes() {
         List<String> list = new ArrayList<>();
-        String sql = "SELECT DISTINCT areaType FROM `Table` WHERE isActive = 1 ORDER BY areaType";
-        try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+        String sql = "SELECT DISTINCT areaType "
+                   + "FROM `Table` "
+                   + "WHERE isActive = 1 "
+                   + "ORDER BY areaType";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 list.add(rs.getString("areaType"));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return list;
     }
 
-    /**
+    /*
      * Tính số bàn còn trống theo từng capacity trong khu vực.
      *
-     * Công thức: Còn trống = Tổng bàn (capacity=X, khu=Y) - Bàn bận có
-     * tableStatus IN ('reserved','serving','cleaning')
+     * Công thức:
+     * Còn trống = Tổng bàn - Bàn bận
      *
-     * Bàn bận gồm 2 loại: 1. Đơn đặt online (tableID IS NULL): đếm theo
-     * capacity + areaType trong Order 2. Khách walk-in (tableID IS NOT NULL):
-     * JOIN Table lấy capacity + areaType thực tế
+     * Bàn bận gồm:
      *
-     * Trước khi tính, lazy-expire các đơn reserved quá 30 phút.
+     * 1. Đơn đặt online:
+     *    tableID IS NULL
+     *    orderStatus = reserved
+     *    tableStatus = reserved
+     *    Trừ theo capacity + areaType + orderTime
+     *
+     * 2. Bàn đang phục vụ / đang dọn:
+     *    tableID IS NOT NULL
+     *    tableStatus IN ('serving', 'cleaning')
+     *    Chỉ trừ khi khách chọn ngày hôm nay.
+     *
+     * Lưu ý:
+     * Không tự hủy order trong hàm tìm bàn.
+     * Hàm này chỉ SELECT, không UPDATE database.
      */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
-
-        autoExpireReservations();
 
         List<Table> resultList = new ArrayList<>();
 
         String sqlTotal
                 = "SELECT capacity, COUNT(*) AS total "
                 + "FROM `Table` "
-                + "WHERE isActive = 1 AND areaType = ? "
+                + "WHERE isActive = 1 "
+                + "  AND areaType = ? "
                 + "GROUP BY capacity";
 
         /*
-    
-      Chỉ trừ reserved nếu thời gian khách đang chọn bị trùng trong khoảng giữ bàn 30 phút.
+         * Đơn online đã reserved nhưng chưa gán bàn thật.
+         * Chỉ trừ nếu thời gian khách chọn bị trùng trong khoảng giữ bàn 30 phút.
          */
         String sqlBusyOnline
                 = "SELECT capacity, COUNT(*) AS busy "
@@ -64,7 +84,8 @@ public class TableDAO extends DBContext {
                 + "GROUP BY capacity";
 
         /*
-         Bàn khách đang ăn hoặc đang dọn.
+         * Bàn thật đang có khách ăn hoặc đang dọn.
+         * Chỉ dùng query này nếu khách chọn ngày hôm nay.
          */
         String sqlBusyCurrentTable
                 = "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy "
@@ -80,8 +101,12 @@ public class TableDAO extends DBContext {
         Map<Integer, Integer> busyCurrentMap = new HashMap<>();
 
         try {
+            /*
+             * 1. Lấy tổng số bàn theo capacity.
+             */
             try (PreparedStatement ps = connection.prepareStatement(sqlTotal)) {
                 ps.setString(1, areaType);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         totalMap.put(rs.getInt("capacity"), rs.getInt("total"));
@@ -89,6 +114,9 @@ public class TableDAO extends DBContext {
                 }
             }
 
+            /*
+             * 2. Lấy số đơn online reserved trùng giờ.
+             */
             try (PreparedStatement ps = connection.prepareStatement(sqlBusyOnline)) {
                 ps.setString(1, areaType);
                 ps.setTimestamp(2, orderTime);
@@ -101,16 +129,28 @@ public class TableDAO extends DBContext {
                 }
             }
 
-            try (PreparedStatement ps = connection.prepareStatement(sqlBusyCurrentTable)) {
-                ps.setString(1, areaType);
+            /*
+             * 3. Chỉ nếu chọn hôm nay thì mới trừ bàn đang serving / cleaning.
+             * Nếu chọn ngày tương lai thì không trừ serving / cleaning hiện tại.
+             */
+            LocalDate selectedDate = orderTime.toLocalDateTime().toLocalDate();
+            LocalDate today = LocalDate.now();
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        busyCurrentMap.put(rs.getInt("capacity"), rs.getInt("busy"));
+            if (selectedDate.equals(today)) {
+                try (PreparedStatement ps = connection.prepareStatement(sqlBusyCurrentTable)) {
+                    ps.setString(1, areaType);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            busyCurrentMap.put(rs.getInt("capacity"), rs.getInt("busy"));
+                        }
                     }
                 }
             }
 
+            /*
+             * 4. Tính số bàn còn trống.
+             */
             for (Map.Entry<Integer, Integer> entry : totalMap.entrySet()) {
                 int cap = entry.getKey();
                 int total = entry.getValue();
@@ -124,6 +164,11 @@ public class TableDAO extends DBContext {
                 dto.setCapacity(cap);
                 dto.setAreaType(areaType);
                 dto.setTableName("Bàn " + cap + " chỗ");
+
+                /*
+                 * Tạm dùng isActive để chứa số lượng bàn còn trống.
+                 * Vì giao diện của bạn đang lấy getIsActive() để hiển thị số bàn.
+                 */
                 dto.setIsActive(availableCount);
 
                 resultList.add(dto);
@@ -137,58 +182,50 @@ public class TableDAO extends DBContext {
         return resultList;
     }
 
-    /*
-       hủy các đơn reserved quá 30 phút mà khách chưa đến.
-     */
-    private void autoExpireReservations() {
-        String sql
-                = "UPDATE `Order` "
-                + "SET orderStatus = 'cancelled', tableStatus = 'available' "
-                + "WHERE orderType = 1 "
-                + "  AND orderStatus = 'reserved' "
-                + "  AND tableStatus = 'reserved' "
-                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            int expired = ps.executeUpdate();
-            if (expired > 0) {
-                System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");
-            }
-        } catch (Exception e) {
-            System.err.println("[TableDAO] autoExpire error: " + e.getMessage());
-        }
-    }
-
     public Table getTableByTableID(int tableID) {
         String sql = "SELECT * FROM `Table` WHERE tableID = ?";
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, tableID);
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapRow(rs);
                 }
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return null;
     }
 
     public List<Table> getAllActiveTables() {
         List<Table> list = new ArrayList<>();
-        String sql = "SELECT * FROM `Table` WHERE isActive = 1 ORDER BY areaType, capacity";
-        try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+        String sql = "SELECT * "
+                   + "FROM `Table` "
+                   + "WHERE isActive = 1 "
+                   + "ORDER BY areaType, capacity";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 list.add(mapRow(rs));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return list;
     }
 
     private Table mapRow(ResultSet rs) throws Exception {
         Table t = new Table();
+
         t.setTableID(rs.getInt("tableID"));
         t.setEmployeeID(rs.getInt("employeeID"));
         t.setCurrentStaffID(rs.getInt("currentStaffID"));
@@ -197,6 +234,7 @@ public class TableDAO extends DBContext {
         t.setQRCodeToken(rs.getString("QRCodeToken"));
         t.setAreaType(rs.getString("areaType"));
         t.setIsActive(rs.getInt("isActive"));
+
         return t;
     }
 }
