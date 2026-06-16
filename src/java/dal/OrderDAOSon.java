@@ -158,7 +158,7 @@ public class OrderDAOSon extends DBContext {
 
         o.setOrderID(rs.getInt("orderID"));
         o.setCustomerID(rs.getInt("customerID"));
-        o.setTableID(rs.getInt("tableID"));
+//        o.setTableID(rs.getInt("tableID"));
         o.setInvoiceID(rs.getInt("invoiceID"));
         o.setOrderType(rs.getInt("orderType"));
         o.setTableStatus(rs.getString("tableStatus"));
@@ -169,8 +169,8 @@ public class OrderDAOSon extends DBContext {
         o.setOrderTime(rs.getTimestamp("orderTime"));
         o.setDepositAmount(rs.getLong("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
-        o.setCapacity(rs.getInt("capacity"));
-        o.setAreaType(rs.getString("areaType"));
+//        o.setCapacity(rs.getInt("capacity"));
+//        o.setAreaType(rs.getString("areaType"));
 
         return o;
     }
