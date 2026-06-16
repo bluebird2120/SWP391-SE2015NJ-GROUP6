@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
+=======
+<%@ page contentType="text/html" pageEncoding="UTF-8" %>
+>>>>>>> Stashed changes
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <!DOCTYPE html>
@@ -51,7 +55,15 @@
 </head>
 
 <body>
+<<<<<<< Updated upstream
     <%@include file="/views/includes/header.jsp" %>
+=======
+    
+      <%@ include file="/views/includes/header.jsp" %>
+   
+        <%@ include file="/views/includes/dashboard.jsp" %>
+
+>>>>>>> Stashed changes
 <div class="page-container">
 
     <h2 class="page-title">Danh sách khách hàng</h2>
@@ -190,6 +202,11 @@
     </nav>
 
 </div>
+<<<<<<< Updated upstream
      <%@include file="/views/includes/footer.jsp" %>  
+=======
+<%@ include file="/views/includes/footer.jsp" %>
+
+>>>>>>> Stashed changes
 </body>
 </html>

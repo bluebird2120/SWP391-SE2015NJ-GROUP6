@@ -69,6 +69,7 @@ public class OrderDAOSon extends DBContext {
 
     /*
      * Tự hủy đơn đặt online nếu:
+<<<<<<< Updated upstream
      * - Là đơn đặt bàn online: orderType = 1
      * - Chưa được gán bàn thật: tableID IS NULL
      * - Vẫn đang reserved
@@ -78,6 +79,15 @@ public class OrderDAOSon extends DBContext {
      * Khách đặt đến 19:00
      * Sau 19:30 mà nhân viên chưa gán bàn
      * => tự hủy
+=======
+     
+     * - Đã quá giờ khách đến 30 phút
+     *
+    
+     * Khách đặt đến 19:00
+     * Sau 19:30 mà nhân viên chưa gán bàn
+      tự hủy
+>>>>>>> Stashed changes
      */
     public int autoExpireReservations() {
         String sql

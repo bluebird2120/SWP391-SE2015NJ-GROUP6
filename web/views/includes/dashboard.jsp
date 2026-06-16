@@ -147,6 +147,17 @@
                     <i class="fas fa-calendar-alt"></i> Shift Templates
                 </a>
             </li>
+<<<<<<< Updated upstream
+=======
+            <li> 
+                    <a class="nav-link ${pageContext.request.requestURI.contains('/owner/customers-list') ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/owner/customers-list">
+                        <i class="fas fa-users"></i> Customer List
+                    </a>
+                </li>
+            </c:if>
+            
+>>>>>>> Stashed changes
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('shift-management') && param.action == 'assignments' ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/shift-management?action=assignments">

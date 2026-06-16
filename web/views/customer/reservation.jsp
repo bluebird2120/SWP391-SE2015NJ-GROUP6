@@ -220,7 +220,12 @@
                 <p class="banner-subtitle">Đặt bàn trước sẽ giúp quý khách lựa chọn được chỗ ngồi ưng ý và sự chuẩn bị chu đáo nhất.</p>
             </div>
 
+<<<<<<< Updated upstream
           
+=======
+            
+
+>>>>>>> Stashed changes
             <div class="main-layout">
 
                 <%-- SIDEBAR --%>
