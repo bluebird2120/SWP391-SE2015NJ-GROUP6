@@ -17,39 +17,40 @@ public class OrderDAO {
     // 1. TẠO ORDER MỚI
     // =========================================================
     public int createOrder(Order order) {
-        // MỚI THÊM: Cập nhật câu lệnh SQL chèn thêm cột areaType và capacity
+        // Đã xóa tableID, areaType, capacity theo CSDL mới. Đã thêm employeeID.
         String sql = "INSERT INTO `Order` "
-                + "(customerID, tableID, invoiceID, orderType, tableStatus, "
+                + "(customerID, employeeID, invoiceID, orderType, tableStatus, "
                 + " totalAmount, checkoutRequestAt, isStaffConfirmed, "
-                + " createdAt, orderTime, depositAmount, orderStatus, areaType, capacity) " 
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // MỚI THÊM: tăng lên 14 dấu ?
+                + " createdAt, orderTime, depositAmount, orderStatus) " 
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setObject(1, order.getCustomerID() == 0 ? null : order.getCustomerID());
-            ps.setObject(2, order.getTableID() == 0 ? null : order.getTableID());
-            ps.setObject(3, order.getInvoiceID() == 0 ? null : order.getInvoiceID());
+            // Xử lý các trường có thể NULL (dùng Integer object)
+            if (order.getCustomerID() != null) ps.setInt(1, order.getCustomerID());
+            else ps.setNull(1, Types.INTEGER);
+
+            if (order.getEmployeeID() != null) ps.setInt(2, order.getEmployeeID());
+            else ps.setNull(2, Types.INTEGER);
+
+            if (order.getInvoiceID() != null) ps.setInt(3, order.getInvoiceID());
+            else ps.setNull(3, Types.INTEGER);
+
             ps.setInt(4, order.getOrderType());
             ps.setString(5, order.getTableStatus() != null ? order.getTableStatus() : "available");
             ps.setLong(6, order.getTotalAmount());
             ps.setTimestamp(7, order.getCheckoutRequestAt());
             ps.setInt(8, order.getIsStaffConfirmed());
-            ps.setTimestamp(9, order.getCreatedAt() != null
-                    ? order.getCreatedAt()
-                    : new Timestamp(System.currentTimeMillis()));
+            
+            ps.setTimestamp(9, order.getCreatedAt() != null ? order.getCreatedAt() : new Timestamp(System.currentTimeMillis()));
             ps.setTimestamp(10, order.getOrderTime());
             ps.setLong(11, order.getDepositAmount());
-            ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "pending");
+            ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
             
-            // MỚI THÊM: Truyền giá trị cho 2 cột mới
-            ps.setString(13, order.getAreaType());
-            ps.setInt(14, order.getCapacity());
-
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next())
-                return rs.getInt(1);
+            if (rs.next()) return rs.getInt(1);
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] createOrder lỗi: " + e.getMessage());
@@ -58,22 +59,39 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN
+    // 1.5 BỔ SUNG: LIÊN KẾT ORDER VÀ TABLE (BẢNG TRUNG GIAN)
+    // =========================================================
+    public boolean linkOrderAndTable(int orderID, int tableID) {
+        String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, tableID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] linkOrderAndTable lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // =========================================================
+    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (ĐÃ UPDATE DÙNG JOIN)
     // =========================================================
     public Order getActiveOrderByTableId(int tableID) {
-        String sql = "SELECT * FROM `Order` "
-                + "WHERE tableID = ? "
-                + "  AND tableStatus = 'occupied' "
-                + "  AND orderStatus NOT IN ('completed', 'checkout') "
-                + "ORDER BY createdAt DESC LIMIT 1";
+        // Dùng JOIN để quét qua bảng Order_Table
+        String sql = "SELECT o.* FROM `Order` o "
+                + "JOIN Order_Table ot ON o.orderID = ot.orderID "
+                + "WHERE ot.tableID = ? "
+                + "  AND o.tableStatus = 'occupied' "
+                + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
+                + "ORDER BY o.createdAt DESC LIMIT 1";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, tableID);
             ResultSet rs = ps.executeQuery();
-            if (rs.next())
-                return mapToOrder(rs);
+            if (rs.next()) return mapToOrder(rs);
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] getActiveOrderByTableId lỗi: " + e.getMessage());
@@ -81,7 +99,6 @@ public class OrderDAO {
         return null;
     }
 
-    // MỚI THÊM HÀM NÀY: Dùng để lấy thông tin đơn hàng đầy đủ theo ID (phục vụ trang checkout.jsp)
     // =========================================================
     // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER (orderID)
     // =========================================================
@@ -103,30 +120,36 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 3. THÊM MÓN VÀO GIỎ
+    // 3. THÊM MÓN VÀO GIỎ (ĐÃ UPDATE THÊM tableID & price)
     // =========================================================
-    public int addOrderItem(int orderID, int itemID, int quantity, String note) {
-        OrderItem existing = getOrderItemByOrderAndItem(orderID, itemID);
+    public int addOrderItem(int orderID, int itemID, Integer tableID, int quantity, int price, String note) {
+        // Check xem món này có cùng cấu hình (cùng order, item, table, note) chưa để cộng dồn
+        OrderItem existing = getOrderItemByOrderAndItemAndTable(orderID, itemID, tableID);
         if (existing != null) {
             int newQty = existing.getQuantity() + quantity;
             boolean updated = updateOrderItemQuantity(existing.getOrderItemID(), newQty);
             return updated ? existing.getOrderItemID() : -1;
         }
 
-        String sql = "INSERT INTO OrderItem (orderID, itemID, quantity, note) VALUES (?, ?, ?, ?)";
+        // Bổ sung insert tableID và price chốt cứng
+        String sql = "INSERT INTO OrderItem (orderID, itemID, tableID, quantity, price, note) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, orderID);
             ps.setInt(2, itemID);
-            ps.setInt(3, quantity);
-            ps.setString(4, note);
+            
+            if (tableID != null) ps.setInt(3, tableID);
+            else ps.setNull(3, Types.INTEGER);
+            
+            ps.setInt(4, quantity);
+            ps.setInt(5, price);
+            ps.setString(6, note);
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next())
-                return rs.getInt(1);
+            if (rs.next()) return rs.getInt(1);
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] addOrderItem lỗi: " + e.getMessage());
@@ -141,7 +164,7 @@ public class OrderDAO {
         String sql = "UPDATE OrderItem SET quantity = ? WHERE orderItemID = ?";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, newQuantity);
             ps.setInt(2, orderItemID);
@@ -160,7 +183,7 @@ public class OrderDAO {
         String sql = "DELETE FROM OrderItem WHERE orderItemID = ?";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, orderItemID);
             return ps.executeUpdate() > 0;
@@ -172,19 +195,18 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 6. LẤY DANH SÁCH ORDER ITEM (chỉ dữ liệu OrderItem)
+    // 6. LẤY DANH SÁCH ORDER ITEM
     // =========================================================
     public List<OrderItem> getOrderItemsByOrderId(int orderID) {
         List<OrderItem> list = new ArrayList<>();
         String sql = "SELECT * FROM OrderItem WHERE orderID = ? ORDER BY orderItemID";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, orderID);
             ResultSet rs = ps.executeQuery();
-            while (rs.next())
-                list.add(mapToOrderItem(rs));
+            while (rs.next()) list.add(mapToOrderItem(rs));
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] getOrderItemsByOrderId lỗi: " + e.getMessage());
@@ -194,23 +216,20 @@ public class OrderDAO {
 
     // =========================================================
     // 7. LẤY DANH SÁCH MENU ITEM TƯƠNG ỨNG VỚI ORDER
-    // Thứ tự trả về KHỚP với getOrderItemsByOrderId
     // =========================================================
     public List<MenuItem> getMenuItemsByOrderId(int orderID) {
         List<MenuItem> list = new ArrayList<>();
-        String sql = "SELECT mi.* "
-                + "FROM OrderItem oi "
+        String sql = "SELECT mi.* FROM OrderItem oi "
                 + "JOIN MenuItem mi ON mi.itemID = oi.itemID "
                 + "WHERE oi.orderID = ? "
                 + "ORDER BY oi.orderItemID";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, orderID);
             ResultSet rs = ps.executeQuery();
-            while (rs.next())
-                list.add(mapToMenuItem(rs));
+            while (rs.next()) list.add(mapToMenuItem(rs));
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] getMenuItemsByOrderId lỗi: " + e.getMessage());
@@ -218,21 +237,15 @@ public class OrderDAO {
         return list;
     }
     
-    
-     // =========================================================
-    // LẤY DANH SÁCH OrderItem THEO DANH SÁCH orderItemID
-    // Dùng khi checkout: chỉ lấy các món khách đã tích chọn
+    // =========================================================
+    // 8. LẤY DANH SÁCH OrderItem THEO DANH SÁCH orderItemID
     // =========================================================
     public List<OrderItem> getOrderItemsByIds(List<Integer> orderItemIDs) {
         List<OrderItem> list = new ArrayList<>();
         if (orderItemIDs == null || orderItemIDs.isEmpty()) return list;
  
-        // Tạo chuỗi "?,?,?" theo số lượng id
-        String placeholders = String.join(",",
-            java.util.Collections.nCopies(orderItemIDs.size(), "?"));
-        String sql = "SELECT * FROM OrderItem "
-                   + "WHERE orderItemID IN (" + placeholders + ") "
-                   + "ORDER BY orderItemID";
+        String placeholders = String.join(",", java.util.Collections.nCopies(orderItemIDs.size(), "?"));
+        String sql = "SELECT * FROM OrderItem WHERE orderItemID IN (" + placeholders + ") ORDER BY orderItemID";
  
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -250,15 +263,13 @@ public class OrderDAO {
     }
  
     // =========================================================
-    // LẤY DANH SÁCH MenuItem THEO DANH SÁCH orderItemID
-    // Thứ tự khớp với getOrderItemsByIds
+    // 9. LẤY DANH SÁCH MenuItem THEO DANH SÁCH orderItemID
     // =========================================================
     public List<MenuItem> getMenuItemsByOrderItemIds(List<Integer> orderItemIDs) {
         List<MenuItem> list = new ArrayList<>();
         if (orderItemIDs == null || orderItemIDs.isEmpty()) return list;
  
-        String placeholders = String.join(",",
-            java.util.Collections.nCopies(orderItemIDs.size(), "?"));
+        String placeholders = String.join(",", java.util.Collections.nCopies(orderItemIDs.size(), "?"));
         String sql = "SELECT mi.* FROM OrderItem oi "
                    + "JOIN MenuItem mi ON mi.itemID = oi.itemID "
                    + "WHERE oi.orderItemID IN (" + placeholders + ") "
@@ -280,79 +291,85 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: kiểm tra món đã có trong đơn chưa
+    // HELPER: kiểm tra món đã có trong đơn (Xét cả Bàn)
     // =========================================================
-    private OrderItem getOrderItemByOrderAndItem(int orderID, int itemID) {
-        String sql = "SELECT * FROM OrderItem WHERE orderID = ? AND itemID = ?";
+    private OrderItem getOrderItemByOrderAndItemAndTable(int orderID, int itemID, Integer tableID) {
+        String sql = "SELECT * FROM OrderItem WHERE orderID = ? AND itemID = ? AND (tableID = ? OR (tableID IS NULL AND ? IS NULL))";
 
         try (Connection conn = getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, orderID);
             ps.setInt(2, itemID);
+            
+            if (tableID != null) {
+                ps.setInt(3, tableID);
+                ps.setInt(4, tableID);
+            } else {
+                ps.setNull(3, Types.INTEGER);
+                ps.setNull(4, Types.INTEGER);
+            }
+            
             ResultSet rs = ps.executeQuery();
-            if (rs.next())
-                return mapToOrderItem(rs);
+            if (rs.next()) return mapToOrderItem(rs);
 
         } catch (SQLException e) {
-            System.err.println("[OrderDAO] getOrderItemByOrderAndItem lỗi: " + e.getMessage());
+            System.err.println("[OrderDAO] getOrderItemByOrderAndItemAndTable lỗi: " + e.getMessage());
         }
         return null;
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> Order
+    // HELPER: map ResultSet -> Order (ĐÃ CẬP NHẬT THEO MODEL MỚI)
     // =========================================================
     private Order mapToOrder(ResultSet rs) throws SQLException {
         return new Order(
-
                 rs.getInt("orderID"),
-                rs.getInt("customerID"),
-                rs.getInt("tableID"),
-                rs.getInt("invoiceID"),
+                (Integer) rs.getObject("customerID"), // Lấy Integer object để nhận Null
+                (Integer) rs.getObject("employeeID"),
+                (Integer) rs.getObject("invoiceID"),
+                rs.getInt("orderType"),
                 rs.getString("tableStatus"),
                 rs.getLong("totalAmount"),
                 rs.getTimestamp("checkoutRequestAt"),
                 rs.getInt("isStaffConfirmed"),
                 rs.getTimestamp("createdAt"),
-                rs.getInt("orderType"),
                 rs.getTimestamp("orderTime"),
                 rs.getLong("depositAmount"),
-                rs.getString("orderStatus"),
-                rs.getString("areaType"),  // MỚI THÊM
-                rs.getInt("capacity")      // MỚI THÊM
+                rs.getString("orderStatus")
         );
-
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> OrderItem
+    // HELPER: map ResultSet -> OrderItem (ĐÃ THÊM tableID, price)
     // =========================================================
     private OrderItem mapToOrderItem(ResultSet rs) throws SQLException {
         return new OrderItem(
                 rs.getInt("orderItemID"),
                 rs.getInt("orderID"),
                 rs.getInt("itemID"),
+                (Integer) rs.getObject("tableID"),
                 rs.getInt("quantity"),
-                rs.getString("note"));
+                rs.getInt("price"),
+                rs.getString("note")
+        );
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> MenuItem
+    // HELPER: map ResultSet -> MenuItem (ĐÃ XÓA categoryID)
     // =========================================================
     private MenuItem mapToMenuItem(ResultSet rs) throws SQLException {
-        return new MenuItem(
-
-                rs.getInt("itemID"),
-                rs.getInt("categoryID"),
-                rs.getString("itemName"),
-                rs.getString("description"),
-                rs.getInt("price"),
-                rs.getInt("discountPercent"),
-                rs.getInt("discountedPrice"),
-                rs.getString("image"),
-                rs.getInt("isAvailable"),
-                rs.getString("allergyNotes"),
-                null);
+        MenuItem mi = new MenuItem();
+        mi.setItemID(rs.getInt("itemID"));
+        // rs.getInt("categoryID") đã bị xóa khỏi SQL Table của bạn
+        mi.setItemName(rs.getString("itemName"));
+        mi.setDescription(rs.getString("description"));
+        mi.setPrice(rs.getInt("price"));
+        mi.setDiscountPercent(rs.getInt("discountPercent"));
+        mi.setDiscountedPrice(rs.getInt("discountedPrice"));
+        mi.setImage(rs.getString("image"));
+        mi.setIsAvailable(rs.getInt("isAvailable"));
+        mi.setAllergyNotes(rs.getString("allergyNotes"));
+        return mi;
     }
 }
