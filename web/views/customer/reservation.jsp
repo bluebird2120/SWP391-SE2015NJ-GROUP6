@@ -220,11 +220,12 @@
                 <p class="banner-subtitle">Đặt bàn trước sẽ giúp quý khách lựa chọn được chỗ ngồi ưng ý và sự chuẩn bị chu đáo nhất.</p>
             </div>
 
-            <div class="nav-menu">
-                <a href="${pageContext.request.contextPath}/">🏠 Trang chủ</a>
-                <a href="${pageContext.request.contextPath}/reservation?action=history">📅 Lịch sử của tôi</a>
-            </div>
+<<<<<<< Updated upstream
+          
+=======
+            
 
+>>>>>>> Stashed changes
             <div class="main-layout">
 
                 <%-- SIDEBAR --%>
@@ -526,6 +527,6 @@
             }
         </script>
 
-       <%@include file="/views/includes/footer.jsp" %>    
+      <%@include file="/views/includes/footer.jsp" %>  
     </body>
 </html>

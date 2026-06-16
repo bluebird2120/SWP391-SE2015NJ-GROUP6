@@ -351,7 +351,7 @@
         <a href="#">Giới thiệu</a>
         <a href="#">Thực đơn</a>
         <c:if test="${sessionScope.employee == null}">
-            <a href="#">Đặt bàn</a>
+            <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
         <a href="#">Album ảnh</a>
         <a href="#">Liên hệ</a>
@@ -406,7 +406,7 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
-                        <a href="${pageContext.request.contextPath}/customer/reservations"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
+                        <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                         <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">
