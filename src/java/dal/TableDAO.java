@@ -34,43 +34,6 @@ public class TableDAO extends DBContext {
         return list;
     }
 
-    /*
-     * Tính số bàn còn trống theo từng capacity trong khu vực.
-     
-     * Công thức:
-     * Còn trống = Tổng bàn - Bàn bận
-<<<<<<< Updated upstream
-     *
-     * Bàn bận gồm:
-     *
-=======
-     
-     * Bàn bận gồm:
-     
->>>>>>> Stashed changes
-     * 1. Đơn đặt online:
-     *    tableID IS NULL
-     *    orderStatus = reserved
-     *    tableStatus = reserved
-     *    Trừ theo capacity + areaType + orderTime
-<<<<<<< Updated upstream
-     *
-=======
-     
->>>>>>> Stashed changes
-     * 2. Bàn đang phục vụ / đang dọn:
-     *    tableID IS NOT NULL
-     *    tableStatus IN ('serving', 'cleaning')
-     *    Chỉ trừ khi khách chọn ngày hôm nay.
-<<<<<<< Updated upstream
-     *
-     * Lưu ý:
-     * Không tự hủy order trong hàm tìm bàn.
-     * Hàm này chỉ SELECT, không UPDATE database.
-=======
-    
->>>>>>> Stashed changes
-     */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
 
         List<Table> resultList = new ArrayList<>();
@@ -179,14 +142,10 @@ public class TableDAO extends DBContext {
                 dto.setAreaType(areaType);
                 dto.setTableName("Bàn " + cap + " chỗ");
 
-<<<<<<< Updated upstream
                 /*
                  * Tạm dùng isActive để chứa số lượng bàn còn trống.
                  * Vì giao diện của bạn đang lấy getIsActive() để hiển thị số bàn.
                  */
-=======
-               
->>>>>>> Stashed changes
                 dto.setIsActive(availableCount);
 
                 resultList.add(dto);

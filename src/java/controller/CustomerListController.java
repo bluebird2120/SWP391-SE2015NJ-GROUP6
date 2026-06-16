@@ -78,12 +78,4 @@ public class CustomerListController extends HttpServlet {
             return defaultValue;
         }
     }
-    
-    
-<<<<<<< Updated upstream
-    // test 
-=======
-    
->>>>>>> Stashed changes
-    
 }
