@@ -49,12 +49,8 @@ public class TableDAO extends DBContext {
                 + "GROUP BY capacity";
 
         /*
-      Đơn online tableID IS NULL:
+    
       Chỉ trừ reserved nếu thời gian khách đang chọn bị trùng trong khoảng giữ bàn 30 phút.
-      Ví dụ đã có đơn 16/06 19:00:
-      - chọn 16/06 19:15 => bị trừ
-      - chọn 16/06 19:30 => không bị trừ nữa
-      - chọn 17/06 19:00 => không bị trừ
          */
         String sqlBusyOnline
                 = "SELECT capacity, COUNT(*) AS busy "
@@ -68,8 +64,7 @@ public class TableDAO extends DBContext {
                 + "GROUP BY capacity";
 
         /*
-      Bàn khách đang ăn hoặc đang dọn.
-      Loại này có tableID thật rồi, nên cứ serving/cleaning là bận.
+         Bàn khách đang ăn hoặc đang dọn.
          */
         String sqlBusyCurrentTable
                 = "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy "
@@ -142,8 +137,8 @@ public class TableDAO extends DBContext {
         return resultList;
     }
 
-    /**
-     * Lazy expire: hủy các đơn reserved quá 30 phút mà khách chưa đến.
+    /*
+       hủy các đơn reserved quá 30 phút mà khách chưa đến.
      */
     private void autoExpireReservations() {
         String sql

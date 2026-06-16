@@ -91,6 +91,21 @@
                     <div class="card-title">Manage Staff</div>
                     <div class="card-desc">Add, edit, deactivate staff</div>
                 </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/shift-templates">
+                    <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="card-title">Shift Templates</div>
+                    <div class="card-desc">Quản lý ca làm việc cố định</div>
+                </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/shift-roster">
+                    <div class="card-icon"><i class="fas fa-user-clock"></i></div>
+                    <div class="card-title">Shift Roster</div>
+                    <div class="card-desc">Phân ca theo ngày cho nhân viên</div>
+                </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/attendance">
+                    <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="card-title">Attendance</div>
+                    <div class="card-desc">Điểm danh ca làm trong ngày</div>
+                </a>
                 <a class="card" href="${pageContext.request.contextPath}/owner/order-history">
                     <div class="card-icon"><i class="fas fa-history"></i></div>
                     <div class="card-title">Order History</div>

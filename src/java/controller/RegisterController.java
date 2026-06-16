@@ -152,6 +152,9 @@ public class RegisterController extends HttpServlet {
         if (userName == null || userName.isBlank()) {
             return "Vui lòng nhập tên của bạn.";
         }
+        if (userName.length() <= 0 || userName.length() > 30) {
+            return "Tên trong khoảng từ 1-30 kí tự.";
+        }
         return null;
     }
 

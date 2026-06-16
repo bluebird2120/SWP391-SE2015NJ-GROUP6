@@ -39,8 +39,8 @@ public class AuthenticationFilter implements Filter {
             //kiểm tra đăng nhập chưa
             if (customer == null) {
                 //tạo mới session nếu session đó chưa có
-                HttpSession s = request.getSession(true);
-                s.setAttribute("redirectAfterLogin", uri);
+                HttpSession newSession = request.getSession(true);
+                newSession.setAttribute("redirectAfterLogin", uri);
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }
@@ -52,6 +52,10 @@ public class AuthenticationFilter implements Filter {
         if (uri.startsWith(ctx + "/staff/")) {
             if (employee == null) {
                 response.sendRedirect(ctx + "/login?msg=required");
+                return;
+            }
+            if (employee.getRoleID() == 1) { // Owner không được vào staff routes
+                response.sendRedirect(ctx + "/owner/dashboard");
                 return;
             }
             // Bắt buộc đổi mật khẩu lần đầu

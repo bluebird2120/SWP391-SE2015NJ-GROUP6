@@ -1,9 +1,3 @@
-<%-- 
-    Document   : dish-update
-    Created on : Jun 3, 2026, 9:11:40 PM
-    Author     : Admin
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page import="java.util.List" %>
@@ -128,9 +122,11 @@
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
-        <%@ include file="/views/includes/dashboard.jsp" %>
-        <div class="form-container">  
-            <h2>Quản lý thông tin món ăn</h2>
+        <div style="display:flex; flex-wrap:nowrap; min-height:calc(100vh - 78px); align-items:flex-start;">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <div style="flex:1; padding:32px; background:#f3f4f6; min-width:0;">
+                <div class="form-container">
+                    <h2>${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}</h2>
             <form action="${pageContext.request.contextPath}/update-menu" method="post" enctype="multipart/form-data">
                 <input type="hidden" value="${dish.itemID}" name="id"/>
                 <div class="form-layout">
@@ -179,22 +175,26 @@
                         <div class="form-image">
                             <label class="form-label">Ảnh hiện tại:</label>
                             <img src="${dish.image}"/>
-                            <input type="hidden" value="${dish.image}" name="oldImage"/>
+                            <input type="hidden" value="${dish.image}" name="oldImage"/>  
                         </div>
                         <div class="form-changeImage">
                             <label class="form-label">Đổi ảnh mới:</label>
                             <input type="file" name="newImage"/>
                         </div>
+                        <div class="error-message">${errorImageFile}</div>
+                        
                         <div class="form-checkbox">
                             <label class="form-label">Trạng thái món ăn:</label>
                             <input type="checkbox" name="isAvailable" value="1" ${dish.isAvailable == 1 ? "checked" : ""}/>Hoạt Động
                         </div>
 
-                        <input class="form-submit" type="submit" value="CẬP NHẬT"/>
+                        <input class="form-submit" type="submit" value="${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}"/>
                     </div>
                 </div>
             </form>
-        </div>
+        </div><!-- /.form-container -->
+            </div><!-- /flex:1 -->
+        </div><!-- /flex-row -->
         <%@ include file="/views/includes/footer.jsp" %>
     </body>
 </html>

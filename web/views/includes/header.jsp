@@ -12,8 +12,6 @@
         employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
 %>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
     *, *::before, *::after {
@@ -392,7 +390,7 @@
             </a>
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
-                  <div class="user-avatar">
+                    <div class="user-avatar">
                         <%= customerInitial %>
                     </div>
                     <div class="user-info">
@@ -408,7 +406,7 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
-                        <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
+                        <a href="${pageContext.request.contextPath}/customer/reservations"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                         <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">
