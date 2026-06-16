@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -254,7 +253,6 @@ public class StaffManagementController extends HttpServlet {
         String email = trim(request.getParameter("email"));
         String phone = trim(request.getParameter("phoneNumber"));
         String dobStr = trim(request.getParameter("dob"));
-        String salaryStr = trim(request.getParameter("salary"));
         String address = trim(request.getParameter("address"));
         String password = request.getParameter("password");
 
@@ -309,18 +307,6 @@ public class StaffManagementController extends HttpServlet {
             }
         }
 
-        if (salaryStr != null && !salaryStr.isBlank()) {
-            try {
-                int sal = Integer.parseInt(salaryStr);
-                if (sal < 0) {
-                    errors.put("salary", "Salary cannot be negative.");
-                } else {
-                    e.setSalary(sal);
-                }
-            } catch (NumberFormatException ex) {
-                errors.put("salary", "Invalid salary value.");
-            }
-        }
 
         if (address != null && address.length() > 255) {
             errors.put("address", "Address must not exceed 255 characters.");

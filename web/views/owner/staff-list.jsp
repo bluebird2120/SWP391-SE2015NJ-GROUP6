@@ -122,7 +122,6 @@
                             <th>Full Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Salary</th>
                             <th>Status</th>
                             <th style="width: 200px;">Actions</th>
                         </tr>
@@ -130,7 +129,7 @@
                     <tbody>
                         <c:choose>
                             <c:when test="${empty staffList}">
-                                <tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i> No staff found.</td></tr>
+                                <tr><td colspan="7" class="empty"><i class="fas fa-inbox"></i> No staff found.</td></tr>
                             </c:when>
                             <c:otherwise>
                                 <c:forEach var="s" items="${staffList}" varStatus="loop">
@@ -149,11 +148,7 @@
                                         <td><strong>${s.fullName}</strong></td>
                                         <td>${s.email}</td>
                                         <td>${s.phoneNumber}</td>
-                                        <td>
-                                            <c:if test="${not empty s.salary}">
-                                                <fmt:formatNumber value="${s.salary}" type="number" maxFractionDigits="0"/>
-                                            </c:if>
-                                        </td>
+
                                         <td>
                                             <c:choose>
                                                 <c:when test="${s.isActive == 1}">

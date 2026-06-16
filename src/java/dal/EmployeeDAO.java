@@ -17,7 +17,7 @@ public class EmployeeDAO extends DBContext {
 
         String sql = "SELECT e.employeeID, e.roleID, "
                 + "       e.fullName, e.phoneNumber, e.email, "
-                + "       e.salary, e.isActive, e.address, e.image, "
+                + "       e.isActive, e.address, e.image, "
                 + "       e.createdAt, e.lastPasswordChangedAt, "
                 + "       e.mustChangePassword, e.password "
                 + "FROM Employee e "
@@ -44,7 +44,6 @@ public class EmployeeDAO extends DBContext {
                 emp.setFullName(rs.getString("fullName"));
                 emp.setPhoneNumber(rs.getString("phoneNumber"));
                 emp.setEmail(rs.getString("email"));
-                emp.setSalary(rs.getInt("salary"));
                 emp.setIsActive(rs.getInt("isActive"));
                 emp.setAddress(rs.getString("address"));
                 emp.setImage(rs.getString("image"));
@@ -59,7 +58,7 @@ public class EmployeeDAO extends DBContext {
     
      public Employee findByEmail(String email) {
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "salary, isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
+                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE email = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
@@ -76,7 +75,7 @@ public class EmployeeDAO extends DBContext {
 
     public Employee findById(int id) {
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "salary, isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
+                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -99,7 +98,7 @@ public class EmployeeDAO extends DBContext {
         List<Employee> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "salary, isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
+                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE roleID = ?");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
@@ -129,8 +128,8 @@ public class EmployeeDAO extends DBContext {
     /** Insert staff mới. Trả về employeeID hoặc -1 nếu fail. */
     public int insert(Employee e) {
         String sql = "INSERT INTO Employee "
-                + "(roleID, password, fullName, dob, phoneNumber, email, salary, isActive, address, image, mustChangePassword) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(roleID, password, fullName, dob, phoneNumber, email, isActive, address, image, mustChangePassword) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, e.getRoleID());
             ps.setString(2, e.getPassword());
@@ -142,11 +141,10 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(5, e.getPhoneNumber());
             ps.setString(6, e.getEmail());
-            ps.setInt(7, e.getSalary());
-            ps.setInt(8, e.getIsActive());
-            ps.setString(9, e.getAddress());
-            ps.setString(10, e.getImage());
-            ps.setInt(11, e.getMustChangePassword());
+            ps.setInt(7, e.getIsActive());
+            ps.setString(8, e.getAddress());
+            ps.setString(9, e.getImage());
+            ps.setInt(10, e.getMustChangePassword());
 
             int affected = ps.executeUpdate();
             if (affected == 0) {
@@ -166,7 +164,7 @@ public class EmployeeDAO extends DBContext {
     /** Update staff (không update password ở đây). */
     public boolean update(Employee e) {
         String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
-                + "salary = ?, isActive = ?, address = ?, image = ? WHERE employeeID = ?";
+                + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, e.getFullName());
             if (e.getDob() != null) {
@@ -176,11 +174,10 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(3, e.getPhoneNumber());
             ps.setString(4, e.getEmail());
-            ps.setInt(5, e.getSalary());
-            ps.setInt(6, e.getIsActive());
-            ps.setString(7, e.getAddress());
-            ps.setString(8, e.getImage());
-            ps.setInt(9, e.getEmployeeID());
+            ps.setInt(5, e.getIsActive());
+            ps.setString(6, e.getAddress());
+            ps.setString(7, e.getImage());
+            ps.setInt(8, e.getEmployeeID());
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -260,7 +257,7 @@ public class EmployeeDAO extends DBContext {
 
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "salary, isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
+                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE roleID = ?");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
@@ -372,7 +369,6 @@ public class EmployeeDAO extends DBContext {
         e.setDob(rs.getDate("dob"));
         e.setPhoneNumber(rs.getString("phoneNumber"));
         e.setEmail(rs.getString("email"));
-        e.setSalary(rs.getInt("salary"));
         e.setIsActive(rs.getInt("isActive"));
         e.setAddress(rs.getString("address"));
         e.setImage(rs.getString("image"));

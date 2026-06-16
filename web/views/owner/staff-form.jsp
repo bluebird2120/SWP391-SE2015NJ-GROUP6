@@ -121,22 +121,13 @@
                         </div>
                     </c:if>
 
-                    <div class="row">
-                        <div class="form-group ${not empty errors['salary'] ? 'has-error' : ''}">
-                            <label>Salary (VND)</label>
-                            <input type="number" step="1000" min="0" name="salary" value="${staff.salary}">
-                            <c:if test="${not empty errors['salary']}">
-                                <div class="err-msg">${errors['salary']}</div>
-                            </c:if>
-                        </div>
-                        <div class="form-group">
-                            <label>Profile Photo</label>
-                            <input type="file" name="image" accept="image/jpeg,image/png">
-                            <div class="help-text">JPG/PNG, max 2MB.</div>
-                            <c:if test="${mode == 'edit' && not empty staff.image}">
-                                <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
-                            </c:if>
-                        </div>
+                    <div class="form-group">
+                        <label>Profile Photo</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png">
+                        <div class="help-text">JPG/PNG, max 2MB.</div>
+                        <c:if test="${mode == 'edit' && not empty staff.image}">
+                            <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
+                        </c:if>
                     </div>
 
                     <div class="form-group ${not empty errors['address'] ? 'has-error' : ''}">
