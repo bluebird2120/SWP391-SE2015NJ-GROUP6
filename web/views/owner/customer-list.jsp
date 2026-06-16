@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@page contentType="text/html" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <!DOCTYPE html>
@@ -51,12 +51,12 @@
 </head>
 
 <body>
-
+    <%@include file="/views/includes/header.jsp" %>
 <div class="page-container">
 
     <h2 class="page-title">Danh sách khách hàng</h2>
 
-    <form method="get" action="${pageContext.request.contextPath}/owner/customers" class="row g-3 mb-4">
+    <form method="get" action="${pageContext.request.contextPath}/owner/customers-list" class="row g-3 mb-4">
 
         <div class="col-md-5">
             <input type="text"
@@ -89,7 +89,7 @@
         </div>
 
         <div class="col-md-2">
-            <a href="${pageContext.request.contextPath}/owner/customers" class="btn btn-secondary w-100">
+            <a href="${pageContext.request.contextPath}/owner/customers-list" class="btn btn-secondary w-100">
                 Reset
             </a>
         </div>
@@ -151,7 +151,7 @@
         <ul class="pagination justify-content-center">
 
             <c:if test="${page > 1}">
-                <c:url var="prevUrl" value="/owner/customers">
+                <c:url var="prevUrl" value="/owner/customers-list">
                     <c:param name="page" value="${page - 1}" />
                     <c:param name="search" value="${search}" />
                     <c:param name="loginProvider" value="${loginProvider}" />
@@ -163,7 +163,7 @@
             </c:if>
 
             <c:forEach begin="1" end="${totalPages}" var="i">
-                <c:url var="pageUrl" value="/owner/customers">
+                <c:url var="pageUrl" value="/owner/customers-list">
                     <c:param name="page" value="${i}" />
                     <c:param name="search" value="${search}" />
                     <c:param name="loginProvider" value="${loginProvider}" />
@@ -175,7 +175,7 @@
             </c:forEach>
 
             <c:if test="${page < totalPages}">
-                <c:url var="nextUrl" value="/owner/customers">
+                <c:url var="nextUrl" value="/owner/customers-list">
                     <c:param name="page" value="${page + 1}" />
                     <c:param name="search" value="${search}" />
                     <c:param name="loginProvider" value="${loginProvider}" />
@@ -190,6 +190,6 @@
     </nav>
 
 </div>
-
+     <%@include file="/views/includes/footer.jsp" %>  
 </body>
 </html>

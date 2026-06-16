@@ -207,7 +207,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // ── Thành công ───────────────────────────────────────────
+        // ── Thành công 
         Order order = orderDAO.getOrderByID(orderID);
         HttpSession session = request.getSession(true);
         session.setAttribute("lastReservation", order);
@@ -216,9 +216,7 @@ public class ReservationController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/reservation?action=success");
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  Helpers
-    // ═══════════════════════════════════════════════════════════════
+    
     private void forward(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
         req.getRequestDispatcher("/views/customer/reservation.jsp").forward(req, res);
@@ -237,8 +235,8 @@ public class ReservationController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/login");
     }
 
-    /**
-     * Thời gian đặt bàn phải trong tương lai (cho phép trễ 5 phút).
+    /*
+      Thời gian đặt bàn phải trong tương lai (cho phép trễ 5 phút).
      */
     private String validateDateTime(String s) {
         if (s == null || s.isBlank()) {
