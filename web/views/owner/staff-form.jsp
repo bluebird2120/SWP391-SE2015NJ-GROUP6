@@ -123,10 +123,13 @@
 
                     <div class="form-group">
                         <label>Profile Photo</label>
-                        <input type="file" name="image" accept="image/jpeg,image/png">
-                        <div class="help-text">JPG/PNG, max 2MB.</div>
+                        <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                        <div class="help-text">JPG, PNG, WEBP — tối đa 2MB.</div>
                         <c:if test="${mode == 'edit' && not empty staff.image}">
                             <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
+                        </c:if>
+                        <c:if test="${not empty errors['image']}">
+                            <div class="err-msg">${errors['image']}</div>
                         </c:if>
                     </div>
 
