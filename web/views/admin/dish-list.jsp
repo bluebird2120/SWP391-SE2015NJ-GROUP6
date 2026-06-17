@@ -313,7 +313,7 @@
 
                 </div>
                 <!--Filter to search dish-->
-                <form id="filterForm" action="${pageContext.request.contextPath}/menu-management" method="get" class="filter-form">
+                <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
                     <input type="text" name="search" value="${param.search}"
                            placeholder="Tìm kiếm món ăn..." class="filter-input"/>
 
