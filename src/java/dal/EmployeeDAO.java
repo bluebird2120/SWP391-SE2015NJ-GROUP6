@@ -16,7 +16,6 @@ public class EmployeeDAO extends DBContext {
     public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
-        // Đã xóa e.salary
         String sql = "SELECT e.employeeID, e.roleID, "
                 + "       e.fullName, e.phoneNumber, e.email, "
                 + "       e.isActive, e.address, e.image, "
@@ -25,8 +24,7 @@ public class EmployeeDAO extends DBContext {
                 + "FROM Employee e "
                 + "WHERE e.phoneNumber = ?";
 
-        try (Connection conn = connection; // Sử dụng connection từ DBContext
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, phoneNumber);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -36,7 +34,7 @@ public class EmployeeDAO extends DBContext {
                 }
 
                 String storedPassword = rs.getString("password");
-                if (!storedPassword.equals(rawPassword)) {
+                if (!util.PasswordUtil.verify(rawPassword, storedPassword)) {
                     return null;
                 }
 
