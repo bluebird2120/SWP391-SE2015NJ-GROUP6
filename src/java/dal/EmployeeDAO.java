@@ -1,5 +1,6 @@
 package dal;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +16,7 @@ public class EmployeeDAO extends DBContext {
     public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
+        // Đã xóa e.salary
         String sql = "SELECT e.employeeID, e.roleID, "
                 + "       e.fullName, e.phoneNumber, e.email, "
                 + "       e.isActive, e.address, e.image, "
@@ -23,7 +25,8 @@ public class EmployeeDAO extends DBContext {
                 + "FROM Employee e "
                 + "WHERE e.phoneNumber = ?";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = connection; // Sử dụng connection từ DBContext
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, phoneNumber);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -57,6 +60,7 @@ public class EmployeeDAO extends DBContext {
     }
     
      public Employee findByEmail(String email) {
+        // Đã xóa salary
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE email = ?";
@@ -74,6 +78,7 @@ public class EmployeeDAO extends DBContext {
     }
 
     public Employee findById(int id) {
+        // Đã xóa salary
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE employeeID = ?";
@@ -96,6 +101,7 @@ public class EmployeeDAO extends DBContext {
      */
     public List<Employee> listStaff(String keyword) {
         List<Employee> list = new ArrayList<>();
+        // Đã xóa salary
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
@@ -127,6 +133,7 @@ public class EmployeeDAO extends DBContext {
 
     /** Insert staff mới. Trả về employeeID hoặc -1 nếu fail. */
     public int insert(Employee e) {
+        // Đã xóa salary
         String sql = "INSERT INTO Employee "
                 + "(roleID, password, fullName, dob, phoneNumber, email, isActive, address, image, mustChangePassword) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -141,6 +148,7 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(5, e.getPhoneNumber());
             ps.setString(6, e.getEmail());
+            // Điều chỉnh lại index sau khi bỏ salary
             ps.setInt(7, e.getIsActive());
             ps.setString(8, e.getAddress());
             ps.setString(9, e.getImage());
@@ -163,6 +171,7 @@ public class EmployeeDAO extends DBContext {
 
     /** Update staff (không update password ở đây). */
     public boolean update(Employee e) {
+        // Đã xóa salary
         String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
                 + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -174,10 +183,12 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(3, e.getPhoneNumber());
             ps.setString(4, e.getEmail());
+            // Điều chỉnh lại index sau khi bỏ salary
             ps.setInt(5, e.getIsActive());
             ps.setString(6, e.getAddress());
             ps.setString(7, e.getImage());
             ps.setInt(8, e.getEmployeeID());
+            
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -255,6 +266,7 @@ public class EmployeeDAO extends DBContext {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 5;  //số lượng sản phẩm có trong trang
 
+        // Đã xóa salary
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
@@ -338,12 +350,14 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
+    
     /** Dropdown roster: chỉ lấy staff active (roleID=2, isActive=1), trả ID + fullName. */
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
         String sql = "SELECT employeeID, fullName FROM Employee "
                 + "WHERE roleID = ? AND isActive = 1 ORDER BY fullName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            // Đảm bảo UserRole.RESTAURANT_STAFF.getRoleID() khớp với ID thực tế trong bảng Role
             ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -359,6 +373,32 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
     
+    // =========================================================
+    // THUẬT TOÁN ĐIỀU PHỐI (LOAD BALANCING) THÔNG MINH
+    // =========================================================
+    public int getLeastBusyAndLongestIdleStaffID() {
+        String sql = "SELECT e.employeeID, " +
+                     "COUNT(CASE WHEN o.orderStatus NOT IN ('completed', 'cancelled') THEN 1 END) AS activeOrders, " +
+                     "COUNT(CASE WHEN o.orderStatus = 'completed' AND DATE(o.createdAt) = CURDATE() THEN 1 END) AS completedOrdersToday " +
+                     "FROM Employee e " +
+                     "LEFT JOIN `Order` o ON e.employeeID = o.employeeID " +
+                     "WHERE e.roleID = ? AND e.isActive = 1 " + 
+                     "GROUP BY e.employeeID, e.fullName " +
+                     "ORDER BY activeOrders ASC, completedOrdersToday ASC " +
+                     "LIMIT 1";
+                     
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("employeeID");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[EmployeeDAO] getLeastBusyAndLongestIdleStaffID lỗi: " + e.getMessage());
+        }
+        return -1;
+    }
 
     private Employee mapRow(ResultSet rs) throws SQLException {
         Employee e = new Employee();
@@ -369,6 +409,7 @@ public class EmployeeDAO extends DBContext {
         e.setDob(rs.getDate("dob"));
         e.setPhoneNumber(rs.getString("phoneNumber"));
         e.setEmail(rs.getString("email"));
+        // Đã xóa e.setSalary(rs.getInt("salary"));
         e.setIsActive(rs.getInt("isActive"));
         e.setAddress(rs.getString("address"));
         e.setImage(rs.getString("image"));

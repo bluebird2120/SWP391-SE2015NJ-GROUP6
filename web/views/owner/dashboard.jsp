@@ -111,7 +111,7 @@
                     <div class="card-title">Order History</div>
                     <div class="card-desc">View completed orders</div>
                 </a>
-                <a class="card" href="${pageContext.request.contextPath}/owner/tables">
+                <a class="card" href="${pageContext.request.contextPath}/manage-table">
                     <div class="card-icon"><i class="fas fa-chair"></i></div>
                     <div class="card-title">Restaurant Tables</div>
                     <div class="card-desc">Table layout and status</div>
