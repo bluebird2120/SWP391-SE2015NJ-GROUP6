@@ -27,7 +27,7 @@ public class CustomerDAO extends DBContext {
 
                 String storedPassword = rs.getString("password") == null ? "" : rs.getString("password");
 
-                if (!storedPassword.equals(rawPassword)) {
+                if (!util.PasswordUtil.verify(rawPassword, storedPassword)) {
                     return null;
                 }
 
@@ -106,7 +106,7 @@ public class CustomerDAO extends DBContext {
             ps.setString(1, userName);
             ps.setString(2, phoneNumber);
             ps.setString(3, email);
-            ps.setString(4, password);
+            ps.setString(4, util.PasswordUtil.hash(password));
             //trả về true / false
             return ps.executeUpdate() > 0;
         }
@@ -199,104 +199,95 @@ public class CustomerDAO extends DBContext {
 
         return null;
     }
-    
-    
-    
+
     public List<Customer> getCustomerList(String search, String loginProvider, int page, int pageSize)
-        throws SQLException {
+            throws SQLException {
 
-    List<Customer> list = new ArrayList<>();
+        List<Customer> list = new ArrayList<>();
 
-    StringBuilder sql = new StringBuilder();
-    sql.append("SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider ");
-    sql.append("FROM Customer ");
-    sql.append("WHERE 1 = 1 ");
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider ");
+        sql.append("FROM Customer ");
+        sql.append("WHERE 1 = 1 ");
 
-    List<Object> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
-    if (search != null && !search.trim().isEmpty()) {
-        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
-        String keyword = "%" + search.trim() + "%";
-        params.add(keyword);
-        params.add(keyword);
-        params.add(keyword);
-    }
-
-    if (loginProvider != null 
-            && !loginProvider.trim().isEmpty() 
-            && !"all".equalsIgnoreCase(loginProvider)) {
-        sql.append("AND loginProvider = ? ");
-        params.add(loginProvider.trim());
-    }
-
-    sql.append("ORDER BY createdAt DESC ");
-    sql.append("LIMIT ? OFFSET ? ");
-
-    params.add(pageSize);
-    params.add((page - 1) * pageSize);
-
-    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+            String keyword = "%" + search.trim() + "%";
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
         }
 
-        try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapRow(rs));
+        if (loginProvider != null
+                && !loginProvider.trim().isEmpty()
+                && !"all".equalsIgnoreCase(loginProvider)) {
+            sql.append("AND loginProvider = ? ");
+            params.add(loginProvider.trim());
+        }
+
+        sql.append("ORDER BY createdAt DESC ");
+        sql.append("LIMIT ? OFFSET ? ");
+
+        params.add(pageSize);
+        params.add((page - 1) * pageSize);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
             }
         }
+
+        return list;
     }
 
-    return list;
-}
+    public int countCustomerList(String search, String loginProvider)
+            throws SQLException {
 
-public int countCustomerList(String search, String loginProvider)
-        throws SQLException {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(*) ");
+        sql.append("FROM Customer ");
+        sql.append("WHERE 1 = 1 ");
 
-    StringBuilder sql = new StringBuilder();
-    sql.append("SELECT COUNT(*) ");
-    sql.append("FROM Customer ");
-    sql.append("WHERE 1 = 1 ");
+        List<Object> params = new ArrayList<>();
 
-    List<Object> params = new ArrayList<>();
-
-    if (search != null && !search.trim().isEmpty()) {
-        sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
-        String keyword = "%" + search.trim() + "%";
-        params.add(keyword);
-        params.add(keyword);
-        params.add(keyword);
-    }
-
-    if (loginProvider != null 
-            && !loginProvider.trim().isEmpty() 
-            && !"all".equalsIgnoreCase(loginProvider)) {
-        sql.append("AND loginProvider = ? ");
-        params.add(loginProvider.trim());
-    }
-
-    try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (userName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?) ");
+            String keyword = "%" + search.trim() + "%";
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
         }
 
-        try (ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
+        if (loginProvider != null
+                && !loginProvider.trim().isEmpty()
+                && !"all".equalsIgnoreCase(loginProvider)) {
+            sql.append("AND loginProvider = ? ");
+            params.add(loginProvider.trim());
+        }
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         }
+
+        return 0;
     }
 
-    return 0;
-}
-    
-    
-    
-    
-    
-    
-    
-    
 }
