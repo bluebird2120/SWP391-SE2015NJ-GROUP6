@@ -21,7 +21,7 @@ import model.MenuItem;
  *
  * @author Admin
  */
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu-management"})
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
 public class MenuItemController extends HttpServlet {
 
     /**

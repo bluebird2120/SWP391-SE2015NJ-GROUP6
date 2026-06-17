@@ -17,7 +17,9 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(int itemID, int categoryID, String itemName, String description, int price, int discountPercent, int discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
+    public MenuItem(int itemID, int categoryID, String itemName, String description, 
+                    int price, int discountPercent, int discountedPrice, String image, 
+                    int isAvailable, String allergyNotes, String categoryName) {
         this.itemID = itemID;
         this.categoryID = categoryID;
         this.itemName = itemName;
@@ -31,92 +33,37 @@ public class MenuItem {
         this.categoryName = categoryName;
     }
 
-    public int getItemID() {
-        return itemID;
-    }
+    // --- Getters & Setters ---
+    public int getItemID() { return itemID; }
+    public void setItemID(int itemID) { this.itemID = itemID; }
 
-    public void setItemID(int itemID) {
-        this.itemID = itemID;
-    }
+    public int getCategoryID() { return categoryID; }
+    public void setCategoryID(int categoryID) { this.categoryID = categoryID; }
 
-    public int getCategoryID() {
-        return categoryID;
-    }
+    public String getItemName() { return itemName; }
+    public void setItemName(String itemName) { this.itemName = itemName; }
 
-    public void setCategoryID(int categoryID) {
-        this.categoryID = categoryID;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getItemName() {
-        return itemName;
-    }
+    public int getPrice() { return price; }
+    public void setPrice(int price) { this.price = price; }
 
-    public void setItemName(String itemName) {
-        this.itemName = itemName;
-    }
+    public int getDiscountPercent() { return discountPercent; }
+    public void setDiscountPercent(int discountPercent) { this.discountPercent = discountPercent; }
 
-    public String getDescription() {
-        return description;
-    }
+    public int getDiscountedPrice() { return discountedPrice; }
+    public void setDiscountedPrice(int discountedPrice) { this.discountedPrice = discountedPrice; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
 
-    public int getPrice() {
-        return price;
-    }
+    public int getIsAvailable() { return isAvailable; }
+    public void setIsAvailable(int isAvailable) { this.isAvailable = isAvailable; }
 
-    public void setPrice(int price) {
-        this.price = price;
-    }
+    public String getAllergyNotes() { return allergyNotes; }
+    public void setAllergyNotes(String allergyNotes) { this.allergyNotes = allergyNotes; }
 
-    public int getDiscountPercent() {
-        return discountPercent;
-    }
-
-    public void setDiscountPercent(int discountPercent) {
-        this.discountPercent = discountPercent;
-    }
-
-    public int getDiscountedPrice() {
-        return discountedPrice;
-    }
-
-    public void setDiscountedPrice(int discountedPrice) {
-        this.discountedPrice = discountedPrice;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
-    }
-
-    public int getIsAvailable() {
-        return isAvailable;
-    }
-
-    public void setIsAvailable(int isAvailable) {
-        this.isAvailable = isAvailable;
-    }
-
-    public String getAllergyNotes() {
-        return allergyNotes;
-    }
-
-    public void setAllergyNotes(String allergyNotes) {
-        this.allergyNotes = allergyNotes;
-    }
-
-    public String getCategoryName() {
-        return categoryName;
-    }
-
-    public void setCategoryName(String categoryName) {
-        this.categoryName = categoryName;
-    }
-
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 }

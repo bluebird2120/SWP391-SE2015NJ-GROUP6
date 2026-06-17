@@ -158,7 +158,7 @@
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/tables') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/tables">
+                   href="${pageContext.request.contextPath}/manage-table">
                     <i class="fas fa-chair"></i> Restaurant Tables
                 </a>
             </li>
@@ -226,7 +226,7 @@
         </li>
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/menu-management">
+               href="${pageContext.request.contextPath}/menu">
                 <i class="fas fa-hamburger"></i> Menu Items
             </a>
         </li>

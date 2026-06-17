@@ -24,7 +24,11 @@ import model.MenuItem;
  * @author Admin
  */
 @WebServlet(name = "UpdateMenuItemServlet", urlPatterns = {"/update-menu"})
-@MultipartConfig
+@MultipartConfig(
+    fileSizeThreshold = 2 * 1024 * 1024,
+    maxFileSize = 10 * 1024 * 1024,
+    maxRequestSize = 15 * 1024 * 1024)
+
 public class UpdateMenuItemServlet extends HttpServlet {
 
     /**
@@ -96,6 +100,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         MenuItem mi;
+        double MAX_FILE_SIZE = 5 * 1024 * 1024;
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
         String categoryId_raw = request.getParameter("category");
@@ -114,8 +119,8 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
 
         int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
-        if(!checkEmpty(errorName)){
-            if(menuItemDAO.checkDuplicateMenuItem(itemName, itemId)){
+        if (!checkEmpty(errorName)) {
+            if (menuItemDAO.checkDuplicateMenuItem(itemName, itemId)) {
                 errorName = "Tên món ăn đã tồn tại";
             }
         }
@@ -123,6 +128,8 @@ public class UpdateMenuItemServlet extends HttpServlet {
         if (newImage != null && !newImage.getSubmittedFileName().isEmpty()) {
             if (!isValidImageFile(newImage.getSubmittedFileName())) {
                 errorImage = "Vui lòng nhập file ảnh (file có đuôi .jpg, .png, .webp, .jpeg)";
+            } else if (newImage.getSize() > MAX_FILE_SIZE) {
+                errorImage = "Dung lượng ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB.";
             }
         } else {
             if (itemId == 0) {
@@ -184,7 +191,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             }
         }
         if (itemId == 0) {
-            menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, fileName, status, allergyNotes_raw);   
+            menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, fileName, status, allergyNotes_raw);
         } else {
             menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price,
                     discountPercent, fileName, status, allergyNotes_raw);

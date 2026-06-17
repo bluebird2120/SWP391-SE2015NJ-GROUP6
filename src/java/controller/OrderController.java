@@ -1,46 +1,29 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import dal.OrderDAO;
 import model.Order;
 import model.OrderItem;
+import model.MenuItem;
+
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.util.List;
-import model.MenuItem;
 
-/**
- *
- * @author taduc
- */
 @WebServlet(name = "OrderController", urlPatterns = {"/order"})
 public class OrderController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     private final OrderDAO orderDAO = new OrderDAO();
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
@@ -53,47 +36,13 @@ public class OrderController extends HttpServlet {
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     // =========================================================
     // GET /order?action=cart  →  hiển thị giỏ hàng
     // =========================================================
-//    @Override
-//    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-//            throws ServletException, IOException {
-// 
-//        String action = request.getParameter("action");
-// 
-//        if ("cart".equals(action)) {
-//            HttpSession session = request.getSession();
-//            Integer orderID = (Integer) session.getAttribute("orderID");
-// 
-//            if (orderID == null) {
-//                request.setAttribute("orderItems", null);
-//                request.setAttribute("menuItems",  null);
-//            } else {
-//                // Lấy 2 list song song — thứ tự index tương ứng nhau
-//                List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
-//                List<MenuItem>  menuItems  = orderDAO.getMenuItemsByOrderId(orderID);
-// 
-//                request.setAttribute("orderItems", orderItems);
-//                request.setAttribute("menuItems",  menuItems);
-//                request.setAttribute("orderID",    orderID);
-//            }
-// 
-//            request.getRequestDispatcher("/views/cart.jsp").forward(request, response);
-//        }
-//    }
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         String action = request.getParameter("action");
 
         // Nếu không truyền action, mặc định xem như là "cart" để tránh trang trắng
@@ -104,12 +53,10 @@ public class OrderController extends HttpServlet {
         if ("cart".equals(action)) {
             HttpSession session = request.getSession();
 
-            // Tạm thời fix cứng bằng 2 để test
+            // Tạm thời fix cứng bằng 2 để test (Nhớ xóa hoặc comment lại khi đưa vào thực tế)
             Integer orderID = 2;
-            session.setAttribute("orderID", orderID); // thêm dòng này
-            // Tạm thời fix cứng bằng 2 để test
             session.setAttribute("orderID", orderID);
-            session.setAttribute("tableID", 2); // Thêm dòng này để JSP nhận diện được bàn số 2
+            session.setAttribute("tableID", 2);
 
             if (orderID == null) {
                 request.setAttribute("orderItems", null);
@@ -128,14 +75,6 @@ public class OrderController extends HttpServlet {
         }
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     // =========================================================
     // POST /order?action=add
     // Thêm món vào giỏ hàng
@@ -143,6 +82,8 @@ public class OrderController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
@@ -152,20 +93,27 @@ public class OrderController extends HttpServlet {
             int quantity = Integer.parseInt(request.getParameter("quantity"));
             String note = request.getParameter("note");
 
+            // Lấy giá trị tiền của món ăn (Phải truyền từ form JSP lên)
+            int price = 0;
+            String priceParam = request.getParameter("price");
+            if (priceParam != null && !priceParam.isEmpty()) {
+                price = Integer.parseInt(priceParam);
+            }
+
             Integer orderID = (Integer) session.getAttribute("orderID");
+            Integer tableID = (Integer) session.getAttribute("tableID");
 
             if (orderID == null) {
-                Integer tableID = (Integer) session.getAttribute("tableID");
                 Integer customerID = (Integer) session.getAttribute("customerID");
 
                 Order newOrder = new Order();
-                newOrder.setTableID(tableID != null ? tableID : 0);
-                newOrder.setCustomerID(customerID != null ? customerID : 0);
-                newOrder.setOrderType(tableID != null ? 1 : 2);
+                newOrder.setCustomerID(customerID);
+                newOrder.setOrderType(tableID != null ? 1 : 2); // 1: Dùng tại bàn, 2: Mang về
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
-                newOrder.setOrderStatus("pending");
+                newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
-                
+
+                // THÊM LẠI: Lấy sức chứa và khu vực từ session để đưa vào hóa đơn
                 String areaType = (String) session.getAttribute("areaType");
                 Integer capacity = (Integer) session.getAttribute("capacity");
                 newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");
@@ -177,11 +125,17 @@ public class OrderController extends HttpServlet {
                     return;
                 }
 
+                // Lưu liên kết Bàn và Đơn hàng vào bảng Order_Table
+                if (tableID != null && tableID > 0) {
+                    orderDAO.linkOrderAndTable(newOrderID, tableID);
+                }
+
                 session.setAttribute("orderID", newOrderID);
                 orderID = newOrderID;
             }
 
-            int result = orderDAO.addOrderItem(orderID, itemID, quantity, note);
+            // Truyền thêm tableID và price vào hàm addOrderItem
+            int result = orderDAO.addOrderItem(orderID, itemID, tableID, quantity, price, note);
             if (result == -1) {
                 response.sendRedirect(request.getContextPath() + "/menu?error=add_item_failed");
                 return;
@@ -214,21 +168,13 @@ public class OrderController extends HttpServlet {
             // --- XÓA MÓN ---
         } else if ("remove".equals(action)) {
             int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
-
             orderDAO.removeOrderItem(orderItemID);
-
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
         }
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
     @Override
     public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
+        return "Order Controller Handles Add, Update, Remove logic";
+    }
 }
