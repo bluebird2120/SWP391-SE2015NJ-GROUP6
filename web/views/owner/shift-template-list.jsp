@@ -58,12 +58,12 @@
             <div class="table-card">
                 <table>
                     <thead>
-                        <tr><th>ID</th><th>Tên ca</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thao tác</th></tr>
+                        <tr><th>#</th><th>Tên ca</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thao tác</th></tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="t" items="${templates}">
+                        <c:forEach var="t" items="${templates}" varStatus="st">
                             <tr>
-                                <td>${t.templateID}</td>
+                                <td>${st.count}</td>
                                 <td>${t.shiftName}</td>
                                 <td><fmt:formatDate value="${t.startTime}" pattern="HH:mm"/></td>
                                 <td><fmt:formatDate value="${t.endTime}" pattern="HH:mm"/></td>

@@ -49,28 +49,27 @@ public class EmployeeShiftDAO extends DBContext {
     }
 
     /**
-     * Kiểm tra staff đã có ca khác chồng giờ trong cùng workDate.
-     * Trả true = có overlap, không cho assign nữa.
+     * Kiểm tra nhân viên đã có ca nào trong ngày workDate chưa.
+     * Quy tắc: 1 nhân viên chỉ được làm 1 ca trong 1 ngày.
+     * Trả true = đã có ca, không cho assign thêm.
+     *
+     * @param employeeID   mã nhân viên
+     * @param workDate     ngày làm việc
+     * @param newTemplateID tham số giữ lại để không phá vỡ signature, không dùng trong query
      */
     public boolean hasOverlap(int employeeID, Date workDate, int newTemplateID) {
-        String sql = "SELECT 1 "
-                + "FROM EmployeeShifts es "
-                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
-                + "JOIN ShiftTemplates nt ON nt.templateID = ? "
-                + "WHERE es.employeeID = ? AND es.workDate = ? "
-                + "  AND st.startTime < nt.endTime "
-                + "  AND st.endTime   > nt.startTime "
+        String sql = "SELECT 1 FROM EmployeeShifts "
+                + "WHERE employeeID = ? AND workDate = ? "
                 + "LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, newTemplateID);
-            ps.setInt(2, employeeID);
-            ps.setDate(3, workDate);
+            ps.setInt(1, employeeID);
+            ps.setDate(2, workDate);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
-            return true;
+            return true; // fail-safe: chặn assign nếu query lỗi
         }
     }
 
@@ -283,7 +282,7 @@ public class EmployeeShiftDAO extends DBContext {
                     r.setShiftName(rs.getString("shiftName"));
                     r.setStartTime(rs.getTime("startTime"));
                     r.setEndTime(rs.getTime("endTime"));
-                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setWorkDate(rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
                     r.setCheckInTime(rs.getTimestamp("checkInTime"));
                     r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
                     r.setStatus(rs.getString("status"));
@@ -322,7 +321,7 @@ public class EmployeeShiftDAO extends DBContext {
                     r.setShiftName(rs.getString("shiftName"));
                     r.setStartTime(rs.getTime("startTime"));
                     r.setEndTime(rs.getTime("endTime"));
-                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setWorkDate(rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
                     r.setCheckInTime(rs.getTimestamp("checkInTime"));
                     r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
                     r.setStatus(rs.getString("status"));
@@ -337,15 +336,59 @@ public class EmployeeShiftDAO extends DBContext {
 
     /** Chỉ cho unassign khi status='scheduled' (chưa xử lý). */
     public boolean unassign(int shiftID) {
-        String sql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, shiftID);
-            return ps.executeUpdate() > 0;
+        String deleteRequestsSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ? OR targetShiftID = ?";
+        String deleteShiftSql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
+        
+        java.sql.Connection conn = connection;
+        boolean originalAuto = true;
+        try {
+            originalAuto = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement psReq = conn.prepareStatement(deleteRequestsSql)) {
+                psReq.setInt(1, shiftID);
+                psReq.setInt(2, shiftID);
+                psReq.executeUpdate();
+            }
+            
+            int affectedRows = 0;
+            try (PreparedStatement psShift = conn.prepareStatement(deleteShiftSql)) {
+                psShift.setInt(1, shiftID);
+                affectedRows = psShift.executeUpdate();
+            }
+            
+            conn.commit();
+            return affectedRows > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
             return false;
+        } finally {
+            try {
+                conn.setAutoCommit(originalAuto);
+            } catch (SQLException ignore) {}
         }
     }
+
+    public boolean hasConflictingShift(int employeeID, Date workDate, int excludeShiftID) {
+        String sql = "SELECT 1 FROM EmployeeShifts WHERE employeeID = ? AND workDate = ? AND shiftID != ? LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            ps.setDate(2, workDate);
+            ps.setInt(3, excludeShiftID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return true; // fail-safe
+        }
+    }
+
 
     /**
      * Liệt kê mọi shift trong ngày, JOIN Employee + ShiftTemplates.
@@ -507,6 +550,156 @@ public class EmployeeShiftDAO extends DBContext {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    /* ===================== BULK ATTENDANCE ===================== */
+
+    /**
+     * Thực hiện điểm danh hàng loạt (bulk check-in) cho danh sách ca làm việc.
+     * Mỗi ca làm việc phải thỏa mãn điều kiện trạng thái là 'scheduled', chưa check-in và ngày làm việc là ngày hiện tại.
+     * Trạng thái điểm danh (Present hoặc Late) được tính tự động dựa trên thời gian bắt đầu của ca.
+     * Sử dụng Transaction để đảm bảo tính toàn vẹn của dữ liệu.
+     *
+     * @param shiftIDs     danh sách các mã ca làm việc (shiftID) cần check-in
+     * @param checkInTime  thời gian thực hiện check-in
+     * @return số lượng ca làm việc được điểm danh thành công
+     */
+    public int bulkCheckIn(List<Integer> shiftIDs, Timestamp checkInTime) {
+        if (shiftIDs == null || shiftIDs.isEmpty()) return 0;
+        // Lấy startTime của từng shiftID để tính status (present/late)
+        String getSql = "SELECT es.shiftID, st.startTime FROM EmployeeShifts es "
+                + "JOIN ShiftTemplates st ON st.templateID = es.templateID "
+                + "WHERE es.shiftID = ? AND es.status = 'scheduled' "
+                + "  AND es.checkInTime IS NULL AND es.workDate = CURRENT_DATE";
+        String updSql = "UPDATE EmployeeShifts SET checkInTime = ?, status = ? "
+                + "WHERE shiftID = ? AND status = 'scheduled' "
+                + "  AND checkInTime IS NULL AND workDate = CURRENT_DATE";
+        int total = 0;
+        boolean origAuto = true;
+        try {
+            origAuto = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement getPs = connection.prepareStatement(getSql);
+                 PreparedStatement updPs = connection.prepareStatement(updSql)) {
+                for (int id : shiftIDs) {
+                    getPs.setInt(1, id);
+                    Time startTime = null;
+                    try (ResultSet rs = getPs.executeQuery()) {
+                        if (rs.next()) startTime = rs.getTime("startTime");
+                    }
+                    if (startTime == null) continue; // already processed or not eligible
+                    String status = computeStatus(checkInTime, startTime);
+                    updPs.setTimestamp(1, checkInTime);
+                    updPs.setString(2, status);
+                    updPs.setInt(3, id);
+                    total += updPs.executeUpdate();
+                }
+            }
+            connection.commit();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ignore) {}
+        } finally {
+            try { connection.setAutoCommit(origAuto); } catch (SQLException ignore) {}
+        }
+        return total;
+    }
+
+    /**
+     * Đánh dấu vắng mặt hàng loạt (bulk mark absent) cho danh sách ca làm việc.
+     * Chỉ áp dụng cho các ca có trạng thái 'scheduled' và ngày làm việc là ngày hiện tại.
+     * Sử dụng Transaction để đảm bảo tính toàn vẹn của dữ liệu.
+     *
+     * @param shiftIDs danh sách các mã ca làm việc (shiftID) cần đánh dấu vắng mặt
+     * @return số lượng ca làm việc được đánh dấu vắng mặt thành công
+     */
+    public int bulkMarkAbsent(List<Integer> shiftIDs) {
+        if (shiftIDs == null || shiftIDs.isEmpty()) return 0;
+        String sql = "UPDATE EmployeeShifts "
+                + "SET status = 'absent', checkInTime = NULL, checkOutTime = NULL "
+                + "WHERE shiftID = ? AND status = 'scheduled' AND workDate = CURRENT_DATE";
+        int total = 0;
+        boolean origAuto = true;
+        try {
+            origAuto = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                for (int id : shiftIDs) {
+                    ps.setInt(1, id);
+                    total += ps.executeUpdate();
+                }
+            }
+            connection.commit();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ignore) {}
+        } finally {
+            try { connection.setAutoCommit(origAuto); } catch (SQLException ignore) {}
+        }
+        return total;
+    }
+
+    /**
+     * Lấy danh sách các ca làm việc của nhân viên khác có thể đổi (tương lai, status=scheduled).
+     */
+    public List<ShiftRow> listEligibleSwaps(int excludeEmployeeID) {
+        List<ShiftRow> list = new ArrayList<>();
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, es.templateID, st.shiftName, st.startTime, st.endTime, es.workDate, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "WHERE es.employeeID != ? AND es.workDate >= CURRENT_DATE AND es.status = 'scheduled' "
+                + "ORDER BY es.workDate ASC, st.startTime ASC";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, excludeEmployeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setStatus(rs.getString("status"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    public ShiftRow getShiftByID(int shiftID) {
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, es.templateID, st.shiftName, st.startTime, st.endTime, es.workDate, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "WHERE es.shiftID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, shiftID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
+                    r.setStatus(rs.getString("status"));
+                    return r;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 
     /* ===================== HELPERS ===================== */

@@ -177,12 +177,91 @@ public class TableDAO extends DBContext {
         Table t = new Table();
         t.setTableID(rs.getInt("tableID"));
         t.setEmployeeID(rs.getInt("employeeID"));
-        t.setCurrentStaffID(rs.getInt("currentStaffID"));
+        
+        // BỎ DÒNG NÀY ĐI VÌ DATABASE MỚI KHÔNG CÒN CỘT NÀY NỮA
+        // t.setCurrentStaffID(rs.getInt("currentStaffID")); 
+        
         t.setTableName(rs.getString("tableName"));
         t.setCapacity(rs.getInt("capacity"));
         t.setQRCodeToken(rs.getString("QRCodeToken"));
         t.setAreaType(rs.getString("areaType"));
         t.setIsActive(rs.getInt("isActive"));
         return t;
+    }
+    
+    // =========================================================
+    // CÁC HÀM THÊM MỚI CHO CHỨC NĂNG QUẢN LÝ BÀN (TABLE MANAGEMENT)
+    // =========================================================
+
+    /**
+     * 1. Xem danh sách TẤT CẢ các bàn (Dành cho Owner & Employee)
+     * Khác với getAllActiveTables() của bạn bạn, hàm này lấy cả bàn isActive = 0
+     * để Quản lý có thể thấy và mở lại bàn nếu cần.
+     */
+    public List<Table> getAllTablesForManagement() {
+        List<Table> list = new ArrayList<>();
+        String sql = "SELECT * FROM `Table` ORDER BY tableID DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRow(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * 2. Thêm bàn mới (Chỉ dành cho Owner)
+     */
+    public boolean addTable(Table t) {
+        String sql = "INSERT INTO `Table` (employeeID, tableName, capacity, QRCodeToken, areaType, isActive) " +
+                     "VALUES (?, ?, ?, ?, ?, ?)";
+        
+        // Tự động sinh mã QR Token ngẫu nhiên và duy nhất
+        String uniqueQRToken = java.util.UUID.randomUUID().toString();
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            // employeeID: ID của Owner thực hiện thêm bàn
+            if (t.getEmployeeID() > 0) {
+                ps.setInt(1, t.getEmployeeID());
+            } else {
+                ps.setNull(1, java.sql.Types.INTEGER);
+            }
+            
+            ps.setString(2, t.getTableName());
+            ps.setInt(3, t.getCapacity());
+            ps.setString(4, uniqueQRToken);
+            ps.setString(5, t.getAreaType() != null ? t.getAreaType() : "public");
+            ps.setInt(6, t.getIsActive());
+
+            return ps.executeUpdate() > 0;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * 3. Cập nhật thông tin bàn (Chỉ dành cho Owner)
+     */
+    public boolean updateTable(Table t) {
+        String sql = "UPDATE `Table` SET tableName = ?, capacity = ?, areaType = ?, isActive = ? " +
+                     "WHERE tableID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, t.getTableName());
+            ps.setInt(2, t.getCapacity());
+            ps.setString(3, t.getAreaType());
+            ps.setInt(4, t.getIsActive());
+            ps.setInt(5, t.getTableID());
+
+            return ps.executeUpdate() > 0;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
