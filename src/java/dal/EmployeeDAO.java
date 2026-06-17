@@ -33,7 +33,7 @@ public class EmployeeDAO extends DBContext {
                 }
 
                 String storedPassword = rs.getString("password");
-                if (!storedPassword.equals(rawPassword)) {
+                if (!util.PasswordUtil.verify(rawPassword, storedPassword)) {
                     return null;
                 }
 
@@ -55,8 +55,8 @@ public class EmployeeDAO extends DBContext {
             }
         }
     }
-    
-     public Employee findByEmail(String email) {
+
+    public Employee findByEmail(String email) {
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE email = ?";
@@ -91,8 +91,8 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * List staff (roleID = 2) có search theo tên/email/phone.
-     * Owner gọi để hiển thị bảng quản lý.
+     * List staff (roleID = 2) có search theo tên/email/phone. Owner gọi để hiển
+     * thị bảng quản lý.
      */
     public List<Employee> listStaff(String keyword) {
         List<Employee> list = new ArrayList<>();
@@ -125,7 +125,9 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
 
-    /** Insert staff mới. Trả về employeeID hoặc -1 nếu fail. */
+    /**
+     * Insert staff mới. Trả về employeeID hoặc -1 nếu fail.
+     */
     public int insert(Employee e) {
         String sql = "INSERT INTO Employee "
                 + "(roleID, password, fullName, dob, phoneNumber, email, isActive, address, image, mustChangePassword) "
@@ -161,7 +163,9 @@ public class EmployeeDAO extends DBContext {
         return -1;
     }
 
-    /** Update staff (không update password ở đây). */
+    /**
+     * Update staff (không update password ở đây).
+     */
     public boolean update(Employee e) {
         String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
                 + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
@@ -185,7 +189,10 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-    /** Soft delete: set isActive = 0. Tránh xoá cứng vì có FK từ EmployeeShifts/Feedback... */
+    /**
+     * Soft delete: set isActive = 0. Tránh xoá cứng vì có FK từ
+     * EmployeeShifts/Feedback...
+     */
     public boolean softDelete(int employeeID) {
         String sql = "UPDATE Employee SET isActive = 0 WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -197,7 +204,9 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-    /** Reactivate: set isActive = 1. */
+    /**
+     * Reactivate: set isActive = 1.
+     */
     public boolean reactivate(int employeeID) {
         String sql = "UPDATE Employee SET isActive = 1 WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -210,9 +219,9 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Đếm tổng số staff thoả filter.
-     * keyword: search theo fullName/phoneNumber/email (có thể null/blank).
-     * status: 1 = active, 0 = inactive, null = tất cả.
+     * Đếm tổng số staff thoả filter. keyword: search theo
+     * fullName/phoneNumber/email (có thể null/blank). status: 1 = active, 0 =
+     * inactive, null = tất cả.
      */
     public int countStaff(String keyword, Integer status) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Employee WHERE roleID = ?");
@@ -247,14 +256,16 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Lấy danh sách staff có phân trang + filter.
-     * page bắt đầu từ 1.
+     * Lấy danh sách staff có phân trang + filter. page bắt đầu từ 1.
      */
     public List<Employee> listStaffPaged(String keyword, Integer status, int page, int pageSize) {
         List<Employee> list = new ArrayList<>();
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 5;  //số lượng sản phẩm có trong trang
-
+        if (page < 1) {
+            page = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 5;  //số lượng sản phẩm có trong trang
+        }
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
@@ -338,7 +349,11 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
-    /** Dropdown roster: chỉ lấy staff active (roleID=2, isActive=1), trả ID + fullName. */
+
+    /**
+     * Dropdown roster: chỉ lấy staff active (roleID=2, isActive=1), trả ID +
+     * fullName.
+     */
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
         String sql = "SELECT employeeID, fullName FROM Employee "
@@ -358,7 +373,6 @@ public class EmployeeDAO extends DBContext {
         }
         return list;
     }
-    
 
     private Employee mapRow(ResultSet rs) throws SQLException {
         Employee e = new Employee();
