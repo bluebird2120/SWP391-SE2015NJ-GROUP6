@@ -162,12 +162,12 @@ public class OrderDAOSon extends DBContext {
         o.setInvoiceID(rs.getInt("invoiceID"));
         o.setOrderType(rs.getInt("orderType"));
         o.setTableStatus(rs.getString("tableStatus"));
-        o.setTotalAmount(rs.getLong("totalAmount"));
+//        o.setTotalAmount(rs.getLong("totalAmount"));
         o.setCheckoutRequestAt(rs.getTimestamp("checkoutRequestAt"));
         o.setIsStaffConfirmed(rs.getInt("isStaffConfirmed"));
         o.setCreatedAt(rs.getTimestamp("createdAt"));
         o.setOrderTime(rs.getTimestamp("orderTime"));
-        o.setDepositAmount(rs.getLong("depositAmount"));
+//        o.setDepositAmount(rs.getLong("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
 //        o.setCapacity(rs.getInt("capacity"));
 //        o.setAreaType(rs.getString("areaType"));
