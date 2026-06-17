@@ -102,8 +102,7 @@ public class LoginController extends HttpServlet {
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            // In trực tiếp thông điệp lỗi ra màn hình để xem
-            request.setAttribute("loginError", "Lỗi thực tế: " + e.getMessage() + " | Chi tiết: " + e.toString());
+            request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau");
             request.setAttribute("identifier", phone);
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
         }
