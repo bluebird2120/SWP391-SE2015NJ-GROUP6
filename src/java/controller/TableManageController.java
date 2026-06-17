@@ -73,9 +73,40 @@ public class TableManageController extends HttpServlet {
 
             case "list":
             default:
-                List<Table> list = tableDAO.getAllTablesForManagement();
+                // 1. Đọc các tham số lọc từ URL gửi lên
+                String searchName = request.getParameter("searchName");
+                searchName = (searchName != null) ? searchName.trim() : "";
+
+                String capParam = request.getParameter("searchCapacity");
+                Integer searchCapacity = (capParam != null && !capParam.isEmpty() && !"all".equals(capParam)) 
+                        ? Integer.parseInt(capParam) : null;
+
+                String searchArea = request.getParameter("searchArea");
+                if ("all".equals(searchArea)) {
+                    searchArea = null;
+                }
+
+                String statusParam = request.getParameter("searchStatus");
+                Integer searchStatus = (statusParam != null && !statusParam.isEmpty() && !"all".equals(statusParam)) 
+                        ? Integer.parseInt(statusParam) : null;
+
+                // 2. BACKEND VALIDATION: Chặn tìm kiếm chuỗi quá dài hoặc chứa ký tự độc hại
+                if (searchName.length() > 30) {
+                    request.setAttribute("errorMessage", "Từ khóa tìm kiếm không được vượt quá 30 ký tự!");
+                    searchName = ""; // Reset bộ lọc tên nếu vi phạm quy định
+                }
+
+                // 3. Gọi hàm DAO để truy vấn dữ liệu đã lọc
+                List<Table> list = tableDAO.searchTables(searchName, searchCapacity, searchArea, searchStatus);
+                
+                // 4. Đẩy ngược các giá trị đã chọn ra Request để giữ trạng thái Form sau khi F5
+                request.setAttribute("searchName", searchName);
+                request.setAttribute("searchCapacity", request.getParameter("searchCapacity"));
+                request.setAttribute("searchArea", request.getParameter("searchArea"));
+                request.setAttribute("searchStatus", request.getParameter("searchStatus"));
+                
                 request.setAttribute("tableList", list);
-                request.setAttribute("userRole", roleID);
+                request.setAttribute("userRole", roleID); 
                 request.getRequestDispatcher("/views/table/table_list.jsp").forward(request, response);
                 break;
         }

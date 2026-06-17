@@ -27,12 +27,12 @@ public class TableDAO extends DBContext {
      * Tính số bàn còn trống theo từng capacity trong khu vực.
      *
      * Công thức:
-     *   Còn trống = Tổng bàn (capacity=X, khu=Y)
-     *             - Bàn bận có tableStatus IN ('reserved','serving','cleaning')
+     * Còn trống = Tổng bàn (capacity=X, khu=Y)
+     * - Bàn bận có tableStatus IN ('reserved','serving','cleaning')
      *
      * Bàn bận gồm 2 loại:
-     *   1. Đơn đặt online (tableID IS NULL): đếm theo capacity + areaType trong Order
-     *   2. Khách walk-in (tableID IS NOT NULL): JOIN Table lấy capacity + areaType thực tế
+     * 1. Đơn đặt online (tableID IS NULL): đếm theo capacity + areaType trong Order
+     * 2. Khách walk-in (tableID IS NOT NULL): JOIN Table lấy capacity + areaType thực tế
      *
      * Trước khi tính, lazy-expire các đơn reserved quá 30 phút.
      */
@@ -177,10 +177,6 @@ public class TableDAO extends DBContext {
         Table t = new Table();
         t.setTableID(rs.getInt("tableID"));
         t.setEmployeeID(rs.getInt("employeeID"));
-        
-        // BỎ DÒNG NÀY ĐI VÌ DATABASE MỚI KHÔNG CÒN CỘT NÀY NỮA
-        // t.setCurrentStaffID(rs.getInt("currentStaffID")); 
-        
         t.setTableName(rs.getString("tableName"));
         t.setCapacity(rs.getInt("capacity"));
         t.setQRCodeToken(rs.getString("QRCodeToken"));
@@ -190,13 +186,11 @@ public class TableDAO extends DBContext {
     }
     
     // =========================================================
-    // CÁC HÀM THÊM MỚI CHO CHỨC NĂNG QUẢN LÝ BÀN (TABLE MANAGEMENT)
+    // CÁC HÀM CHỨC NĂNG QUẢN LÝ BÀN (TABLE MANAGEMENT)
     // =========================================================
 
     /**
      * 1. Xem danh sách TẤT CẢ các bàn (Dành cho Owner & Employee)
-     * Khác với getAllActiveTables() của bạn bạn, hàm này lấy cả bàn isActive = 0
-     * để Quản lý có thể thấy và mở lại bàn nếu cần.
      */
     public List<Table> getAllTablesForManagement() {
         List<Table> list = new ArrayList<>();
@@ -213,17 +207,64 @@ public class TableDAO extends DBContext {
     }
 
     /**
+     * 1.5 BỔ SUNG: Tìm kiếm và lọc danh sách bàn đa tiêu chí (SẠCH LỖI KHỚP 100%)
+     */
+    public List<Table> searchTables(String name, Integer capacity, String area, Integer status) {
+        List<Table> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM `Table` WHERE 1=1");
+        
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND tableName LIKE ?");
+        }
+        if (capacity != null) {
+            sql.append(" AND capacity = ?");
+        }
+        if (area != null && !area.isEmpty()) {
+            sql.append(" AND areaType = ?");
+        }
+        if (status != null) {
+            sql.append(" AND isActive = ?");
+        }
+        sql.append(" ORDER BY tableID DESC");
+
+        // Sử dụng trực tiếp đối tượng connection từ DBContext kế thừa sang
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            if (name != null && !name.isEmpty()) {
+                ps.setString(index++, "%" + name + "%");
+            }
+            if (capacity != null) {
+                ps.setInt(index++, capacity);
+            }
+            if (area != null && !area.isEmpty()) {
+                ps.setString(index++, area);
+            }
+            if (status != null) {
+                ps.setInt(index++, status);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // Gọi hàm mapRow(rs) có sẵn của bạn để không bị trùng lặp code gán dữ liệu
+                    list.add(mapRow(rs)); 
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] searchTables lỗi: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
      * 2. Thêm bàn mới (Chỉ dành cho Owner)
      */
     public boolean addTable(Table t) {
         String sql = "INSERT INTO `Table` (employeeID, tableName, capacity, QRCodeToken, areaType, isActive) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
         
-        // Tự động sinh mã QR Token ngẫu nhiên và duy nhất
         String uniqueQRToken = java.util.UUID.randomUUID().toString();
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            // employeeID: ID của Owner thực hiện thêm bàn
             if (t.getEmployeeID() > 0) {
                 ps.setInt(1, t.getEmployeeID());
             } else {

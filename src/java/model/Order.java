@@ -6,26 +6,32 @@ public class Order {
 
     private int orderID;
     private Integer customerID; // Dùng Integer để chấp nhận null
-    private Integer employeeID; // THÊM MỚI: Liên kết với nhân viên phụ trách
+    private Integer employeeID; // Liên kết với nhân viên phụ trách
     private Integer invoiceID;
-    // Đã xóa: private int tableID;
     private int orderType;
-    private String tableStatus;
-    private long totalAmount; 
+    private String tableStatus; 
     private Timestamp checkoutRequestAt;
     private int isStaffConfirmed;
     private Timestamp createdAt;
     private Timestamp orderTime;
-    private long depositAmount; 
     private String orderStatus;
+    
+    // Đã sửa đồng bộ kiểu int
+    private int totalAmount; 
+    private int depositAmount;
+    
+    // Cột mới thêm
+    private Integer capacity; 
+    private String areaType;
 
     public Order() {
     }
 
+    // Đã đổi long thành int ở Constructor
     public Order(int orderID, Integer customerID, Integer employeeID, Integer invoiceID, 
-                 int orderType, String tableStatus, long totalAmount, Timestamp checkoutRequestAt, 
+                 int orderType, String tableStatus, int totalAmount, Timestamp checkoutRequestAt, 
                  int isStaffConfirmed, Timestamp createdAt, Timestamp orderTime, 
-                 long depositAmount, String orderStatus) {
+                 int depositAmount, String orderStatus, Integer capacity, String areaType) {
         this.orderID = orderID;
         this.customerID = customerID;
         this.employeeID = employeeID;
@@ -39,6 +45,8 @@ public class Order {
         this.orderTime = orderTime;
         this.depositAmount = depositAmount;
         this.orderStatus = orderStatus;
+        this.capacity = capacity;
+        this.areaType = areaType;
     }
 
     // --- Getters & Setters ---
@@ -60,8 +68,9 @@ public class Order {
     public String getTableStatus() { return tableStatus; }
     public void setTableStatus(String tableStatus) { this.tableStatus = tableStatus; }
 
-    public long getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(long totalAmount) { this.totalAmount = totalAmount; }
+    // Đã đổi long thành int
+    public int getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(int totalAmount) { this.totalAmount = totalAmount; }
 
     public Timestamp getCheckoutRequestAt() { return checkoutRequestAt; }
     public void setCheckoutRequestAt(Timestamp checkoutRequestAt) { this.checkoutRequestAt = checkoutRequestAt; }
@@ -75,9 +84,17 @@ public class Order {
     public Timestamp getOrderTime() { return orderTime; }
     public void setOrderTime(Timestamp orderTime) { this.orderTime = orderTime; }
 
-    public long getDepositAmount() { return depositAmount; }
-    public void setDepositAmount(long depositAmount) { this.depositAmount = depositAmount; }
+    // Đã đổi long thành int
+    public int getDepositAmount() { return depositAmount; }
+    public void setDepositAmount(int depositAmount) { this.depositAmount = depositAmount; }
 
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+
+    // Thêm Getters & Setters cho capacity và areaType
+    public Integer getCapacity() { return capacity; }
+    public void setCapacity(Integer capacity) { this.capacity = capacity; }
+
+    public String getAreaType() { return areaType; }
+    public void setAreaType(String areaType) { this.areaType = areaType; }
 }
