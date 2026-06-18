@@ -345,7 +345,7 @@
             <!-- Yêu cầu đổi ca từ đồng nghiệp -->
             <div class="card" style="margin-top: 24px; overflow-x: auto;">
                 <div class="section-title" style="font-size: 1.1rem; color: #76493b; margin-bottom: 16px; font-weight: 600;">
-                    <i class="fas fa-people-arrows"></i> Yêu cầu đổi ca từ đồng nghiệp đang chờ bạn xác nhận
+                    Yêu cầu đổi ca từ đồng nghiệp đang chờ bạn xác nhận
                 </div>
                 <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                     <thead>

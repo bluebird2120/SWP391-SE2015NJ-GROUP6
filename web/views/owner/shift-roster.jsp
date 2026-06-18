@@ -699,9 +699,8 @@
                                                     onchange="this.form.submit()">
                                             </form>
                                         </div>
-                                        <!-- Filter bar: lọc theo ca (tab tháng) -->
                                         <div class="filter-bar">
-                                            <label for="filterShiftMonthly"><i class="fas fa-filter"></i>&nbsp;Lọc theo
+                                            <label for="filterShiftMonthly">Lọc theo
                                                 ca:</label>
                                             <select id="filterShiftMonthly"
                                                 onchange="filterRosterTable('monthlyPlanBody', this.value, 'monthlyCountBadge')">

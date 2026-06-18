@@ -269,7 +269,7 @@
                     </form>
                 </div>
                 <div class="filter-bar">
-                    <label for="filterShift"><i class="fas fa-filter"></i>&nbsp;Lọc theo ca:</label>
+                    <label for="filterShift">Lọc theo ca:</label>
                     <select id="filterShift" onchange="filterAttendance(this.value)">
                         <option value="">-- Tất cả ca --</option>
                         <c:forEach var="t" items="${templates}">
@@ -278,32 +278,10 @@
                     </select>
                     <span class="filter-count" id="attendanceCountBadge"></span>
                 </div>
-                <%-- Bulk action bar (chỉ hiện khi đang là hôm nay) --%>
-                <c:if test="${isToday}">
-                    <div class="bulk-bar" id="bulkBar">
-                        <span><span class="sel-count" id="selCount">0</span> đã chọn</span>
-                        <button type="button" class="btn-bulk btn-bulk-ci" onclick="submitBulk('bulk_checkin')">
-                            <i class="fas fa-sign-in-alt"></i> Check-in tất cả
-                        </button>
-                        <button type="button" class="btn-bulk btn-bulk-ab" onclick="submitBulk('bulk_absent')">
-                            <i class="fas fa-user-slash"></i> Vắng tất cả
-                        </button>
-                        <button type="button" class="btn-bulk btn-bulk-cancel" onclick="clearAll()">
-                            <i class="fas fa-times"></i> Bỏ chọn
-                        </button>
-                    </div>
-                    <%-- Hidden form để submit bulk --%>
-                    <form id="bulkForm" method="post" action="${pageContext.request.contextPath}/owner/attendance" style="display:none;">
-                        <input type="hidden" name="action" id="bulkAction">
-                        <input type="hidden" name="date" value="${date}">
-                        <div id="bulkIdsContainer"></div>
-                    </form>
-                </c:if>
                 <div class="card" style="padding:0;">
                     <table>
                         <thead>
                             <tr>
-                                <th class="col-cb"><c:if test="${isToday}"><input type="checkbox" id="checkAll" title="Chọn tất cả" onchange="toggleAll(this)"></c:if></th>
                                 <th>Nhân viên</th>
                                 <th>Ca</th>
                                 <th>Khung giờ</th>
@@ -316,11 +294,6 @@
                         <tbody id="attendanceBody">
                             <c:forEach var="r" items="${rows}">
                                 <tr data-shift="${r.shiftName}">
-                                    <td class="col-cb">
-                                        <c:if test="${isToday && r.status == 'scheduled'}">
-                                            <input type="checkbox" class="row-cb" value="${r.shiftID}" onchange="onCbChange()">
-                                        </c:if>
-                                    </td>
                                     <td>${r.fullName}</td>
                                     <td>${r.shiftName}</td>
                                     <td>
@@ -348,7 +321,7 @@
                                     <td class="actions">
                                         <c:choose>
                                             <c:when test="${not isToday}">
-                                                <span class="readonly-tag"><i class="fas fa-lock"></i> Read-only</span>
+                                                <span class="readonly-tag">Read-only</span>
                                             </c:when>
                                             <c:otherwise>
                                                 <c:choose>
@@ -357,14 +330,14 @@
                                                             <input type="hidden" name="action" value="checkin">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
-                                                            <button type="submit" class="btn btn-checkin"><i class="fas fa-sign-in-alt"></i> Check-in</button>
+                                                            <button type="submit" class="btn btn-checkin">Check-in</button>
                                                         </form>
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
                                                               onsubmit="return confirm('Đánh dấu vắng mặt?');">
                                                             <input type="hidden" name="action" value="absent">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
-                                                            <button type="submit" class="btn btn-absent"><i class="fas fa-user-slash"></i> Vắng</button>
+                                                            <button type="submit" class="btn btn-absent">Vắng</button>
                                                         </form>
                                                     </c:when>
                                                     <c:when test="${(r.status == 'present' || r.status == 'late') && empty r.checkOutTime}">
@@ -372,14 +345,14 @@
                                                             <input type="hidden" name="action" value="checkout">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
-                                                            <button type="submit" class="btn btn-checkout"><i class="fas fa-sign-out-alt"></i> Check-out</button>
+                                                            <button type="submit" class="btn btn-checkout">Check-out</button>
                                                         </form>
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
                                                               onsubmit="return confirm('Reset về scheduled?');">
                                                             <input type="hidden" name="action" value="reset">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
-                                                            <button type="submit" class="btn btn-reset"><i class="fas fa-undo"></i> Reset</button>
+                                                            <button type="submit" class="btn btn-reset">Reset</button>
                                                         </form>
                                                     </c:when>
                                                     <c:when test="${r.status == 'absent'}">
@@ -388,11 +361,11 @@
                                                             <input type="hidden" name="action" value="reset">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
-                                                            <button type="submit" class="btn btn-reset"><i class="fas fa-undo"></i> Reset</button>
+                                                            <button type="submit" class="btn btn-reset">Reset</button>
                                                         </form>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <span class="readonly-tag"><i class="fas fa-check-double"></i> Đã hoàn tất</span>
+                                                        <span class="readonly-tag">Đã hoàn tất</span>
                                                     </c:otherwise>
                                                 </c:choose>
                                             </c:otherwise>
@@ -432,69 +405,6 @@
                         ? visible + ' nhân viên'
                         : rows.length + ' nhân viên';
                 }
-                // Bỏ check những row bị ẩn
-                rows.forEach(function(tr) {
-                    if (tr.style.display === 'none') {
-                        var cb = tr.querySelector('.row-cb');
-                        if (cb) cb.checked = false;
-                    }
-                });
-                onCbChange();
-            }
-
-            /* ============ Bulk select ============ */
-            function toggleAll(master) {
-                var visibleCbs = getVisibleCheckboxes();
-                visibleCbs.forEach(function(cb) { cb.checked = master.checked; });
-                onCbChange();
-            }
-
-            function getVisibleCheckboxes() {
-                var tbody = document.getElementById('attendanceBody');
-                if (!tbody) return [];
-                return Array.from(tbody.querySelectorAll('.row-cb')).filter(function(cb) {
-                    return cb.closest('tr').style.display !== 'none';
-                });
-            }
-
-            function onCbChange() {
-                var checked = Array.from(document.querySelectorAll('.row-cb:checked'));
-                var bar = document.getElementById('bulkBar');
-                var cnt = document.getElementById('selCount');
-                if (!bar) return;
-                if (checked.length > 0) {
-                    bar.classList.add('active');
-                    cnt.textContent = checked.length;
-                } else {
-                    bar.classList.remove('active');
-                }
-            }
-
-            function clearAll() {
-                document.querySelectorAll('.row-cb').forEach(function(cb) { cb.checked = false; });
-                var master = document.getElementById('checkAll');
-                if (master) master.checked = false;
-                onCbChange();
-            }
-
-            function submitBulk(action) {
-                var checked = Array.from(document.querySelectorAll('.row-cb:checked'));
-                if (checked.length === 0) { alert('Chưa chọn nhân viên nào.'); return; }
-                if (action === 'bulk_absent') {
-                    if (!confirm('Xác nhận đánh vắng ' + checked.length + ' nhân viên?')) return;
-                }
-                var form = document.getElementById('bulkForm');
-                document.getElementById('bulkAction').value = action;
-                var container = document.getElementById('bulkIdsContainer');
-                container.innerHTML = '';
-                checked.forEach(function(cb) {
-                    var inp = document.createElement('input');
-                    inp.type = 'hidden';
-                    inp.name = 'shiftIDs';
-                    inp.value = cb.value;
-                    container.appendChild(inp);
-                });
-                form.submit();
             }
 
             /* ============ Init ============ */

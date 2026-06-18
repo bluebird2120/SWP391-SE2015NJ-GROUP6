@@ -69,13 +69,13 @@
                                 <td><fmt:formatDate value="${t.endTime}" pattern="HH:mm"/></td>
                                 <td class="actions">
                                     <a class="btn btn-sm btn-edit" href="${pageContext.request.contextPath}/owner/shift-templates?action=edit&id=${t.templateID}">
-                                        <i class="fas fa-edit"></i> Sửa
+                                        Sửa
                                     </a>
                                     <form class="inline" method="post" action="${pageContext.request.contextPath}/owner/shift-templates"
                                           onsubmit="return confirm('Xoá template này?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="${t.templateID}">
-                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Xoá</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
                                     </form>
                                 </td>
                             </tr>

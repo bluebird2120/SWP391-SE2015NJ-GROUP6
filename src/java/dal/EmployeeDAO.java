@@ -25,8 +25,7 @@ public class EmployeeDAO extends DBContext {
                 + "FROM Employee e "
                 + "WHERE e.phoneNumber = ?";
 
-        try (Connection conn = connection; // Sử dụng connection từ DBContext
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, phoneNumber);
 
             try (ResultSet rs = ps.executeQuery()) {

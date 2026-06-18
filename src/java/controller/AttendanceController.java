@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import model.EmployeeShifts;
 
@@ -43,8 +42,6 @@ public class AttendanceController extends HttpServlet {
             case "checkout":      handle(req, resp, "checkout"); break;
             case "absent":        handle(req, resp, "absent"); break;
             case "reset":         handle(req, resp, "reset"); break;
-            case "bulk_checkin":  handleBulk(req, resp, "checkin"); break;
-            case "bulk_absent":   handleBulk(req, resp, "absent"); break;
             default: resp.sendRedirect(req.getContextPath() + "/owner/attendance");
         }
     }
@@ -120,58 +117,6 @@ public class AttendanceController extends HttpServlet {
             return;
         }
         resp.sendRedirect(req.getContextPath() + "/owner/attendance?date=" + date + "&msg=" + successMsg);
-    }
-
-    /**
-     * Xử lý hành động điểm danh hàng loạt (bulk check-in hoặc bulk absent) cho nhiều mã ca cùng lúc.
-     * Danh sách mã ca làm việc được nhận từ tham số "shiftIDs" dưới dạng mảng.
-     * Quy tắc today-only áp dụng nghiêm ngặt: chỉ cho phép điểm danh hàng loạt các ca trong ngày hiện tại.
-     *
-     * @param req    đối tượng HttpServletRequest chứa các tham số yêu cầu (shiftIDs, date)
-     * @param resp   đối tượng HttpServletResponse dùng để thực hiện điều hướng sau khi cập nhật thành công
-     * @param action hành động điểm danh cần thực hiện ("checkin" hoặc "absent")
-     * @throws ServletException nếu có lỗi xảy ra trong servlet
-     * @throws IOException      nếu có lỗi vào ra dữ liệu
-     */
-    private void handleBulk(HttpServletRequest req, HttpServletResponse resp, String action)
-            throws ServletException, IOException {
-        String[] ids = req.getParameterValues("shiftIDs");
-        LocalDate date = parseDateOrToday(req.getParameter("date"));
-
-        if (ids == null || ids.length == 0) {
-            showAttendance(req, resp, "Chưa chọn nhân viên nào.", null);
-            return;
-        }
-
-        // Chỉ chấp nhận cà hôm nay
-        if (!date.equals(LocalDate.now())) {
-            showAttendance(req, resp, "Chỉ được điểm danh trong ngày hôm nay.", null);
-            return;
-        }
-
-        List<Integer> shiftIDs = new ArrayList<>();
-        for (String idStr : ids) {
-            int id = parseInt(idStr, 0);
-            if (id > 0) shiftIDs.add(id);
-        }
-        if (shiftIDs.isEmpty()) {
-            showAttendance(req, resp, "shiftID không hợp lệ.", null);
-            return;
-        }
-
-        EmployeeShiftDAO dao = new EmployeeShiftDAO();
-        int updated;
-        String successMsg;
-        if ("checkin".equals(action)) {
-            updated = dao.bulkCheckIn(shiftIDs, new Timestamp(System.currentTimeMillis()));
-            successMsg = "bulk_checkedin";
-        } else {
-            updated = dao.bulkMarkAbsent(shiftIDs);
-            successMsg = "bulk_absent";
-        }
-
-        resp.sendRedirect(req.getContextPath() + "/owner/attendance?date=" + date
-                + "&msg=" + successMsg + "&cnt=" + updated);
     }
 
     private static LocalDate parseDateOrToday(String s) {
