@@ -218,8 +218,8 @@
                             <input
                                 type="password"
                                 name="password"
-
-                                placeholder="Mật khẩu" required>
+                                placeholder="Mật khẩu"
+                                value="${prefillPassword}"required>
 
 
 

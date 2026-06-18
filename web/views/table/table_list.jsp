@@ -94,6 +94,73 @@
         padding: 10px;
         border-radius: 5px;
     }
+    /* Thanh bộ lọc phong cách Vị An */
+    .vian-filter-bar {
+        background-color: #FFFFFF;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        border: 1px solid #E6DEC9;
+    }
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: flex-end;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 150px;
+    }
+    .filter-group label {
+        font-size: 13px;
+        font-weight: bold;
+        color: #5C4033;
+        margin-bottom: 5px;
+    }
+    .filter-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #D4A373;
+        border-radius: 4px;
+        background-color: #FCF9F2;
+        color: #4A3B32;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .filter-input:focus {
+        outline: none;
+        border-color: #8B4513;
+        background-color: #FFF;
+    }
+    .btn-filter {
+        background-color: #8B7355;
+        color: white;
+        padding: 9px 20px;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-filter:hover {
+        background-color: #695640;
+    }
+    .btn-clear {
+        background-color: #E6DEC9;
+        color: #4A3B32;
+        padding: 9px 15px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+        text-align: center;
+    }
+    .btn-clear:hover {
+        background-color: #D4C9A8;
+    }
 </style>
 
 <%@ include file="/views/includes/header.jsp" %>
@@ -118,6 +185,64 @@
                 + Thêm bàn mới
             </a>
         </c:if>
+        <div class="vian-filter-bar">
+            <form action="${pageContext.request.contextPath}/manage-table" method="GET" class="filter-form" onsubmit="return validateFilterForm();">
+                <input type="hidden" name="action" value="list">
+
+                <div class="filter-group">
+                    <label>Tên bàn:</label>
+                    <input type="text" id="searchName" name="searchName" class="filter-input" 
+                           placeholder="Nhập tên bàn..." value="${searchName}" maxlength="30">
+                </div>
+
+                <div class="filter-group">
+                    <label>Sức chứa:</label>
+                    <select name="searchCapacity" class="filter-input">
+                        <option value="all" ${searchCapacity == 'all' || empty searchCapacity ? 'selected' : ''}>-- Tất cả số ghế --</option>
+                        <option value="2" ${searchCapacity == '2' ? 'selected' : ''}>2 người</option>
+                        <option value="4" ${searchCapacity == '4' ? 'selected' : ''}>4 người</option>
+                        <option value="6" ${searchCapacity == '6' ? 'selected' : ''}>6 người</option>
+                        <option value="8" ${searchCapacity == '8' ? 'selected' : ''}>8 người</option>
+                        <option value="10" ${searchCapacity == '10' ? 'selected' : ''}>10 người</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Khu vực:</label>
+                    <select name="searchArea" class="filter-input">
+                        <option value="all" ${searchArea == 'all' || empty searchArea ? 'selected' : ''}>-- Tất cả khu vực --</option>
+                        <option value="public" ${searchArea == 'public' ? 'selected' : ''}>Sảnh chung</option>
+                        <option value="private" ${searchArea == 'private' ? 'selected' : ''}>Phòng VIP</option>
+                        <option value="outdoor" ${searchArea == 'outdoor' ? 'selected' : ''}>Ngoài trời</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Trạng thái:</label>
+                    <select name="searchStatus" class="filter-input">
+                        <option value="all" ${searchStatus == 'all' || empty searchStatus ? 'selected' : ''}>-- Tất cả trạng thái --</option>
+                        <option value="1" ${searchStatus == '1' ? 'selected' : ''}>Mở bán</option>
+                        <option value="0" ${searchStatus == '0' ? 'selected' : ''}>Tạm ngưng</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="btn-filter">Tìm kiếm</button>
+                    <a href="${pageContext.request.contextPath}/manage-table" class="btn-clear">Xóa bộ lọc</a>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            function validateFilterForm() {
+                var nameInput = document.getElementById("searchName").value;
+                if (nameInput.length > 30) {
+                    alert("Cảnh báo: Từ khóa tìm kiếm không được vượt quá 30 ký tự!");
+                    return false; // Hủy sự kiện gửi form dữ liệu lên Server
+                }
+                return true;
+            }
+        </script>    
 
         <table class="vian-table">
             <thead>

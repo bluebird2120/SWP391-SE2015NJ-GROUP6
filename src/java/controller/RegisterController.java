@@ -78,7 +78,7 @@ public class RegisterController extends HttpServlet {
         //PhoneNumber
         String phoneNumberError = validatePhone(phoneNumber);
         if (phoneNumberError == null && customerDAO.isPhoneExists(phoneNumber, 0)) {
-            phoneNumberError = "Số điện thoại đã tồn tại!";
+            phoneNumberError = "Số điện thoại này đã được đăng ký hoặc không khả dụng.";
         }
         if (phoneNumberError != null) {
             request.setAttribute("phoneNumberError", phoneNumberError);
@@ -88,7 +88,7 @@ public class RegisterController extends HttpServlet {
         //Email
         String emailError = validateEmail(email);
         if (emailError == null && customerDAO.isEmailExists(email, 0)) {
-            emailError = "Email đã tồn tại!";
+            emailError = "Email này đã được đăng ký hoặc không khả dụng.";
         }
         if (emailError != null) {
             request.setAttribute("emailError", emailError);
@@ -134,7 +134,11 @@ public class RegisterController extends HttpServlet {
             return;
         }
 
-        //Đăng kí thành công thì redirect về login kèm thông báo
+        HttpSession session = request.getSession();
+        //Đăng kí thành công thì redirect về login kèm thông báo và số điện thoại 
+        session.setAttribute("registeredPhone", phoneNumber);
+        session.setAttribute("registeredPassword", password);
+
         response.sendRedirect(request.getContextPath() + "/login?registered=true");
     }
 
@@ -142,7 +146,7 @@ public class RegisterController extends HttpServlet {
         if (email == null || email.isBlank()) {
             return "Vui lòng nhập email của bạn.";
         }
-        if (!email.matches("^[\\w.+-]+@[\\w-]+\\.[\\w.]{2,}$")) {
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,10}$")) {
             return "Email không hợp lệ.";
         }
         return null;

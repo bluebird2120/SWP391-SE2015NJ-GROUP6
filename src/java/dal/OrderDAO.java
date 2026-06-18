@@ -17,12 +17,12 @@ public class OrderDAO {
     // 1. TẠO ORDER MỚI
     // =========================================================
     public int createOrder(Order order) {
-        // Đã xóa tableID, areaType, capacity theo CSDL mới. Đã thêm employeeID.
+        // ĐÃ SỬA: Thêm capacity và areaType vào câu lệnh SQL (tổng cộng 14 cột)
         String sql = "INSERT INTO `Order` "
                 + "(customerID, employeeID, invoiceID, orderType, tableStatus, "
-                + " totalAmount, checkoutRequestAt, isStaffConfirmed, "
+                + " totalAmount, capacity, areaType, checkoutRequestAt, isStaffConfirmed, "
                 + " createdAt, orderTime, depositAmount, orderStatus) " 
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -39,14 +39,23 @@ public class OrderDAO {
 
             ps.setInt(4, order.getOrderType());
             ps.setString(5, order.getTableStatus() != null ? order.getTableStatus() : "available");
-            ps.setLong(6, order.getTotalAmount());
-            ps.setTimestamp(7, order.getCheckoutRequestAt());
-            ps.setInt(8, order.getIsStaffConfirmed());
             
-            ps.setTimestamp(9, order.getCreatedAt() != null ? order.getCreatedAt() : new Timestamp(System.currentTimeMillis()));
-            ps.setTimestamp(10, order.getOrderTime());
-            ps.setLong(11, order.getDepositAmount());
-            ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
+            // ĐÃ SỬA: Đổi từ setLong sang setInt
+            ps.setInt(6, order.getTotalAmount()); 
+
+            // ĐÃ SỬA: Thêm 2 tham số mới cho capacity và areaType
+            if (order.getCapacity() != null) ps.setInt(7, order.getCapacity());
+            else ps.setNull(7, Types.INTEGER);
+            ps.setString(8, order.getAreaType());
+
+            ps.setTimestamp(9, order.getCheckoutRequestAt());
+            ps.setInt(10, order.getIsStaffConfirmed());
+            ps.setTimestamp(11, order.getCreatedAt() != null ? order.getCreatedAt() : new Timestamp(System.currentTimeMillis()));
+            ps.setTimestamp(12, order.getOrderTime());
+            
+            // ĐÃ SỬA: Đổi từ setLong sang setInt
+            ps.setInt(13, order.getDepositAmount()); 
+            ps.setString(14, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
             
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
@@ -330,13 +339,15 @@ public class OrderDAO {
                 (Integer) rs.getObject("invoiceID"),
                 rs.getInt("orderType"),
                 rs.getString("tableStatus"),
-                rs.getLong("totalAmount"),
+                rs.getInt("totalAmount"), // ĐÃ SỬA: Dùng getInt thay cho getLong
                 rs.getTimestamp("checkoutRequestAt"),
                 rs.getInt("isStaffConfirmed"),
                 rs.getTimestamp("createdAt"),
                 rs.getTimestamp("orderTime"),
-                rs.getLong("depositAmount"),
-                rs.getString("orderStatus")
+                rs.getInt("depositAmount"), // ĐÃ SỬA: Dùng getInt thay cho getLong
+                rs.getString("orderStatus"),
+                (Integer) rs.getObject("capacity"), // ĐÃ SỬA: Hứng thêm cột capacity
+                rs.getString("areaType")            // ĐÃ SỬA: Hứng thêm cột areaType
         );
     }
 
@@ -356,12 +367,15 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> MenuItem (ĐÃ XÓA categoryID)
+    // HELPER: map ResultSet -> MenuItem (ĐÃ THÊM LẠI categoryID)
     // =========================================================
     private MenuItem mapToMenuItem(ResultSet rs) throws SQLException {
         MenuItem mi = new MenuItem();
         mi.setItemID(rs.getInt("itemID"));
-        // rs.getInt("categoryID") đã bị xóa khỏi SQL Table của bạn
+        
+        // ĐÃ SỬA: Thêm lại hàm lấy categoryID từ Database
+        mi.setCategoryID(rs.getInt("categoryID")); 
+        
         mi.setItemName(rs.getString("itemName"));
         mi.setDescription(rs.getString("description"));
         mi.setPrice(rs.getInt("price"));

@@ -107,12 +107,17 @@ public class OrderController extends HttpServlet {
                 Integer customerID = (Integer) session.getAttribute("customerID");
 
                 Order newOrder = new Order();
-                // ĐÃ SỬA: Không còn setTableID, setAreaType, setCapacity
                 newOrder.setCustomerID(customerID);
                 newOrder.setOrderType(tableID != null ? 1 : 2); // 1: Dùng tại bàn, 2: Mang về
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
+
+                // THÊM LẠI: Lấy sức chứa và khu vực từ session để đưa vào hóa đơn
+                String areaType = (String) session.getAttribute("areaType");
+                Integer capacity = (Integer) session.getAttribute("capacity");
+                newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");
+                newOrder.setCapacity(capacity != null ? capacity : 0);
 
                 int newOrderID = orderDAO.createOrder(newOrder);
                 if (newOrderID == -1) {
@@ -120,7 +125,7 @@ public class OrderController extends HttpServlet {
                     return;
                 }
 
-                // ĐÃ SỬA: Lưu liên kết Bàn và Đơn hàng vào bảng Order_Table
+                // Lưu liên kết Bàn và Đơn hàng vào bảng Order_Table
                 if (tableID != null && tableID > 0) {
                     orderDAO.linkOrderAndTable(newOrderID, tableID);
                 }
@@ -129,7 +134,7 @@ public class OrderController extends HttpServlet {
                 orderID = newOrderID;
             }
 
-            // ĐÃ SỬA: Truyền thêm tableID và price vào hàm addOrderItem
+            // Truyền thêm tableID và price vào hàm addOrderItem
             int result = orderDAO.addOrderItem(orderID, itemID, tableID, quantity, price, note);
             if (result == -1) {
                 response.sendRedirect(request.getContextPath() + "/menu?error=add_item_failed");

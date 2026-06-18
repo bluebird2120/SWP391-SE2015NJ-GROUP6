@@ -16,14 +16,13 @@
                 font-family: 'Segoe UI', Arial, sans-serif;
                 background: #f7f5f0; /* Nền kem sáng ấm áp, đặc trưng phong cách Vị An */
                 color: #2c2520; /* Chữ màu nâu đen trầm charcoal dễ đọc */
-                /* ĐÃ BỎ lệnh display: flex; và justify-content: center; ở đây */
             }
             .container {
                 width: 100%;
                 max-width: 1100px;
-                margin: 32px auto; /* THÊM margin: auto để tự động căn giữa trang */
-                padding: 0 16px;   /* Giữ khoảng cách an toàn 2 bên trên màn hình điện thoại */
-                min-height: 60vh;  /* Đẩy footer xuống dưới nếu giỏ hàng trống/ngắn */
+                margin: 32px auto; 
+                padding: 0 16px;   
+                min-height: 60vh;  
             }
 
             /* Header giỏ hàng */
@@ -70,7 +69,31 @@
                 gap: 16px;
             }
 
-            /* Thẻ món ăn (Card Item) - Nền trắng tinh khôi, đổ bóng nhẹ mềm mại */
+            /* Thanh hiển thị phân chia vị trí Bàn */
+            .table-section-divider {
+                background: #D4A373; /* Vàng đồng thanh lịch */
+                color: #ffffff;
+                padding: 10px 18px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 15px;
+                margin-top: 10px;
+                margin-bottom: 2px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 2px 6px rgba(212, 163, 115, 0.15);
+            }
+            .table-section-divider span.badge {
+                background: rgba(255, 255, 255, 0.25);
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            /* Thẻ món ăn (Card Item) */
             .cart-item-card {
                 background: #ffffff;
                 color: #2c2520;
@@ -84,15 +107,15 @@
                 position: relative;
             }
 
-            /* Checkbox tùy biến theo màu thương hiệu */
+            /* Checkbox tùy biến */
             input[type=checkbox] {
                 width: 20px;
                 height: 20px;
                 cursor: pointer;
-                accent-color: #1c4332; /* Tích chọn màu xanh rêu */
+                accent-color: #1c4332; 
             }
 
-            /* Khung ảnh món ăn sáng sủa */
+            /* Khung ảnh món ăn */
             .item-image-placeholder {
                 width: 85px;
                 height: 85px;
@@ -104,11 +127,6 @@
                 justify-content: center;
                 flex-shrink: 0;
             }
-            .item-image-placeholder svg {
-                width: 42px;
-                height: 42px;
-                fill: #bc945c; /* Icon màu vàng đồng quý phái */
-            }
 
             /* Thông tin văn bản của món */
             .item-details {
@@ -117,7 +135,7 @@
             .item-name {
                 font-size: 18px;
                 font-weight: 700;
-                color: #1c4332; /* Tên món màu xanh rêu */
+                color: #1c4332; 
                 margin-bottom: 4px;
             }
             .item-description {
@@ -128,7 +146,7 @@
             }
             .item-note {
                 font-size: 12px;
-                color: #bc945c; /* Ghi chú màu vàng đồng */
+                color: #bc945c; 
                 font-style: italic;
                 font-weight: 500;
             }
@@ -143,7 +161,7 @@
                 color: #bfaea3;
             }
 
-            /* Khối điều khiển bên phải của Thẻ (Số lượng, thành tiền, nút xóa) */
+            /* Khối điều khiển bên phải của Thẻ */
             .item-actions-wrap {
                 display: flex;
                 flex-direction: column;
@@ -152,7 +170,7 @@
                 min-width: 140px;
             }
 
-            /* Cụm tăng giảm số lượng - Nền sáng kem tinh tế */
+            /* Cụm tăng giảm số lượng */
             .qty-control-box {
                 display: flex;
                 align-items: center;
@@ -171,9 +189,8 @@
                 font-weight: bold;
                 cursor: pointer;
             }
-            .qty-btn:hover {
-                color: #bc945c;
-            }
+            .qty-btn:hover { color: #bc945c; }
+            
             .qty-control-box input[type=number] {
                 width: 40px;
                 background: transparent;
@@ -189,14 +206,14 @@
                 margin: 0;
             }
 
-            /* Thành tiền của từng món - Nâu đậm nổi bật */
+            /* Thành tiền của từng món */
             .item-line-total {
                 font-size: 16px;
                 font-weight: 700;
                 color: #2c2520;
             }
 
-            /* Nút Thùng rác xóa món nhã nhặn */
+            /* Nút Thùng rác xóa món */
             .btn-delete-icon {
                 background: #fbf9f6;
                 border: 1px solid #eadecf;
@@ -221,7 +238,7 @@
                 fill: currentColor;
             }
 
-            /* Cột bên phải: Khối Tóm tắt hóa đơn (Nền trắng đồng bộ Vị An) */
+            /* Khối Tóm tắt hóa đơn Sidebar bên phải */
             .cart-summary-sidebar {
                 width: 340px;
                 background: #ffffff;
@@ -280,7 +297,6 @@
                 font-style: italic;
             }
 
-            /* Các nút hành động chính ở Sidebar */
             .btn-summary-action {
                 width: 100%;
                 padding: 14px;
@@ -296,7 +312,6 @@
                 transition: all 0.2s;
                 margin-top: 12px;
             }
-            /* Nút thanh toán chính: Màu xanh rêu, chữ trắng tinh tế */
             .btn-sidebar-checkout {
                 background: #1c4332;
                 border: none;
@@ -313,7 +328,6 @@
                 box-shadow: none;
                 cursor: not-allowed;
             }
-            /* Nút chọn tiếp: Màu kem nhạt, viền mảnh mảnh quý phái */
             .btn-sidebar-continue {
                 background: #fbf9f6;
                 border: 1px solid #dcd5c5;
@@ -325,7 +339,6 @@
                 border-color: #bc945c;
             }
 
-            /* Trạng thái giỏ hàng trống */
             .empty-state {
                 text-align: center;
                 padding: 64px 0;
@@ -344,11 +357,8 @@
                 text-decoration: none;
                 font-weight: bold;
             }
-            .empty-state a:hover {
-                text-decoration: underline;
-            }
+            .empty-state a:hover { text-decoration: underline; }
 
-            /* Thanh hiển thị số lượng chọn ở dưới cùng danh sách món */
             .bottom-count-bar {
                 margin-top: 16px;
                 font-size: 14px;
@@ -361,9 +371,16 @@
         <%@ include file="/views/includes/header.jsp" %>
         <div class="container">
 
+            <c:if test="${param.error == 'invalid_quantity'}">
+                <div style="color: #D9534F; background: #FDE8E8; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #D9534F; font-weight: bold;">
+                    ⚠ Hệ thống cảnh báo: Số lượng món ăn không hợp lệ! Vui lòng chỉ nhập số lượng trong khoảng từ 1 đến 99 phần.
+                </div>
+            </c:if>
+
             <div class="cart-header">
                 <div class="cart-title">
                     <h2>Giỏ hàng của bạn</h2>
+                    <p>Mã đơn hàng: #${orderID}</p>
                 </div>
                 <c:if test="${not empty orderItems}">
                     <label class="select-all-wrap">
@@ -386,10 +403,12 @@
                 <div class="cart-main-layout">
 
                     <div class="cart-items-column">
+                        
+                        <c:set var="currentTableID" value="-1" />
+
                         <c:forEach var="oi" items="${orderItems}" varStatus="loop">
                             <c:set var="mi" value="${menuItems[loop.index]}"/>
 
-                            <%-- Tự động tính toán đơn giá phù hợp --%>
                             <c:choose>
                                 <c:when test="${mi.discountedPrice > 0}">
                                     <c:set var="unitPrice" value="${mi.discountedPrice}"/>
@@ -400,6 +419,23 @@
                             </c:choose>
                             <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
 
+                            <%-- PHẦN CHIA KHỐI THEO BÀN --%>
+                            <c:if test="${oi.tableID != currentTableID}">
+                                <c:set var="currentTableID" value="${oi.tableID}" />
+                                <div class="table-section-divider">
+                                    <span>📍 Vị trí: 
+                                        <c:choose>
+                                            <c:when test="${oi.tableID == 6}">Bàn 1.1 (ID: #6)</c:when>
+                                            <c:when test="${oi.tableID == 7}">Bàn Đẹp (ID: #7)</c:when>
+                                            <c:when test="${oi.tableID == 8}">Bàn Ô là la (ID: #8)</c:when>
+                                            <c:when test="${empty oi.tableID || oi.tableID == 0}">Mang Về</c:when>
+                                            <c:otherwise>Bàn số ${oi.tableID}</c:otherwise>
+                                        </c:choose>
+                                    </span>
+                                    <span class="badge">Đồ ăn gọi tại bàn này</span>
+                                </div>
+                            </c:if>
+
                             <div class="cart-item-card">
                                 <input type="checkbox" 
                                        class="item-checkbox" 
@@ -409,14 +445,11 @@
 
                                 <div class="item-image-placeholder" style="padding: 0; overflow: hidden; background: transparent; border: none;">
                                     <c:choose>
-                                        <%-- Nếu món ăn có đường dẫn ảnh --%>
                                         <c:when test="${not empty mi.image}">
-                                            <img src="${mi.image}" 
+                                            <img src="${pageContext.request.contextPath}/${mi.image}" 
                                                  alt="${mi.itemName}" 
                                                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
                                         </c:when>
-
-                                        <%-- Nếu không có ảnh, dùng lại Icon dự phòng --%>
                                         <c:otherwise>
                                             <div style="width: 100%; height: 100%; background: #fdfcfb; border: 1px solid #ede8de; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                                 <svg viewBox="0 0 24 24" style="width: 42px; height: 42px; fill: #bc945c;">
@@ -429,10 +462,10 @@
 
                                 <div class="item-details">
                                     <div class="item-name">${mi.itemName}</div>
-                                    <div class="item-description">${mi.description != null ? mi.description : 'Món ăn đặc sắc mang đậm phong vị quê hương.'}</div>
+                                    <div class="item-description">${mi.description != null ? mi.description : 'Món ăn đặc sắc mang đậm phong vị quê hương Vị An.'}</div>
 
                                     <div class="item-unit-price">
-                                        <c:if test="${mi.discountedPrice > 0}">
+                                        <c:if test="${mi.discountPercent > 0}">
                                             <span class="price-original">
                                                 <fmt:formatNumber value="${mi.price}" type="number" maxFractionDigits="0"/> VNĐ
                                             </span>
@@ -452,12 +485,15 @@
 
                                         <div class="qty-control-box">
                                             <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+                                            
                                             <input type="number" name="quantity" value="${oi.quantity}" min="1" max="99"
                                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                                   oninput="checkLiveQty(this)"
                                                    onchange="validateQty(this)">
+                                                   
                                             <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
                                         </div>
-                                        <span class="qty-error" style="display:none; color:#e74c3c; font-size:11px; margin-top:4px;">Từ 1-99</span>
+                                        <span class="qty-error" style="display:none; color:#e74c3c; font-size:11px; margin-top:4px; font-weight:bold;">Yêu cầu: Từ 1-99</span>
                                     </form>
 
                                     <div class="item-line-total">
@@ -490,7 +526,7 @@
                             <span id="totalDisplay">0 VNĐ</span>
                         </div>
                         <div class="summary-row">
-                            <span>Phí dịch vụ:</span>
+                            <span>Phí phục vụ:</span>
                             <span>0 VNĐ</span>
                         </div>
 
@@ -507,11 +543,11 @@
 
                         <button class="btn-summary-action btn-sidebar-checkout" id="btnCheckout"
                                 type="button" disabled onclick="submitCheckout()">
-                            💳 Tiến hành thanh toán ↗
+                            💳 Gửi Đơn Lên Bếp thanh toán ↗
                         </button>
 
                         <a href="${pageContext.request.contextPath}/menu" class="btn-summary-action btn-sidebar-continue">
-                            ← Tiếp tục mua sắm
+                            ← Tiếp tục chọn món
                         </a>
                     </div>
 
@@ -519,15 +555,14 @@
             </c:if>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
+        
         <script>
-            // Tích hoặc bỏ tích toàn bộ các checkbox món ăn
             function toggleAll(source) {
                 document.querySelectorAll('.item-checkbox')
                         .forEach(cb => cb.checked = source.checked);
                 updateTotal();
             }
 
-            // Tính toán tổng số lượng và cập nhật tiền hiển thị theo thời gian thực
             function updateTotal() {
                 var checked = document.querySelectorAll('.item-checkbox:checked');
                 var total = 0;
@@ -542,7 +577,9 @@
                         count > 0 ? 'Tính theo ' + count + ' món đã chọn' : 'Chưa chọn món nào';
                 document.getElementById('bottomCountDisplay').innerText = 'Đã chọn ' + count + ' món';
 
-                document.getElementById('btnCheckout').disabled = (count === 0);
+                // Chỉ cho bật nút checkout nếu số lượng hợp lệ và có tích chọn món
+                var hasError = document.querySelectorAll('.qty-error[style*="block"]').length > 0;
+                document.getElementById('btnCheckout').disabled = (count === 0 || hasError);
 
                 var all = document.querySelectorAll('.item-checkbox');
                 var checkAllBox = document.getElementById('checkAll');
@@ -551,7 +588,6 @@
                 }
             }
 
-            // Thao tác bấm nút cộng trừ số lượng ngay trên giao diện
             function changeQty(btn, amount) {
                 var input = btn.parentElement.querySelector('input[type=number]');
                 var currentVal = parseInt(input.value);
@@ -564,22 +600,48 @@
                 }
             }
 
-            // Kiểm tra tính hợp lệ dữ liệu số lượng ở phía Client-side trước khi Submit form
+            // 🌟 1. Live Validation: Kiểm tra liên tục từng ký tự khi gõ hoặc dán số vào ô
+            function checkLiveQty(input) {
+                var errorSpan = input.parentElement.nextElementSibling;
+                var val = parseInt(input.value);
+                var btnCheckout = document.getElementById('btnCheckout');
+
+                // Nếu người dùng gõ lố quá 99, tự động ép giật ngược về số 99 ngay lập tức
+                if (val > 99) {
+                    input.value = 99;
+                    val = 99;
+                }
+
+                // Nếu ô nhập bị xóa rỗng hoặc gõ số âm lẻ
+                if (isNaN(val) || val < 1) {
+                    errorSpan.style.display = 'block';
+                    if (btnCheckout) btnCheckout.disabled = true; // KHÓA CỨNG nút thanh toán để ngăn chặn gửi đơn lỗi
+                } else {
+                    errorSpan.style.display = 'none';
+                    updateTotal(); // Tính toán lại tiền nong live nếu hợp lệ
+                }
+            }
+
+            // 🌟 2. Final Validation: Kiểm tra chốt chặn khi người dùng click chuột ra ngoài ô nhập hoặc bấm nút Sửa
             function validateQty(input) {
                 var errorSpan = input.parentElement.nextElementSibling;
                 var val = parseInt(input.value);
 
-                if (isNaN(val) || val < 1 || val > 99) {
-                    errorSpan.style.display = 'block';
-                    input.focus();
-                    return;
+                // Nếu cố tình để trống hoặc nhập số âm rồi click ra lề, tự ép về 1 để tránh lỗi hệ thống
+                if (isNaN(val) || val < 1) {
+                    input.value = 1;
+                    val = 1;
+                }
+                
+                if (val > 99) {
+                    input.value = 99;
+                    val = 99;
                 }
 
                 errorSpan.style.display = 'none';
-                input.form.submit();
+                input.form.submit(); // Thực hiện submit form đẩy dữ liệu xuống DB an toàn
             }
 
-            // Tạo form ẩn độc lập bằng JavaScript để đóng gói các bản ghi được chọn đem sang /checkout
             function submitCheckout() {
                 var checked = document.querySelectorAll('.item-checkbox:checked');
                 if (checked.length === 0) {
