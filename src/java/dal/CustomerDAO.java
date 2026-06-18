@@ -97,17 +97,16 @@ public class CustomerDAO extends DBContext {
         c.setLoginProvider(rs.getString("loginProvider"));
         return c;
     }
-
-    public boolean register(String userName, String phoneNumber,
-            String email, String password) throws SQLException {
-        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider) "
-                + "VALUES (?, ?, ?, ?, 'local')";
+    
+    public boolean registerVerified(String userName, String phoneNumber,
+            String email, String hashedPassword) throws SQLException {
+        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified) "
+                + "VALUES (?, ?, ?, ?, 'local', 1)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, userName);
             ps.setString(2, phoneNumber);
             ps.setString(3, email);
-            ps.setString(4, util.PasswordUtil.hash(password));
-            //trả về true / false
+            ps.setString(4, hashedPassword);
             return ps.executeUpdate() > 0;
         }
     }
