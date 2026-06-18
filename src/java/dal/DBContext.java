@@ -16,13 +16,19 @@ public class DBContext {
 
     public DBContext() {
         try {
-            // Edit your connection details here
             String username = "root";
             String password = "123456";
-            String url = "jdbc:mysql://localhost:3306/Restaurant_Reservation_and_Table_Service_System?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+            String url = "jdbc:mysql://localhost:3306/Restaurant_Reservation_and_Table_Service_System"
+                    + "?useSSL=false"
+                    + "&allowPublicKeyRetrieval=true"
+                    + "&useUnicode=true"
+                    + "&characterEncoding=UTF-8"
+                    + "&serverTimezone=Asia/Ho_Chi_Minh";
 
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(url, username, password);
+
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -49,7 +55,6 @@ public class DBContext {
     }
 
     public static void main(String[] args) {
-        // Kiểm tra kết nối trực tiếp
         DBContext db = new DBContext();
         if (db.connection != null) {
             System.out.println("✅ Thành công! Kết nối MySQL hoạt động: " + db.connection);
