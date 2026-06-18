@@ -11,23 +11,44 @@ import model.Order;
 
 public class OrderDAOSon extends DBContext {
 
+    /*
+     * Tạo đơn đặt bàn online.
+     *
+     * DB mới KHÔNG còn tableID trong bảng Order.
+     * Vì vậy đơn online lúc khách đặt chỉ lưu:
+     * - customerID
+     * - orderType = 1
+     * - orderStatus = reserved
+     * - tableStatus = reserved
+     * - capacity
+     * - areaType
+     * - orderTime
+     *
+     * Chưa insert vào Order_Table vì lúc này chưa gán bàn thật.
+     */
     public int createReservation(int customerID, int capacity,
             String areaType, Timestamp orderTime,
             BigDecimal depositAmount) {
+
         String sql
                 = "INSERT INTO `Order` "
-                + "(customerID, tableID, orderType, orderStatus, tableStatus, "
-                + " areaType, capacity, orderTime, depositAmount, createdAt) "
-                + "VALUES (?, NULL, 1, 'reserved', 'reserved', ?, ?, ?, ?, NOW())";
+                + "(customerID, employeeID, invoiceID, orderType, tableStatus, "
+                + " totalAmount, capacity, areaType, checkoutRequestAt, "
+                + " isStaffConfirmed, createdAt, orderTime, depositAmount, orderStatus) "
+                + "VALUES (?, NULL, NULL, 1, 'reserved', "
+                + " 0, ?, ?, NULL, "
+                + " 0, NOW(), ?, ?, 'reserved')";
 
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             ps.setInt(1, customerID);
-            ps.setString(2, areaType);
-            ps.setInt(3, capacity);
+            ps.setInt(2, capacity);
+            ps.setString(3, areaType);
             ps.setTimestamp(4, orderTime);
-            ps.setBigDecimal(5, depositAmount != null ? depositAmount : BigDecimal.ZERO);
+            ps.setInt(5, depositAmount != null ? depositAmount.intValue() : 0);
 
             int affected = ps.executeUpdate();
+
             if (affected == 0) {
                 return -1;
             }
@@ -45,6 +66,9 @@ public class OrderDAOSon extends DBContext {
         return -1;
     }
 
+    /*
+     * Khách tự hủy đơn đặt bàn.
+     */
     public boolean cancelReservation(int orderID, int customerID) {
         String sql
                 = "UPDATE `Order` "
@@ -69,35 +93,25 @@ public class OrderDAOSon extends DBContext {
 
     /*
      * Tự hủy đơn đặt online nếu:
-<<<<<<< Updated upstream
+     *
      * - Là đơn đặt bàn online: orderType = 1
-     * - Chưa được gán bàn thật: tableID IS NULL
      * - Vẫn đang reserved
      * - Đã quá giờ khách đến 30 phút
+     * - Nhân viên chưa chuyển tableStatus sang serving
      *
      * Ví dụ:
-     * Khách đặt đến 19:00
-     * Sau 19:30 mà nhân viên chưa gán bàn
-     * => tự hủy
-=======
-     
-     * - Đã quá giờ khách đến 30 phút
-     *
-    
-     * Khách đặt đến 19:00
-     * Sau 19:30 mà nhân viên chưa gán bàn
-      tự hủy
->>>>>>> Stashed changes
+     * Khách đặt 19:00
+     * Đến 19:31 mà đơn vẫn là reserved
+     * => tự động chuyển cancelled / available
      */
     public int autoExpireReservations() {
         String sql
                 = "UPDATE `Order` "
                 + "SET orderStatus = 'cancelled', tableStatus = 'available' "
                 + "WHERE orderType = 1 "
-                + "  AND tableID IS NULL "
                 + "  AND orderStatus = 'reserved' "
                 + "  AND tableStatus = 'reserved' "
-                + "  AND DATE_ADD(orderTime, INTERVAL 30 MINUTE) < NOW()";
+                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             return ps.executeUpdate();
@@ -158,19 +172,18 @@ public class OrderDAOSon extends DBContext {
 
         o.setOrderID(rs.getInt("orderID"));
         o.setCustomerID(rs.getInt("customerID"));
-//        o.setTableID(rs.getInt("tableID"));
         o.setInvoiceID(rs.getInt("invoiceID"));
         o.setOrderType(rs.getInt("orderType"));
         o.setTableStatus(rs.getString("tableStatus"));
-//        o.setTotalAmount(rs.getLong("totalAmount"));
+        o.setTotalAmount(rs.getInt("totalAmount"));
         o.setCheckoutRequestAt(rs.getTimestamp("checkoutRequestAt"));
         o.setIsStaffConfirmed(rs.getInt("isStaffConfirmed"));
         o.setCreatedAt(rs.getTimestamp("createdAt"));
         o.setOrderTime(rs.getTimestamp("orderTime"));
-//        o.setDepositAmount(rs.getLong("depositAmount"));
+        o.setDepositAmount(rs.getInt("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
-//        o.setCapacity(rs.getInt("capacity"));
-//        o.setAreaType(rs.getString("areaType"));
+        o.setCapacity(rs.getInt("capacity"));
+        o.setAreaType(rs.getString("areaType"));
 
         return o;
     }
