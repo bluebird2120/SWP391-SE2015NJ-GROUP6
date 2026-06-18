@@ -1,5 +1,6 @@
 package controller;
 
+
 import dal.EmployeeDAO;
 import dal.EmployeeShiftDAO;
 import dal.NotificationDAO;
@@ -124,35 +125,49 @@ public class StaffMyScheduleController extends HttpServlet {
                 NotificationDAO notifDAO = new NotificationDAO();
 
                 if ("acceptColleagueSwap".equals(action)) {
-                    boolean success = swapDAO.updateColleagueStatus(swapID, "pending");
-                    if (success) {
-                        session.setAttribute("successMsg", "Đã đồng ý đổi ca. Yêu cầu đang được gửi tới quản lý để phê duyệt.");
+                    // Re-check for conflicts to ensure no new shifts were assigned in the meantime
+                    EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+                    if (detail.getTargetShiftID() != null) {
+                        if (esDAO.hasConflictingShift(detail.getReqEmployeeID(), detail.getTargetWorkDate(), detail.getRequesterShiftID())) {
+                            session.setAttribute("errorMsg", "Không thể đổi ca: " + detail.getReqEmployeeName() + " đã có ca khác vào ngày " + detail.getTargetWorkDate() + "!");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
+                        if (esDAO.hasConflictingShift(detail.getTargetEmployeeID(), detail.getReqWorkDate(), detail.getTargetShiftID())) {
+                            session.setAttribute("errorMsg", "Không thể đổi ca: Bạn đã có ca khác vào ngày " + detail.getReqWorkDate() + "!");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
+                    }
 
-                        // 1. Notify Requester
+                    // Directly approve and swap shifts — no owner approval needed
+                    boolean success = swapDAO.updateStatus(swapID, "approved", null);
+                    if (success) {
+                        session.setAttribute("successMsg", "Đổi ca thành công! Lịch làm việc của 2 nhân viên đã được cập nhật.");
+
+                        // Notify the requester that the swap is complete
                         Notifications n1 = new Notifications();
                         n1.setRecipientID(detail.getReqEmployeeID());
                         n1.setRecipientType("staff");
-                        n1.setType("shift_request_colleague_accepted");
-                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý đổi ca ngày " + detail.getReqWorkDate() + " của bạn. Yêu cầu đang chờ quản lý phê duyệt.");
+                        n1.setType("shift_request_approved");
+                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý đổi ca. Ca ngày "
+                                + detail.getReqWorkDate() + " của bạn đã được đổi thành công với ca ngày "
+                                + detail.getTargetWorkDate() + ".");
                         n1.setIsRead(0);
                         notifDAO.insert(n1);
 
-                        // 2. Notify Owners
-                        EmployeeDAO empDAO = new EmployeeDAO();
-                        List<Integer> ownerIDs = empDAO.getActiveOwnerIDs();
-                        String ownerMsgText = String.format("Có yêu cầu đổi ca mới giữa %s và %s đang chờ phê duyệt.",
-                                                        detail.getReqEmployeeName(), emp.getFullName());
-                        for (int ownerID : ownerIDs) {
-                            Notifications n = new Notifications();
-                            n.setRecipientID(ownerID);
-                            n.setRecipientType("staff");
-                            n.setType("shift_request");
-                            n.setMessage(ownerMsgText);
-                            n.setIsRead(0);
-                            notifDAO.insert(n);
-                        }
+                        // Notify the acceptor (current employee) as a record
+                        Notifications n2 = new Notifications();
+                        n2.setRecipientID(emp.getEmployeeID());
+                        n2.setRecipientType("staff");
+                        n2.setType("shift_request_approved");
+                        n2.setMessage("Bạn đã đồng ý đổi ca với " + detail.getReqEmployeeName() + ". Ca ngày "
+                                + detail.getTargetWorkDate() + " của bạn đã được đổi thành công với ca ngày "
+                                + detail.getReqWorkDate() + ".");
+                        n2.setIsRead(0);
+                        notifDAO.insert(n2);
                     } else {
-                        session.setAttribute("errorMsg", "Lỗi khi cập nhật trạng thái yêu cầu!");
+                        session.setAttribute("errorMsg", "Lỗi khi thực hiện đổi ca. Vui lòng thử lại!");
                     }
                 } else {
                     boolean success = swapDAO.updateColleagueStatus(swapID, "colleague_rejected");

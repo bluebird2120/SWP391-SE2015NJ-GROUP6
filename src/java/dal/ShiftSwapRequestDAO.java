@@ -146,7 +146,7 @@ public class ShiftSwapRequestDAO extends DBContext {
         return null;
     }
 
-    public boolean updateStatus(int swapID, String status, int approvedByID) {
+    public boolean updateStatus(int swapID, String status, Integer approvedByID) {
         Connection conn = connection;
         try {
             conn.setAutoCommit(false);
@@ -155,7 +155,11 @@ public class ShiftSwapRequestDAO extends DBContext {
             String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? WHERE swapID = ?";
             try (PreparedStatement ps = conn.prepareStatement(updateRequestSql)) {
                 ps.setString(1, status);
-                ps.setInt(2, approvedByID);
+                if (approvedByID != null) {
+                    ps.setInt(2, approvedByID);
+                } else {
+                    ps.setNull(2, Types.INTEGER);
+                }
                 ps.setInt(3, swapID);
                 ps.executeUpdate();
             }

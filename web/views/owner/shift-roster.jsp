@@ -500,7 +500,7 @@
                                     <button class="tab-btn" onclick="switchTab('view')"><i
                                             class="fas fa-user-clock"></i> Xem lịch NV</button>
                                     <button class="tab-btn" onclick="switchTab('requests')">
-                                        <i class="fas fa-paper-plane"></i> Yêu cầu đổi ca/xin nghỉ
+                                        <i class="fas fa-paper-plane"></i> Yêu cầu xin nghỉ
                                         <c:if test="${not empty pendingRequests}">
                                             <span style="background:#c14b4b; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.65rem; margin-left:4px; font-weight:700;">${pendingRequests.size()}</span>
                                         </c:if>
