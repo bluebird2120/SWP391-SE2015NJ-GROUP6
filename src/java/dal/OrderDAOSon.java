@@ -182,8 +182,8 @@ public class OrderDAOSon extends DBContext {
         o.setOrderTime(rs.getTimestamp("orderTime"));
         o.setDepositAmount(rs.getInt("depositAmount"));
         o.setOrderStatus(rs.getString("orderStatus"));
-        o.setCapacity(rs.getInt("capacity"));
-        o.setAreaType(rs.getString("areaType"));
+//        o.setCapacity(rs.getInt("capacity"));
+//        o.setAreaType(rs.getString("areaType"));
 
         return o;
     }

@@ -116,8 +116,10 @@ public class OrderController extends HttpServlet {
                 // THÊM LẠI: Lấy sức chứa và khu vực từ session để đưa vào hóa đơn
                 String areaType = (String) session.getAttribute("areaType");
                 Integer capacity = (Integer) session.getAttribute("capacity");
-                newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");
-                newOrder.setCapacity(capacity != null ? capacity : 0);
+                
+                
+//                newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");  sửa lỗi 
+//                newOrder.setCapacity(capacity != null ? capacity : 0);
 
                 int newOrderID = orderDAO.createOrder(newOrder);
                 if (newOrderID == -1) {
