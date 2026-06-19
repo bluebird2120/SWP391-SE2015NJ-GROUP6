@@ -1,6 +1,7 @@
 package controller;
 
 import dal.OrderDAO;
+import dal.TableDAO;
 import model.Order;
 import model.OrderItem;
 import model.MenuItem;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Table;
 
 @WebServlet(name = "OrderController", urlPatterns = {"/order"})
 public class OrderController extends HttpServlet {
@@ -86,6 +88,44 @@ public class OrderController extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
+
+// Lấy orderID hiện tại của khách từ Session
+        Integer currentOrderID = (Integer) session.getAttribute("orderID");
+
+        if ("addTable".equals(action)) {
+            // Khách sẽ gửi lên một chuỗi Token (Mã bảo mật) của cái bàn muốn gộp
+            String newTableToken = request.getParameter("tableToken");
+
+            if (currentOrderID != null && newTableToken != null) {
+                TableDAO tableDAO = new TableDAO();
+                OrderDAO orderDAO = new OrderDAO();
+
+                // 1. Tìm cái bàn dựa trên Token khách nhập
+                // Logic Controller chuẩn
+                Table newTable = tableDAO.getTableByToken(newTableToken);
+
+                if (newTable != null) {
+                    // 1. Kiểm tra xem bàn có rảnh không
+                    boolean isTableFree = tableDAO.isTableAvailable(newTable.getTableID());
+
+                    if (isTableFree) {
+                        // 2. Chèn thẳng vào bảng trung gian Order_Table
+                        boolean success = orderDAO.addTableToExistingOrder(currentOrderID, newTable.getTableID());
+
+                        if (success) {
+                            session.setAttribute("successMsg", "Đã gộp thành công Bàn " + newTable.getTableName() + " vào đơn hàng của bạn!");
+                        }
+                    } else {
+                        session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
+                    }
+                } else {
+                    session.setAttribute("errorMsg", "Mã QR bàn không hợp lệ!");
+                }
+            }
+            // Load lại trang Menu hoặc Giỏ hàng
+            response.sendRedirect(request.getContextPath() + "/menu");
+            return;
+        }
 
         // --- THÊM MÓN ---
         if ("add".equals(action)) {
