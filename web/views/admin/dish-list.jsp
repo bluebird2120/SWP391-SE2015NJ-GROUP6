@@ -435,9 +435,9 @@
 
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/menu-management?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
                            title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/menu-management?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
                            title="Trang trước">Trước</a>
                     </c:when>
                     <c:otherwise>
@@ -450,9 +450,9 @@
 
                 <c:choose>
                     <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/menu-management?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
                            title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/menu-management?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
                            title="Đến trang cuối">Cuối</a>
                     </c:when>
                     <c:otherwise>
