@@ -314,12 +314,15 @@
                                     <i class="fas fa-user"></i>
 
                                     <input type="text"
+                                           id="userName"
                                            name="userName"
+                                           maxlength="30"
                                            value="${userName}"
-                                           class="${not empty userNameError ? 'input-error' : ''}">
+                                           class="${not empty userNameError ? 'input-error' : ''}"
+                                           required>
                                 </div>
 
-                                <div class="error">${userNameError}</div>
+                                <div id="userNameError" class="error">${userNameError}</div>
                             </div>
 
                             <!--SĐT-->
@@ -331,18 +334,20 @@
                                     <i class="fas fa-phone"></i>
 
                                     <input type="tel"
+                                           id="phoneNumber"
                                            name="phoneNumber"
                                            placeholder="0912345678"
                                            value="${phoneNumber}"
-                                           class="${not empty phoneNumberError ? 'input-error' : ''}">
+                                           class="${not empty phoneNumberError ? 'input-error' : ''}"
+                                           required>
                                 </div>
 
-                                <div class="error">${phoneNumberError}</div>
+                                <div id="phoneNumberError" class="error">${phoneNumberError}</div>
                             </div>
 
                         </div>
 
-                            <!--Email-->
+                        <!--Email-->
                         <div class="field">
                             <label class="field-label">
                                 EMAIL <span>*</span>
@@ -352,13 +357,15 @@
                                 <i class="fas fa-envelope"></i>
 
                                 <input type="email"
+                                       id="email"
                                        name="email"
                                        placeholder="example@gmail.com"
                                        value="${email}"
-                                       class="${not empty emailError ? 'input-error' : ''}">
+                                       class="${not empty emailError ? 'input-error' : ''}"
+                                       required>
                             </div>
 
-                            <div class="error">${emailError}</div>
+                            <div id="emailError" class="error">${emailError}</div>
                         </div>
 
                         <div class="field-row">
@@ -373,12 +380,14 @@
                                     <i class="fas fa-lock"></i>
 
                                     <input type="password"
+                                           id="password"
                                            name="password"
                                            placeholder="Ít nhất 6 ký tự"
-                                           class="${not empty passwordError ? 'input-error' : ''}">
+                                           class="${not empty passwordError ? 'input-error' : ''}"
+                                           required>
                                 </div>
 
-                                <div class="error">${passwordError}</div>
+                                <div id="passwordError" class="error">${passwordError}</div>
                             </div>
 
                             <!--Xác Nhận Mật Khẩu-->
@@ -391,12 +400,14 @@
                                     <i class="fas fa-lock"></i>
 
                                     <input type="password"
+                                           id="confirmPassword"
                                            name="confirmPassword"
                                            placeholder="Nhập lại mật khẩu"
-                                           class="${not empty confirmError ? 'input-error' : ''}">
+                                           class="${not empty confirmError ? 'input-error' : ''}"
+                                           required>
                                 </div>
 
-                                <div class="error">${confirmError}</div>
+                                <div id="confirmError" class="error">${confirmError}</div>
                             </div>
 
                         </div>
@@ -431,5 +442,85 @@
         </div>
 
         <%@include file="/views/includes/footer.jsp" %>
+        <script>
+            document.querySelector("form").addEventListener("submit", function (e) {
+
+                let hasError = false;
+
+                const userName = document.getElementById("userName");
+                const phone = document.getElementById("phoneNumber");
+                const email = document.getElementById("email");
+                const password = document.getElementById("password");
+                const confirmPassword = document.getElementById("confirmPassword");
+
+                // xóa các lỗi cũ
+                document.getElementById("userNameError").textContent = "";
+                document.getElementById("phoneNumberError").textContent = "";
+                document.getElementById("emailError").textContent = "";
+                document.getElementById("passwordError").textContent = "";
+                document.getElementById("confirmError").textContent = "";
+
+                // USERNAME
+                if (userName.value.trim() === "") {
+                    document.getElementById("userNameError").textContent =
+                            "Vui lòng nhập tên của bạn.";
+                    hasError = true;
+                } else if (userName.value.trim().length > 30) {
+                    document.getElementById("userNameError").textContent =
+                            "Tên trong khoảng từ 1-30 kí tự.";
+                    hasError = true;
+                }
+
+                // PHONE
+                if (phone.value.trim() === "") {
+                    document.getElementById("phoneNumberError").textContent =
+                            "Vui lòng nhập số điện thoại";
+                    hasError = true;
+                } else if (!/^\d{10,11}$/.test(phone.value.trim())) {
+                    document.getElementById("phoneNumberError").textContent =
+                            "Số điện thoại phải có đúng 10-11 chữ số.";
+                    hasError = true;
+                }
+
+                // EMAIL
+                const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,10}$/;
+
+                if (email.value.trim() === "") {
+                    document.getElementById("emailError").textContent =
+                            "Vui lòng nhập email của bạn.";
+                    hasError = true;
+                } else if (!emailRegex.test(email.value.trim())) {
+                    document.getElementById("emailError").textContent =
+                            "Email không hợp lệ.";
+                    hasError = true;
+                }
+
+                // PASSWORD
+                if (password.value === "") {
+                    document.getElementById("passwordError").textContent =
+                            "Vui lòng nhập mật khẩu.";
+                    hasError = true;
+                } else if (password.value.length < 6) {
+                    document.getElementById("passwordError").textContent =
+                            "Mật khẩu phải có ít nhất 6 ký tự.";
+                    hasError = true;
+                }
+
+                // CONFIRM PASSWORD
+                if (confirmPassword.value === "") {
+                    document.getElementById("confirmError").textContent =
+                            "Vui lòng xác nhận mật khẩu.";
+                    hasError = true;
+                } else if (confirmPassword.value !== password.value) {
+                    document.getElementById("confirmError").textContent =
+                            "Mật khẩu không khớp!";
+                    hasError = true;
+                }
+
+                if (hasError) {
+                    e.preventDefault();
+                }
+            });
+        </script>
     </body>
 </html>
