@@ -20,10 +20,7 @@ public class Order {
     private int totalAmount; 
     private int depositAmount;
     
-    // Cột mới thêm
-    private Integer capacity; 
-    private String areaType;
-
+    
     public Order() {
     }
 
@@ -31,7 +28,7 @@ public class Order {
     public Order(int orderID, Integer customerID, Integer employeeID, Integer invoiceID, 
                  int orderType, String tableStatus, int totalAmount, Timestamp checkoutRequestAt, 
                  int isStaffConfirmed, Timestamp createdAt, Timestamp orderTime, 
-                 int depositAmount, String orderStatus, Integer capacity, String areaType) {
+                 int depositAmount, String orderStatus) {
         this.orderID = orderID;
         this.customerID = customerID;
         this.employeeID = employeeID;
@@ -45,8 +42,7 @@ public class Order {
         this.orderTime = orderTime;
         this.depositAmount = depositAmount;
         this.orderStatus = orderStatus;
-        this.capacity = capacity;
-        this.areaType = areaType;
+        
     }
 
     // --- Getters & Setters ---
@@ -91,10 +87,5 @@ public class Order {
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
 
-    // Thêm Getters & Setters cho capacity và areaType
-    public Integer getCapacity() { return capacity; }
-    public void setCapacity(Integer capacity) { this.capacity = capacity; }
-
-    public String getAreaType() { return areaType; }
-    public void setAreaType(String areaType) { this.areaType = areaType; }
+    
 }

@@ -21,6 +21,7 @@ public final class PasswordUtil {
         }
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
+            //xử lý byte chứ không xử lý string và hash(md.digest) byte bằng SHA-256
             byte[] bytes = md.digest((rawPassword + SALT).getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder(bytes.length * 2);
             for (byte b : bytes) {
