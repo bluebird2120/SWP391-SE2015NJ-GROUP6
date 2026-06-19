@@ -79,11 +79,12 @@
                 margin-bottom: 15px;
             }
             img{
-                max-width: 100%;
-                max-height: 200px;
+                max-width: 100px;
+                max-height: 100px;
                 border-radius: 4px;
                 border: 1px solid #d1d5db;
             }
+            
             .form-changeImage{
                 display: flex;
                 align-items: center;
@@ -163,7 +164,7 @@
                                 </div>
                                 <div class="form-group"> 
                                     <label class="form-label">Nhập giảm giá món ăn:</label>
-                                    <input class="form-input"class="form-input" type="number" name="discountPercent" value="${param.discountPercent != null ? param.discountPercent : dish.discountPercent}" required/>
+                                    <input class="form-input" type="number" name="discountPercent" value="${param.discountPercent != null ? param.discountPercent : dish.discountPercent}" required/>
                                     <div class="error-message">${errorDiscountPercent}</div>
                                 </div>
                                 <div class="form-group">
@@ -173,15 +174,29 @@
                             </div>
                             <div class="configuration-block">
                                 <div class="form-image">
-                                    <label class="form-label">Ảnh hiện tại:</label>
+                                    <label class="form-label">Ảnh chính hiện tại:</label>
                                     <img src="${dish.image}"/>
                                     <input type="hidden" value="${dish.image}" name="oldImage"/>  
                                 </div>
                                 <div class="form-changeImage">
-                                    <label class="form-label">Đổi ảnh mới:</label>
-                                    <input type="file" id="newImage" name="newImage"/>
+                                    <label class="form-label">Đổi ảnh chính mới:</label>
+                                    <input class="button-image" type="file" id="newMainImage" name="newMainImage"/>
                                 </div>
-                                <div class="error-message" id="errorImage">${errorImageFile}</div>
+
+                                <div class="error-message" id="errorMainImage">${errorMainImage}</div>
+
+                                <div class="form-image">
+                                    <label class="form-label">Ảnh phụ hiện tại:</label>
+                                    <c:forEach var="subImg" items="${subImages}">
+                                        <img src="${subImg.imagePath}"/>
+                                    </c:forEach>
+                                </div>
+                                <div class="form-changeImage">
+                                    <label class="form-label">Đổi ảnh phụ mới:</label>
+                                    <input class="button-image" type="file" id="newSubImage" name="newSubImage" multiple/>
+                                </div>
+
+                                <div class="error-message" id="errorSubImage">${errorSubImage}</div>
 
                                 <div class="form-checkbox">
                                     <label class="form-label">Trạng thái món ăn:</label>
@@ -198,26 +213,48 @@
 
         <script>
             const form = document.getElementById("dishForm");
-            const imageInput = document.getElementById("newImage");
-            const errorImage = document.getElementById("errorImage");
+            const mainImageInput = document.getElementById("newMainImage");
+            const subImageInput = document.getElementById("newSubImage");   
+            const errorMainImage = document.getElementById("errorMainImage");
+            const errorSubImage = document.getElementById("errorSubImage");
 
-            imageInput.onchange = function () {
-                let file = imageInput.files[0];
-                if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                        errorImage.innerHTML = "Ảnh quá lớn! Hệ thống chỉ cho phép ảnh dưới 5MB.";
-                        imageInput.value = "";
-                        return;
-                    }
+            const MAX_SIZE = 5 * 1024 * 1024; 
 
-                    let fileName = file.name.toLowerCase();
-                    if (!(fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.webp'))) {
-                        errorImage.innerHTML = "Vui lòng chọn file ảnh hợp lệ (.jpg, .png, .webp, .jpeg)";
-                        imageInput.value = "";
-                        return;
-                    }
-                    errorImage.innerHTML = "";
+            function checkFileValid(file) {
+                if (!file)
+                    return "";
+                if (file.size > MAX_SIZE) {
+                    return "Dung lượng ảnh vượt quá 5MB! Vui lòng chọn ảnh nhỏ hơn.";
                 }
+                let fName = file.name.toLowerCase();
+                if (!(fName.endsWith('.jpg') || fName.endsWith('.jpeg') || fName.endsWith('.png') || fName.endsWith('.webp'))) {
+                    return "Vui lòng chọn file định dạng ảnh hợp lệ (.jpg, .png, .webp, .jpeg)";
+                }
+                return "";
+            }
+
+            mainImageInput.onchange = function () {
+                let file = mainImageInput.files[0];
+                errorMainImage.innerHTML = checkFileValid(file);
+            };
+
+            subImageInput.onchange = function () {
+                let files = subImageInput.files;
+                if (files.length > 3) {
+                    errorSubImage.innerHTML = "Hệ thống chỉ cho phép tải lên tối đa 3 ảnh phụ!";
+                    subImageInput.value = ""; 
+                    return;
+                }
+
+                for (let file of files) {
+                    let errorMsg = checkFileValid(file);
+                    if (errorMsg !== "") {
+                        errorSubImage.innerHTML = errorMsg;
+                        subImageInput.value = ""; 
+                        return;
+                    }
+                }
+                errorSubImage.innerHTML = ""; 
             };
 
             form.onsubmit = function (event) {
@@ -228,7 +265,7 @@
                 const allergyNotes = form.elements["allergyNotes"].value.trim();
                 const price = form.elements["price"].value.trim();
                 const discountPercent = form.elements["discountPercent"].value.trim();
-                const itemId = form.elements["id"].value;
+                const itemId = parseInt(form.elements["id"].value);
 
                 const errNameDiv = form.elements["name"].nextElementSibling;
                 const errDescDiv = form.elements["description"].nextElementSibling;
@@ -240,7 +277,7 @@
                     errNameDiv.innerHTML = "Tên món ăn không được để trống";
                     isValid = false;
                 } else if (name.length > 150) {
-                    errNameDiv.innerHTML = "Tên món ăn không được vượt quá 150 ký tự1";
+                    errNameDiv.innerHTML = "Tên món ăn không được vượt quá 150 ký tự";
                     isValid = false;
                 } else {
                     errNameDiv.innerHTML = "";
@@ -284,17 +321,23 @@
                     isValid = false;
                 } else {
                     let dNum = parseInt(discountPercent);
-                    if (isNaN(dNum) || dNum < 0 || dNum > 1000000000) {
-                        errDiscountDiv.innerHTML = "Giảm giá món ăn phải từ 0-1000000000";
+                    if (isNaN(dNum) || dNum < 0 || dNum > 100) { 
+                        errDiscountDiv.innerHTML = "Giảm giá món ăn phải từ 0-100%";
                         isValid = false;
                     } else {
                         errDiscountDiv.innerHTML = "";
                     }
                 }
 
-                if (parseInt(itemId) === 0 && imageInput.files.length === 0) {
-                    errorImage.innerHTML = "Vui lòng tải ảnh cho món ăn";
-                    isValid = false;
+                if (itemId === 0) {
+                    if (mainImageInput.files.length === 0) {
+                        errorMainImage.innerHTML = "Vui lòng tải ảnh chính đại diện cho món ăn mới!";
+                        isValid = false;
+                    }
+                    if (subImageInput.files.length === 0) {
+                        errorSubImage.innerHTML = "Món ăn mới bắt buộc phải có từ 1 đến 3 ảnh phụ!";
+                        isValid = false;
+                    }
                 }
 
                 if (!isValid) {

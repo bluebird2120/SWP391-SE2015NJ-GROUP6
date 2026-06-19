@@ -120,7 +120,7 @@
                 border-radius: 8px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                 position: relative;
-                box-sizing: border-box; 
+                box-sizing: border-box;
             }
             h3{
                 border-bottom: 2px solid #e5e7eb;
@@ -171,16 +171,16 @@
                     </div>
                     <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
 
-                    <table border="1">
-                        <thead>
-                            <tr>
-                                <th>Tên Loại Món</th>
-                                <th>Tổng Số món</th>
-                                <th>Hoạt Động</th>
-                                <th>Tạm Ngưng</th>
-                                <th>Hành Động</th>
-                            </tr>
-                        </thead>
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th>Tên Loại Món</th>
+                                    <th>Tổng Số món</th>
+                                    <th>Hoạt Động</th>
+                                    <th>Tạm Ngưng</th>
+                                    <th>Hành Động</th>
+                                </tr>
+                            </thead>
                         <c:forEach var="cat" items="${categoryList}">
                             <tr>
                                 <td><div>${cat.categoryName}</div></td>
@@ -207,6 +207,39 @@
                 </div>
             </div>
         </div>
+        <c:if test="${totalPage > 1}">
+            <div class="pagination">
+
+                <c:choose>
+                    <c:when test="${currentPage > 1}">
+                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                           title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                           title="Trang trước">Trước</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Đầu</span>
+                        <span class="disabled">Trước</span>
+                    </c:otherwise>
+                </c:choose>
+
+                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+
+                <c:choose>
+                    <c:when test="${currentPage < totalPage}">
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                           title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                           title="Đến trang cuối">Cuối</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Sau</span>
+                        <span class="disabled">Cuối</span>
+                    </c:otherwise>
+                </c:choose>
+
+            </div>
+        </c:if>
 
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
