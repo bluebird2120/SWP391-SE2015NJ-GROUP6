@@ -1,6 +1,7 @@
 package controller;
 
 import dal.OrderDAO;
+import dal.TableDAO;
 import model.Order;
 import model.OrderItem;
 import model.MenuItem;
@@ -14,6 +15,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.sql.Timestamp;
+import model.Table;
 
 @WebServlet(name = "OrderController", urlPatterns = {"/order"})
 public class OrderController extends HttpServlet {
@@ -76,8 +79,8 @@ public class OrderController extends HttpServlet {
     }
 
     // =========================================================
-    // POST /order?action=add
-    // Thêm món vào giỏ hàng
+    // POST /order
+    // Xử lý các logic: Thêm món, Cập nhật số lượng, Xóa món, Gộp bàn
     // =========================================================
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -87,13 +90,45 @@ public class OrderController extends HttpServlet {
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
-        // --- THÊM MÓN ---
+        // Lấy orderID hiện tại của khách từ Session
+        Integer currentOrderID = (Integer) session.getAttribute("orderID");
+
+        // --- GỘP BÀN TỪ QUÉT QR ---
+        if ("addTable".equals(action)) {
+            String newTableToken = request.getParameter("tableToken");
+
+            if (currentOrderID != null && newTableToken != null) {
+                TableDAO tableDAO = new TableDAO();
+
+                Table newTable = tableDAO.getTableByToken(newTableToken);
+
+                if (newTable != null) {
+                    boolean isTableFree = tableDAO.isTableAvailable(newTable.getTableID());
+
+                    if (isTableFree) {
+                        boolean success = orderDAO.addTableToExistingOrder(currentOrderID, newTable.getTableID());
+
+                        if (success) {
+                            session.setAttribute("successMsg", "Đã gộp thành công Bàn " + newTable.getTableName() + " vào đơn hàng của bạn!");
+                        }
+                    } else {
+                        session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
+                    }
+                } else {
+                    session.setAttribute("errorMsg", "Mã QR bàn không hợp lệ!");
+                }
+            }
+            response.sendRedirect(request.getContextPath() + "/menu");
+            return;
+        }
+
+        // --- THÊM MÓN VÀO GIỎ ---
         if ("add".equals(action)) {
             int itemID = Integer.parseInt(request.getParameter("itemID"));
             int quantity = Integer.parseInt(request.getParameter("quantity"));
             String note = request.getParameter("note");
 
-            // Lấy giá trị tiền của món ăn (Phải truyền từ form JSP lên)
+            // Lấy giá trị tiền của món ăn
             int price = 0;
             String priceParam = request.getParameter("price");
             if (priceParam != null && !priceParam.isEmpty()) {
@@ -103,6 +138,7 @@ public class OrderController extends HttpServlet {
             Integer orderID = (Integer) session.getAttribute("orderID");
             Integer tableID = (Integer) session.getAttribute("tableID");
 
+            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
             if (orderID == null) {
                 Integer customerID = (Integer) session.getAttribute("customerID");
 
@@ -112,14 +148,11 @@ public class OrderController extends HttpServlet {
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
+                newOrder.setTotalAmount(0);
+                newOrder.setDepositAmount(0);
+                newOrder.setOrderTime(new Timestamp(System.currentTimeMillis()));
 
-                // THÊM LẠI: Lấy sức chứa và khu vực từ session để đưa vào hóa đơn
-                String areaType = (String) session.getAttribute("areaType");
-                Integer capacity = (Integer) session.getAttribute("capacity");
-                
-                
-//                newOrder.setAreaType(areaType != null ? areaType : "Chưa xác định");  sửa lỗi 
-//                newOrder.setCapacity(capacity != null ? capacity : 0);
+                // ĐÃ XÓA SẠCH ĐOẠN SET CAPACITY VÀ AREATYPE THEO CHUẨN MODEL MỚI
 
                 int newOrderID = orderDAO.createOrder(newOrder);
                 if (newOrderID == -1) {
@@ -136,7 +169,7 @@ public class OrderController extends HttpServlet {
                 orderID = newOrderID;
             }
 
-            // Truyền thêm tableID và price vào hàm addOrderItem
+            // Gọi hàm thêm món vào chi tiết đơn
             int result = orderDAO.addOrderItem(orderID, itemID, tableID, quantity, price, note);
             if (result == -1) {
                 response.sendRedirect(request.getContextPath() + "/menu?error=add_item_failed");
@@ -145,7 +178,7 @@ public class OrderController extends HttpServlet {
 
             response.sendRedirect(request.getContextPath() + "/menu?success=added");
 
-            // --- CẬP NHẬT SỐ LƯỢNG ---
+        // --- CẬP NHẬT SỐ LƯỢNG MÓN ---
         } else if ("update".equals(action)) {
             try {
                 int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
@@ -160,14 +193,13 @@ public class OrderController extends HttpServlet {
                 orderDAO.updateOrderItemQuantity(orderItemID, quantity);
 
             } catch (NumberFormatException e) {
-                // Nhập chữ hoặc số không hợp lệ → bỏ qua, về lại cart
                 response.sendRedirect(request.getContextPath() + "/order?action=cart&error=invalid_quantity");
                 return;
             }
 
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
 
-            // --- XÓA MÓN ---
+        // --- XÓA MÓN KHỎI GIỎ ---
         } else if ("remove".equals(action)) {
             int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
             orderDAO.removeOrderItem(orderItemID);

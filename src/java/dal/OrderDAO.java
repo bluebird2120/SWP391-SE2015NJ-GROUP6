@@ -3,6 +3,7 @@ package dal;
 import model.Order;
 import model.OrderItem;
 import model.MenuItem;
+import model.OrderReservationDetail; // ĐÃ THÊM IMPORT MODEL MỚI
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,59 +15,8 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1. TẠO ORDER MỚI
+    // 1. TẠO ORDER MỚI (Đã gỡ bỏ hoàn toàn capacity và areaType)
     // =========================================================
-//    public int createOrder(Order order) {
-//        // ĐÃ SỬA: Thêm capacity và areaType vào câu lệnh SQL (tổng cộng 14 cột)
-//        String sql = "INSERT INTO `Order` "
-//                + "(customerID, employeeID, invoiceID, orderType, tableStatus, "
-//                + " totalAmount, capacity, areaType, checkoutRequestAt, isStaffConfirmed, "
-//                + " createdAt, orderTime, depositAmount, orderStatus) " 
-//                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
-//
-//        try (Connection conn = getConnection();
-//             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-//
-//            // Xử lý các trường có thể NULL (dùng Integer object)
-//            if (order.getCustomerID() != null) ps.setInt(1, order.getCustomerID());
-//            else ps.setNull(1, Types.INTEGER);
-//
-//            if (order.getEmployeeID() != null) ps.setInt(2, order.getEmployeeID());
-//            else ps.setNull(2, Types.INTEGER);
-//
-//            if (order.getInvoiceID() != null) ps.setInt(3, order.getInvoiceID());
-//            else ps.setNull(3, Types.INTEGER);
-//
-//            ps.setInt(4, order.getOrderType());
-//            ps.setString(5, order.getTableStatus() != null ? order.getTableStatus() : "available");
-//            
-//            // ĐÃ SỬA: Đổi từ setLong sang setInt
-//            ps.setInt(6, order.getTotalAmount()); 
-//
-//            // ĐÃ SỬA: Thêm 2 tham số mới cho capacity và areaType
-//            if (order.getCapacity() != null) ps.setInt(7, order.getCapacity());
-//            else ps.setNull(7, Types.INTEGER);
-//            ps.setString(8, order.getAreaType());
-//
-//            ps.setTimestamp(9, order.getCheckoutRequestAt());
-//            ps.setInt(10, order.getIsStaffConfirmed());
-//            ps.setTimestamp(11, order.getCreatedAt() != null ? order.getCreatedAt() : new Timestamp(System.currentTimeMillis()));
-//            ps.setTimestamp(12, order.getOrderTime());
-//            
-//            // ĐÃ SỬA: Đổi từ setLong sang setInt
-//            ps.setInt(13, order.getDepositAmount()); 
-//            ps.setString(14, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
-//            
-//            ps.executeUpdate();
-//            ResultSet rs = ps.getGeneratedKeys();
-//            if (rs.next()) return rs.getInt(1);
-//
-//        } catch (SQLException e) {
-//            System.err.println("[OrderDAO] createOrder lỗi: " + e.getMessage());
-//        }
-//        return -1;
-//    }
-    
     public int createOrder(Order order) {
         String sql = "INSERT INTO `Order` "
                 + "(customerID, employeeID, invoiceID, orderType, tableStatus, "
@@ -96,27 +46,14 @@ public class OrderDAO {
 
             ps.setInt(4, order.getOrderType());
 
-            ps.setString(5, order.getTableStatus() != null
-                    ? order.getTableStatus()
-                    : "available");
-
+            ps.setString(5, order.getTableStatus() != null ? order.getTableStatus() : "available");
             ps.setInt(6, order.getTotalAmount());
-
             ps.setTimestamp(7, order.getCheckoutRequestAt());
-
             ps.setInt(8, order.getIsStaffConfirmed());
-
-            ps.setTimestamp(9, order.getCreatedAt() != null
-                    ? order.getCreatedAt()
-                    : new Timestamp(System.currentTimeMillis()));
-
+            ps.setTimestamp(9, order.getCreatedAt() != null ? order.getCreatedAt() : new Timestamp(System.currentTimeMillis()));
             ps.setTimestamp(10, order.getOrderTime());
-
             ps.setInt(11, order.getDepositAmount());
-
-            ps.setString(12, order.getOrderStatus() != null
-                    ? order.getOrderStatus()
-                    : "ordering");
+            ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
 
             ps.executeUpdate();
 
@@ -134,7 +71,45 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1.5 BỔ SUNG: LIÊN KẾT ORDER VÀ TABLE (BẢNG TRUNG GIAN)
+    // 1.5 BỔ SUNG: THÊM CHI TIẾT ĐẶT BÀN (Dành cho Đặt trước)
+    // =========================================================
+    public boolean addOrderReservationDetail(OrderReservationDetail detail) {
+        String sql = "INSERT INTO OrderReservationDetail (orderID, capacity, areaType, quantity) VALUES (?, ?, ?, ?)";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, detail.getOrderID());
+            ps.setInt(2, detail.getCapacity());
+            ps.setString(3, detail.getAreaType());
+            ps.setInt(4, detail.getQuantity());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] addOrderReservationDetail lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public List<OrderReservationDetail> getReservationDetailsByOrderId(int orderID) {
+        List<OrderReservationDetail> list = new ArrayList<>();
+        String sql = "SELECT * FROM OrderReservationDetail WHERE orderID = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new OrderReservationDetail(
+                        rs.getInt("detailID"),
+                        rs.getInt("orderID"),
+                        rs.getInt("capacity"),
+                        rs.getString("areaType"),
+                        rs.getInt("quantity")
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] getReservationDetailsByOrderId lỗi: " + e.getMessage());
+        }
+        return list;
+    }
+
+    // =========================================================
+    // 1.6 BỔ SUNG: LIÊN KẾT ORDER VÀ TABLE (BẢNG TRUNG GIAN)
     // =========================================================
     public boolean linkOrderAndTable(int orderID, int tableID) {
         String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
@@ -149,10 +124,9 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (ĐÃ UPDATE DÙNG JOIN)
+    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN
     // =========================================================
     public Order getActiveOrderByTableId(int tableID) {
-        // Dùng JOIN để quét qua bảng Order_Table
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
@@ -194,10 +168,9 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 3. THÊM MÓN VÀO GIỎ (ĐÃ UPDATE THÊM tableID & price)
+    // 3. THÊM MÓN VÀO GIỎ
     // =========================================================
     public int addOrderItem(int orderID, int itemID, Integer tableID, int quantity, int price, String note) {
-        // Check xem món này có cùng cấu hình (cùng order, item, table, note) chưa để cộng dồn
         OrderItem existing = getOrderItemByOrderAndItemAndTable(orderID, itemID, tableID);
         if (existing != null) {
             int newQty = existing.getQuantity() + quantity;
@@ -205,7 +178,6 @@ public class OrderDAO {
             return updated ? existing.getOrderItemID() : -1;
         }
 
-        // Bổ sung insert tableID và price chốt cứng
         String sql = "INSERT INTO OrderItem (orderID, itemID, tableID, quantity, price, note) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -405,30 +377,28 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> Order (ĐÃ CẬP NHẬT THEO MODEL MỚI)
+    // HELPER: map ResultSet -> Order (Đã gỡ capacity và areaType)
     // =========================================================
     private Order mapToOrder(ResultSet rs) throws SQLException {
         return new Order(
                 rs.getInt("orderID"),
-                (Integer) rs.getObject("customerID"), // Lấy Integer object để nhận Null
+                (Integer) rs.getObject("customerID"),
                 (Integer) rs.getObject("employeeID"),
                 (Integer) rs.getObject("invoiceID"),
                 rs.getInt("orderType"),
                 rs.getString("tableStatus"),
-                rs.getInt("totalAmount"), // ĐÃ SỬA: Dùng getInt thay cho getLong
+                rs.getInt("totalAmount"),
                 rs.getTimestamp("checkoutRequestAt"),
                 rs.getInt("isStaffConfirmed"),
                 rs.getTimestamp("createdAt"),
                 rs.getTimestamp("orderTime"),
-                rs.getInt("depositAmount"), // ĐÃ SỬA: Dùng getInt thay cho getLong
+                rs.getInt("depositAmount"),
                 rs.getString("orderStatus")
-//                (Integer) rs.getObject("capacity"), // ĐÃ SỬA: Hứng thêm cột capacity
-//                rs.getString("areaType") // ĐÃ SỬA: Hứng thêm cột areaType
         );
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> OrderItem (ĐÃ THÊM tableID, price)
+    // HELPER: map ResultSet -> OrderItem
     // =========================================================
     private OrderItem mapToOrderItem(ResultSet rs) throws SQLException {
         return new OrderItem(
@@ -443,15 +413,12 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> MenuItem (ĐÃ THÊM LẠI categoryID)
+    // HELPER: map ResultSet -> MenuItem
     // =========================================================
     private MenuItem mapToMenuItem(ResultSet rs) throws SQLException {
         MenuItem mi = new MenuItem();
         mi.setItemID(rs.getInt("itemID"));
-
-        // ĐÃ SỬA: Thêm lại hàm lấy categoryID từ Database
         mi.setCategoryID(rs.getInt("categoryID"));
-
         mi.setItemName(rs.getString("itemName"));
         mi.setDescription(rs.getString("description"));
         mi.setPrice(rs.getInt("price"));
@@ -462,4 +429,29 @@ public class OrderDAO {
         mi.setAllergyNotes(rs.getString("allergyNotes"));
         return mi;
     }
+
+    public boolean addTableToExistingOrder(int orderID, int tableID) {
+        String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
+
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, orderID);
+            ps.setInt(2, tableID);
+
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 1062) {
+                System.out.println("Bàn này đã nằm trong đơn hàng rồi!");
+            } else {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            System.out.println("Lỗi kết nối CSDL: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }
