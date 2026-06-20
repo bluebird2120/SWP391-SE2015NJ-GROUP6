@@ -370,24 +370,19 @@
                             <div class="card shadow-sm my-4 success-card">
                                 <div class="card-body p-4" style="font-size:0.95rem; text-align:left;">
                                     <div class="mb-2">
-                                        <strong>Loại bàn:</strong> Bàn ${order.capacity} chỗ
-                                    </div>
-
-                                    <div class="mb-2">
-                                        <strong>Khu vực:</strong>
-                                        <c:choose>
-                                            <c:when test="${order.areaType == 'public'}">
-                                                🌿 Ngoài sảnh
-                                            </c:when>
-
-                                            <c:when test="${order.areaType == 'private'}">
-                                                🚪 Trong phòng
-                                            </c:when>
-
-                                            <c:otherwise>
-                                                ${order.areaType}
-                                            </c:otherwise>
-                                        </c:choose>
+                                        <strong>Chi tiết bàn:</strong>
+                                        <ul class="mb-0 mt-1">
+                                            <c:forEach var="detail" items="${orderDetails}">
+                                                <li>
+                                                    ${detail.quantity} bàn ${detail.capacity} chỗ -
+                                                    <c:choose>
+                                                        <c:when test="${detail.areaType == 'public'}">Ngoài sảnh</c:when>
+                                                        <c:when test="${detail.areaType == 'private'}">Trong phòng</c:when>
+                                                        <c:otherwise>${detail.areaType}</c:otherwise>
+                                                    </c:choose>
+                                                </li>
+                                            </c:forEach>
+                                        </ul>
                                     </div>
 
                                     <div class="mb-2">
@@ -481,29 +476,22 @@
                                                         </c:choose>
                                                     </div>
 
-                                                    <p class="m-0 small">
-                                                        🪑 Loại bàn:
-                                                        <strong>${o.capacity} chỗ</strong>
-                                                    </p>
-
-                                                    <p class="m-0 small">
-                                                        📍 Khu vực:
-                                                        <strong>
-                                                            <c:choose>
-                                                                <c:when test="${o.areaType == 'public'}">
-                                                                    Ngoài sảnh
-                                                                </c:when>
-
-                                                                <c:when test="${o.areaType == 'private'}">
-                                                                    Trong phòng
-                                                                </c:when>
-
-                                                                <c:otherwise>
-                                                                    ${o.areaType}
-                                                                </c:otherwise>
-                                                            </c:choose>
-                                                        </strong>
-                                                    </p>
+                                                    <div class="m-0 small">
+                                                        🪑 Chi tiết bàn:
+                                                        <ul class="mb-1">
+                                                            <c:forEach var="detail" items="${reservationDetails[o.orderID]}">
+                                                                <li>
+                                                                    <strong>${detail.quantity} bàn ${detail.capacity} chỗ</strong>
+                                                                    -
+                                                                    <c:choose>
+                                                                        <c:when test="${detail.areaType == 'public'}">Ngoài sảnh</c:when>
+                                                                        <c:when test="${detail.areaType == 'private'}">Trong phòng</c:when>
+                                                                        <c:otherwise>${detail.areaType}</c:otherwise>
+                                                                    </c:choose>
+                                                                </li>
+                                                            </c:forEach>
+                                                        </ul>
+                                                    </div>
 
                                                     <p class="m-0 small mt-1">
                                                         📅 Ngày đến:
@@ -546,13 +534,12 @@
 
                             <input type="hidden" name="orderTime" value="${orderTime}">
                             <input type="hidden" name="areaType" value="${areaType}">
-                            <input type="hidden" name="capacity" id="finalCapacity" value="${capacity}">
 
                             <%-- STEP CHỌN BÀN --%>
                             <c:if test="${step == 'choose-table'}">
                                 <div class="mb-4">
                                     <div class="section-title">
-                                        3. Chọn quy mô bàn phù hợp
+                                        3. Chọn số lượng cho từng loại bàn
                                     </div>
 
                                     <c:choose>
@@ -580,8 +567,7 @@
                                                             </c:when>
 
                                                             <c:otherwise>
-                                                                <div class="table-card ${capacity == g.capacity ? 'selected' : ''}"
-                                                                     onclick="selectCapacity(this, '${g.capacity}')">
+                                                                <div class="table-card">
 
                                                                     <div class="fw-bold text-dark mb-1">
                                                                         🪑 Bàn ${g.capacity} chỗ
@@ -591,6 +577,21 @@
                                                                           style="font-size:.7rem;">
                                                                         Còn ${g.isActive} bàn trống
                                                                     </span>
+
+                                                                    <div class="mt-3">
+                                                                        <label class="small fw-bold"
+                                                                               for="quantity_${g.capacity}">
+                                                                            Số lượng
+                                                                        </label>
+                                                                        <input type="number"
+                                                                               class="form-control text-center table-quantity"
+                                                                               id="quantity_${g.capacity}"
+                                                                               name="quantity_${g.capacity}"
+                                                                               min="0"
+                                                                               max="${g.isActive}"
+                                                                               value="${empty selectedQuantities[g.capacity] ? 0 : selectedQuantities[g.capacity]}"
+                                                                               oninput="updateTableCard(this)">
+                                                                    </div>
                                                                 </div>
                                                             </c:otherwise>
                                                         </c:choose>
@@ -600,7 +601,7 @@
                                             </div>
 
                                             <div id="tableError" class="text-danger small mt-2" style="display:none">
-                                                ⚠️ Quý khách vui lòng chọn một loại bàn trống màu xanh.
+                                                ⚠️ Quý khách vui lòng chọn ít nhất một bàn.
                                             </div>
 
                                             <div class="mb-4 mt-4">
@@ -724,19 +725,10 @@
                 return true;
             }
 
-            function selectCapacity(card, capacityValue) {
-                document.querySelectorAll('.table-card').forEach(function (c) {
-                    c.classList.remove('selected');
-                });
-
-                card.classList.add('selected');
-
-                var finalCapacity = document.getElementById('finalCapacity');
-
-                if (finalCapacity) {
-                    finalCapacity.value = capacityValue;
-                }
-
+            function updateTableCard(input) {
+                var card = input.closest('.table-card');
+                var quantity = parseInt(input.value || '0', 10);
+                card.classList.toggle('selected', quantity > 0);
                 var tableError = document.getElementById('tableError');
 
                 if (tableError) {
@@ -745,16 +737,19 @@
             }
 
             function validateFinalForm() {
-                var finalCapacity = document.getElementById('finalCapacity');
-
-                if (!finalCapacity) {
+                var quantityInputs = document.querySelectorAll('.table-quantity');
+                if (!quantityInputs.length) {
                     return true;
                 }
 
-                var cap = finalCapacity.value;
+                var totalQuantity = 0;
+                quantityInputs.forEach(function (input) {
+                    totalQuantity += parseInt(input.value || '0', 10);
+                });
+
                 var tableError = document.getElementById('tableError');
 
-                if (!cap || cap === "" || cap === "-1") {
+                if (totalQuantity <= 0) {
                     if (tableError) {
                         tableError.style.display = 'block';
                     }
@@ -764,6 +759,10 @@
 
                 return true;
             }
+
+            document.querySelectorAll('.table-quantity').forEach(function (input) {
+                updateTableCard(input);
+            });
         </script>
 
         <%@include file="/views/includes/footer.jsp" %>
