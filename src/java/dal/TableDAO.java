@@ -77,11 +77,11 @@ public class TableDAO extends DBContext {
         
         
         String sqlBusyOnline
-                = "SELECT o.capacity, COUNT(*) AS busy "
+                = "SELECT ord.capacity, SUM(ord.quantity) AS busy "
                 + "FROM `Order` o "
+                + "JOIN order_reservation_detail ord ON ord.orderID = o.orderID "
                 + "WHERE o.orderType = 1 "
-                + "  AND o.areaType = ? "
-                + "  AND o.capacity IS NOT NULL "
+                + "  AND ord.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
                 + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus NOT IN ('cancelled', 'completed')) "
@@ -90,7 +90,7 @@ public class TableDAO extends DBContext {
                 + "      FROM Order_Table ot "
                 + "      WHERE ot.orderID = o.orderID "
                 + "  ) "
-                + "GROUP BY o.capacity";
+                + "GROUP BY ord.capacity";
 
         /*
          * Đơn đã được gán bàn thật.
