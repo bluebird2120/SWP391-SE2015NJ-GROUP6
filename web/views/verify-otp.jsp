@@ -48,7 +48,9 @@
                 padding: 40px;
                 text-align: center;
             }
-            .left img { width: 200px; }
+            .left img {
+                width: 200px;
+            }
             .welcome-text {
                 font-family: 'Playfair Display', serif;
                 font-size: 28px;
@@ -83,7 +85,9 @@
                 color: #3d2318;
             }
 
-            .field { margin-top: 20px; }
+            .field {
+                margin-top: 20px;
+            }
             .field-label {
                 display: block;
                 margin-bottom: 8px;
@@ -106,8 +110,12 @@
                 transition: border-color 0.2s;
                 box-sizing: border-box;
             }
-            .otp-input:focus { border-color: #76493b; }
-            .otp-input.input-error { border-color: #e74c3c; }
+            .otp-input:focus {
+                border-color: #76493b;
+            }
+            .otp-input.input-error {
+                border-color: #e74c3c;
+            }
 
             .error {
                 color: red;
@@ -157,7 +165,9 @@
                 font-family: 'Nunito', sans-serif;
                 transition: background 0.2s;
             }
-            .btn:hover { background: #5a3329; }
+            .btn:hover {
+                background: #5a3329;
+            }
 
             .btn-link {
                 width: 100%;
@@ -188,15 +198,29 @@
                 font-weight: 700;
                 text-decoration: none;
             }
-            .register-link a:hover { text-decoration: underline; }
+            .register-link a:hover {
+                text-decoration: underline;
+            }
 
             @media (max-width: 700px) {
-                .otp-box { flex-direction: column; }
-                .left { padding: 28px 20px; }
-                .left img { width: 110px; }
-                .welcome-text { font-size: 20px; }
-                .brand-text { font-size: 16px; }
-                .right { padding: 28px 20px; }
+                .otp-box {
+                    flex-direction: column;
+                }
+                .left {
+                    padding: 28px 20px;
+                }
+                .left img {
+                    width: 110px;
+                }
+                .welcome-text {
+                    font-size: 20px;
+                }
+                .brand-text {
+                    font-size: 16px;
+                }
+                .right {
+                    padding: 28px 20px;
+                }
             }
         </style>
     </head>
@@ -241,7 +265,7 @@
                         <input type="hidden" name="action" value="verify">
 
                         <div class="field">
-                            <label class="field-label" for="otpCode">MÃ OTP (6 SỐ)</label>
+                            <label class="field-label" for="otpCode">MÃ OTP</label>
                             <input type="text"
                                    id="otpCode"
                                    name="otpCode"
@@ -249,7 +273,7 @@
                                    maxlength="6"
                                    inputmode="numeric"
                                    pattern="\d{6}"
-                                   placeholder="······"
+                                   placeholder="******"
                                    autocomplete="one-time-code"
                                    required>
                             <div class="error" id="otpCodeError"></div>
@@ -281,7 +305,7 @@
                 errorEl.textContent = "";
 
                 if (!/^\d{6}$/.test(otpInput.value.trim())) {
-                    errorEl.textContent = "Vui lòng nhập đúng 6 chữ số.";
+                    errorEl.textContent = "Vui lòng nhập OTP";
                     e.preventDefault();
                 }
             });

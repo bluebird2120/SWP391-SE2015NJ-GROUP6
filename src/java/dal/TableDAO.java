@@ -71,11 +71,6 @@ public class TableDAO extends DBContext {
                 + "  AND areaType = ? "
                 + "GROUP BY capacity";
 
-        
-        
-        
-        
-        
         String sqlBusyOnline
                 = "SELECT ord.capacity, SUM(ord.quantity) AS busy "
                 + "FROM `Order` o "
@@ -178,8 +173,6 @@ public class TableDAO extends DBContext {
                 dto.setAreaType(areaType);
                 dto.setTableName("Bàn " + cap + " chỗ");
 
-               
-                
                 dto.setIsActive(availableCount);
 
                 resultList.add(dto);
@@ -279,7 +272,6 @@ public class TableDAO extends DBContext {
 
         return t;
     }
-
 
     // =========================================================
     // CÁC HÀM CHỨC NĂNG QUẢN LÝ BÀN (TABLE MANAGEMENT)
@@ -397,6 +389,50 @@ public class TableDAO extends DBContext {
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =========================================================
+    // CÁC HÀM HỖ TRỢ TÍNH NĂNG QUÉT QR GỘP BÀN
+    // =========================================================
+    /**
+     * Tìm thông tin bàn dựa trên mã QRCodeToken (Mã bảo mật)
+     */
+    public Table getTableByToken(String token) {
+        String sql = "SELECT * FROM `Table` WHERE QRCodeToken = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, token);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] getTableByToken lỗi: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Kiểm tra xem bàn có đang rảnh hay không. Bàn rảnh = Không có đơn hàng nào
+     * đang 'reserved', 'preparing' hoặc 'serving' gắn với bàn này trong bảng
+     * Order_Table.
+     */
+    public boolean isTableAvailable(int tableID) {
+        String sql = "SELECT COUNT(*) FROM Order_Table ot "
+                + "JOIN `Order` o ON ot.orderID = o.orderID "
+                + "WHERE ot.tableID = ? AND o.orderStatus NOT IN ('completed', 'cancelled')";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, tableID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    return count == 0; // Nếu = 0 tức là không bị kẹt đơn nào -> Bàn rảnh
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] isTableAvailable lỗi: " + e.getMessage());
         }
         return false;
     }

@@ -62,7 +62,7 @@ public class VerifyOtpController extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("resend".equals(action)) {
-            handleResend(request, response, session, pendingEmail);
+            handleResend(request, response, pendingEmail);
             return;
         }
 
@@ -111,8 +111,8 @@ public class VerifyOtpController extends HttpServlet {
         request.getRequestDispatcher("/views/verify-otp.jsp").forward(request, response);
     }
 
-    private void handleResend(HttpServletRequest request, HttpServletResponse response,
-            HttpSession session, String pendingEmail) throws ServletException, IOException {
+    private void handleResend(HttpServletRequest request, HttpServletResponse response, 
+            String pendingEmail) throws ServletException, IOException {
  
         String otpCode = EmailService.generateOtp();
  
@@ -139,6 +139,7 @@ public class VerifyOtpController extends HttpServlet {
         String phoneNumber = (String) session.getAttribute("pendingPhoneNumber");
         String hashedPassword = (String) session.getAttribute("pendingPasswordHash");
         String rawPassword = (String) session.getAttribute("pendingPassword");
+        
         try {
             //Kiểm tra lần nữa tránh trong lúc chờ nhập otp có người đăng kí trùng
             if (customerDAO.isUserNameExists(userName, 0)

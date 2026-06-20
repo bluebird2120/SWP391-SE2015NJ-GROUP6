@@ -16,8 +16,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import model.MenuItem;
+import model.MenuItemImages;
 
 /**
  *
@@ -25,9 +28,9 @@ import model.MenuItem;
  */
 @WebServlet(name = "UpdateMenuItemServlet", urlPatterns = {"/update-menu"})
 @MultipartConfig(
-    fileSizeThreshold = 2 * 1024 * 1024,
-    maxFileSize = 10 * 1024 * 1024,
-    maxRequestSize = 15 * 1024 * 1024)
+        fileSizeThreshold = 2 * 1024 * 1024,
+        maxFileSize = 10 * 1024 * 1024,
+        maxRequestSize = 15 * 1024 * 1024)
 
 public class UpdateMenuItemServlet extends HttpServlet {
 
@@ -77,10 +80,11 @@ public class UpdateMenuItemServlet extends HttpServlet {
         if (id == 0) {
             //Tạo mới
             mi = new MenuItem();
-            System.out.println(mi.getCategoryID());
         } else {
             //Cập nhật
             mi = menuItemDAO.getMenuItemById(id);
+            List<MenuItemImages> subImages = menuItemDAO.getImagesByMenuItemId(id);
+            request.setAttribute("subImages", subImages);
         }
         List categoryList = menuCategoryDAO.getAllMenuCategory();
         request.setAttribute("dish", mi);
@@ -109,42 +113,80 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String discountPercent_raw = request.getParameter("discountPercent");
         String isAvailable_raw = request.getParameter("isAvailable");
         String allergyNotes_raw = request.getParameter("allergyNotes");
+        //lấy ảnh chính cũ
         String oldImage = request.getParameter("oldImage");
-        Part newImage = request.getPart("newImage");
-
+        //lấy ảnh chính
+        Part mainImage = request.getPart("newMainImage");
+        //tạo danh sách lưu trữ ảnh phụ
+        List<Part> subImage = new ArrayList<>();
+        //validate dữ liệu số và chữ
         String errorName = isValidString(itemName, 150, "Tên món ăn không được để trống", "Tên món ăn không được vượt quá 150 ký tự");
         String errorDescription = isValidString(description_raw, 500, "Mô tả món ăn không được để trống", "Mô tả món ăn không được vượt quá 500 ký tự");
         String errorPrice = isValidPositive(price_raw, "Giá món ăn không được để trống", "Giá món ăn từ 0-1000000000");
-        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-1000000000");
+        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-100");
         String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
 
+        //kiểm tra trùng tên khi update
         int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
         if (!checkEmpty(errorName)) {
             if (menuItemDAO.checkDuplicateMenuItem(itemName, itemId)) {
                 errorName = "Tên món ăn đã tồn tại";
             }
         }
-        String errorImage = "";
-        if (newImage != null && !newImage.getSubmittedFileName().isEmpty()) {
-            if (!isValidImageFile(newImage.getSubmittedFileName())) {
-                errorImage = "Vui lòng nhập file ảnh (file có đuôi .jpg, .png, .webp, .jpeg)";
-            } else if (newImage.getSize() > MAX_FILE_SIZE) {
-                errorImage = "Dung lượng ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB.";
+        //validate ảnh chính
+        String errorMainImage = "";
+        if (mainImage != null && !mainImage.getSubmittedFileName().trim().isEmpty()) {
+            String fileName = mainImage.getSubmittedFileName();
+            if (!isValidImageFile(fileName)) {
+                errorMainImage = "Ảnh chính không đúng định dạng (.jpg, .png, .webp, .jpeg)";
+            } else {
+                if (mainImage.getSize() > MAX_FILE_SIZE) {
+                    errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                }
             }
         } else {
             if (itemId == 0) {
-                errorImage = "Vui lòng tải ảnh cho món ăn";
+                errorMainImage = "Vui lòng tải ảnh chính đại diện cho món ăn mới!";
             }
         }
+        //validate ảnh phụ
+        String errorSubImage = "";
+        for (Part p : request.getParts()) {
+            if (p.getName().equals("newSubImage") && p.getSubmittedFileName() != null && !p.getSubmittedFileName().isEmpty()) {
+                subImage.add(p);
+            }
+        }
+
+        if (itemId == 0 && subImage.isEmpty()) {
+            errorSubImage = "Món ăn mới bắt buộc phải có từ 1 đến 3 ảnh phụ!";
+        }
+        if (subImage.size() > 3) {
+            errorSubImage = "Hệ thống chỉ cho phép tải lên tối đa 3 ảnh phụ!";
+        }
+
+        if (subImage != null && errorSubImage.isEmpty()) {
+            for (Part p : subImage) {
+                if (!isValidImageFile(p.getSubmittedFileName())) {
+                    errorSubImage = "Có file ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
+                    break;
+                }
+                if (p.getSize() > MAX_FILE_SIZE) {
+                    errorSubImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                    break;
+                }
+            }
+        }
+        //chặn lỗi và trả về jsp
         if (!errorName.isEmpty() || !errorDescription.isEmpty() || !errorPrice.isEmpty()
-                || !errorDiscountPercent.isEmpty() || !errorAllergyNotes.isEmpty() || !errorImage.isEmpty()) {
+                || !errorDiscountPercent.isEmpty() || !errorAllergyNotes.isEmpty() || !errorMainImage.isEmpty() || !errorSubImage.isEmpty()) {
             int id = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
             if (id == 0) {
                 mi = new MenuItem();
             } else {
                 mi = menuItemDAO.getMenuItemById(id);
+                List<MenuItemImages> subImages = menuItemDAO.getImagesByMenuItemId(id);
+                request.setAttribute("subImages", subImages);
             }
-
             List categoryList = menuCategoryDAO.getAllMenuCategory();
             request.setAttribute("dish", mi);
             request.setAttribute("list", categoryList);
@@ -153,7 +195,8 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.setAttribute("errorPrice", errorPrice);
             request.setAttribute("errorDiscountPercent", errorDiscountPercent);
             request.setAttribute("errorAllergyNotes", errorAllergyNotes);
-            request.setAttribute("errorImageFile", errorImage);
+            request.setAttribute("errorMainImage", errorMainImage);
+            request.setAttribute("errorSubImage", errorSubImage);
             request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
             return;
         }
@@ -161,42 +204,77 @@ public class UpdateMenuItemServlet extends HttpServlet {
         int price = Integer.parseInt(price_raw);
         int discountPercent = Integer.parseInt(discountPercent_raw);
         int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
+        //tạo đường dẫn
+        String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\web\\images";
+        String upLoadServer = getServletContext().getRealPath("/images");
+        //tạo folder
+        File sourceFolder = new File(upLoadSource);
+        if (!sourceFolder.exists()) {
+            sourceFolder.mkdirs();
+        }
+        File serverFolder = new File(upLoadServer);
+        if (!serverFolder.exists()) {
+            serverFolder.mkdirs();
+        }
+        //lưu ảnh chính và ảnh phụ khi tạo mới
+        String fileMainImage = mainImage.getSubmittedFileName();
+        if (itemId == 0) {
+            File sourceFile = new File(upLoadSource + File.separator + fileMainImage);
+            mainImage.write(sourceFile.getAbsolutePath());
+            File cachFile = new File(upLoadServer + File.separator + fileMainImage);
+            try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cachFile)) {
+                fis.transferTo(fos);
+            } catch (Exception e) {
+            }
+            int id = menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, "images/" + fileMainImage, status, allergyNotes_raw);
+            for (Part p : subImage) {
+                String saveDbPath = "images/" + p.getSubmittedFileName();
 
-        String fileName = oldImage;
-        if (newImage != null && !newImage.getSubmittedFileName().isEmpty()) {
-            String imageName = newImage.getSubmittedFileName();
+                File sourceSubFile = new File(upLoadSource + File.separator + saveDbPath);
+                p.write(sourceSubFile.getAbsolutePath());
 
-            if (isValidImageFile(imageName)) {
-                fileName = "images/" + imageName;
-                String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\web\\images";
-                File sourceFolder = new File(upLoadSource);
-                if (!sourceFolder.exists()) {
-                    sourceFolder.mkdirs();
+                File cachSubFile = new File(upLoadServer + File.separator + saveDbPath);
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceSubFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cachSubFile)) {
+                    fis.transferTo(fos);
+                } catch (Exception e) {
                 }
-                File sourceFile = new File(upLoadSource + File.separator + imageName);
+                menuItemDAO.insertMenuItemImage(id, saveDbPath);
+            }
+        } else { //lưu ảnh chính và phụ khi cập nhật
+            String mainImagePath = oldImage;
 
-                newImage.write(sourceFile.getAbsolutePath());
-
-                String upLoadServer = getServletContext().getRealPath("/images");
-                File serverFolder = new File(upLoadServer);
-                if (!serverFolder.exists()) {
-                    serverFolder.mkdirs();
-                }
-                File cacheFile = new File(upLoadServer + File.separator + imageName);
-
+            if (mainImage != null && !mainImage.getSubmittedFileName().isEmpty()) {
+                mainImagePath = "images/" + mainImage.getSubmittedFileName();
+                File sourceFile = new File(upLoadSource + File.separator + fileMainImage);
+                mainImage.write(sourceFile.getAbsolutePath());
+                File cacheFile = new File(upLoadServer + File.separator + fileMainImage);
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cacheFile)) {
                     fis.transferTo(fos);
                 } catch (Exception e) {
                 }
             }
+
+            if (!subImage.isEmpty() && subImage != null) {
+                menuItemDAO.deleteMenuItemImages(itemId);
+
+                for (Part p : subImage) {
+                    String subName = p.getSubmittedFileName();
+                    String saveDbPath = "images/" + subName;
+
+                    File sourceFile = new File(upLoadSource + File.separator + subName);
+                    p.write(sourceFile.getAbsolutePath());
+                    File cacheFile = new File(upLoadServer + File.separator + subName);
+                    try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cacheFile)) {
+                        fis.transferTo(fos);
+                    } catch (Exception e) {
+                    }
+
+                    menuItemDAO.insertMenuItemImage(itemId, saveDbPath);
+                }
+            }
+            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price, discountPercent, mainImagePath, status, allergyNotes_raw);
         }
-        if (itemId == 0) {
-            menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, fileName, status, allergyNotes_raw);
-        } else {
-            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price,
-                    discountPercent, fileName, status, allergyNotes_raw);
-        }
-        response.sendRedirect(request.getContextPath() + "/menu-management");
+        response.sendRedirect(request.getContextPath() + "/menu");
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {
