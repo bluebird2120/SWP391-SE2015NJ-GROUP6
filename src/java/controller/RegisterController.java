@@ -5,6 +5,7 @@
 package controller;
 
 import dal.CustomerDAO;
+import dal.EmailOTPDAO;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.sql.SQLException;
-
 /**
  *
  * @author admin
@@ -115,31 +115,46 @@ public class RegisterController extends HttpServlet {
             request.getRequestDispatcher("/views/register.jsp").forward(request, response);
             return;
         }
-
-        //Lưu vào DB
+        
+        //Lưu tạm thông tin đăng ký vào session (CHƯA insert vào Customer)
+        //Password được hash tại đây
+        String hashedPassword = util.PasswordUtil.hash(password);
+        
+        HttpSession session = request.getSession();
+        session.setAttribute("pendingUserName", userName);
+        session.setAttribute("pendingPhoneNumber", phoneNumber);
+        session.setAttribute("pendingEmail", email);
+        session.setAttribute("pendingPasswordHash", hashedPassword);
+        
+        //password để gửi qua VerifyOtpController và để fill vô form login
+        session.setAttribute("pendingPassword", password);
+        
+        String otpCode = util.EmailService.generateOtp();
+        int expireMinutes = 5;
+        
         try {
-            boolean register = customerDAO.register(userName, phoneNumber, email, password);
-            if (!register) {
-                request.setAttribute("registerError", "Đăng kí thất bại. Vui lòng thử lại.");
-                request.setAttribute("userName", userName);
-                request.setAttribute("phoneNumber", phoneNumber);
-                request.setAttribute("email", email);
-                request.getRequestDispatcher("/views/register.jsp").forward(request, response);
-                return;
-            }
+            EmailOTPDAO otpDAO = new EmailOTPDAO();
+            otpDAO.createOtp(email, otpCode, "register", expireMinutes);
+            util.EmailService.sendOtpEmail(email, otpCode, expireMinutes);
         } catch (SQLException e) {
             e.printStackTrace();
             request.setAttribute("registerError", "Lỗi hệ thống. Vui lòng thử lại.");
+            request.setAttribute("userName", userName);
+            request.setAttribute("phoneNumber", phoneNumber);
+            request.setAttribute("email", email);
+            request.getRequestDispatcher("/views/register.jsp").forward(request, response);
+            return;
+        } catch (jakarta.mail.MessagingException e) {
+            e.printStackTrace();
+            request.setAttribute("registerError", "Không gửi được email xác thực. Vui lòng kiểm tra lại email hoặc thử lại sau.");
+            request.setAttribute("userName", userName);
+            request.setAttribute("phoneNumber", phoneNumber);
+            request.setAttribute("email", email);
             request.getRequestDispatcher("/views/register.jsp").forward(request, response);
             return;
         }
-
-        HttpSession session = request.getSession();
-        //Đăng kí thành công thì redirect về login kèm thông báo và số điện thoại 
-        session.setAttribute("registeredPhone", phoneNumber);
-        session.setAttribute("registeredPassword", password);
-
-        response.sendRedirect(request.getContextPath() + "/login?registered=true");
+        
+        response.sendRedirect(request.getContextPath() + "/verify-otp");
     }
 
     private String validateEmail(String email) {

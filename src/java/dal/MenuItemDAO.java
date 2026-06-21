@@ -4,14 +4,14 @@
  */
 package dal;
 
-import com.mysql.cj.jdbc.PreparedStatementWrapper;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import model.MenuItem;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.*;
+import model.MenuItemImages;
 
 /**
  *
@@ -203,7 +203,6 @@ public class MenuItemDAO extends DBContext {
             ps.setString(3, description);
             ps.setInt(4, price);
             ps.setInt(5, discountPercent);
-            ps.setInt(6, (int) (price * (1 - (double) discountPercent / 100)));
             ps.setInt(6, (int) Math.round((price * (1 - (double) discountPercent / 100))));
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
@@ -215,12 +214,14 @@ public class MenuItemDAO extends DBContext {
         }
         return false;
     }
-    public boolean insertMenuItem(int categoryId, String itemName, String description, int price,
+
+    public int insertMenuItem(int categoryId, String itemName, String description, int price,
             int discountPercent, String image, int isAvailable, String allergyNotes) {
         String sql = "insert into MenuItem (categoryID, itemName, description, price, discountPercent, discountedPrice, image, isAvailable, allergyNotes) "
                 + "values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
-            PreparedStatement ps = connection.prepareStatement(sql);
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+
             ps.setInt(1, categoryId);
             ps.setString(2, itemName);
             ps.setString(3, description);
@@ -230,10 +231,20 @@ public class MenuItemDAO extends DBContext {
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
-            return ps.executeUpdate() > 0;
+
+            int affectedRows = ps.executeUpdate();
+
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
         } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return false;
+        return 0;
     }
 
     public boolean checkDuplicateMenuItem(String name, int itemID) {
@@ -252,4 +263,66 @@ public class MenuItemDAO extends DBContext {
         }
         return false;
     }
+
+    public boolean deleteMenuItemImages(int itemID) {
+
+        String sql = "DELETE FROM MenuItemImages WHERE itemID = ?";
+
+        try {
+
+            PreparedStatement ps = connection.prepareStatement(sql);
+
+            ps.setInt(1, itemID);
+
+            return ps.executeUpdate() >= 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public boolean insertMenuItemImage(int itemID, String imagePath) {
+
+        String sql = "INSERT INTO MenuItemImages(itemID, imagePath) "
+                + "VALUES (?, ?)";
+
+        try {
+
+            PreparedStatement ps = connection.prepareStatement(sql);
+
+            ps.setInt(1, itemID);
+            ps.setString(2, imagePath);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+    
+    public List<MenuItemImages> getImagesByMenuItemId(int itemID){
+        List<MenuItemImages> list = new ArrayList<>();
+        String sql = "select * from MenuItemImages "
+                + "where itemID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, itemID);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {   
+                MenuItemImages mim = new MenuItemImages(rs.getInt("imageID"), 
+                        rs.getInt("itemID"),
+                        rs.getString("imagePath"), 
+                        rs.getDate("createdAt"));
+                list.add(mim);
+            }
+            return list;
+        } catch (Exception e) {
+        }
+        return null;
+    }
+    
 }
