@@ -25,7 +25,11 @@ import util.PasswordUtil;
 import util.UserRole;
 
 @WebServlet(name = "StaffManagementController", urlPatterns = { "/owner/staff" })
-@MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 2L * 1024 * 1024, maxRequestSize = 5L * 1024 * 1024)
+@MultipartConfig(
+        fileSizeThreshold = 1024 * 1024,         // 1MB: ghi ra disk nếu vượt quá
+        maxFileSize       = 50L * 1024 * 1024,   // 50MB: Tomcat không crash với MP4 thông thường
+        maxRequestSize    = 55L * 1024 * 1024    // 55MB: giới hạn toàn bộ request
+)
 public class StaffManagementController extends HttpServlet {
 
     private static final String LIST_VIEW = "/views/owner/staff-list.jsp";
@@ -39,9 +43,11 @@ public class StaffManagementController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
+
         if (action == null) {
             action = "list";
         }
+
         switch (action) {
             case "create":
                 showCreateForm(request, response);
@@ -58,9 +64,11 @@ public class StaffManagementController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
+
         if (action == null) {
             action = "";
         }
+
         switch (action) {
             case "create":
                 handleCreate(request, response);
@@ -83,24 +91,31 @@ public class StaffManagementController extends HttpServlet {
             throws ServletException, IOException {
         String keyword = request.getParameter("keyword");
         String statusStr = request.getParameter("status");
+
         Integer status = null;
+
         if (statusStr != null && !statusStr.isBlank()) {
             try {
                 status = Integer.parseInt(statusStr);
             } catch (NumberFormatException ignored) {
             }
         }
+
         int page = parseIntOrDefault(request.getParameter("page"), 1);
+
         if (page < 1) {
             page = 1;
         }
 
         EmployeeDAO dao = new EmployeeDAO();
+
         int total = dao.countStaff(keyword, status);
         int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
+
         if (totalPages == 0) {
             totalPages = 1;
         }
+
         if (page > totalPages) {
             page = totalPages;
         }
@@ -113,6 +128,7 @@ public class StaffManagementController extends HttpServlet {
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalRecords", total);
+
         request.getRequestDispatcher(LIST_VIEW).forward(request, response);
     }
 
@@ -125,6 +141,7 @@ public class StaffManagementController extends HttpServlet {
     private void handleCreate(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Employee e = new Employee();
+
         e.setRoleID(UserRole.RESTAURANT_STAFF.getRoleID());
         e.setIsActive(1);
         e.setMustChangePassword(1);
@@ -142,13 +159,24 @@ public class StaffManagementController extends HttpServlet {
         String rawPassword = request.getParameter("password");
         e.setPassword(PasswordUtil.hash(rawPassword));
 
-        String imagePath = handleImageUpload(request, 0);
+        String imagePath = handleImageUpload(request, 0, errors);
+
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            request.setAttribute("staff", e);
+            request.setAttribute("mode", "create");
+            request.getRequestDispatcher(FORM_VIEW).forward(request, response);
+            return;
+        }
+
         if (imagePath != null) {
             e.setImage(imagePath);
         }
 
         EmployeeDAO dao = new EmployeeDAO();
+
         int newId = dao.insert(e);
+
         if (newId < 0) {
             errors.put("_global", "Unable to create staff. Please try again.");
             request.setAttribute("errors", errors);
@@ -157,22 +185,27 @@ public class StaffManagementController extends HttpServlet {
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
+
         response.sendRedirect(request.getContextPath() + "/owner/staff?action=list&msg=created");
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
+
         if (id <= 0) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
+
         EmployeeDAO dao = new EmployeeDAO();
         Employee e = dao.findById(id);
+
         if (e == null || e.getRoleID() != UserRole.RESTAURANT_STAFF.getRoleID()) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
+
         request.setAttribute("staff", e);
         request.setAttribute("mode", "edit");
         request.getRequestDispatcher(FORM_VIEW).forward(request, response);
@@ -181,18 +214,22 @@ public class StaffManagementController extends HttpServlet {
     private void handleEdit(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
+
         if (id <= 0) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
+
         EmployeeDAO dao = new EmployeeDAO();
         Employee existing = dao.findById(id);
+
         if (existing == null || existing.getRoleID() != UserRole.RESTAURANT_STAFF.getRoleID()) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
 
         Employee e = new Employee();
+
         e.setEmployeeID(id);
         e.setRoleID(existing.getRoleID());
         e.setIsActive(existing.getIsActive());
@@ -210,12 +247,22 @@ public class StaffManagementController extends HttpServlet {
             return;
         }
 
-        String imagePath = handleImageUpload(request, id);
+        String imagePath = handleImageUpload(request, id, errors);
+
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            request.setAttribute("staff", e);
+            request.setAttribute("mode", "edit");
+            request.getRequestDispatcher(FORM_VIEW).forward(request, response);
+            return;
+        }
+
         if (imagePath != null) {
             e.setImage(imagePath);
         }
 
         boolean ok = dao.update(e);
+
         if (!ok) {
             errors.put("_global", "Unable to update. Please try again.");
             request.setAttribute("errors", errors);
@@ -224,28 +271,36 @@ public class StaffManagementController extends HttpServlet {
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
+
         response.sendRedirect(request.getContextPath() + "/owner/staff?action=list&msg=updated");
     }
 
     private void handleDeactivate(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
+
         if (id > 0) {
             new EmployeeDAO().softDelete(id);
         }
+
         response.sendRedirect(buildListBackUrl(request, "deactivated"));
     }
 
     private void handleReactivate(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
+
         if (id > 0) {
             new EmployeeDAO().reactivate(id);
         }
+
         response.sendRedirect(buildListBackUrl(request, "reactivated"));
     }
 
-    private Map<String, String> bindAndValidate(HttpServletRequest request, Employee e, boolean isCreate,
+    private Map<String, String> bindAndValidate(
+            HttpServletRequest request,
+            Employee e,
+            boolean isCreate,
             int excludeId) {
         Map<String, String> errors = new HashMap<>();
 
@@ -268,6 +323,7 @@ public class StaffManagementController extends HttpServlet {
         }
 
         EmployeeDAO dao = new EmployeeDAO();
+
         if (email == null || email.isBlank()) {
             errors.put("email", "Email is required.");
         } else if (!EMAIL_PATTERN.matcher(email).matches()) {
@@ -295,6 +351,7 @@ public class StaffManagementController extends HttpServlet {
         if (dobStr != null && !dobStr.isBlank()) {
             try {
                 LocalDate dob = LocalDate.parse(dobStr);
+
                 if (!dob.isBefore(LocalDate.now())) {
                     errors.put("dob", "Date of birth must be in the past.");
                 } else if (dob.isAfter(LocalDate.now().minusYears(18))) {
@@ -307,7 +364,6 @@ public class StaffManagementController extends HttpServlet {
             }
         }
 
-
         if (address != null && address.length() > 255) {
             errors.put("address", "Address must not exceed 255 characters.");
         }
@@ -315,39 +371,70 @@ public class StaffManagementController extends HttpServlet {
         return errors;
     }
 
-    private String handleImageUpload(HttpServletRequest request, int employeeId) {
+    private boolean isValidImageFile(String fileName) {
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+                || lower.endsWith(".png") || lower.endsWith(".webp");
+    }
+
+    private String handleImageUpload(HttpServletRequest request, int employeeId, Map<String, String> errors) {
         try {
             Part filePart = request.getPart("image");
+
             if (filePart == null || filePart.getSize() == 0) {
                 return null;
             }
 
+            long maxSize = 2L * 1024 * 1024;
+
+            if (filePart.getSize() > maxSize) {
+                errors.put("image", "Profile photo must not exceed 2MB.");
+                return null;
+            }
+
             String submitted = filePart.getSubmittedFileName();
+
             if (submitted == null || submitted.isBlank()) {
                 return null;
             }
 
-            String ext = "";
-            int dot = submitted.lastIndexOf('.');
-            if (dot >= 0) {
-                ext = submitted.substring(dot + 1).toLowerCase();
-            }
-            if (!ext.equals("jpg") && !ext.equals("jpeg") && !ext.equals("png")) {
+            String safeSubmitted = Paths.get(submitted).getFileName().toString();
+
+            // Kiểm tra extension (chặn video và file khác)
+            if (!isValidImageFile(safeSubmitted)) {
+                errors.put("image", "Vui lòng chọn file ảnh (jpg, jpeg, png, webp).");
                 return null;
             }
 
-            String appPath = request.getServletContext().getRealPath("/");
-            Path uploadFolder = Paths.get(appPath, UPLOAD_DIR);
-            Files.createDirectories(uploadFolder);
+            // Kiểm tra MIME type (chặn file giả mạo đổi đuôi)
+            String contentType = filePart.getContentType();
+            if (contentType == null
+                    || (!contentType.equals("image/jpeg")
+                        && !contentType.equals("image/png")
+                        && !contentType.equals("image/webp"))) {
+                errors.put("image", "File không hợp lệ. Chỉ chấp nhận ảnh JPG, PNG, WEBP.");
+                return null;
+            }
 
-            String fileName = "staff_" + employeeId + "_" + System.currentTimeMillis() + "." + ext;
+            String ext = safeSubmitted.substring(safeSubmitted.lastIndexOf('.') + 1).toLowerCase();
+            // Tên file dùng timestamp để tránh trùng
+            String fileName = "staff_" + System.currentTimeMillis() + "." + ext;
+
+            // Lưu vào thư mục runtime của Tomcat
+            String runtimePath = request.getServletContext().getRealPath("/");
+            Path uploadFolder = Paths.get(runtimePath, UPLOAD_DIR);
+            Files.createDirectories(uploadFolder);
             Path target = uploadFolder.resolve(fileName);
+
             try (InputStream in = filePart.getInputStream()) {
                 Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
             }
+
             return UPLOAD_DIR + "/" + fileName;
+
         } catch (Exception ex) {
             ex.printStackTrace();
+            errors.put("image", "Không thể upload ảnh. Vui lòng thử lại.");
             return null;
         }
     }
@@ -356,6 +443,7 @@ public class StaffManagementController extends HttpServlet {
         if (s == null || s.isBlank()) {
             return def;
         }
+
         try {
             return Integer.parseInt(s);
         } catch (NumberFormatException e) {
@@ -368,22 +456,29 @@ public class StaffManagementController extends HttpServlet {
     }
 
     private String buildListBackUrl(HttpServletRequest request, String msg) {
-        StringBuilder url = new StringBuilder(request.getContextPath()).append("/owner/staff?action=list");
+        StringBuilder url = new StringBuilder(request.getContextPath())
+                .append("/owner/staff?action=list");
+
         String kw = request.getParameter("keyword");
         String st = request.getParameter("status");
         String pg = request.getParameter("page");
+
         if (kw != null && !kw.isBlank()) {
             url.append("&keyword=").append(kw);
         }
+
         if (st != null && !st.isBlank()) {
             url.append("&status=").append(st);
         }
+
         if (pg != null && !pg.isBlank()) {
             url.append("&page=").append(pg);
         }
+
         if (msg != null) {
             url.append("&msg=").append(msg);
         }
+
         return url.toString();
     }
 }

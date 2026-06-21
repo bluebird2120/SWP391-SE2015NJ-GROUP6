@@ -170,15 +170,31 @@ public class ShiftTemplateController extends HttpServlet {
 
         if (canEditTimes) {
             LocalTime start = parseLocalTime(startStr);
-            LocalTime end = parseLocalTime(endStr);
+            LocalTime end   = parseLocalTime(endStr);
+
+            // Giới hạn khung giờ ban ngày được phép (06:00 – 22:00)
+            LocalTime DAY_START  = LocalTime.of(6,  0);
+            LocalTime NIGHT_START = LocalTime.of(22, 0);
+
             if (start == null) errors.put("startTime", "Giờ bắt đầu không hợp lệ (HH:mm).");
-            if (end == null) errors.put("endTime", "Giờ kết thúc không hợp lệ (HH:mm).");
+            if (end   == null) errors.put("endTime",   "Giờ kết thúc không hợp lệ (HH:mm).");
+
             if (start != null && end != null) {
+                // Kiểm tra qua đêm
                 if (!end.isAfter(start)) {
-                    errors.put("endTime", "Giờ kết thúc phải sau giờ bắt đầu (ca qua đêm chưa được hỗ trợ).");
+                    errors.put("endTime", "Giờ kết thúc phải sau giờ bắt đầu (ca qua đêm không được hỗ trợ).");
                 } else {
-                    t.setStartTime(Time.valueOf(start));
-                    t.setEndTime(Time.valueOf(end));
+                    // Kiểm tra khung giờ đêm
+                    if (start.isBefore(DAY_START)) {
+                        errors.put("startTime", "Giờ bắt đầu không được trước 06:00 — ca làm đêm không được hỗ trợ.");
+                    } else if (!start.isBefore(NIGHT_START)) {
+                        errors.put("startTime", "Giờ bắt đầu không được từ 22:00 trở đi — ca làm đêm không được hỗ trợ.");
+                    } else if (end.isAfter(NIGHT_START)) {
+                        errors.put("endTime", "Giờ kết thúc không được sau 22:00 — ca làm đêm không được hỗ trợ.");
+                    } else {
+                        t.setStartTime(Time.valueOf(start));
+                        t.setEndTime(Time.valueOf(end));
+                    }
                 }
             }
         }

@@ -26,6 +26,11 @@
         .btn { padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; gap:6px; align-items:center; }
         .btn-primary { background:#76493b; color:#fff; }
         .btn-cancel { background:#e9ecef; color:#444; }
+        .time-picker { display:flex; align-items:center; gap:6px; }
+        .time-picker select { padding:10px 12px; border:1px solid #d7bfa4; border-radius:8px; font-family:inherit; font-size:0.95rem; background:#fff; color:#333; cursor:pointer; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2376493b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+        .time-picker select:focus { outline:none; border-color:#76493b; }
+        .time-picker select:disabled { background-color:#f5f0eb; color:#8a6e5a; cursor:not-allowed; }
+        .time-sep { font-weight:700; color:#76493b; font-size:1.1rem; }
     </style>
 </head>
 <body>
@@ -57,19 +62,43 @@
                         <c:if test="${not empty errors.shiftName}"><div class="err">${errors.shiftName}</div></c:if>
                     </div>
 
+                    <%-- Giờ bắt đầu --%>
                     <div class="form-group">
                         <label>Giờ bắt đầu *</label>
-                        <input type="time" name="startTime"
-                               value="<fmt:formatDate value='${template.startTime}' pattern='HH:mm'/>"
-                               <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                        <input type="hidden" id="startTime" name="startTime" value="<fmt:formatDate value='${template.startTime}' pattern='HH:mm'/>">
+                        <div class="time-picker">
+                            <select id="startHour" onchange="syncTime('start')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                                <c:forEach var="h" begin="0" end="23">
+                                    <option value="${h}"><fmt:formatNumber value="${h}" minIntegerDigits="2"/></option>
+                                </c:forEach>
+                            </select>
+                            <span class="time-sep">:</span>
+                            <select id="startMin" onchange="syncTime('start')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                                <c:forEach var="m" begin="0" end="59" step="5">
+                                    <option value="${m}"><fmt:formatNumber value="${m}" minIntegerDigits="2"/></option>
+                                </c:forEach>
+                            </select>
+                        </div>
                         <c:if test="${not empty errors.startTime}"><div class="err">${errors.startTime}</div></c:if>
                     </div>
 
+                    <%-- Giờ kết thúc --%>
                     <div class="form-group">
                         <label>Giờ kết thúc *</label>
-                        <input type="time" name="endTime"
-                               value="<fmt:formatDate value='${template.endTime}' pattern='HH:mm'/>"
-                               <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                        <input type="hidden" id="endTime" name="endTime" value="<fmt:formatDate value='${template.endTime}' pattern='HH:mm'/>">
+                        <div class="time-picker">
+                            <select id="endHour" onchange="syncTime('end')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                                <c:forEach var="h" begin="0" end="23">
+                                    <option value="${h}"><fmt:formatNumber value="${h}" minIntegerDigits="2"/></option>
+                                </c:forEach>
+                            </select>
+                            <span class="time-sep">:</span>
+                            <select id="endMin" onchange="syncTime('end')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
+                                <c:forEach var="m" begin="0" end="59" step="5">
+                                    <option value="${m}"><fmt:formatNumber value="${m}" minIntegerDigits="2"/></option>
+                                </c:forEach>
+                            </select>
+                        </div>
                         <c:if test="${not empty errors.endTime}"><div class="err">${errors.endTime}</div></c:if>
                     </div>
 
@@ -82,5 +111,100 @@
         </main>
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
+    <script>
+        // === Cấu hình giờ hợp lệ (ca ban ngày) ===
+        var NIGHT_START_H = 22; // từ 22:00 trở đi là đêm
+        var DAY_START_H   = 6;  // trước 06:00 là đêm
+
+        // Sync hidden input từ 2 select (giờ + phút)
+        function syncTime(prefix) {
+            var h = document.getElementById(prefix + 'Hour').value;
+            var m = document.getElementById(prefix + 'Min').value;
+            var hh = String(h).padStart(2,'0');
+            var mm = String(m).padStart(2,'0');
+            document.getElementById(prefix + 'Time').value = hh + ':' + mm;
+        }
+
+        // Khởi tạo giá trị dropdown từ hidden input khi load trang
+        function initPicker(prefix) {
+            var val = document.getElementById(prefix + 'Time').value; // HH:mm
+            if (!val) return;
+            var parts = val.split(':');
+            if (parts.length < 2) return;
+            var h = parseInt(parts[0], 10);
+            var m = parseInt(parts[1], 10);
+            var mRound = Math.round(m / 5) * 5;
+            if (mRound === 60) mRound = 55;
+            var hSel = document.getElementById(prefix + 'Hour');
+            var mSel = document.getElementById(prefix + 'Min');
+            if (hSel) hSel.value = h;
+            if (mSel) mSel.value = mRound;
+        }
+
+        // Chuyển "HH:mm" thành số phút từ 00:00
+        function toMinutes(hhmm) {
+            var p = hhmm.split(':');
+            return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+        }
+
+        // Kiểm tra ca đêm trước khi submit
+        function validateNightShift(e) {
+            var startEl = document.getElementById('startTime');
+            var endEl   = document.getElementById('endTime');
+            if (!startEl || !endEl) return; // disabled fields – server will validate
+
+            var startVal = startEl.value;
+            var endVal   = endEl.value;
+            if (!startVal || !endVal) return;
+
+            var startMin = toMinutes(startVal);
+            var endMin   = toMinutes(endVal);
+            var nightStartMin = NIGHT_START_H * 60; // 1320
+            var dayStartMin   = DAY_START_H   * 60; // 360
+
+            var errors = [];
+
+            // Kiểm tra qua đêm (endTime <= startTime)
+            if (endMin <= startMin) {
+                errors.push('Ca làm đêm (qua nửa đêm) không được hỗ trợ — giờ kết thúc phải sau giờ bắt đầu.');
+            } else {
+                // Kiểm tra khung giờ ban đêm
+                if (startMin < dayStartMin) {
+                    errors.push('Giờ bắt đầu không được trước 06:00 (ca đêm không hỗ trợ).');
+                }
+                if (startMin >= nightStartMin) {
+                    errors.push('Giờ bắt đầu không được từ 22:00 trở đi (ca đêm không hỗ trợ).');
+                }
+                if (endMin > nightStartMin) {
+                    errors.push('Giờ kết thúc không được sau 22:00 (ca đêm không hỗ trợ).');
+                }
+            }
+
+            if (errors.length > 0) {
+                e.preventDefault();
+                showClientError(errors.join('\n'));
+            }
+        }
+
+        function showClientError(msg) {
+            var existing = document.getElementById('client-night-err');
+            if (existing) existing.remove();
+            var div = document.createElement('div');
+            div.id = 'client-night-err';
+            div.className = 'alert alert-error';
+            div.style.whiteSpace = 'pre-line';
+            div.textContent = msg;
+            var card = document.querySelector('.form-card');
+            card.insertBefore(div, card.firstChild);
+            div.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initPicker('start');
+            initPicker('end');
+            var form = document.querySelector('form');
+            if (form) form.addEventListener('submit', validateNightShift);
+        });
+    </script>
 </body>
 </html>

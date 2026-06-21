@@ -58,24 +58,24 @@
             <div class="table-card">
                 <table>
                     <thead>
-                        <tr><th>ID</th><th>Tên ca</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thao tác</th></tr>
+                        <tr><th>#</th><th>Tên ca</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thao tác</th></tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="t" items="${templates}">
+                        <c:forEach var="t" items="${templates}" varStatus="st">
                             <tr>
-                                <td>${t.templateID}</td>
+                                <td>${st.count}</td>
                                 <td>${t.shiftName}</td>
                                 <td><fmt:formatDate value="${t.startTime}" pattern="HH:mm"/></td>
                                 <td><fmt:formatDate value="${t.endTime}" pattern="HH:mm"/></td>
                                 <td class="actions">
                                     <a class="btn btn-sm btn-edit" href="${pageContext.request.contextPath}/owner/shift-templates?action=edit&id=${t.templateID}">
-                                        <i class="fas fa-edit"></i> Sửa
+                                        Sửa
                                     </a>
                                     <form class="inline" method="post" action="${pageContext.request.contextPath}/owner/shift-templates"
                                           onsubmit="return confirm('Xoá template này?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="${t.templateID}">
-                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Xoá</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
                                     </form>
                                 </td>
                             </tr>

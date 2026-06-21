@@ -184,7 +184,7 @@
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/shift-roster') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/shift-roster">
-                    <i class="fas fa-user-clock"></i> Shift Assignments
+                    <i class="fas fa-user-clock"></i> Shift Roster
                 </a>
             </li>
             <li class="nav-item">
