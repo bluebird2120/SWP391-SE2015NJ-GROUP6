@@ -398,7 +398,10 @@
                     }
                     .single-select-panel {
                         display: none;
-                        position: fixed;
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
                         background: #fff;
                         border: 1px solid #d7bfa4;
                         border-radius: 7px;
@@ -408,6 +411,7 @@
                         max-height: 260px;
                         overflow: hidden;
                         flex-direction: column;
+                        margin-top: 4px;
                     }
                     .single-select-panel.active {
                         display: flex;
@@ -899,7 +903,7 @@
                                 <!-- ===== TAB 4: YÊU CẦU ĐỔI CA / XIN NGHỈ ===== -->
                                 <div id="tab-requests" class="tab-content">
                                     <div class="card" style="overflow-x:auto;">
-                                        <div class="section-title"><i class="fas fa-paper-plane"></i> Yêu cầu đổi ca / xin nghỉ đang chờ duyệt</div>
+                                        <div class="section-title"><i class="fas fa-paper-plane"></i> Yêu cầu xin nghỉ đang chờ duyệt</div>
                                         <table>
                                             <thead>
                                                 <tr>
@@ -916,14 +920,9 @@
                                                 <c:forEach var="pr" items="${pendingRequests}">
                                                     <tr>
                                                         <td>
-                                                            <c:choose>
-                                                                <c:when test="${pr.requestType == 'swap'}">
-                                                                    <span class="badge" style="background:#cfe2ff; color:#084298;">Đổi ca</span>
-                                                                </c:when>
                                                                 <c:otherwise>
                                                                     <span class="badge" style="background:#f8d7da; color:#842029;">Xin nghỉ</span>
                                                                 </c:otherwise>
-                                                            </c:choose>
                                                         </td>
                                                         <td><strong>${pr.reqEmployeeName}</strong></td>
                                                         <td>
@@ -933,20 +932,9 @@
                                                             </div>
                                                         </td>
                                                         <td>
-                                                            <c:choose>
-                                                                <c:when test="${pr.requestType == 'swap' && not empty pr.targetShiftID}">
-                                                                    <div style="font-weight:600; color:#5d3a2e;">${pr.targetEmployeeName}</div>
-                                                                    <div style="font-size:0.75rem; color:#8a6e5a; margin-top:2px;">
-                                                                        ${pr.targetShiftName} - <fmt:formatDate value="${pr.targetWorkDate}" pattern="dd/MM/yyyy" /> (<fmt:formatDate value="${pr.targetStartTime}" pattern="HH:mm" /> - <fmt:formatDate value="${pr.targetEndTime}" pattern="HH:mm" />)
-                                                                    </div>
-                                                                    <div style="font-size:0.7rem; color:#28a745; margin-top:4px; font-weight:600;">
-                                                                        <i class="fas fa-check-double"></i> Đồng nghiệp đã đồng ý
-                                                                    </div>
-                                                                </c:when>
                                                                 <c:otherwise>
                                                                     <span style="color:#a0a0a0;">N/A (Nghỉ ca)</span>
                                                                 </c:otherwise>
-                                                            </c:choose>
                                                         </td>
                                                         <td style="max-width: 220px; word-wrap: break-word; white-space: normal; font-size:0.82rem; color:#5d3a2e;">
                                                             <c:out value="${pr.reason}" />
@@ -1075,25 +1063,7 @@
                             }
 
                             function openSingleSelect() {
-                                var trigger = document.getElementById('singleSelectTrigger');
-                                var panel   = document.getElementById('singleSelectPanel');
-                                var rect    = trigger.getBoundingClientRect();
-                                var panelH  = 260; // max-height
-                                var spaceBelow = window.innerHeight - rect.bottom - 8;
-                                var spaceAbove = rect.top - 8;
-
-                                panel.style.width = Math.max(rect.width, 220) + 'px';
-                                panel.style.left  = rect.left + 'px';
-
-                                if (spaceBelow >= Math.min(panelH, 160) || spaceBelow >= spaceAbove) {
-                                    // Mở xuống
-                                    panel.style.top    = (rect.bottom + window.scrollY + 4) + 'px';
-                                    panel.style.bottom = 'auto';
-                                } else {
-                                    // Mở lên (chỉ khi thực sự không đủ chỗ xuống)
-                                    panel.style.top    = 'auto';
-                                    panel.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-                                }
+                                var panel = document.getElementById('singleSelectPanel');
                                 panel.classList.add('active');
                                 // Focus search box
                                 var search = panel.querySelector('.single-select-search');
@@ -1127,15 +1097,7 @@
                                 });
                             }
 
-                            // Reposition panel on scroll/resize
-                            window.addEventListener('scroll', function() {
-                                var panel = document.getElementById('singleSelectPanel');
-                                if (panel && panel.classList.contains('active')) { openSingleSelect(); }
-                            }, true);
-                            window.addEventListener('resize', function() {
-                                var panel = document.getElementById('singleSelectPanel');
-                                if (panel && panel.classList.contains('active')) { openSingleSelect(); }
-                            });
+
 
                             /**
                              * Lọc các hàng trong bảng theo tên ca.

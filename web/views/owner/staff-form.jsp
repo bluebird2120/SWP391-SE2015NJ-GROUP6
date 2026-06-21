@@ -86,7 +86,7 @@
                         </div>
                         <div class="form-group ${not empty errors['email'] ? 'has-error' : ''}">
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" name="email" value="${staff.email}" maxlength="150">
+                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="email">
                             <c:if test="${not empty errors['email']}">
                                 <div class="err-msg">${errors['email']}</div>
                             </c:if>
