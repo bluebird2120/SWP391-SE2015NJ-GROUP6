@@ -357,10 +357,24 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-    /**
-     * Dropdown roster: chỉ lấy staff active (roleID=2, isActive=1), trả ID +
-     * fullName.
-     */
+    /** Lấy danh sách ID của các Owner active để gửi notification. */
+    public List<Integer> getActiveOwnerIDs() {
+        List<Integer> list = new ArrayList<>();
+        String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_OWNER.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(rs.getInt("employeeID"));
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
         String sql = "SELECT employeeID, fullName FROM Employee "

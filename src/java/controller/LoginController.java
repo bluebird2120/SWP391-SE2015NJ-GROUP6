@@ -23,31 +23,13 @@ public class LoginController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-
         //register -> login
         if ("true".equals(request.getParameter("registered"))) {
-
-            request.setAttribute(
-                    "successMessage",
-                    "Đăng ký thành công. Vui lòng đăng nhập."
-            );
-
-            if (session != null) {
-                request.setAttribute(
-                        "identifier",
-                        session.getAttribute("registeredPhone")
-                );
-
-                request.setAttribute(
-                        "prefillPassword",
-                        session.getAttribute("registeredPassword")
-                );
-
-                session.removeAttribute("registeredPhone");
-                session.removeAttribute("registeredPassword");
-            }
+            request.setAttribute("successMessage",
+                    "Đăng ký thành công. Vui lòng đăng nhập.");
         }
+
+        HttpSession session = request.getSession(false);
 
         if (session != null) {
             if (session.getAttribute("employee") != null) {
@@ -168,6 +150,9 @@ public class LoginController extends HttpServlet {
         if (phone == null || phone.isBlank()) {
             return "Vui lòng nhập số điện thoại.";
         }
+        if (!phone.matches("\\d{10,11}")) {
+            return "Số điện thoại phải có đúng 10-11 chữ số.";
+        }
         return null;
     }
 
@@ -175,9 +160,12 @@ public class LoginController extends HttpServlet {
         if (password == null || password.isBlank()) {
             return "Vui lòng nhập mật khẩu.";
         }
+        if (password.length() < 6) {
+            return "Mật khẩu phải có ít nhất 6 ký tự.";
+        }
         return null;
     }
-
+    
     private String trim(String str) {
         return str == null ? "" : str.trim();
     }

@@ -86,7 +86,7 @@
                         </div>
                         <div class="form-group ${not empty errors['email'] ? 'has-error' : ''}">
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" name="email" value="${staff.email}" maxlength="150">
+                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="email">
                             <c:if test="${not empty errors['email']}">
                                 <div class="err-msg">${errors['email']}</div>
                             </c:if>
@@ -123,10 +123,13 @@
 
                     <div class="form-group">
                         <label>Profile Photo</label>
-                        <input type="file" name="image" accept="image/jpeg,image/png">
-                        <div class="help-text">JPG/PNG, max 2MB.</div>
+                        <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                        <div class="help-text">JPG, PNG, WEBP — tối đa 2MB.</div>
                         <c:if test="${mode == 'edit' && not empty staff.image}">
                             <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
+                        </c:if>
+                        <c:if test="${not empty errors['image']}">
+                            <div class="err-msg">${errors['image']}</div>
                         </c:if>
                     </div>
 
