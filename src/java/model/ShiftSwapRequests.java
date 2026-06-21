@@ -6,17 +6,19 @@ public class ShiftSwapRequests {
 
     private int swapID;
     private int requesterShiftID;
-    private int targetShiftID;
-    private int approvedByID;
-    private String status;     // pending / approved / rejected
+    private Integer targetShiftID; // Can be null for leave requests
+    private Integer approvedByID;  // Can be null initially
+    private String status;         // pending / approved / rejected
     private String reason;
-    private Timestamp createdAt;  // DATETIME
+    private Timestamp createdAt;   // DATETIME
+    private String requestType;    // swap / leave
 
     public ShiftSwapRequests() {
+        this.requestType = "swap"; // default
     }
 
-    public ShiftSwapRequests(int swapID, int requesterShiftID, int targetShiftID,
-            int approvedByID, String status, String reason, Timestamp createdAt) {
+    public ShiftSwapRequests(int swapID, int requesterShiftID, Integer targetShiftID,
+            Integer approvedByID, String status, String reason, Timestamp createdAt, String requestType) {
         this.swapID = swapID;
         this.requesterShiftID = requesterShiftID;
         this.targetShiftID = targetShiftID;
@@ -24,6 +26,7 @@ public class ShiftSwapRequests {
         this.status = status;
         this.reason = reason;
         this.createdAt = createdAt;
+        this.requestType = requestType;
     }
 
     public int getSwapID() {
@@ -42,19 +45,19 @@ public class ShiftSwapRequests {
         this.requesterShiftID = requesterShiftID;
     }
 
-    public int getTargetShiftID() {
+    public Integer getTargetShiftID() {
         return targetShiftID;
     }
 
-    public void setTargetShiftID(int targetShiftID) {
+    public void setTargetShiftID(Integer targetShiftID) {
         this.targetShiftID = targetShiftID;
     }
 
-    public int getApprovedByID() {
+    public Integer getApprovedByID() {
         return approvedByID;
     }
 
-    public void setApprovedByID(int approvedByID) {
+    public void setApprovedByID(Integer approvedByID) {
         this.approvedByID = approvedByID;
     }
 
@@ -81,4 +84,13 @@ public class ShiftSwapRequests {
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
+
+    public String getRequestType() {
+        return requestType;
+    }
+
+    public void setRequestType(String requestType) {
+        this.requestType = requestType;
+    }
 }
+

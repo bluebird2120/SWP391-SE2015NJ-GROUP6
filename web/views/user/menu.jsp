@@ -4,43 +4,22 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Quản lý Thực đơn - Lách Tách</title>
+
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
         <style>
-            .page-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 2px solid #e5e7eb;
-                padding-bottom: 10px;
-                margin-bottom: 25px;
-            }
-
-            .main-content h2 {
+            body {
                 margin: 0;
-                border-bottom: none;
-                padding-bottom: 0;
-                font-size: 24px;
-                font-weight: 600;
+                font-family: 'Nunito', sans-serif !important;
+                background-color: #fdf6f0; 
                 color: #111827;
-                justify-content: center;
-            }
-
-            .btn-add-new {
-                background-color: #10b981;
-                /* Màu xanh lá cây hiện đại */
-                color: white;
-                text-decoration: none;
-                padding: 10px 18px;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
             }
 
             .admin-layout {
@@ -49,6 +28,114 @@
                 flex-wrap: nowrap;
                 min-height: calc(100vh - 78px);
                 align-items: flex-start;
+                justify-content: center;
+            }
+
+            .main-content {
+                flex: 1;
+                max-width: 1200px; 
+                padding: 24px;
+                box-sizing: border-box;
+            }
+
+            .restaurant-banner {
+                background: linear-gradient(135deg, #76493b 0%, #5a3329 100%);
+                color: #f0dcc2;
+                padding: 25px;
+                border-radius: 16px;
+                text-align: center;
+                margin-bottom: 25px;
+                box-shadow: 0 8px 24px rgba(118, 73, 59, 0.12);
+            }
+
+            .restaurant-banner h1 {
+                font-family: 'Playfair Display', serif;
+                margin: 0 0 6px 0;
+                font-size: 30px;
+                font-weight: 700;
+            }
+
+            .table-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background-color: rgba(240, 220, 194, 0.15);
+                border: 1px solid #f0dcc2;
+                padding: 5px 16px;
+                border-radius: 30px;
+                font-size: 15px;
+                font-weight: 700;
+            }
+
+            .border-cart {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #76493b;
+                padding-bottom: 8px;
+                margin-bottom: 25px;
+            }
+
+            .border-cart .page-header {
+                margin: 0;
+                padding: 0;
+            }
+
+            .border-cart h2 {
+                font-family: 'Playfair Display', serif;
+                margin: 0;
+                font-size: 24px;
+                font-weight: 700;
+                color: #76493b;
+            }
+
+            .btn-add-new {
+                background-color: #10b981;
+                color: white;
+                text-decoration: none;
+                padding: 8px 14px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .cart-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background-color: #76493b;
+                color: #ffffff !important;
+                text-decoration: none;
+                padding: 10px 18px;
+                border-radius: 20px;
+                font-weight: 700;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(118, 73, 59, 0.2);
+                transition: all 0.2s ease-in-out;
+            }
+
+            .cart-btn:hover {
+                background-color: #5a3329;
+                transform: translateY(-2px);
+            }
+
+            .filter-form {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                justify-content: space-between;
+                background: white;
+                border: 1px solid #e2e8f0;
+                color: #475569;
+                padding: 16px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+                flex-wrap: nowrap !important;
+                overflow-x: auto; 
             }
 
             .line2 {
@@ -56,40 +143,23 @@
                 align-items: center;
                 gap: 12px;
                 width: auto;
-            }
-
-            .main-content {
-                flex: 1;
-                /* Tự động húp trọn phần khoảng trống còn lại bên phải */
-                padding: 24px;
-                background-color: #ffffff;
-                box-sizing: border-box;
-                /* Bảo hiểm giữ khung, chống tràn viền màn hình */
-            }
-
-            .filter-form {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                color: #475569;
-                padding: 12px;
-                flex-wrap: wrap;
-                /*tự động xuống dòng khi screen nhỏ */
-                border-radius: 12px;
-                margin-bottom: 20px;
-                font-family: Arial, sans-serif;
+                white-space: nowrap;
             }
 
             .filter-input,
             .filter-select {
-                padding: 8px 8px;
-                border: 1px solid #cccccc;
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
                 border-radius: 8px;
                 font-size: 14px;
                 color: #333333;
                 background-color: #ffffff;
+                outline: none;
+            }
+
+            .filter-input:focus,
+            .filter-select:focus {
+                border-color: #76493b;
             }
 
             .filter-price {
@@ -98,147 +168,143 @@
                 gap: 6px;
                 font-size: 14px;
                 color: #555555;
+                white-space: nowrap; 
             }
 
             .filter-price input {
-                width: 80px;
-                border-radius: 6px;
+                width: 90px;
+                border-radius: 8px;
             }
 
             .btn-submit {
-                background-color: #007bff;
+                background-color: #76493b; 
                 color: white;
                 border: none;
-                padding: 8px 20px;
+                padding: 8px 22px;
                 border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
+                font-size: 14px;
+                transition: background 0.2s;
             }
 
             .btn-submit:hover {
-                background-color: #0056b3;
+                background-color: #5a3329;
             }
 
             .menu-container {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                gap: 20px;
-                padding: 20px;
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 25px;
+                padding: 10px 0;
             }
 
             .card {
-                border: 1px solid #e0e0e0;
+                border: 1px solid #e5e7eb;
                 border-radius: 16px;
                 padding: 16px;
                 background: #ffffff;
-                font-family: Arial, sans-serif;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.02);
+                transition: transform 0.2s, box-shadow 0.2s;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 24px rgba(118, 73, 59, 0.06);
             }
 
             .card img {
                 width: 100%;
                 height: 180px;
                 object-fit: cover;
-                /* Giúp ảnh không bị méo khi co giãn */
                 border-radius: 12px;
                 margin-bottom: 12px;
             }
 
-            .status {
-                display: block;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 14px;
-            }
-
-            .active {
-                background-color: #edf7ed;
-                color: #1e4620;
-            }
-
-            .inactive {
-                background-color: #fdeaea;
-                color: #c62828;
-            }
-
             .item-name {
                 font-size: 18px;
-                font-weight: bold;
-                margin: 8px 0;
+                font-weight: 700;
+                margin: 6px 0;
+                color: #1f2937;
             }
 
             .category {
-                color: #666666;
-                font-size: 14px;
-                margin: 4px 0;
+                color: #6b7280;
+                font-size: 13px;
+                margin: 4px 0 12px 0;
             }
 
             .price-container {
-                border-bottom: 1px solid #eeeeee;
-                /* Thêm một đường gạch ngang mờ ở dưới giá */
+                border-top: 1px dashed #e5e7eb;
                 display: flex;
-                align-items: center;
-                gap: 10px;
-                padding-bottom: 10px;
+                align-items: baseline;
+                gap: 8px;
+                padding-top: 10px;
+                margin-top: auto;
+            }
 
+            .discount-price {
+                font-size: 19px;
+                font-weight: 700;
+                color: #76493b;
             }
 
             .price {
-                font-size: 10px;
-                color: #000000;
+                font-size: 12px;
+                color: #9ca3af;
                 text-decoration: line-through;
             }
 
             .discount-percent {
-                font-size: 10px;
-                color: red;
-            }
-
-            .discount-price {
-                font-size: 18px;
-                font-weight: bold;
-                color: #000000;
+                font-size: 11px;
+                color: #dc2626;
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 1px 5px;
+                border-radius: 4px;
             }
 
             .button-group {
                 display: flex;
-                gap: 12px;
-                /* Khoảng cách giữa 2 nút */
+                gap: 10px;
+                margin-top: 14px;
             }
 
             .btn {
                 flex: 1;
-                /* Ép 2 nút tự chia đôi chiều rộng bằng nhau (50% - 50%) */
-                margin-top: 10px;
+                margin-top: 0;
                 padding: 10px 0;
-                border: 1px solid #cccccc;
-                border-radius: 12px;
-                /* Nút bo góc tròn */
+                border: 1px solid #76493b;
+                border-radius: 10px;
                 background-color: #ffffff;
                 cursor: pointer;
-                font-size: 15px;
-                display: flex;
+                font-size: 14px;
+                font-weight: 600;
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
-                /* Khoảng cách giữa icon và chữ */
                 text-decoration: none;
-                color: black;
+                color: #76493b;
+                transition: all 0.2s;
             }
 
-            /* Hiệu ứng đổi màu nhẹ khi di chuột vào nút */
             .btn:hover {
-                background-color: #f5f5f5;
+                background-color: #fdf6f0;
             }
 
             .error-msg {
                 color: #b91c1c;
                 background-color: #fef2f2;
                 border: 1px solid #fee2e2;
-                padding: 6px 12px;
+                padding: 8px 14px;
                 font-size: 13px;
                 margin-top: 6px;
                 font-weight: 500;
-                border-radius: 6px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 gap: 6px;
@@ -249,15 +315,14 @@
                 justify-content: center;
                 align-items: center;
                 gap: 5px;
-                margin: 30px 0;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 35px 0;
             }
 
             .pagination a,
             .pagination span {
-                padding: 6px 12px;
+                padding: 6px 14px;
                 border: 1px solid #cbd5e1;
-                border-radius: 4px;
+                border-radius: 6px;
                 text-decoration: none;
                 color: #334155;
                 font-size: 14px;
@@ -267,12 +332,11 @@
             }
 
             .pagination a:hover {
-                background-color: #f8fafc;
-                border-color: #94a3b8;
-                color: #0f172a;
+                background-color: #76493b;
+                border-color: #76493b;
+                color: #ffffff;
             }
 
-            /* Kiểu dáng cho ô hiển thị thông tin số trang ở giữa */
             .pagination .page-info {
                 background-color: #f1f5f9;
                 border-color: #cbd5e1;
@@ -281,38 +345,41 @@
             }
 
             .pagination .page-info b {
-                color: #007bff;
+                color: #76493b;
             }
 
-            /* Trạng thái nút bị vô hiệu hóa khi ở trang đầu hoặc trang cuối */
             .pagination .disabled {
                 color: #94a3b8;
                 background-color: #f8fafc;
                 border-color: #e2e8f0;
                 pointer-events: none;
-                /* Khóa không cho click */
                 cursor: not-allowed;
             }
         </style>
     </head>
 
     <body>
-        <%@ include file="/views/includes/header.jsp" %>
         <div class="admin-layout">
-            <%@ include file="/views/includes/dashboard.jsp" %>
 
             <div class="main-content">
-                <div class="page-header">
-                    <h2>Danh sách món ăn</h2>
-                    <c:if test="${sessionScope.employee.roleID == 1}">
-                        <a href="${pageContext.request.contextPath}/update-menu"
-                           class="btn-add-new">
-                            Thêm món ăn mới
-                        </a>
-                    </c:if>
 
+                <div class="restaurant-banner">
+                    <h1>Vị An Restaurant</h1>
+                    <div class="table-badge">
+                        <i class="fas fa-chair"></i>
+                        <span>Vị trí: ${not empty sessionScope.currentTableID ? 'Bàn số '.concat(sessionScope.currentTableID) : 'Menu Trực Tuyến'}</span>
+                    </div>
                 </div>
-                <!--Filter to search dish-->
+
+                <div class="border-cart"> 
+                    <div class="page-header">
+                        <h2>Khám phá ẩm thực</h2>
+                    </div>
+                    <a class="cart-btn" href="${pageContext.request.contextPath}/order">
+                        <i class="fas fa-shopping-cart"></i> GIỎ HÀNG
+                    </a>
+                </div>
+
                 <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
                     <input type="text" name="search" value="${param.search}"
                            placeholder="Tìm kiếm món ăn..." class="filter-input"/>
@@ -325,13 +392,6 @@
                             </option>
                         </c:forEach>
                     </select>
-
-                    <c:if test="${sessionScope.employee.roleID == 1}">
-                        <select name="status" class="filter-select">
-                            <option value="1" ${param.status==1 ? 'selected' : '' }>Đang Bán</option>
-                            <option value="0" ${param.status==0 ? 'selected' : '' }>Tạm Ngưng</option>
-                        </select>
-                    </c:if>
 
                     <div class="filter-price">
                         <span>Giá từ:</span>
@@ -356,6 +416,7 @@
                     </div>
                 </form>
 
+                <%-- Các vùng thông báo lỗi cũ của Giang --%>
                 <c:if test="${not empty errorPrice}">
                     <div id="jsErrorPrice" class="error-msg">${errorPrice}</div>
                 </c:if>
@@ -369,78 +430,46 @@
                 <c:if test="${empty errorSearch}">
                     <div id="jsErrorSearch" class="error-msg" style="display: none;"></div>
                 </c:if>
-                <!--Display dish-->
-                <div class="menu-container">
 
+                <div class="menu-container">
                     <c:forEach var="item" items="${listItem}">
                         <div class="card">
-
                             <img src="${item.image}" alt="${item.itemName}">
-
-                            <span
-                                class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
-                                ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
-                            </span>
-
                             <h3 class="item-name">${item.itemName}</h3>
-
                             <p class="category">🏷️ ${item.categoryName}</p>
 
                             <div class="price-container">
                                 <div class="discount-price">
-                                    <fmt:formatNumber value="${item.discountedPrice}"
-                                                      type="number" groupingUsed="true" />đ
+                                    <fmt:formatNumber value="${item.discountedPrice}" type="number" groupingUsed="true" />đ
                                 </div>
-
                                 <div class="price">
-                                    <fmt:formatNumber value="${item.price}" type="number"
-                                                      groupingUsed="true" />đ
+                                    <fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" />đ
                                 </div>
-
                                 <div class="discount-percent">
-                                    <fmt:formatNumber value="${item.discountPercent}"
-                                                      type="number" groupingUsed="true" />%
+                                    <fmt:formatNumber value="${item.discountPercent}" type="number" groupingUsed="true" />%
                                 </div>
                             </div>
 
                             <div class="button-group">
-                                <c:choose>
-                                    <c:when test="${sessionScope.customer != null}">
-                                        <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #0284c7; color: white;">
-                                            🛒 Thêm vào giỏ
-                                        </a>
-                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
-                                            Xem chi tiết
-                                        </a>
-                                    </c:when>
-
-                                    <c:when test="${sessionScope.employee.roleID == 1}">
-                                        <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">
-                                            Chỉnh sửa
-                                        </a>
-                                    </c:when>
-
-                                    <c:otherwise>
-                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
-                                            Xem chi tiết
-                                        </a>
-                                    </c:otherwise>
-                                </c:choose>
+                                <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #76493b; color: white;">
+                                    Thêm vào giỏ
+                                </a>
+                                <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
+                                    Xem chi tiết
+                                </a>
                             </div>
                         </div>
                     </c:forEach>
                 </div>
             </div>
         </div>
+
         <c:if test="${totalPage > 1}">
             <div class="pagination">
-
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang trước">Trước</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang trước">Trước</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Đầu</span>
@@ -452,19 +481,17 @@
 
                 <c:choose>
                     <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Đến trang cuối">Cuối</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Đến trang cuối">Cuối</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Sau</span>
                         <span class="disabled">Cuối</span>
                     </c:otherwise>
                 </c:choose>
-
             </div>
         </c:if>
+
         <script>
             const filterForm = document.getElementById('filterForm');
             const jsErrorSearch = document.getElementById("jsErrorSearch");
@@ -511,7 +538,5 @@
                 }
             };
         </script>
-        <%@ include file="/views/includes/footer.jsp" %>
     </body>
-
 </html>
