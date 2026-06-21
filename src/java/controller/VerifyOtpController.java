@@ -5,8 +5,8 @@
 package controller;
 
 import dal.CustomerDAO;
-import dal.EmailOTPDAO;
-import dal.EmailOTPDAO.VerifyResult;
+import dal.EmailDAO;
+import dal.EmailDAO.VerifyResult;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,7 +27,7 @@ public class VerifyOtpController extends HttpServlet {
 
     private static final int OTP_EXPIRE_MINUTES = 5;
 
-    private final EmailOTPDAO otpDAO = new EmailOTPDAO();
+    private final EmailDAO otpDAO = new EmailDAO();
     private final CustomerDAO customerDAO = new CustomerDAO();
 
     @Override

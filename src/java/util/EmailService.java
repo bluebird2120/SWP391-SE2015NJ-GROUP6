@@ -34,7 +34,7 @@ public class EmailService {
 
     public static void sendOtpEmail(String toEmail, String otpCode, int expireMinutes)
             throws MessagingException {
-        
+
         Properties props = new Properties();
         //Cấu hình
         props.put("mail.smtp.auth", "true");
@@ -52,7 +52,7 @@ public class EmailService {
 
         try {
             MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(SENDER_EMAIL, SENDER_DISPLAY_NAME));
+            message.setFrom(new InternetAddress(SENDER_EMAIL, SENDER_DISPLAY_NAME, "UTF-8"));
             //chuyển cho ai và chỉ định địa chỉ người nhận
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
 
