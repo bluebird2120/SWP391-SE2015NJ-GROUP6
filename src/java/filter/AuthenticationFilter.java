@@ -6,8 +6,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 import model.Customer;
 import model.Employee;
+import model.RoutePermission;
 
 @WebFilter(filterName = "AuthenticationFilter", urlPatterns = {
     "/customer/*",
@@ -48,18 +51,37 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
-        //Staff
-        if (uri.startsWith(ctx + "/staff/")) {
+        //Employee (/staff/*, /owner/*): Phân quyền động
+        if (uri.startsWith(ctx + "/staff/") || uri.startsWith(ctx + "/owner/")) {
             if (employee == null) {
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }
-            if (employee.getRoleID() == 1) { // Owner không được vào staff routes
-                response.sendRedirect(ctx + "/owner/dashboard");
+
+            // Tìm permission cần thiết cho route này (từ dữ liệu DB, có cache)
+            String requiredPermission = findRequiredPermission(ctx, uri);
+
+            if (requiredPermission == null) {
+                response.sendRedirect(ctx + "/unauthorized");
                 return;
             }
-            // Bắt buộc đổi mật khẩu lần đầu
-            if (employee.getMustChangePassword() == 1
+
+            //Set != List ko cho trùng lặp phần tử
+            Set<String> employeePermissions = PermissionCache.getPermissionsForRole(employee.getRoleID());
+
+            if (!employeePermissions.contains(requiredPermission)) {
+                //Owner cố vào Staff -> đưa về dashboard Owner
+                if (employee.getRoleID() == OWNER_ROLE_ID && uri.startsWith(ctx + "/staff/")) {
+                    response.sendRedirect(ctx + "/owner/dashboard");
+                    return;
+                }
+                response.sendRedirect(ctx + "/unauthorized");
+                return;
+            }
+
+            //Bắt buộc đổi mật khẩu lần đầu (áp dụng cho riêng staff)
+            if (uri.startsWith(ctx + "/staff/")
+                    && employee.getMustChangePassword() == 1
                     && !uri.contains("/staff/change-password")) {
                 response.sendRedirect(ctx + "/staff/change-password?first=true");
                 return;
@@ -67,30 +89,17 @@ public class AuthenticationFilter implements Filter {
             chain.doFilter(req, res);
             return;
         }
-
-        //Staff
-        if (uri.startsWith(ctx + "/owner/")) {
-            if (employee == null) {
-                response.sendRedirect(ctx + "/login?msg=required");
-                return;
-            }
-            if (employee.getRoleID() != OWNER_ROLE_ID) {
-                // Staff thường → không có quyền
-                response.sendRedirect(ctx + "/unauthorized");
-                return;
-            }
-            chain.doFilter(req, res);
-            return;
-        }
-
         chain.doFilter(req, res);
     }
 
-    @Override
-    public void init(FilterConfig fc) throws ServletException {
-    }
-
-    @Override
-    public void destroy() {
+    private String findRequiredPermission(String ctx, String uri) {
+        List<RoutePermission> rules = PermissionCache.getRouteRules();
+        for (RoutePermission rule : rules) {
+            if (uri.startsWith(ctx + rule.getRoutePrefix())) {
+                //owner.access / staff.access
+                return rule.getPermissionKey();
+            }
+        }
+        return null;
     }
 }

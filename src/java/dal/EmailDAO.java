@@ -13,7 +13,7 @@ import java.sql.ResultSet;
  *
  * @author admin
  */
-public class EmailOTPDAO extends DBContext {
+public class EmailDAO extends DBContext {
 
     public void createOtp(String email, String otpCode, String purpose, int exprireMinutes)
             throws SQLException {

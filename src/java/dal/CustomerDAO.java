@@ -97,7 +97,7 @@ public class CustomerDAO extends DBContext {
         c.setLoginProvider(rs.getString("loginProvider"));
         return c;
     }
-    
+
     public boolean registerVerified(String userName, String phoneNumber,
             String email, String hashedPassword) throws SQLException {
         String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified) "
@@ -288,5 +288,4 @@ public class CustomerDAO extends DBContext {
 
         return 0;
     }
-
 }
