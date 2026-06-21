@@ -59,8 +59,9 @@
                 </c:when>
                 <c:otherwise>
                     <div class="list">
-                        <c:forEach var="n" items="${notifications}">
-                            <div class="item ${n.isRead == 0 ? 'unread' : ''}">
+                        <c:forEach var="n" items="${notifications}" varStatus="status">
+                            <div class="item ${n.isRead == 0 ? 'unread' : ''} ${status.index >= 5 ? 'previous-notif' : ''}"
+                                 ${status.index >= 5 ? 'style="display: none;"' : ''}>
                                 <div class="item-icon"><i class="fas fa-calendar-alt"></i></div>
                                 <div class="item-body">
                                     <div class="item-meta">
@@ -94,10 +95,35 @@
                             </div>
                         </c:forEach>
                     </div>
+
+                    <c:if test="${fn:length(notifications) > 5}">
+                        <div id="showMoreContainer" style="text-align: center; margin-top: 18px;">
+                            <button type="button" id="btnShowMore" onclick="showAllNotifications()" style="background: none; border: none; color: #76493b; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; transition: all 0.2s; text-decoration: underline;">
+                                Xem các thông báo trước đó <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+                    </c:if>
                 </c:otherwise>
             </c:choose>
         </main>
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
+    <script>
+        function showAllNotifications() {
+            var prevNotifs = document.querySelectorAll('.previous-notif');
+            prevNotifs.forEach(function(el) {
+                el.style.display = 'flex';
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s ease';
+                setTimeout(function() {
+                    el.style.opacity = '1';
+                }, 10);
+            });
+            var container = document.getElementById('showMoreContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

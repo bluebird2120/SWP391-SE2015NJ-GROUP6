@@ -15,6 +15,7 @@ import java.util.List;
 import model.MenuCategory;
 import dal.MenuCategoryDAO;
 import dal.MenuItemDAO;
+import jakarta.servlet.http.HttpSession;
 import model.MenuItem;
 
 /**
@@ -70,23 +71,24 @@ public class MenuItemController extends HttpServlet {
         String priceType = request.getParameter("price");
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
-
+        String tableID_raw = request.getParameter("tableID");
+        
         if (!checkEmpty(search)) {
             search = "";
         }
         if (!checkEmpty(priceType)) {
-            priceType = "price";
+            priceType = "discountedPrice";
         }
         if (!checkEmpty(sort)) {
             sort = "asc";
         }
 
-        int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : -1;
+        int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
         int minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
         int maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
-
+        int tableID = checkEmpty(tableID_raw) ? Integer.parseInt(tableID_raw) : 0;
         String errorPrice = checkPriceInput(minPrice, maxPrice);
         String errorSearch = isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự");
 
@@ -116,8 +118,14 @@ public class MenuItemController extends HttpServlet {
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
-
-        request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        HttpSession session = request.getSession();
+        session.setAttribute("currentTableID", tableID);
+        
+        if (checkEmpty(tableID_raw)) {
+            request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
+        } else {
+            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        }
     }
 
     private MenuCategoryDAO md = new MenuCategoryDAO();

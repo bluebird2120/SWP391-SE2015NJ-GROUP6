@@ -2,6 +2,8 @@ package controller;
 
 import dal.EmployeeShiftDAO;
 import dal.ShiftRow;
+import dal.ShiftTemplateDAO;
+import model.ShiftTemplates;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -36,10 +38,10 @@ public class AttendanceController extends HttpServlet {
         String action = req.getParameter("action");
         if (action == null) action = "";
         switch (action) {
-            case "checkin":  handle(req, resp, "checkin"); break;
-            case "checkout": handle(req, resp, "checkout"); break;
-            case "absent":   handle(req, resp, "absent"); break;
-            case "reset":    handle(req, resp, "reset"); break;
+            case "checkin":       handle(req, resp, "checkin"); break;
+            case "checkout":      handle(req, resp, "checkout"); break;
+            case "absent":        handle(req, resp, "absent"); break;
+            case "reset":         handle(req, resp, "reset"); break;
             default: resp.sendRedirect(req.getContextPath() + "/owner/attendance");
         }
     }
@@ -52,10 +54,15 @@ public class AttendanceController extends HttpServlet {
         EmployeeShiftDAO dao = new EmployeeShiftDAO();
         List<ShiftRow> rows = dao.listByDate(sqlDate);
 
+        // Load danh sách ca template để render dropdown lọc ca
+        ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
+        List<ShiftTemplates> templates = tplDao.findAll();
+
         req.setAttribute("date", date.toString());
         req.setAttribute("today", LocalDate.now().toString());
         req.setAttribute("isToday", date.equals(LocalDate.now()));
         req.setAttribute("rows", rows);
+        req.setAttribute("templates", templates);
         if (error != null) req.setAttribute("error", error);
         if (success != null) req.setAttribute("success", success);
         req.getRequestDispatcher(VIEW).forward(req, resp);

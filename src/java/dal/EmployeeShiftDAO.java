@@ -15,11 +15,11 @@ import model.EmployeeShifts;
  * DAO cho EmployeeShifts.
  *
  * Status flow: scheduled -> present | late | absent
- *   Đã ra ca = checkOutTime IS NOT NULL (status không bị ghi đè 'completed').
+ * Đã ra ca = checkOutTime IS NOT NULL (status không bị ghi đè 'completed').
  *
  * Mọi UPDATE attendance đều có:
- *   - WHERE workDate = CURRENT_DATE  (today-only rule)
- *   - WHERE status / checkInTime / checkOutTime phù hợp (optimistic lock)
+ * - WHERE workDate = CURRENT_DATE (today-only rule)
+ * - WHERE status / checkInTime / checkOutTime phù hợp (optimistic lock)
  */
 public class EmployeeShiftDAO extends DBContext {
 
@@ -38,9 +38,11 @@ public class EmployeeShiftDAO extends DBContext {
             ps.setInt(1, templateID);
             ps.setInt(2, employeeID);
             ps.setDate(3, workDate);
-            if (ps.executeUpdate() == 0) return -1;
+            if (ps.executeUpdate() == 0)
+                return -1;
             try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) return keys.getInt(1);
+                if (keys.next())
+                    return keys.getInt(1);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -49,28 +51,28 @@ public class EmployeeShiftDAO extends DBContext {
     }
 
     /**
-     * Kiểm tra staff đã có ca khác chồng giờ trong cùng workDate.
-     * Trả true = có overlap, không cho assign nữa.
+     * Kiểm tra nhân viên đã có ca nào trong ngày workDate chưa.
+     * Quy tắc: 1 nhân viên chỉ được làm 1 ca trong 1 ngày.
+     * Trả true = đã có ca, không cho assign thêm.
+     *
+     * @param employeeID    mã nhân viên
+     * @param workDate      ngày làm việc
+     * @param newTemplateID tham số giữ lại để không phá vỡ signature, không dùng
+     *                      trong query
      */
     public boolean hasOverlap(int employeeID, Date workDate, int newTemplateID) {
-        String sql = "SELECT 1 "
-                + "FROM EmployeeShifts es "
-                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
-                + "JOIN ShiftTemplates nt ON nt.templateID = ? "
-                + "WHERE es.employeeID = ? AND es.workDate = ? "
-                + "  AND st.startTime < nt.endTime "
-                + "  AND st.endTime   > nt.startTime "
+        String sql = "SELECT 1 FROM EmployeeShifts "
+                + "WHERE employeeID = ? AND workDate = ? "
                 + "LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, newTemplateID);
-            ps.setInt(2, employeeID);
-            ps.setDate(3, workDate);
+            ps.setInt(1, employeeID);
+            ps.setDate(2, workDate);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
-            return true;
+            return true; // fail-safe: chặn assign nếu query lỗi
         }
     }
 
@@ -102,13 +104,18 @@ public class EmployeeShiftDAO extends DBContext {
             return days;
         } catch (SQLException ex) {
             ex.printStackTrace();
-            try { connection.rollback(); } catch (SQLException ignore) {}
+            try {
+                connection.rollback();
+            } catch (SQLException ignore) {
+            }
             return -1;
         } finally {
-            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+            try {
+                connection.setAutoCommit(originalAuto);
+            } catch (SQLException ignore) {
+            }
         }
     }
-
 
     /**
      * Batch insert ca cho các ngày CHƯA có ca trong tháng.
@@ -137,7 +144,8 @@ public class EmployeeShiftDAO extends DBContext {
             return -1;
         }
 
-        if (existingDays.size() >= days) return 0;
+        if (existingDays.size() >= days)
+            return 0;
 
         String insertSql = "INSERT INTO EmployeeShifts (templateID, employeeID, workDate, status) "
                 + "VALUES (?, ?, ?, 'scheduled')";
@@ -148,7 +156,8 @@ public class EmployeeShiftDAO extends DBContext {
             connection.setAutoCommit(false);
             try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
                 for (int d = 1; d <= days; d++) {
-                    if (existingDays.contains(d)) continue;
+                    if (existingDays.contains(d))
+                        continue;
                     Date workDate = Date.valueOf(first.withDayOfMonth(d));
                     ps.setInt(1, templateID);
                     ps.setInt(2, employeeID);
@@ -156,22 +165,31 @@ public class EmployeeShiftDAO extends DBContext {
                     ps.addBatch();
                     count++;
                 }
-                if (count > 0) ps.executeBatch();
+                if (count > 0)
+                    ps.executeBatch();
             }
             connection.commit();
             return count;
         } catch (SQLException ex) {
             ex.printStackTrace();
-            try { connection.rollback(); } catch (SQLException ignore) {}
+            try {
+                connection.rollback();
+            } catch (SQLException ignore) {
+            }
             return -1;
         } finally {
-            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+            try {
+                connection.setAutoCommit(originalAuto);
+            } catch (SQLException ignore) {
+            }
         }
     }
 
     /**
-     * Xóa tất cả ca 'scheduled' của nhân viên trong tháng, rồi insert lại cả tháng với template mới.
-     * Chỉ xóa ca chưa điểm danh (status='scheduled') — ca đã present/late/absent giữ nguyên.
+     * Xóa tất cả ca 'scheduled' của nhân viên trong tháng, rồi insert lại cả tháng
+     * với template mới.
+     * Chỉ xóa ca chưa điểm danh (status='scheduled') — ca đã present/late/absent
+     * giữ nguyên.
      * Trả về số ngày đã insert, -1 nếu lỗi.
      */
     public int replaceMonth(int employeeID, int templateID, int year, int month) {
@@ -219,7 +237,8 @@ public class EmployeeShiftDAO extends DBContext {
             int count = 0;
             try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
                 for (int d = 1; d <= days; d++) {
-                    if (attendedDays.contains(d)) continue;
+                    if (attendedDays.contains(d))
+                        continue;
                     Date workDate = Date.valueOf(first.withDayOfMonth(d));
                     ps.setInt(1, templateID);
                     ps.setInt(2, employeeID);
@@ -227,19 +246,27 @@ public class EmployeeShiftDAO extends DBContext {
                     ps.addBatch();
                     count++;
                 }
-                if (count > 0) ps.executeBatch();
+                if (count > 0)
+                    ps.executeBatch();
             }
 
             connection.commit();
             return count;
         } catch (SQLException ex) {
             ex.printStackTrace();
-            try { connection.rollback(); } catch (SQLException ignore) {}
+            try {
+                connection.rollback();
+            } catch (SQLException ignore) {
+            }
             return -1;
         } finally {
-            try { connection.setAutoCommit(originalAuto); } catch (SQLException ignore) {}
+            try {
+                connection.setAutoCommit(originalAuto);
+            } catch (SQLException ignore) {
+            }
         }
     }
+
     /** Có bất kỳ ca nào của nhân viên trong tháng (year/month)? */
     public boolean hasAnyShiftInMonth(int employeeID, int year, int month) {
         String sql = "SELECT 1 FROM EmployeeShifts "
@@ -283,7 +310,8 @@ public class EmployeeShiftDAO extends DBContext {
                     r.setShiftName(rs.getString("shiftName"));
                     r.setStartTime(rs.getTime("startTime"));
                     r.setEndTime(rs.getTime("endTime"));
-                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setWorkDate(
+                            rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
                     r.setCheckInTime(rs.getTimestamp("checkInTime"));
                     r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
                     r.setStatus(rs.getString("status"));
@@ -322,7 +350,8 @@ public class EmployeeShiftDAO extends DBContext {
                     r.setShiftName(rs.getString("shiftName"));
                     r.setStartTime(rs.getTime("startTime"));
                     r.setEndTime(rs.getTime("endTime"));
-                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setWorkDate(
+                            rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
                     r.setCheckInTime(rs.getTimestamp("checkInTime"));
                     r.setCheckOutTime(rs.getTimestamp("checkOutTime"));
                     r.setStatus(rs.getString("status"));
@@ -337,13 +366,57 @@ public class EmployeeShiftDAO extends DBContext {
 
     /** Chỉ cho unassign khi status='scheduled' (chưa xử lý). */
     public boolean unassign(int shiftID) {
-        String sql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, shiftID);
-            return ps.executeUpdate() > 0;
+        String deleteRequestsSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ? OR targetShiftID = ?";
+        String deleteShiftSql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
+
+        java.sql.Connection conn = connection;
+        boolean originalAuto = true;
+        try {
+            originalAuto = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement psReq = conn.prepareStatement(deleteRequestsSql)) {
+                psReq.setInt(1, shiftID);
+                psReq.setInt(2, shiftID);
+                psReq.executeUpdate();
+            }
+
+            int affectedRows = 0;
+            try (PreparedStatement psShift = conn.prepareStatement(deleteShiftSql)) {
+                psShift.setInt(1, shiftID);
+                affectedRows = psShift.executeUpdate();
+            }
+
+            conn.commit();
+            return affectedRows > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
             return false;
+        } finally {
+            try {
+                conn.setAutoCommit(originalAuto);
+            } catch (SQLException ignore) {
+            }
+        }
+    }
+
+    public boolean hasConflictingShift(int employeeID, Date workDate, int excludeShiftID) {
+        String sql = "SELECT 1 FROM EmployeeShifts WHERE employeeID = ? AND workDate = ? AND shiftID != ? LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            ps.setDate(2, workDate);
+            ps.setInt(3, excludeShiftID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return true; // fail-safe
         }
     }
 
@@ -415,11 +488,11 @@ public class EmployeeShiftDAO extends DBContext {
 
     /**
      * Check-in. Auto compute status:
-     *   - late nếu checkInTime > startTime + 15p
-     *   - present ngược lại
+     * - late nếu checkInTime > startTime + 15p
+     * - present ngược lại
      *
      * Update có optimistic lock + today-only:
-     *   status='scheduled' AND checkInTime IS NULL AND workDate = CURRENT_DATE
+     * status='scheduled' AND checkInTime IS NULL AND workDate = CURRENT_DATE
      *
      * Trả true = thành công (1 row affected).
      */
@@ -432,13 +505,15 @@ public class EmployeeShiftDAO extends DBContext {
         try (PreparedStatement ps = connection.prepareStatement(getSql)) {
             ps.setInt(1, shiftID);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) startTime = rs.getTime("startTime");
+                if (rs.next())
+                    startTime = rs.getTime("startTime");
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
             return false;
         }
-        if (startTime == null) return false;
+        if (startTime == null)
+            return false;
 
         String status = computeStatus(checkInTime, startTime);
 
@@ -461,7 +536,8 @@ public class EmployeeShiftDAO extends DBContext {
 
     /**
      * Check-out: chỉ set checkOutTime, status giữ nguyên (present/late).
-     * Optimistic lock: status IN (present,late) AND checkInTime IS NOT NULL AND checkOutTime IS NULL AND today.
+     * Optimistic lock: status IN (present,late) AND checkInTime IS NOT NULL AND
+     * checkOutTime IS NULL AND today.
      */
     public boolean checkOut(int shiftID, Timestamp checkOutTime) {
         String sql = "UPDATE EmployeeShifts "
@@ -509,6 +585,73 @@ public class EmployeeShiftDAO extends DBContext {
         }
     }
 
+    /* ===================== BULK ATTENDANCE ===================== */
+
+    /**
+     * Lấy danh sách các ca làm việc của nhân viên khác có thể đổi (tương lai,
+     * status=scheduled).
+     */
+    public List<ShiftRow> listEligibleSwaps(int excludeEmployeeID) {
+        List<ShiftRow> list = new ArrayList<>();
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, es.templateID, st.shiftName, st.startTime, st.endTime, es.workDate, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "WHERE es.employeeID != ? AND es.workDate >= CURRENT_DATE AND es.status = 'scheduled' "
+                + "ORDER BY es.workDate ASC, st.startTime ASC";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, excludeEmployeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(rs.getDate("workDate"));
+                    r.setStatus(rs.getString("status"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    public ShiftRow getShiftByID(int shiftID) {
+        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, es.templateID, st.shiftName, st.startTime, st.endTime, es.workDate, es.status "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "WHERE es.shiftID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, shiftID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ShiftRow r = new ShiftRow();
+                    r.setShiftID(rs.getInt("shiftID"));
+                    r.setEmployeeID(rs.getInt("employeeID"));
+                    r.setFullName(rs.getString("fullName"));
+                    r.setTemplateID(rs.getInt("templateID"));
+                    r.setShiftName(rs.getString("shiftName"));
+                    r.setStartTime(rs.getTime("startTime"));
+                    r.setEndTime(rs.getTime("endTime"));
+                    r.setWorkDate(
+                            rs.getString("workDate") != null ? java.sql.Date.valueOf(rs.getString("workDate")) : null);
+                    r.setStatus(rs.getString("status"));
+                    return r;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
     /* ===================== HELPERS ===================== */
 
     /**
@@ -525,8 +668,9 @@ public class EmployeeShiftDAO extends DBContext {
         cal.set(java.util.Calendar.SECOND, 0);
         cal.set(java.util.Calendar.MILLISECOND, 0);
         long midnight = cal.getTimeInMillis();
-        long startMs = startTime.getTime();              // ms từ epoch ngày 1970-01-01
-        // startTime java.sql.Time chỉ giữ giờ:phút:giây nhưng giá trị raw có offset timezone.
+        long startMs = startTime.getTime(); // ms từ epoch ngày 1970-01-01
+        // startTime java.sql.Time chỉ giữ giờ:phút:giây nhưng giá trị raw có offset
+        // timezone.
         // Cách an toàn: parse string.
         String[] parts = startTime.toString().split(":");
         int h = Integer.parseInt(parts[0]);
