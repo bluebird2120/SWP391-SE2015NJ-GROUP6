@@ -303,8 +303,8 @@ public class MenuItemDAO extends DBContext {
 
         return false;
     }
-    
-    public List<MenuItemImages> getImagesByMenuItemId(int itemID){
+
+    public List<MenuItemImages> getImagesByMenuItemId(int itemID) {
         List<MenuItemImages> list = new ArrayList<>();
         String sql = "select * from MenuItemImages "
                 + "where itemID = ?";
@@ -312,10 +312,10 @@ public class MenuItemDAO extends DBContext {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, itemID);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {   
-                MenuItemImages mim = new MenuItemImages(rs.getInt("imageID"), 
+            while (rs.next()) {
+                MenuItemImages mim = new MenuItemImages(rs.getInt("imageID"),
                         rs.getInt("itemID"),
-                        rs.getString("imagePath"), 
+                        rs.getString("imagePath"),
                         rs.getDate("createdAt"));
                 list.add(mim);
             }
@@ -324,5 +324,62 @@ public class MenuItemDAO extends DBContext {
         }
         return null;
     }
-    
+
+    public int countSearchDish(String itemName, int categoryID) {
+        int total = 0;
+        int index = 1;
+        String sql = "select count(*) from MenuItem mi "
+                + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "where mi.itemName like ? ";
+        if (categoryID > 0) {
+            sql += "and mi.categoryID = ?";
+        }
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(index++, "%" + itemName + "%");
+            if (categoryID > 0) {
+                ps.setInt(index++, categoryID);
+            }
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt(1);
+            }
+        } catch (Exception e) {
+        }
+        return total;
+    }
+
+    public List<MenuItem> searchDishPaging(String itemName, int categoryID, int offset, int pageSize) {
+        List<MenuItem> list = new ArrayList<>();
+        int index = 1;
+        String sql = "select * from MenuItem mi "
+                + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join DailyInventory di on mi.itemID = di.itemID "
+                + "where mi.itemName like ? ";
+        if (categoryID > 0) {
+            sql += "and mi.categoryID = ? ";
+        }
+        sql += "LIMIT ?, ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(index++, "%" + itemName + "%");
+            if (categoryID > 0) {
+                ps.setInt(index++, categoryID);
+            }
+            ps.setInt(index++, offset);
+            ps.setInt(index++, pageSize);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {                
+                MenuItem item = new MenuItem(rs.getInt("itemID"), 
+                        rs.getString("categoryName"), 
+                        rs.getDate("createdAt"), 
+                        rs.getInt("initialQuantity"), 
+                        rs.getInt("quantityInStock"));
+                list.add(item);
+            }
+        } catch (Exception e) {
+        }
+        return list;
+    }
+
 }
