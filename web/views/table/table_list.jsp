@@ -161,6 +161,41 @@
     .btn-clear:hover {
         background-color: #D4C9A8;
     }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        margin: 20px 0;
+    }
+    .pagination a, .pagination span {
+        padding: 6px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 500;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+    }
+    .pagination a:hover {
+        background-color: #76493b;
+        border-color: #76493b;
+        color: #ffffff;
+    }
+    .pagination .page-info {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+    .pagination .page-info b {
+        color: #76493b;
+    }
+    .pagination .disabled {
+        color: #94a3b8;
+        background-color: #f8fafc;
+        pointer-events: none;
+    }
 </style>
 
 <%@ include file="/views/includes/header.jsp" %>
@@ -284,7 +319,34 @@
                         </td>
                     </tr>
                 </c:forEach>
-            </tbody>
+            </tbody>          
         </table>
+        <c:if test="${totalPage > 1}">
+            <div class="pagination">
+                <c:choose>
+                    <c:when test="${currentPage > 1}">
+                        <a href="${pageContext.request.contextPath}/manage-table?page=1&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage - 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang trước">Trước</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Đầu</span>
+                        <span class="disabled">Trước</span>
+                    </c:otherwise>
+                </c:choose>
+
+                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+
+                <c:choose>
+                    <c:when test="${currentPage < totalPage}">
+                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage + 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/manage-table?page=${totalPage}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Đến trang cuối">Cuối</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Sau</span>
+                        <span class="disabled">Cuối</span>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </c:if>
 
     </div> </div> <%@ include file="/views/includes/footer.jsp" %>

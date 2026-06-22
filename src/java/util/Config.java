@@ -22,7 +22,7 @@ public class Config {
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     
     // Đường dẫn VNPay sẽ trả về sau khi thanh toán xong. (Sửa lại port và tên project của bạn cho đúng)
-    public static String vnp_Returnurl = "http://localhost:9999/Restaurant-Reservation-And-Table-Service-System/vnpay_return";
+    public static String vnp_Returnurl = "http://localhost:8080/Restaurant-Reservation-And-Table-Service-System/vnpay_return";
     
     public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
