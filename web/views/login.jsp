@@ -197,7 +197,6 @@
                     </c:if>
 
                     <form action="${pageContext.request.contextPath}/login" method="post">
-
                         <!-- SĐT -->
                         <div class="field">
                             <input
@@ -206,10 +205,6 @@
                                 name="identifier"
                                 placeholder="Số điện thoại"
                                 value="${identifier}" required>
-
-
-
-
                             <div class="error">${phoneError}</div>
                         </div>
 
@@ -220,9 +215,6 @@
                                 name="password"
                                 placeholder="Mật khẩu"
                                 value="${prefillPassword}" required>
-
-
-
                             <div class="error">${passwordError}</div>
 
                             <!-- Quên mật khẩu -->
@@ -237,12 +229,10 @@
                                 </a>
                             </div>
                         </div>
-
                         <!-- Button Login -->
                         <button class="btn" type="submit">
                             Đăng nhập
                         </button>
-
                     </form>
 
                     <!-- Divider -->
@@ -280,8 +270,6 @@
                             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                             width="18"
                             height="18">
-
-
                     </a>
 
                     <!-- Register -->
@@ -291,16 +279,11 @@
                             Đăng ký ngay
                         </a>
                     </div>
-
                 </div>
-
             </div>
-
         </div>
         <%@include file="/views/includes/footer.jsp" %>  
     </body>
-
-
 </html>
 
 
