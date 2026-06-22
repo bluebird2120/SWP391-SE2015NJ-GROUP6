@@ -219,7 +219,7 @@
                                 type="password"
                                 name="password"
                                 placeholder="Mật khẩu"
-                                value="${prefillPassword}"required>
+                                value="${prefillPassword}" required>
 
 
 
