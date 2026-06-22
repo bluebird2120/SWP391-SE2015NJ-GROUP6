@@ -14,6 +14,9 @@ import model.OrderReservationDetail;
 
 public class OrderDAOSon extends DBContext {
 
+    public static final int HOLD_MINUTES = 5;
+    public static final int DEFAULT_DEPOSIT_AMOUNT = 50000;
+
     /**
      * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. Order
      * không còn lưu capacity/areaType; các giá trị đó cùng quantity được lưu
@@ -28,7 +31,8 @@ public class OrderDAOSon extends DBContext {
                 + " totalAmount, checkoutRequestAt, isStaffConfirmed, createdAt, "
                 + " orderTime, depositAmount, orderStatus) "
                 + "VALUES (?, NULL, NULL, 1, 'reserved', "
-                + " 0, NULL, 0, NOW(), ?, ?, 'reserved')";
+                + " 0, DATE_ADD(NOW(), INTERVAL " + HOLD_MINUTES
+                + " MINUTE), 0, NOW(), ?, ?, 'pending')";
 
         String detailSql
                 = "INSERT INTO order_reservation_detail "
@@ -102,7 +106,7 @@ public class OrderDAOSon extends DBContext {
                 + "WHERE orderID = ? "
                 + "  AND customerID = ? "
                 + "  AND orderType = 1 "
-                + "  AND orderStatus = 'reserved'";
+                + "  AND orderStatus IN ('reserved', 'pending')";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, orderID);
@@ -115,11 +119,73 @@ public class OrderDAOSon extends DBContext {
         return false;
     }
 
+    public int createDepositInvoice(int orderID, int depositAmount) {
+        String invoiceSql
+                = "INSERT INTO Invoices "
+                + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
+                + " depositDeducted, finalAmount, issuedDate, status) "
+                + "VALUES (?, 'vnpay', ?, 0, 0, ?, CURDATE(), 'unpaid')";
+        String linkSql
+                = "UPDATE `Order` SET invoiceID = ? "
+                + "WHERE orderID = ? AND orderStatus = 'pending'";
+
+        try {
+            connection.setAutoCommit(false);
+            int invoiceID;
+
+            try (PreparedStatement ps = connection.prepareStatement(
+                    invoiceSql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, "DEP-" + orderID + "-"
+                        + System.currentTimeMillis());
+                ps.setInt(2, depositAmount);
+                ps.setInt(3, depositAmount);
+                if (ps.executeUpdate() == 0) {
+                    connection.rollback();
+                    return -1;
+                }
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (!keys.next()) {
+                        connection.rollback();
+                        return -1;
+                    }
+                    invoiceID = keys.getInt(1);
+                }
+            }
+
+            try (PreparedStatement ps = connection.prepareStatement(linkSql)) {
+                ps.setInt(1, invoiceID);
+                ps.setInt(2, orderID);
+                if (ps.executeUpdate() == 0) {
+                    connection.rollback();
+                    return -1;
+                }
+            }
+
+            connection.commit();
+            return invoiceID;
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception rollbackError) {
+                rollbackError.printStackTrace();
+            }
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return -1;
+    }
+
     /**
      * Sau giờ hẹn 30 phút, nếu nhân viên chưa chuyển bàn từ reserved sang
      * serving thì đơn được hủy và bàn được tính là available trở lại.
      */
     public int autoExpireReservations() {
+        int changed = synchronizeDepositStatus();
         String sql
                 = "UPDATE `Order` "
                 + "SET orderStatus = 'cancelled', tableStatus = 'available' "
@@ -129,12 +195,55 @@ public class OrderDAOSon extends DBContext {
                 + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            return ps.executeUpdate();
+            return changed + ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         return 0;
+    }
+
+    /**
+     * Đồng bộ đơn giữ bàn với hóa đơn do module thanh toán quản lý.
+     * - paid: xác nhận giữ bàn.
+     * - failed/cancelled/expired: hủy giữ bàn.
+     * - chưa thanh toán và hết 5 phút: hủy giữ bàn.
+     */
+    public int synchronizeDepositStatus() {
+        String confirmSql
+                = "UPDATE `Order` o "
+                + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'reserved', "
+                + "    o.tableStatus = 'reserved', "
+                + "    o.checkoutRequestAt = NULL "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND i.status = 'paid'";
+
+        String cancelSql
+                = "UPDATE `Order` o "
+                + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'cancelled', "
+                + "    o.tableStatus = 'available' "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND ("
+                + "      LOWER(COALESCE(i.status, '')) "
+                + "          IN ('failed', 'cancelled', 'expired') "
+                + "      OR (o.checkoutRequestAt IS NOT NULL "
+                + "          AND o.checkoutRequestAt <= NOW() "
+                + "          AND COALESCE(i.status, 'unpaid') <> 'paid')"
+                + "  )";
+
+        int changed = 0;
+        try (PreparedStatement confirmPs = connection.prepareStatement(confirmSql);
+                PreparedStatement cancelPs = connection.prepareStatement(cancelSql)) {
+            changed += confirmPs.executeUpdate();
+            changed += cancelPs.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return changed;
     }
 
     public Order getOrderByID(int orderID) {

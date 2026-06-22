@@ -198,7 +198,32 @@ public class TableDAO extends DBContext {
      * Không động vào khách walk-in / đơn đang serving / cleaning.
      */
     private void autoExpireReservations() {
-        String sql
+        String confirmPaidSql
+                = "UPDATE `Order` o "
+                + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'reserved', "
+                + "    o.tableStatus = 'reserved', "
+                + "    o.checkoutRequestAt = NULL "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND i.status = 'paid'";
+
+        String releasePendingSql
+                = "UPDATE `Order` o "
+                + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'cancelled', "
+                + "    o.tableStatus = 'available' "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND ("
+                + "      LOWER(COALESCE(i.status, '')) "
+                + "          IN ('failed', 'cancelled', 'expired') "
+                + "      OR (o.checkoutRequestAt IS NOT NULL "
+                + "          AND o.checkoutRequestAt <= NOW() "
+                + "          AND COALESCE(i.status, 'unpaid') <> 'paid')"
+                + "  )";
+
+        String lateArrivalSql
                 = "UPDATE `Order` "
                 + "SET orderStatus = 'cancelled', tableStatus = 'available' "
                 + "WHERE orderType = 1 "
@@ -206,8 +231,11 @@ public class TableDAO extends DBContext {
                 + "  AND tableStatus = 'reserved' "
                 + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            int expired = ps.executeUpdate();
+        try (PreparedStatement confirmPs = connection.prepareStatement(confirmPaidSql);
+                PreparedStatement pendingPs = connection.prepareStatement(releasePendingSql);
+                PreparedStatement latePs = connection.prepareStatement(lateArrivalSql)) {
+            confirmPs.executeUpdate();
+            int expired = pendingPs.executeUpdate() + latePs.executeUpdate();
 
             if (expired > 0) {
                 System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");
