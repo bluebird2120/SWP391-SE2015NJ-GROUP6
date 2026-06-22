@@ -23,13 +23,23 @@ public class LoginController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        HttpSession session = request.getSession(false);
+
         //register -> login
         if ("true".equals(request.getParameter("registered"))) {
             request.setAttribute("successMessage",
                     "Đăng ký thành công. Vui lòng đăng nhập.");
-        }
 
-        HttpSession session = request.getSession(false);
+            if (session != null) {
+                request.setAttribute("identifier",session.getAttribute("registeredPhone"));
+
+                request.setAttribute("prefillPassword",session.getAttribute("registeredPassword"));
+
+                // dùng 1 lần rồi xóa
+                session.removeAttribute("registeredPhone");
+                session.removeAttribute("registeredPassword");
+            }
+        }
 
         if (session != null) {
             if (session.getAttribute("employee") != null) {
@@ -165,7 +175,7 @@ public class LoginController extends HttpServlet {
         }
         return null;
     }
-    
+
     private String trim(String str) {
         return str == null ? "" : str.trim();
     }

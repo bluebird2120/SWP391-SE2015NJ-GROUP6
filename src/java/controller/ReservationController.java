@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import model.Customer;
@@ -32,6 +33,8 @@ public class ReservationController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        orderDAO.synchronizeDepositStatus();
+        cleanFinishedReservationSession(request);
         String action = request.getParameter("action");
 
         if ("history".equals(action)) {
@@ -86,10 +89,13 @@ public class ReservationController extends HttpServlet {
             }
 
             Timestamp orderTime = parseTimestamp(dateTimeStr);
+            Map<String, Integer> selectedQuantities
+                    = parseSelectedQuantities(request);
             request.setAttribute("orderTime", dateTimeStr);
             request.setAttribute("areaType", areaType);
             request.setAttribute("tableGroups",
                     tableDAO.findAvailableTableGroups(areaType, orderTime));
+            request.setAttribute("selectedQuantities", selectedQuantities);
             request.setAttribute("step", "choose-table");
             request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
             forward(request, response);
@@ -127,6 +133,8 @@ public class ReservationController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        orderDAO.synchronizeDepositStatus();
+        cleanFinishedReservationSession(request);
         String dateTimeStr = request.getParameter("orderTime");
         String areaType = request.getParameter("areaType");
 
@@ -147,11 +155,21 @@ public class ReservationController extends HttpServlet {
         if (customer == null) {
             HttpSession session = request.getSession(true);
             try {
-                String redirectUrl = request.getContextPath()
-                        + "/reservation?action=choosetable"
-                        + "&orderTime=" + URLEncoder.encode(dateTimeStr, "UTF-8")
-                        + "&areaType=" + URLEncoder.encode(areaType, "UTF-8");
-                session.setAttribute("redirectAfterLogin", redirectUrl);
+                StringBuilder redirectUrl = new StringBuilder();
+                redirectUrl.append(request.getContextPath())
+                        .append("/reservation?action=choosetable")
+                        .append("&orderTime=")
+                        .append(URLEncoder.encode(dateTimeStr, "UTF-8"))
+                        .append("&areaType=")
+                        .append(URLEncoder.encode(areaType, "UTF-8"));
+                for (Map.Entry<String, Integer> entry
+                        : parseSelectedQuantities(request).entrySet()) {
+                    redirectUrl.append("&selection_")
+                            .append(URLEncoder.encode(entry.getKey(), "UTF-8"))
+                            .append("=")
+                            .append(entry.getValue());
+                }
+                session.setAttribute("redirectAfterLogin", redirectUrl.toString());
             } catch (Exception e) {
                 session.setAttribute("redirectAfterLogin",
                         request.getContextPath() + "/reservation");
@@ -164,15 +182,15 @@ public class ReservationController extends HttpServlet {
         // Luôn kiểm tra lại ngay trước khi tạo đơn vì số bàn trống có thể đổi.
         List<Table> tableGroups = tableDAO.findAvailableTableGroups(areaType, orderTime);
         List<OrderReservationDetail> details = new ArrayList<>();
-        Map<Integer, Integer> selectedQuantities = new HashMap<>();
+        Map<String, Integer> selectedQuantities
+                = parseSelectedQuantities(request);
 
-        for (Table group : tableGroups) {
-            int quantity = toInt(
-                    request.getParameter("quantity_" + group.getCapacity()), 0);
-            if (quantity > 0) {
-                selectedQuantities.put(group.getCapacity(), quantity);
+        for (Map.Entry<String, Integer> entry : selectedQuantities.entrySet()) {
+            SelectionKey selection = parseSelectionKey(entry.getKey());
+            if (selection != null) {
                 details.add(new OrderReservationDetail(
-                        0, 0, group.getCapacity(), areaType, quantity));
+                        0, 0, selection.capacity, selection.areaType,
+                        entry.getValue()));
             }
         }
 
@@ -182,8 +200,13 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        Map<String, List<Table>> groupsByArea = new HashMap<>();
+        groupsByArea.put(areaType, tableGroups);
         for (OrderReservationDetail detail : details) {
-            Table group = findGroup(tableGroups, detail.getCapacity());
+            List<Table> areaGroups = groupsByArea.computeIfAbsent(
+                    detail.getAreaType(),
+                    key -> tableDAO.findAvailableTableGroups(key, orderTime));
+            Table group = findGroup(areaGroups, detail.getCapacity());
             if (group == null || detail.getQuantity() > group.getIsActive()) {
                 showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
                         selectedQuantities,
@@ -194,7 +217,8 @@ public class ReservationController extends HttpServlet {
         }
 
         int orderID = orderDAO.createReservation(
-                customer.getCustomerID(), orderTime, details, BigDecimal.ZERO);
+                customer.getCustomerID(), orderTime, details,
+                BigDecimal.valueOf(OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT));
 
         if (orderID < 0) {
             showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
@@ -202,13 +226,36 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        Order order = orderDAO.getOrderByID(orderID);
         HttpSession session = request.getSession(true);
-        session.setAttribute("lastReservation", order);
-        session.setAttribute("lastReservationDetails", details);
+        session.setAttribute("orderID", orderID);
+        session.setAttribute("reservationOrderID", orderID);
+        session.setAttribute("reservationFlow", true);
+        session.setAttribute("depositAmount",
+                OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+        session.setAttribute("reservationHoldExpiresAt",
+                System.currentTimeMillis()
+                + OrderDAOSon.HOLD_MINUTES * 60_000L);
         session.removeAttribute("redirectAfterLogin");
 
-        response.sendRedirect(request.getContextPath() + "/reservation?action=success");
+        if ("deposit".equals(request.getParameter("nextStep"))) {
+            int invoiceID = orderDAO.createDepositInvoice(
+                    orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+            if (invoiceID < 0) {
+                orderDAO.cancelReservation(
+                        orderID, customer.getCustomerID());
+                cleanFinishedReservationSession(request);
+                showChooseTable(request, response, tableGroups,
+                        dateTimeStr, areaType, selectedQuantities,
+                        "Không thể tạo hóa đơn cọc. Vui lòng thử lại.");
+                return;
+            }
+            session.setAttribute("invoiceID", invoiceID);
+            response.sendRedirect(request.getContextPath() + "/payment");
+            return;
+        }
+
+        response.sendRedirect(request.getContextPath()
+                + "/menu?reservation=true&orderID=" + orderID);
     }
 
     private Table findGroup(List<Table> groups, int capacity) {
@@ -231,7 +278,7 @@ public class ReservationController extends HttpServlet {
     private void showChooseTable(HttpServletRequest request,
             HttpServletResponse response, List<Table> tableGroups,
             String dateTimeStr, String areaType,
-            Map<Integer, Integer> selectedQuantities, String error)
+            Map<String, Integer> selectedQuantities, String error)
             throws ServletException, IOException {
         request.setAttribute("error", error);
         request.setAttribute("tableGroups", tableGroups);
@@ -293,6 +340,89 @@ public class ReservationController extends HttpServlet {
             return Integer.parseInt(value);
         } catch (Exception e) {
             return defaultValue;
+        }
+    }
+
+    private void cleanFinishedReservationSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return;
+        }
+
+        Integer reservationOrderID
+                = (Integer) session.getAttribute("reservationOrderID");
+        if (reservationOrderID == null) {
+            return;
+        }
+
+        Order reservation = orderDAO.getOrderByID(reservationOrderID);
+        if (reservation == null
+                || "cancelled".equals(reservation.getOrderStatus())
+                || "reserved".equals(reservation.getOrderStatus())) {
+            Integer sessionOrderID
+                    = (Integer) session.getAttribute("orderID");
+            if (reservationOrderID.equals(sessionOrderID)) {
+                session.removeAttribute("orderID");
+            }
+            session.removeAttribute("reservationOrderID");
+            session.removeAttribute("reservationFlow");
+            session.removeAttribute("depositAmount");
+            session.removeAttribute("reservationHoldExpiresAt");
+        }
+    }
+
+    private Map<String, Integer> parseSelectedQuantities(
+            HttpServletRequest request) {
+        Map<String, Integer> selections = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String[]> parameter
+                : request.getParameterMap().entrySet()) {
+            String name = parameter.getKey();
+            if (!name.startsWith("selection_")) {
+                continue;
+            }
+
+            String key = name.substring("selection_".length());
+            SelectionKey selection = parseSelectionKey(key);
+            String[] values = parameter.getValue();
+            int quantity = values == null || values.length == 0
+                    ? 0 : toInt(values[values.length - 1], 0);
+
+            if (selection != null && quantity > 0) {
+                selections.put(key, quantity);
+            }
+        }
+
+        return selections;
+    }
+
+    private SelectionKey parseSelectionKey(String key) {
+        if (key == null) {
+            return null;
+        }
+
+        int separator = key.lastIndexOf('_');
+        if (separator <= 0 || separator == key.length() - 1) {
+            return null;
+        }
+
+        String selectedArea = key.substring(0, separator);
+        int capacity = toInt(key.substring(separator + 1), -1);
+        if (selectedArea.isBlank() || capacity <= 0) {
+            return null;
+        }
+
+        return new SelectionKey(selectedArea, capacity);
+    }
+
+    private static class SelectionKey {
+
+        private final String areaType;
+        private final int capacity;
+
+        private SelectionKey(String areaType, int capacity) {
+            this.areaType = areaType;
+            this.capacity = capacity;
         }
     }
 }
