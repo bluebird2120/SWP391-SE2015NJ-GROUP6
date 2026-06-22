@@ -267,6 +267,12 @@
 
                         <input type="hidden" name="action" value="choosetable">
                         <input type="hidden" name="areaType" id="areaType" value="${areaType}">
+                        <c:forEach var="selection" items="${selectedQuantities}">
+                            <input type="hidden"
+                                   class="draft-selection"
+                                   name="selection_${selection.key}"
+                                   value="${selection.value}">
+                        </c:forEach>
 
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-secondary">
@@ -534,6 +540,12 @@
 
                             <input type="hidden" name="orderTime" value="${orderTime}">
                             <input type="hidden" name="areaType" value="${areaType}">
+                            <c:forEach var="selection" items="${selectedQuantities}">
+                                <input type="hidden"
+                                       class="draft-selection"
+                                       name="selection_${selection.key}"
+                                       value="${selection.value}">
+                            </c:forEach>
 
                             <%-- STEP CHỌN BÀN --%>
                             <c:if test="${step == 'choose-table'}">
@@ -546,6 +558,7 @@
                                         <c:when test="${not empty tableGroups}">
                                             <div class="row g-3" id="tableGridContainer">
                                                 <c:forEach var="g" items="${tableGroups}">
+                                                    <c:set var="selectionKey" value="${areaType}_${g.capacity}"/>
                                                     <div class="col-sm-6 col-md-4 card-item-filter"
                                                          data-name="bàn ${g.capacity} chỗ">
 
@@ -586,10 +599,10 @@
                                                                         <input type="number"
                                                                                class="form-control text-center table-quantity"
                                                                                id="quantity_${g.capacity}"
-                                                                               name="quantity_${g.capacity}"
+                                                                               data-selection-key="${selectionKey}"
                                                                                min="0"
                                                                                max="${g.isActive}"
-                                                                               value="${empty selectedQuantities[g.capacity] ? 0 : selectedQuantities[g.capacity]}"
+                                                                               value="${empty selectedQuantities[selectionKey] ? 0 : selectedQuantities[selectionKey]}"
                                                                                oninput="updateTableCard(this)">
                                                                     </div>
                                                                 </div>
@@ -613,19 +626,32 @@
                                                     <span class="fs-4">🍲</span>
 
                                                     <h6 class="fw-bold text-secondary small mt-1">
-                                                        Hệ thống thực đơn chuẩn bị trước
+                                                        Bạn có muốn đặt món trước không?
                                                     </h6>
 
                                                     <p class="text-muted mb-0" style="font-size:.8rem;">
-                                                        Module chọn món đang được cập nhật.
-                                                        Quý khách có thể bấm xác nhận phía dưới để hoàn tất đặt chỗ.
+                                                        Chọn <strong>Đặt món trước</strong> để sang thực đơn,
+                                                        hoặc bỏ qua món ăn và đi thẳng đến thanh toán cọc.
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            <button type="submit" class="btn-confirm-booking mt-2">
-                                                XÁC NHẬN ĐẶT BÀN
-                                            </button>
+                                            <div class="d-flex flex-column flex-md-row gap-2 mt-2">
+                                                <button type="submit"
+                                                        name="nextStep"
+                                                        value="menu"
+                                                        class="btn-confirm-booking">
+                                                    🍲 ĐẶT MÓN TRƯỚC
+                                                </button>
+
+                                                <button type="submit"
+                                                        name="nextStep"
+                                                        value="deposit"
+                                                        class="btn-confirm-booking"
+                                                        style="background:#8c6239;">
+                                                    💳 BỎ QUA MÓN - THANH TOÁN CỌC
+                                                </button>
+                                            </div>
                                         </c:when>
 
                                         <c:otherwise>
@@ -722,7 +748,37 @@
                     return false;
                 }
 
+                syncDraftSelections(document.getElementById('checkForm'));
                 return true;
+            }
+
+            function syncDraftSelections(form) {
+                if (!form) {
+                    return;
+                }
+
+                document.querySelectorAll('.table-quantity').forEach(function (input) {
+                    var key = input.getAttribute('data-selection-key');
+                    if (!key) {
+                        return;
+                    }
+
+                    form.querySelectorAll('.draft-selection').forEach(function (hidden) {
+                        if (hidden.name === 'selection_' + key) {
+                            hidden.remove();
+                        }
+                    });
+
+                    var quantity = parseInt(input.value || '0', 10);
+                    if (quantity > 0) {
+                        var hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.className = 'draft-selection';
+                        hidden.name = 'selection_' + key;
+                        hidden.value = quantity;
+                        form.appendChild(hidden);
+                    }
+                });
             }
 
             function updateTableCard(input) {
@@ -742,8 +798,10 @@
                     return true;
                 }
 
+                var form = document.getElementById('mainBookingForm');
+                syncDraftSelections(form);
                 var totalQuantity = 0;
-                quantityInputs.forEach(function (input) {
+                form.querySelectorAll('.draft-selection').forEach(function (input) {
                     totalQuantity += parseInt(input.value || '0', 10);
                 });
 
