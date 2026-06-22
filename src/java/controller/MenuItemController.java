@@ -72,7 +72,7 @@ public class MenuItemController extends HttpServlet {
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-  
+        
         if (!checkEmpty(search)) {
             search = "";
         }

@@ -315,10 +315,12 @@
                             </div>
                         </c:if>
                     </div>
-
-                </div> </div> </div> <c:if test="${currentTableID == 0 || empty currentTableID}">
-                    <%@ include file="/views/includes/footer.jsp" %>
-                </c:if>            
+                </div> 
+            </div> 
+        </div> 
+        <c:if test="${currentTableID == 0 || empty currentTableID}">
+            <%@ include file="/views/includes/footer.jsp" %>
+        </c:if>            
 
         <script>
             function changePreview(imgSrc) {

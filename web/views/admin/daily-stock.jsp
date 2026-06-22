@@ -309,8 +309,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/dailystock?page=1&search=${param.search}&categoryID=${param.categoryID}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/dailystock?page=${currentPage - 1}&search=${param.search}&categoryID=${param.categoryID}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${param.search}&categoryID=${param.categoryID}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${param.search}&categoryID=${param.categoryID}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -322,8 +322,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/dailystock?page=${currentPage + 1}&search=${param.search}&categoryID=${param.categoryID}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/dailystock?page=${totalPage}&search=${param.search}&categoryID=${param.categoryID}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${param.search}&categoryID=${param.categoryID}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${param.search}&categoryID=${param.categoryID}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
