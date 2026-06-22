@@ -79,7 +79,7 @@ public class TableDAO extends DBContext {
                 + "  AND ord.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
                 + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus NOT IN ('cancelled', 'completed')) "
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "  AND NOT EXISTS ( "
                 + "      SELECT 1 "
                 + "      FROM Order_Table ot "
@@ -102,7 +102,7 @@ public class TableDAO extends DBContext {
                 + "  AND t.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
                 + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus NOT IN ('cancelled', 'completed')) "
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "GROUP BY t.capacity";
 
         Map<Integer, Integer> totalMap = new HashMap<>();
