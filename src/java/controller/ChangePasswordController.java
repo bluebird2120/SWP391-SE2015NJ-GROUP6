@@ -52,7 +52,7 @@ public class ChangePasswordController extends HttpServlet {
             //Old Password
             String oldPasswordError = validateOldPassword(oldPassword);
             boolean oldPasswordCorrect = false;
-            
+
             if (oldPasswordError == null) {
                 if (customer != null
                         && !customerDAO.checkCurrentPassword(customer.getCustomerID(), oldPassword)) {
@@ -74,10 +74,9 @@ public class ChangePasswordController extends HttpServlet {
             //New Password
             String newPasswordError = validateNewPassword(newPassword);
             if (newPasswordError == null && oldPasswordCorrect) {
-                if (util.PasswordUtil.hash(newPassword).equals(util.PasswordUtil.hash(oldPassword))) {
-                    
+                if (newPassword.equals(oldPassword)) {
+                    newPasswordError = "Mật khẩu mới phải khác mật khẩu hiện tại.";
                 }
-                newPasswordError = "Mật khẩu mới phải khác mật khẩu hiện tại.";
             }
             if (newPasswordError != null) {
                 request.setAttribute("newPasswordError", newPasswordError);

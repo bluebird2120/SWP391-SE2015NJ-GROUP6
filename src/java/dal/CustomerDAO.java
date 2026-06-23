@@ -12,7 +12,7 @@ public class CustomerDAO extends DBContext {
     public Customer findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
                 + "FROM Customer "
                 + "WHERE phoneNumber = ?";
 
@@ -94,7 +94,7 @@ public class CustomerDAO extends DBContext {
         String sql = "SELECT password FROM Customer WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, customerID);
-            try (ResultSet rs = ps.executeQuery()) { 
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String storedPassword = rs.getString("password") == null ? "" : rs.getString("password");
                     return util.PasswordUtil.verify(rawPassword, storedPassword);
@@ -114,13 +114,14 @@ public class CustomerDAO extends DBContext {
         c.setEmail(rs.getString("email"));
         c.setCreatedAt(rs.getTimestamp("createdAt"));
         c.setLoginProvider(rs.getString("loginProvider"));
+        c.setIsActive(rs.getInt("isActive"));
         return c;
     }
 
     public boolean registerVerified(String userName, String phoneNumber,
             String email, String hashedPassword) throws SQLException {
-        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified) "
-                + "VALUES (?, ?, ?, ?, 'local', 1)";
+        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified, isActive) "
+                + "VALUES (?, ?, ?, ?, 'local', 1, 1)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, userName);
             ps.setString(2, phoneNumber);
@@ -134,7 +135,7 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo customerID
      */
     public Customer findByID(int id) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
                 + "FROM Customer WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -151,7 +152,7 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo email
      */
     public Customer findByEmail(String email) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
                 + "FROM Customer WHERE email = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
@@ -198,8 +199,8 @@ public class CustomerDAO extends DBContext {
         String baseUserName = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_");
         String userName = generateUniqueUserName(baseUserName);
 
-        String sql = "INSERT INTO Customer (userName, email, password, loginProvider) "
-                + "VALUES (?, ?, NULL, 'google')";
+        String sql = "INSERT INTO Customer (userName, email, password, loginProvider, isActive) "
+                + "VALUES (?, ?, NULL, 'google', 1)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql,
                 java.sql.Statement.RETURN_GENERATED_KEYS)) {
@@ -224,7 +225,7 @@ public class CustomerDAO extends DBContext {
         List<Customer> list = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider ");
+        sql.append("SELECT customerID, userName, password, phoneNumber, email, isActive, createdAt, loginProvider ");
         sql.append("FROM Customer ");
         sql.append("WHERE 1 = 1 ");
 
@@ -308,8 +309,8 @@ public class CustomerDAO extends DBContext {
         return 0;
     }
 
-    public boolean updatePassword(int customerID, String newHashedPassword) 
-            throws SQLException{
+    public boolean updatePassword(int customerID, String newHashedPassword)
+            throws SQLException {
         String sql = "UPDATE Customer SET password = ? WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newHashedPassword);

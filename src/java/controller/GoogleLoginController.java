@@ -139,15 +139,26 @@ public class GoogleLoginController extends HttpServlet {
                 return;
             }
 
-            // Tạo session
+            if (customer.getIsActive() == 0) {
+                request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa");
+                request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+                return;
+            }
+
+            String redirectUrl = null;
+            HttpSession oldSession = request.getSession(false);
+            if (oldSession != null) {
+                // Redirect về trang trước đó hoặc home
+                redirectUrl = (String) oldSession.getAttribute("redirectAfterLogin");
+                // bảo mật: hủy session cũ trước khi tạo mới
+                oldSession.invalidate();
+            }
+
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("customer", customer);
             newSession.setMaxInactiveInterval(30 * 60);
 
-            // Redirect về trang trước đó hoặc trang chủ
-            String redirectUrl = (String) newSession.getAttribute("redirectAfterLogin");
             if (redirectUrl != null) {
-                newSession.removeAttribute("redirectAfterLogin");
                 response.sendRedirect(redirectUrl);
             } else {
                 response.sendRedirect(request.getContextPath() + "/");
