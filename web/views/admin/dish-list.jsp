@@ -319,7 +319,8 @@
                         </a>
                     </c:if>
                     <c:if test="${sessionScope.customer != null}">
-                        <a href="${pageContext.request.contextPath}/update-menu"
+                        <%-- [FIX PREORDER CART] Giỏ riêng của khách đặt bàn online. --%>
+                        <a href="${pageContext.request.contextPath}/reservation?action=preorderCart"
                            class="btn-add-new">
                             🛒 Xem Giỏ Hàng
                         </a>
@@ -420,9 +421,22 @@
                             <div class="button-group">
                                 <c:choose>
                                     <c:when test="${sessionScope.customer != null}">
-                                        <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #76493b; color: white;">
-                                            Thêm vào giỏ
-                                        </a>
+                                        <%-- [FIX PREORDER CART] Thêm món vào đúng đơn
+                                             đặt trước, không dùng URL /add-to-cart cũ. --%>
+                                        <form action="${pageContext.request.contextPath}/reservation"
+                                              method="post"
+                                              style="flex:1; margin:0; display:flex;">
+                                            <input type="hidden" name="action"
+                                                   value="addPreorderItem">
+                                            <input type="hidden" name="itemID"
+                                                   value="${item.itemID}">
+                                            <input type="hidden" name="quantity"
+                                                   value="1">
+                                            <button type="submit" class="btn"
+                                                    style="width:100%; background-color:#76493b; color:white;">
+                                                Thêm vào giỏ
+                                            </button>
+                                        </form>
                                         <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
                                             Xem chi tiết
                                         </a>

@@ -97,7 +97,9 @@ public class PaymentController extends HttpServlet {
         long amount = invoice.getFinalAmount() * 100;
 
         // Cài đặt múi giờ Việt Nam và định dạng thời gian
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+        // [FIX VNPAY] Dùng đúng múi giờ Việt Nam; Etc/GMT+7 thực tế là UTC-7.
+        Calendar cld = Calendar.getInstance(
+                TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
         
