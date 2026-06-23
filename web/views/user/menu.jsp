@@ -18,7 +18,7 @@
             body {
                 margin: 0;
                 font-family: 'Nunito', sans-serif !important;
-                background-color: #fdf6f0; 
+                background-color: #fdf6f0;
                 color: #111827;
             }
 
@@ -33,7 +33,7 @@
 
             .main-content {
                 flex: 1;
-                max-width: 1200px; 
+                max-width: 1200px;
                 padding: 24px;
                 box-sizing: border-box;
             }
@@ -135,7 +135,7 @@
                 margin-bottom: 20px;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.02);
                 flex-wrap: nowrap !important;
-                overflow-x: auto; 
+                overflow-x: auto;
             }
 
             .line2 {
@@ -168,7 +168,7 @@
                 gap: 6px;
                 font-size: 14px;
                 color: #555555;
-                white-space: nowrap; 
+                white-space: nowrap;
             }
 
             .filter-price input {
@@ -177,7 +177,7 @@
             }
 
             .btn-submit {
-                background-color: #76493b; 
+                background-color: #76493b;
                 color: white;
                 border: none;
                 padding: 8px 22px;
@@ -451,9 +451,16 @@
                             </div>
 
                             <div class="button-group">
-                                <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #76493b; color: white;">
-                                    Thêm vào giỏ
-                                </a>
+                                <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex;">
+                                    <input type="hidden" name="action" value="add">
+                                    <input type="hidden" name="itemID" value="${item.itemID}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
+
+                                    <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white;">
+                                        Thêm vào giỏ
+                                    </button>
+                                </form>
                                 <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
                                     Xem chi tiết
                                 </a>
@@ -538,5 +545,110 @@
                 }
             };
         </script>
+        <c:if test="${sessionScope.roleInTable == 'HOST'}">
+            
+            <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">
+                
+                <button id="btn-toggle-requests" onclick="toggleRequestPanel()" 
+                        style="position: relative; width: 56px; height: 56px; border-radius: 50%; background-color: #1c4332; color: white; border: none; box-shadow: 0 4px 15px rgba(28, 67, 50, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;">
+                    <i class="fas fa-users"></i>
+                    
+                    <span id="request-badge" style="display: none; position: absolute; top: -4px; right: -4px; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">0</span>
+                </button>
+
+                <div id="request-panel" style="display: none; position: absolute; bottom: 70px; left: 0; width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid #eae5da; overflow: hidden;">
+                    <div style="background: #fdf6f0; padding: 14px 18px; border-bottom: 1px solid #eae5da; display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="margin: 0; color: #1c4332; font-size: 15px;"><i class="fas fa-bell"></i> Yêu cầu vào bàn (<span id="panel-count">0</span>)</h4>
+                        <i class="fas fa-times" onclick="toggleRequestPanel()" style="cursor: pointer; color: #a8988e;"></i>
+                    </div>
+                    <div id="request-list-content" style="padding: 15px; max-height: 300px; overflow-y: auto; background: #ffffff;">
+                        <div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Đang kiểm tra...</div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <script>
+                const apiPath = "${pageContext.request.contextPath}/api/table-join";
+                let isPanelOpen = false;
+
+                // 1. Hàm bật/tắt cái bảng danh sách
+                function toggleRequestPanel() {
+                    const panel = document.getElementById('request-panel');
+                    isPanelOpen = !isPanelOpen;
+                    panel.style.display = isPanelOpen ? 'block' : 'none';
+                    if(isPanelOpen) fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
+                }
+
+                // 2. Chạy ngầm quét dữ liệu mỗi 3 giây
+                setInterval(fetchPendingRequests, 3000);
+
+                // 3. Hàm gọi API lấy danh sách người đang chờ
+                function fetchPendingRequests() {
+                    fetch(apiPath + '?action=getPending')
+                        .then(response => response.json())
+                        .then(data => {
+                            const badge = document.getElementById('request-badge');
+                            const listDiv = document.getElementById('request-list-content');
+                            const panelCount = document.getElementById('panel-count');
+
+                            // Cập nhật số lượng trên chuông và tiêu đề
+                            panelCount.innerText = data.length;
+                            if (data.length > 0) {
+                                badge.style.display = 'flex';
+                                badge.innerText = data.length;
+                                document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
+                                setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
+                            } else {
+                                badge.style.display = 'none';
+                            }
+
+                            // Vẽ HTML cho danh sách người chờ
+                            if (data.length === 0) {
+                                listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
+                            } else {
+                                listDiv.innerHTML = '';
+                                data.forEach(req => {
+                                    listDiv.innerHTML += `
+                                    <div style="background: #fbf9f6; border: 1px solid #eae5da; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                                        <div style="font-size: 14px; font-weight: bold; color: #2c2520; margin-bottom: 8px;">
+                                            👤 ` + req.name + `
+                                        </div>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button onclick="handleRequest(` + req.id + `, 'approve')" style="flex: 1; background: #10b981; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;">Cho phép</button>
+                                            <button onclick="handleRequest(` + req.id + `, 'reject')" style="flex: 1; background: #ef4444; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;">Từ chối</button>
+                                        </div>
+                                    </div>
+                                    `;
+                                });
+                            }
+                        });
+                }
+
+                // 4. Hàm Duyệt / Từ chối
+                function handleRequest(reqID, actionType) {
+                    fetch(apiPath, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=' + actionType + '&requestID=' + reqID
+                    })
+                    .then(response => response.text())
+                    .then(res => {
+                        if (res === 'success') {
+                            fetchPendingRequests(); // Tải lại danh sách ngay lập tức
+                        }
+                    });
+                }
+            </script>
+            <style>
+                @keyframes shake {
+                  0% { transform: rotate(0deg); }
+                  25% { transform: rotate(-10deg); }
+                  50% { transform: rotate(10deg); }
+                  75% { transform: rotate(-10deg); }
+                  100% { transform: rotate(0deg); }
+                }
+            </style>
+        </c:if>
     </body>
 </html>

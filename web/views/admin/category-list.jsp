@@ -34,6 +34,34 @@
                 color: #2c3e50;
                 margin-bottom: 12px;
             }
+            .search-container {
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                padding: 12px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .search-input {
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                font-size: 14px;
+                width: 250px;
+                outline: none;
+            }
+            .btn-search {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                border-radius: 6px;
+                cursor: pointer;
+            }
             .btn-create {
                 background-color: #007bff;
                 color: white;
@@ -90,6 +118,42 @@
             .btn-enable{
                 background-color: #28a745;
                 color: white;
+            }
+            .pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 5px;
+                margin-top: 25px;
+            }
+            .pagination a,
+            .pagination span {
+                padding: 6px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 4px;
+                text-decoration: none;
+                color: #334155;
+                font-size: 14px;
+                font-weight: 500;
+                background-color: #ffffff;
+            }
+            .pagination a:hover {
+                background-color: #f1f5f9;
+                border-color: #94a3b8;
+            }
+            .pagination .page-info {
+                background-color: #f1f5f9;
+                border-color: #cbd5e1;
+                cursor: default;
+            }
+            .pagination .page-info b {
+                color: #007bff;
+            }
+            .pagination .disabled {
+                color: #94a3b8;
+                background-color: #f8fafc;
+                border-color: #e2e8f0;
+                pointer-events: none;
             }
             .error-message {
                 color: #dc3545;
@@ -169,6 +233,12 @@
                         <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
                         <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
                     </div>
+
+                    <form action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
+                        <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
+                        <button type="submit" class="btn-search">Tìm kiếm</button>
+                    </form>
+
                     <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
 
                         <table border="1">
@@ -204,42 +274,37 @@
                             </tr>
                         </c:forEach>
                     </table>
+                    
+                    <c:if test="${totalPage > 1}">
+                        <div class="pagination">
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${param.search}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${param.search}">Trước</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="disabled">Đầu</span>
+                                    <span class="disabled">Trước</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+
+                            <c:choose>
+                                <c:when test="${currentPage < totalPage}">
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${param.search}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${param.search}">Cuối</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="disabled">Sau</span>
+                                    <span class="disabled">Cuối</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </c:if>
                 </div>
             </div>
         </div>
-        <c:if test="${totalPage > 1}">
-            <div class="pagination">
-
-                <c:choose>
-                    <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang trước">Trước</a>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="disabled">Đầu</span>
-                        <span class="disabled">Trước</span>
-                    </c:otherwise>
-                </c:choose>
-
-                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
-
-                <c:choose>
-                    <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Đến trang cuối">Cuối</a>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="disabled">Sau</span>
-                        <span class="disabled">Cuối</span>
-                    </c:otherwise>
-                </c:choose>
-
-            </div>
-        </c:if>
 
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">

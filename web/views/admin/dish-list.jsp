@@ -164,6 +164,12 @@
                 font-size: 18px;
                 font-weight: bold;
                 margin: 8px 0;
+
+                height: 2.4em;       /* Ép chiều cao cố định bằng 2 dòng chữ */
+                line-height: 1.2em;  /* Chiều cao của mỗi dòng */
+                overflow: hidden;    /* Nếu tên quá dài vượt quá 2 dòng sẽ tự ẩn */
+                display: -webkit-box;
+                -webkit-line-clamp: 2; /* Giới hạn tối đa hiển thị 2 dòng */          
             }
 
             .category {
@@ -299,7 +305,9 @@
     <body>
         <%@ include file="/views/includes/header.jsp" %>
         <div class="admin-layout">
-            <%@ include file="/views/includes/dashboard.jsp" %>
+            <c:if test="${sessionScope.employee.roleID != null}">
+                <%@ include file="/views/includes/dashboard.jsp" %>
+            </c:if>
 
             <div class="main-content">
                 <div class="page-header">
@@ -307,7 +315,13 @@
                     <c:if test="${sessionScope.employee.roleID == 1}">
                         <a href="${pageContext.request.contextPath}/update-menu"
                            class="btn-add-new">
-                            Thêm món ăn mới
+                            Thêm Món Ăn Mới
+                        </a>
+                    </c:if>
+                    <c:if test="${sessionScope.customer != null}">
+                        <a href="${pageContext.request.contextPath}/update-menu"
+                           class="btn-add-new">
+                            🛒 Xem Giỏ Hàng
                         </a>
                     </c:if>
 
@@ -406,8 +420,8 @@
                             <div class="button-group">
                                 <c:choose>
                                     <c:when test="${sessionScope.customer != null}">
-                                        <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #0284c7; color: white;">
-                                            🛒 Thêm vào giỏ
+                                        <a href="${pageContext.request.contextPath}/add-to-cart?id=${item.itemID}" class="btn" style="background-color: #76493b; color: white;">
+                                            Thêm vào giỏ
                                         </a>
                                         <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
                                             Xem chi tiết
