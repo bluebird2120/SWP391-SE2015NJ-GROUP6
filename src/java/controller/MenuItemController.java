@@ -88,10 +88,10 @@ public class MenuItemController extends HttpServlet {
                     Order newOrder = new Order();
                     newOrder.setTableStatus("occupied");
                     newOrder.setOrderType(1);
-                    
+
                     // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT
-                    newOrder.setIsStaffConfirmed(1); 
-                    
+                    newOrder.setIsStaffConfirmed(1);
+
                     newOrder.setOrderStatus("ordering");
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
@@ -106,7 +106,7 @@ public class MenuItemController extends HttpServlet {
                         /* session.setAttribute("pendingOrderID", newOrderID);
                         request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
                         return;
-                        */
+                         */
                     }
                 }
             } else {
@@ -139,8 +139,21 @@ public class MenuItemController extends HttpServlet {
 
         int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
-        int minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
-        int maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        int minPrice = 0;
+        int maxPrice = 0;
+        try {
+            minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
+        } catch (NumberFormatException e) {
+            minPrice = 0;
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
+
+        try {
+            maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        } catch (NumberFormatException e) {
+            maxPrice = Integer.MAX_VALUE;
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
 
         // Cập nhật lại tableID để tương thích với Token (nếu quét Token thì ưu tiên lấy ID từ Token)

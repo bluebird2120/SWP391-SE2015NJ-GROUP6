@@ -12,41 +12,97 @@ import model.Table;
 public class TableDAO extends DBContext {
 
     public List<String> getAllAreaTypes() {
+
         List<String> list = new ArrayList<>();
-        String sql = "SELECT DISTINCT areaType FROM `Table` WHERE isActive = 1 ORDER BY areaType";
+
+        String sql
+                = "SELECT DISTINCT areaType "
+                + "FROM `Table` "
+                + "WHERE isActive = 1 "
+                + "ORDER BY areaType";
 
         try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 list.add(rs.getString("areaType"));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return list;
     }
 
+    /*
+     * Tính số bàn còn trống theo từng capacity trong khu vực.
+     *
+     * Logic:
+     * Bàn trống = Tổng số bàn - bàn bận trong cùng ngày
+     *
+     * Bàn bận gồm:
+     * - reserved
+     * - serving
+     * - cleaning
+     *
+     * Không giới hạn thời gian ăn:
+     * Nếu bàn đã reserved / serving / cleaning trong ngày đó
+     * thì khóa đến hết ngày đó. hoặc có nhân viên xác nhận đã dọn xẹp xong chuyển trạng thái bàn 
+     *
+     * Khách vẫn có thể đặt ngày tương lai khác,
+
+     */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
+
         autoExpireReservations();
 
         List<Table> resultList = new ArrayList<>();
-        String sqlTotal = "SELECT capacity, COUNT(*) AS total FROM `Table` WHERE isActive = 1 AND areaType = ? GROUP BY capacity";
+
+        System.out.println("[TableDAO] areaType = " + areaType);
+        System.out.println("[TableDAO] orderTime = " + orderTime);
+
+        /*
+         * Tổng số bàn active theo capacity trong khu vực.
+         */
+        String sqlTotal
+                = "SELECT capacity, COUNT(*) AS total "
+                + "FROM `Table` "
+                + "WHERE isActive = 1 "
+                + "  AND areaType = ? "
+                + "GROUP BY capacity";
 
         String sqlBusyOnline
-                = "SELECT ord.capacity, SUM(ord.quantity) AS busy FROM `Order` o "
+                = "SELECT ord.capacity, SUM(ord.quantity) AS busy "
+                + "FROM `Order` o "
                 + "JOIN order_reservation_detail ord ON ord.orderID = o.orderID "
-                + "WHERE o.orderType = 1 AND ord.areaType = ? AND DATE(o.orderTime) = DATE(?) "
+                + "WHERE o.orderType = 1 "
+                + "  AND ord.areaType = ? "
+                + "  AND DATE(o.orderTime) = DATE(?) "
                 + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus NOT IN ('cancelled', 'completed')) "
-                + "  AND NOT EXISTS ( SELECT 1 FROM Order_Table ot WHERE ot.orderID = o.orderID ) "
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
+                + "  AND NOT EXISTS ( "
+                + "      SELECT 1 "
+                + "      FROM Order_Table ot "
+                + "      WHERE ot.orderID = o.orderID "
+                + "  ) "
                 + "GROUP BY ord.capacity";
 
+        /*
+         * Đơn đã được gán bàn thật.
+        
+        
+         
+         */
         String sqlBusyAssigned
-                = "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy FROM `Order` o "
+                = "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy "
+                + "FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "JOIN `Table` t ON ot.tableID = t.tableID "
-                + "WHERE t.isActive = 1 AND t.areaType = ? AND DATE(o.orderTime) = DATE(?) "
+                + "WHERE t.isActive = 1 "
+                + "  AND t.areaType = ? "
+                + "  AND DATE(o.orderTime) = DATE(?) "
                 + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus NOT IN ('cancelled', 'completed')) "
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "GROUP BY t.capacity";
 
         Map<Integer, Integer> totalMap = new HashMap<>();
@@ -54,8 +110,12 @@ public class TableDAO extends DBContext {
         Map<Integer, Integer> busyAssignedMap = new HashMap<>();
 
         try {
+            /*
+             * Query 1: lấy tổng số bàn.
+             */
             try (PreparedStatement ps = connection.prepareStatement(sqlTotal)) {
                 ps.setString(1, areaType);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         totalMap.put(rs.getInt("capacity"), rs.getInt("total"));
@@ -63,9 +123,13 @@ public class TableDAO extends DBContext {
                 }
             }
 
+            /*
+             * Query 2: lấy số bàn bận do đơn online chưa gán bàn.
+             */
             try (PreparedStatement ps = connection.prepareStatement(sqlBusyOnline)) {
                 ps.setString(1, areaType);
                 ps.setTimestamp(2, orderTime);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         busyOnlineMap.put(rs.getInt("capacity"), rs.getInt("busy"));
@@ -73,9 +137,13 @@ public class TableDAO extends DBContext {
                 }
             }
 
+            /*
+             * Query 3: lấy số bàn bận do đơn đã gán bàn thật.
+             */
             try (PreparedStatement ps = connection.prepareStatement(sqlBusyAssigned)) {
                 ps.setString(1, areaType);
                 ps.setTimestamp(2, orderTime);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         busyAssignedMap.put(rs.getInt("capacity"), rs.getInt("busy"));
@@ -83,39 +151,96 @@ public class TableDAO extends DBContext {
                 }
             }
 
+            System.out.println("[TableDAO] totalMap = " + totalMap);
+            System.out.println("[TableDAO] busyOnlineMap = " + busyOnlineMap);
+            System.out.println("[TableDAO] busyAssignedMap = " + busyAssignedMap);
+
+            /*
+             * Tính bàn trống:
+             * available = total - busyOnline - busyAssigned
+             */
             for (Map.Entry<Integer, Integer> entry : totalMap.entrySet()) {
                 int cap = entry.getKey();
                 int total = entry.getValue();
+
                 int busyOnline = busyOnlineMap.getOrDefault(cap, 0);
                 int busyAssigned = busyAssignedMap.getOrDefault(cap, 0);
+
                 int availableCount = Math.max(0, total - busyOnline - busyAssigned);
 
                 Table dto = new Table();
                 dto.setCapacity(cap);
                 dto.setAreaType(areaType);
                 dto.setTableName("Bàn " + cap + " chỗ");
+
                 dto.setIsActive(availableCount);
 
                 resultList.add(dto);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         resultList.sort((a, b) -> Integer.compare(a.getCapacity(), b.getCapacity()));
+
         return resultList;
     }
 
+    /*
+     * Lazy expire:
+     *
+     * Nếu khách đặt bàn online,
+     * quá giờ đến 30 phút mà nhân viên chưa chuyển sang serving,
+     * thì đơn tự động bị hủy.
+     *
+     * Chỉ hủy orderType = 1.
+     * Không động vào khách walk-in / đơn đang serving / cleaning.
+     */
     private void autoExpireReservations() {
-        String sql
-                = "UPDATE `Order` SET orderStatus = 'cancelled', tableStatus = 'available' "
-                + "WHERE orderType = 1 AND orderStatus = 'reserved' AND tableStatus = 'reserved' "
+        String confirmPaidSql
+                = "UPDATE `Order` o "
+                + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'reserved', "
+                + "    o.tableStatus = 'reserved', "
+                + "    o.checkoutRequestAt = NULL "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND i.status = 'paid'";
+
+        String releasePendingSql
+                = "UPDATE `Order` o "
+                + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "SET o.orderStatus = 'cancelled', "
+                + "    o.tableStatus = 'available' "
+                + "WHERE o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND ("
+                + "      LOWER(COALESCE(i.status, '')) "
+                + "          IN ('failed', 'cancelled', 'expired') "
+                + "      OR (o.checkoutRequestAt IS NOT NULL "
+                + "          AND o.checkoutRequestAt <= NOW() "
+                + "          AND COALESCE(i.status, 'unpaid') <> 'paid')"
+                + "  )";
+
+        String lateArrivalSql
+                = "UPDATE `Order` "
+                + "SET orderStatus = 'cancelled', tableStatus = 'available' "
+                + "WHERE orderType = 1 "
+                + "  AND orderStatus = 'reserved' "
+                + "  AND tableStatus = 'reserved' "
                 + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            int expired = ps.executeUpdate();
+
+        try (PreparedStatement confirmPs = connection.prepareStatement(confirmPaidSql);
+                PreparedStatement pendingPs = connection.prepareStatement(releasePendingSql);
+                PreparedStatement latePs = connection.prepareStatement(lateArrivalSql)) {
+            confirmPs.executeUpdate();
+            int expired = pendingPs.executeUpdate() + latePs.executeUpdate();
+
             if (expired > 0) {
                 System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");
             }
+
         } catch (Exception e) {
             System.err.println("[TableDAO] autoExpire error: " + e.getMessage());
         }
@@ -123,29 +248,42 @@ public class TableDAO extends DBContext {
 
     public Table getTableByTableID(int tableID) {
         String sql = "SELECT * FROM `Table` WHERE tableID = ?";
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, tableID);
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapRow(rs);
                 }
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return null;
     }
 
     public List<Table> getAllActiveTables() {
         List<Table> list = new ArrayList<>();
-        String sql = "SELECT * FROM `Table` WHERE isActive = 1 ORDER BY areaType, capacity";
+
+        String sql
+                = "SELECT * "
+                + "FROM `Table` "
+                + "WHERE isActive = 1 "
+                + "ORDER BY areaType, capacity";
+
         try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 list.add(mapRow(rs));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return list;
     }
 
