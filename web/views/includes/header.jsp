@@ -422,7 +422,7 @@
         </c:if>
 
         <c:if test="${sessionScope.employee != null}">
-            <a href="${pageContext.request.contextPath}/staff/notifications" class="notif-btn">
+            <a href="${pageContext.request.contextPath}/${sessionScope.employee.roleID == 1 ? 'owner' : 'staff'}/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
                 <c:if test="${sessionScope.unreadCount > 0}">
                     <span class="notif-count">${sessionScope.unreadCount}</span>
