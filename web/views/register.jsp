@@ -268,7 +268,7 @@
             }
 
             .input-icon input{
-                padding-left:45px;
+                padding-left:40px;
             }
         </style>
     </head>
@@ -382,7 +382,7 @@
                                     <input type="password"
                                            id="password"
                                            name="password"
-                                           placeholder="Ít nhất 6 ký tự"
+                                           placeholder="Ít nhất 6 đến 50 ký tự"
                                            class="${not empty passwordError ? 'input-error' : ''}"
                                            required>
                                 </div>
@@ -496,13 +496,13 @@
                 }
 
                 // PASSWORD
-                if (password.value === "") {
+                if (password.value.trim() === "") {
                     document.getElementById("passwordError").textContent =
                             "Vui lòng nhập mật khẩu.";
                     hasError = true;
-                } else if (password.value.length < 6) {
+                } else if (password.value.length < 6 || password.value.length > 50) {
                     document.getElementById("passwordError").textContent =
-                            "Mật khẩu phải có ít nhất 6 ký tự.";
+                            "Mật khẩu phải có ít nhất 6 đến 50 ký tự.";
                     hasError = true;
                 }
 
@@ -517,6 +517,7 @@
                     hasError = true;
                 }
 
+                //Chặn ko cho submit nếu có lỗi
                 if (hasError) {
                     e.preventDefault();
                 }
