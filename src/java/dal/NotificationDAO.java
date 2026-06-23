@@ -9,14 +9,13 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO cho bảng Notifications.
- * Dùng chung kết nối từ DBContext.
- */
 public class NotificationDAO extends DBContext {
 
     /**
-     * Insert 1 notification, trả notificationID hoặc -1 nếu lỗi.
+     * Thêm mới một bản ghi thông báo vào cơ sở dữ liệu.
+     * 
+     * @param n Đối tượng Notifications chứa thông tin thông báo cần tạo
+     * @return ID tự tăng của thông báo vừa tạo, hoặc -1 nếu có lỗi xảy ra
      */
     public int insert(Notifications n) {
         String sql = "INSERT INTO Notifications (recipientID, recipientType, type, message, isRead) "
@@ -40,7 +39,12 @@ public class NotificationDAO extends DBContext {
     }
 
     /**
-     * Lấy N notification gần nhất của 1 recipient (employee/customer).
+     * Lấy danh sách các thông báo gần nhất của người nhận theo số lượng giới hạn.
+     * 
+     * @param recipientID ID của người nhận thông báo
+     * @param recipientType Loại người nhận (ví dụ: 'staff' hoặc 'customer')
+     * @param limit Số lượng thông báo tối đa muốn lấy
+     * @return Danh sách các đối tượng Notifications, sắp xếp theo thời gian mới nhất trước
      */
     public List<Notifications> listByRecipient(int recipientID, String recipientType, int limit) {
         List<Notifications> out = new ArrayList<>();
@@ -71,7 +75,13 @@ public class NotificationDAO extends DBContext {
     }
 
     /**
-     * Đánh dấu đã đọc — chỉ owner thật của notification mới đổi được.
+     * Đánh dấu một thông báo cụ thể là đã đọc.
+     * Đảm bảo tính bảo mật bằng cách kiểm tra ID và loại người nhận tương ứng.
+     * 
+     * @param notificationID ID của thông báo cần đánh dấu
+     * @param recipientID ID của người nhận
+     * @param recipientType Loại người nhận
+     * @return true nếu cập nhật thành công trạng thái, ngược lại false
      */
     public boolean markRead(int notificationID, int recipientID, String recipientType) {
         String sql = "UPDATE Notifications SET isRead = 1 "
@@ -88,7 +98,12 @@ public class NotificationDAO extends DBContext {
     }
 
     /**
-     * Đếm notification chưa đọc cho badge UI.
+     * Đếm số lượng thông báo chưa đọc của người nhận.
+     * Dùng để hiển thị badge số lượng thông báo mới ở Header giao diện.
+     * 
+     * @param recipientID ID của người nhận
+     * @param recipientType Loại người nhận ('staff' hoặc 'customer')
+     * @return Số lượng thông báo chưa đọc
      */
     public int countUnread(int recipientID, String recipientType) {
         String sql = "SELECT COUNT(*) FROM Notifications "

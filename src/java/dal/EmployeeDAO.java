@@ -13,6 +13,16 @@ import util.UserRole;
 
 public class EmployeeDAO extends DBContext {
 
+    /**
+     * Tìm kiếm nhân viên bằng số điện thoại và kiểm chứng mật khẩu.
+     * Dùng cho chức năng Đăng nhập hệ thống của nhân viên.
+     * 
+     * @param phoneNumber Số điện thoại đăng nhập
+     * @param rawPassword Mật khẩu chưa mã hóa do người dùng nhập
+     * @return Đối tượng Employee tương ứng nếu thông tin chính xác và trùng khớp,
+     *         ngược lại trả về null
+     * @throws SQLException Nếu phát sinh lỗi trong quá trình truy vấn cơ sở dữ liệu
+     */
     public Employee findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
@@ -56,27 +66,15 @@ public class EmployeeDAO extends DBContext {
             }
         }
     }
-    
-     public Employee findByEmail(String email) {
-        // Đã xóa salary
-        String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
-                + "FROM Employee WHERE email = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, email);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapRow(rs);
-                }
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
 
+    /**
+     * Tìm kiếm thông tin nhân viên theo Mã ID định danh.
+     * 
+     * @param id Mã ID của nhân viên
+     * @return Đối tượng Employee chứa đầy đủ thông tin cá nhân, ngược lại trả về
+     *         null
+     */
     public Employee findById(int id) {
-        // Đã xóa salary
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE employeeID = ?";
@@ -92,48 +90,16 @@ public class EmployeeDAO extends DBContext {
         }
         return null;
     }
-
     /**
-     * List staff (roleID = 2) có search theo tên/email/phone. Owner gọi để hiển
-     * thị bảng quản lý.
-     */
-    public List<Employee> listStaff(String keyword) {
-        List<Employee> list = new ArrayList<>();
-        // Đã xóa salary
-        StringBuilder sql = new StringBuilder(
-                "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
-                + "FROM Employee WHERE roleID = ?");
-        boolean hasKeyword = keyword != null && !keyword.isBlank();
-        if (hasKeyword) {
-            sql.append(" AND (fullName LIKE ? OR email LIKE ? OR phoneNumber LIKE ?)");
-        }
-        sql.append(" ORDER BY employeeID DESC");
-
-        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
-            if (hasKeyword) {
-                String like = "%" + keyword.trim() + "%";
-                ps.setString(2, like);
-                ps.setString(3, like);
-                ps.setString(4, like);
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        return list;
-    }
-
-    /**
-     * Insert staff mới. Trả về employeeID hoặc -1 nếu fail.
+     * --
+     * Thêm mới tài khoản nhân viên vào cơ sở dữ liệu.
+     * Dùng khi Owner tạo mới hồ sơ nhân viên phục vụ/bếp.
+     * 
+     * @param e Đối tượng Employee chứa thông tin nhân viên cần thêm mới
+     * @return Mã ID tự sinh (employeeID) của nhân viên vừa được tạo mới, hoặc -1
+     *         nếu thất bại
      */
     public int insert(Employee e) {
-        // Đã xóa salary
         String sql = "INSERT INTO Employee "
                 + "(roleID, password, fullName, dob, phoneNumber, email, isActive, address, image, mustChangePassword) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -148,7 +114,6 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(5, e.getPhoneNumber());
             ps.setString(6, e.getEmail());
-            // Điều chỉnh lại index sau khi bỏ salary
             ps.setInt(7, e.getIsActive());
             ps.setString(8, e.getAddress());
             ps.setString(9, e.getImage());
@@ -170,10 +135,15 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Update staff (không update password ở đây).
+     * -----
+     * Cập nhật thông tin cá nhân của nhân viên (Họ tên, ngày sinh, SĐT, Email, địa
+     * chỉ, ảnh đại diện).
+     * Không cập nhật mật khẩu tại đây.
+     * 
+     * @param e Đối tượng Employee chứa dữ liệu cần cập nhật kèm theo ID nhân viên
+     * @return true nếu cập nhật thành công ít nhất 1 dòng, ngược lại false
      */
     public boolean update(Employee e) {
-        // Đã xóa salary
         String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
                 + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -185,12 +155,11 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(3, e.getPhoneNumber());
             ps.setString(4, e.getEmail());
-            // Điều chỉnh lại index sau khi bỏ salary
             ps.setInt(5, e.getIsActive());
             ps.setString(6, e.getAddress());
             ps.setString(7, e.getImage());
             ps.setInt(8, e.getEmployeeID());
-            
+
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -199,8 +168,13 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Soft delete: set isActive = 0. Tránh xoá cứng vì có FK từ
-     * EmployeeShifts/Feedback...
+     * ----
+     * Khóa tài khoản nhân viên (xóa mềm - Soft Delete).
+     * Thiết lập cột isActive = 0 để vô hiệu hóa tài khoản mà không làm mất tính
+     * toàn vẹn khóa ngoại (Foreign Key).
+     * 
+     * @param employeeID Mã ID của nhân viên cần khóa
+     * @return true nếu khóa tài khoản thành công, ngược lại false
      */
     public boolean softDelete(int employeeID) {
         String sql = "UPDATE Employee SET isActive = 0 WHERE employeeID = ?";
@@ -214,7 +188,12 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Reactivate: set isActive = 1.
+     * ----
+     * Mở khóa/kích hoạt lại tài khoản nhân viên đã bị khóa.
+     * Thiết lập cột isActive = 1.
+     * 
+     * @param employeeID Mã ID của nhân viên cần kích hoạt lại
+     * @return true nếu kích hoạt thành công, ngược lại false
      */
     public boolean reactivate(int employeeID) {
         String sql = "UPDATE Employee SET isActive = 1 WHERE employeeID = ?";
@@ -228,9 +207,16 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Đếm tổng số staff thoả filter. keyword: search theo
-     * fullName/phoneNumber/email (có thể null/blank). status: 1 = active, 0 =
-     * inactive, null = tất cả.
+     * --
+     * Đếm tổng số lượng nhân viên thỏa mãn các điều kiện tìm kiếm và lọc trạng
+     * thái.
+     * Dùng để phục vụ thuật toán phân trang trên danh sách quản lý của Owner.
+     * 
+     * @param keyword Từ khóa tìm kiếm theo tên, số điện thoại, hoặc email (có thể
+     *                null hoặc rỗng)
+     * @param status  Trạng thái lọc (1 = đang hoạt động, 0 = bị khóa, null = tất
+     *                cả)
+     * @return Tổng số lượng nhân viên thỏa mãn điều kiện lọc
      */
     public int countStaff(String keyword, Integer status) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Employee WHERE roleID = ?");
@@ -265,18 +251,29 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Lấy danh sách staff có phân trang + filter. page bắt đầu từ 1.
+     * ------
+     * Lấy danh sách nhân viên phục vụ/nhà bếp có phân trang kết hợp tìm kiếm và lọc
+     * trạng thái.
+     * 
+     * @param keyword  Từ khóa tìm kiếm theo họ tên, SĐT, hoặc email (có thể null
+     *                 hoặc rỗng)
+     * @param status   Trạng thái lọc (1 = đang hoạt động, 0 = bị khóa, null = tất
+     *                 cả)
+     * @param page     Số trang hiện tại cần lấy dữ liệu (bắt đầu từ 1)
+     * @param pageSize Số lượng bản ghi tối đa trên một trang
+     * @return Danh sách các đối tượng Employee trong trang được yêu cầu
      */
     public List<Employee> listStaffPaged(String keyword, Integer status, int page, int pageSize) {
         List<Employee> list = new ArrayList<>();
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 5;  //số lượng sản phẩm có trong trang
+        if (page < 1)
+            page = 1;
+        if (pageSize < 1)
+            pageSize = 5;
 
-        // Đã xóa salary
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
-                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
-                + "FROM Employee WHERE roleID = ?");
+                        + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
+                        + "FROM Employee WHERE roleID = ?");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
             sql.append(" AND (fullName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?)");
@@ -312,20 +309,16 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
 
-    public boolean updatePassword(int employeeID, String newHashedPassword) {
-        String sql = "UPDATE Employee SET password = ?, lastPasswordChangedAt = ?, mustChangePassword = 0 "
-                + "WHERE employeeID = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, newHashedPassword);
-            ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
-            ps.setInt(3, employeeID);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            return false;
-        }
-    }
-
+    /**
+     * Kiểm tra xem một địa chỉ Email đã tồn tại trong hệ thống hay chưa (ngoại trừ
+     * một nhân viên cụ thể).
+     * Dùng để tránh trùng lặp Email khi tạo mới hoặc cập nhật hồ sơ nhân viên khác.
+     * 
+     * @param email     Địa chỉ email cần kiểm tra
+     * @param excludeID Mã ID nhân viên cần loại trừ khi kiểm tra (ví dụ: ID của
+     *                  chính nhân viên đang sửa)
+     * @return true nếu email đã được sử dụng bởi người khác, ngược lại false
+     */
     public boolean isEmailExists(String email, int excludeID) {
         String sql = "SELECT 1 FROM Employee WHERE email = ? AND employeeID <> ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -340,6 +333,16 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
+    /**
+     * Kiểm tra xem Số điện thoại đã tồn tại trong hệ thống hay chưa (ngoại trừ một
+     * nhân viên cụ thể).
+     * Dùng để kiểm tra trùng lặp số điện thoại khi thêm mới hoặc cập nhật thông tin
+     * nhân viên.
+     * 
+     * @param phone     Số điện thoại cần kiểm tra
+     * @param excludeID Mã ID nhân viên cần loại trừ
+     * @return true nếu số điện thoại đã tồn tại ở tài khoản khác, ngược lại false
+     */
     public boolean isPhoneExists(String phone, int excludeID) {
         if (phone == null || phone.isBlank()) {
             return false;
@@ -357,7 +360,13 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-    /** Lấy danh sách ID của các Owner active để gửi notification. */
+    /**
+     * Lấy danh sách mã ID của tất cả các Owner đang hoạt động.
+     * Dùng để gửi thông báo (Notifications) cho tất cả các chủ cửa hàng khi nhân
+     * viên gửi đơn xin nghỉ.
+     * 
+     * @return Danh sách các ID chủ cửa hàng (Role = Owner)
+     */
     public List<Integer> getActiveOwnerIDs() {
         List<Integer> list = new ArrayList<>();
         String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
@@ -374,13 +383,18 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
 
-
+    /**
+     * Lấy danh sách tất cả các nhân viên phục vụ/nhà bếp (Role = Staff) đang hoạt
+     * động.
+     * Dùng để hiển thị danh sách cho Owner phân ca làm việc thủ công.
+     * 
+     * @return Danh sách đối tượng Employee chỉ chứa ID và Họ tên
+     */
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
         String sql = "SELECT employeeID, fullName FROM Employee "
                 + "WHERE roleID = ? AND isActive = 1 ORDER BY fullName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            // Đảm bảo UserRole.RESTAURANT_STAFF.getRoleID() khớp với ID thực tế trong bảng Role
             ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -395,33 +409,14 @@ public class EmployeeDAO extends DBContext {
         }
         return list;
     }
-    // =========================================================
-    // THUẬT TOÁN ĐIỀU PHỐI (LOAD BALANCING) THÔNG MINH
-    // =========================================================
-    public int getLeastBusyAndLongestIdleStaffID() {
-        String sql = "SELECT e.employeeID, " +
-                     "COUNT(CASE WHEN o.orderStatus NOT IN ('completed', 'cancelled') THEN 1 END) AS activeOrders, " +
-                     "COUNT(CASE WHEN o.orderStatus = 'completed' AND DATE(o.createdAt) = CURDATE() THEN 1 END) AS completedOrdersToday " +
-                     "FROM Employee e " +
-                     "LEFT JOIN `Order` o ON e.employeeID = o.employeeID " +
-                     "WHERE e.roleID = ? AND e.isActive = 1 " + 
-                     "GROUP BY e.employeeID, e.fullName " +
-                     "ORDER BY activeOrders ASC, completedOrdersToday ASC " +
-                     "LIMIT 1";
-                     
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("employeeID");
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[EmployeeDAO] getLeastBusyAndLongestIdleStaffID lỗi: " + e.getMessage());
-        }
-        return -1;
-    }
 
+    /**
+     * Chuyển đổi một dòng dữ liệu từ ResultSet sang đối tượng Employee.
+     * 
+     * @param rs Đối tượng ResultSet thu được từ câu lệnh truy vấn CSDL
+     * @return Đối tượng Employee chứa dữ liệu của dòng hiện tại
+     * @throws SQLException Nếu phát sinh lỗi khi lấy dữ liệu từ ResultSet
+     */
     private Employee mapRow(ResultSet rs) throws SQLException {
         Employee e = new Employee();
         e.setEmployeeID(rs.getInt("employeeID"));
@@ -431,7 +426,6 @@ public class EmployeeDAO extends DBContext {
         e.setDob(rs.getDate("dob"));
         e.setPhoneNumber(rs.getString("phoneNumber"));
         e.setEmail(rs.getString("email"));
-        // Đã xóa e.setSalary(rs.getInt("salary"));
         e.setIsActive(rs.getInt("isActive"));
         e.setAddress(rs.getString("address"));
         e.setImage(rs.getString("image"));

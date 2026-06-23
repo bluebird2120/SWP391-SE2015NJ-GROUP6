@@ -15,6 +15,12 @@ import java.util.Map;
 
 public class ShiftSwapRequestDAO extends DBContext {
 
+    /**
+     * Thêm mới một yêu cầu đổi ca hoặc xin nghỉ vào cơ sở dữ liệu.
+     * 
+     * @param req Đối tượng ShiftSwapRequests chứa thông tin ca yêu cầu, ca muốn đổi, lý do và loại yêu cầu ('swap' hoặc 'leave')
+     * @return true nếu thêm mới thành công, ngược lại false
+     */
     public boolean insert(ShiftSwapRequests req) {
         String sql = "INSERT INTO ShiftSwapRequests (requesterShiftID, targetShiftID, status, reason, requestType) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -34,6 +40,12 @@ public class ShiftSwapRequestDAO extends DBContext {
         }
     }
 
+    /**
+     * Lấy toàn bộ danh sách các yêu cầu đang chờ Owner duyệt (thường là đơn xin nghỉ 'leave' ở trạng thái 'pending').
+     * Truy vấn kết hợp thông tin chi tiết của người gửi yêu cầu (requester) và người liên quan (target).
+     * 
+     * @return Danh sách chi tiết các yêu cầu đang chờ phê duyệt
+     */
     public List<ShiftSwapRequestDetail> listPendingRequests() {
         List<ShiftSwapRequestDetail> list = new ArrayList<>();
         String sql = "SELECT "
@@ -64,7 +76,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                 d.setCreatedAt(rs.getTimestamp("createdAt"));
                 d.setRequestType(rs.getString("requestType"));
 
-                // Requester
                 d.setReqEmployeeID(rs.getInt("reqEmpID"));
                 d.setReqEmployeeName(rs.getString("reqEmpName"));
                 d.setReqShiftName(rs.getString("reqShiftName"));
@@ -72,7 +83,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                 d.setReqStartTime(rs.getTime("reqStartTime"));
                 d.setReqEndTime(rs.getTime("reqEndTime"));
 
-                // Target
                 int tarEmpID = rs.getInt("tarEmpID");
                 if (!rs.wasNull()) {
                     d.setTargetEmployeeID(tarEmpID);
@@ -90,6 +100,12 @@ public class ShiftSwapRequestDAO extends DBContext {
         return list;
     }
 
+    /**
+     * Lấy thông tin chi tiết của một yêu cầu đổi ca/xin nghỉ cụ thể theo ID.
+     * 
+     * @param swapID ID của yêu cầu đổi ca/xin nghỉ
+     * @return Đối tượng ShiftSwapRequestDetail chứa đầy đủ thông tin cá nhân và thời gian ca làm việc liên quan
+     */
     public ShiftSwapRequestDetail getDetailById(int swapID) {
         String sql = "SELECT "
                    + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
@@ -119,7 +135,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                     d.setCreatedAt(rs.getTimestamp("createdAt"));
                     d.setRequestType(rs.getString("requestType"));
 
-                    // Requester
                     d.setReqEmployeeID(rs.getInt("reqEmpID"));
                     d.setReqEmployeeName(rs.getString("reqEmpName"));
                     d.setReqShiftName(rs.getString("reqShiftName"));
@@ -127,7 +142,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                     d.setReqStartTime(rs.getTime("reqStartTime"));
                     d.setReqEndTime(rs.getTime("reqEndTime"));
 
-                    // Target
                     int tarEmpID = rs.getInt("tarEmpID");
                     if (!rs.wasNull()) {
                         d.setTargetEmployeeID(tarEmpID);
@@ -146,12 +160,24 @@ public class ShiftSwapRequestDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Cập nhật trạng thái phê duyệt yêu cầu đổi ca hoặc xin nghỉ của Owner.
+     * Sử dụng Database Transaction (commit/rollback) để đảm bảo tính nhất quán dữ liệu:
+     * 1. Cập nhật trạng thái của bản ghi yêu cầu đổi/nghỉ (ShiftSwapRequests).
+     * 2. Nếu trạng thái phê duyệt là 'approved':
+     *    - Đối với đơn xin nghỉ ('leave'): Cập nhật trạng thái ca làm việc tương ứng trong bảng EmployeeShifts thành 'absent'.
+     *    - Đối với đơn đổi ca ('swap'): Thực hiện hoán đổi employeeID của hai ca làm việc của hai nhân viên liên quan.
+     * 
+     * @param swapID ID của yêu cầu
+     * @param status Trạng thái mới (ví dụ: 'approved' hoặc 'rejected')
+     * @param approvedByID ID của Owner thực hiện phê duyệt (có thể null nếu đồng nghiệp tự duyệt)
+     * @return true nếu thực hiện thành công toàn bộ giao dịch (Transaction), ngược lại false
+     */
     public boolean updateStatus(int swapID, String status, Integer approvedByID) {
         Connection conn = connection;
         try {
             conn.setAutoCommit(false);
 
-            // 1. Update the request status
             String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? WHERE swapID = ?";
             try (PreparedStatement ps = conn.prepareStatement(updateRequestSql)) {
                 ps.setString(1, status);
@@ -164,23 +190,19 @@ public class ShiftSwapRequestDAO extends DBContext {
                 ps.executeUpdate();
             }
 
-            // 2. Perform DB logic if approved
             if ("approved".equals(status)) {
                 ShiftSwapRequestDetail detail = getDetailById(swapID);
                 if (detail != null) {
                     if ("leave".equals(detail.getRequestType())) {
-                        // For leave requests, update status to absent
                         String updateShiftSql = "UPDATE EmployeeShifts SET status = 'absent' WHERE shiftID = ?";
                         try (PreparedStatement ps = conn.prepareStatement(updateShiftSql)) {
                             ps.setInt(1, detail.getRequesterShiftID());
                             ps.executeUpdate();
                         }
                     } else if ("swap".equals(detail.getRequestType()) && detail.getTargetShiftID() != null) {
-                        // Swap logic: get the employee IDs
                         int reqEmpID = detail.getReqEmployeeID();
                         int tarEmpID = detail.getTargetEmployeeID();
 
-                        // Swap employeeID in EmployeeShifts
                         String updateReqShiftSql = "UPDATE EmployeeShifts SET employeeID = ? WHERE shiftID = ?";
                         try (PreparedStatement ps = conn.prepareStatement(updateReqShiftSql)) {
                             ps.setInt(1, tarEmpID);
@@ -214,7 +236,12 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Map shiftID -> pending requests of the given employee
+     * Lấy bản đồ (Map) các yêu cầu đổi ca/xin nghỉ đang chờ xử lý của một nhân viên cụ thể.
+     * Khóa (Key) là shiftID, Giá trị (Value) là đối tượng ShiftSwapRequests.
+     * Giúp Controller kiểm tra nhanh xem một ca làm việc cụ thể có đang nằm trong quá trình đổi ca hoặc xin nghỉ hay không.
+     * 
+     * @param employeeID ID nhân viên cần kiểm tra
+     * @return Bản đồ tương quan giữa ID ca làm việc và yêu cầu đang chờ xử lý
      */
     public Map<Integer, ShiftSwapRequests> getPendingRequestsMap(int employeeID) {
         Map<Integer, ShiftSwapRequests> map = new HashMap<>();
@@ -239,7 +266,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                     r.setCreatedAt(rs.getTimestamp("createdAt"));
                     r.setRequestType(rs.getString("requestType"));
 
-                    // Put the requester shift ID as the primary indicator
                     map.put(r.getRequesterShiftID(), r);
                     if (r.getTargetShiftID() != null) {
                         map.put(r.getTargetShiftID(), r);
@@ -252,6 +278,12 @@ public class ShiftSwapRequestDAO extends DBContext {
         return map;
     }
 
+    /**
+     * Lấy danh sách các yêu cầu đổi ca do đồng nghiệp khác gửi tới cho một nhân viên cụ thể (đang chờ đồng nghiệp phản hồi).
+     * 
+     * @param targetEmployeeID ID của nhân viên nhận được lời mời đổi ca
+     * @return Danh sách chi tiết các yêu cầu đổi ca đang chờ phản hồi từ đồng nghiệp
+     */
     public List<ShiftSwapRequestDetail> listPendingColleagueRequests(int targetEmployeeID) {
         List<ShiftSwapRequestDetail> list = new ArrayList<>();
         String sql = "SELECT "
@@ -280,7 +312,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                     d.setCreatedAt(rs.getTimestamp("createdAt"));
                     d.setRequestType(rs.getString("requestType"));
 
-                    // Requester
                     d.setReqEmployeeID(rs.getInt("reqEmpID"));
                     d.setReqEmployeeName(rs.getString("reqEmpName"));
                     d.setReqShiftName(rs.getString("reqShiftName"));
@@ -288,7 +319,6 @@ public class ShiftSwapRequestDAO extends DBContext {
                     d.setReqStartTime(rs.getTime("reqStartTime"));
                     d.setReqEndTime(rs.getTime("reqEndTime"));
 
-                    // Target
                     d.setTargetEmployeeID(rs.getInt("tarEmpID"));
                     d.setTargetEmployeeName(rs.getString("tarEmpName"));
                     d.setTargetShiftName(rs.getString("tarShiftName"));
@@ -305,6 +335,13 @@ public class ShiftSwapRequestDAO extends DBContext {
         return list;
     }
 
+    /**
+     * Cập nhật trạng thái phản hồi của đồng nghiệp đối với yêu cầu đổi ca ('approved' hoặc 'rejected').
+     * 
+     * @param swapID ID của yêu cầu đổi ca
+     * @param status Trạng thái mới do đồng nghiệp chọn
+     * @return true nếu cập nhật thành công trạng thái, ngược lại false
+     */
     public boolean updateColleagueStatus(int swapID, String status) {
         String sql = "UPDATE ShiftSwapRequests SET status = ? WHERE swapID = ? AND status = 'pending_colleague'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
