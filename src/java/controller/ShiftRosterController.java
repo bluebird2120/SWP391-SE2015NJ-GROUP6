@@ -26,7 +26,7 @@ import model.ShiftTemplates;
 import dal.ShiftSwapRequestDAO;
 import model.ShiftSwapRequestDetail;
 
-@WebServlet(name = "ShiftRosterController", urlPatterns = {"/owner/shift-roster"})
+@WebServlet(name = "ShiftRosterController", urlPatterns = { "/owner/shift-roster" })
 public class ShiftRosterController extends HttpServlet {
 
     private static final String VIEW = "/views/owner/shift-roster.jsp";
@@ -41,26 +41,37 @@ public class ShiftRosterController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (action == null) action = "";
+        if (action == null)
+            action = "";
         switch (action) {
-            case "assign":      handleAssign(req, resp); break;
-            case "unassign":    handleUnassign(req, resp); break;
-            case "assignMonth": handleAssignMonth(req, resp); break;
-            case "cancelPlan":  handleCancelPlan(req, resp); break;
-            case "approveRequest": handleApproveRequest(req, resp); break;
-            case "rejectRequest":  handleRejectRequest(req, resp); break;
-            default: resp.sendRedirect(req.getContextPath() + "/owner/shift-roster");
+            case "assign":
+                handleAssign(req, resp);
+                break;
+            case "unassign":
+                handleUnassign(req, resp);
+                break;
+            case "assignMonth":
+                handleAssignMonth(req, resp);
+                break;
+            case "cancelPlan":
+                handleCancelPlan(req, resp);
+                break;
+            case "approveRequest":
+                handleApproveRequest(req, resp);
+                break;
+            case "rejectRequest":
+                handleRejectRequest(req, resp);
+                break;
+            default:
+                resp.sendRedirect(req.getContextPath() + "/owner/shift-roster");
         }
     }
-
-    /* ==================== VIEW ==================== */
 
     private void showRoster(HttpServletRequest req, HttpServletResponse resp, String error, String success)
             throws ServletException, IOException {
         LocalDate date = parseDateOrToday(req.getParameter("date"));
         Date sqlDate = Date.valueOf(date);
 
-        // Tháng đang xem cho bảng plan; mặc định = tháng hiện tại
         YearMonth viewYm = parseYearMonth(req.getParameter("planYear"), req.getParameter("planMonth"),
                 YearMonth.now());
 
@@ -74,7 +85,6 @@ public class ShiftRosterController extends HttpServlet {
         List<ShiftRow> roster = shiftDao.listByDate(sqlDate);
         List<MonthlyShiftPlan> monthlyPlans = planDao.listByMonth(viewYm.getYear(), viewYm.getMonthValue());
 
-        // Load pending shift swap/leave requests
         ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
         List<ShiftSwapRequestDetail> pendingRequests = requestDAO.listPendingRequests();
 
@@ -90,9 +100,8 @@ public class ShiftRosterController extends HttpServlet {
         req.setAttribute("currentMonth", LocalDate.now().getMonthValue());
         req.setAttribute("pendingRequests", pendingRequests);
 
-        // Xem lịch chi tiết 1 nhân viên theo tháng
         int viewEmpID = parseInt(req.getParameter("viewEmployeeID"), 0);
-        int viewYear  = parseInt(req.getParameter("viewYear"), LocalDate.now().getYear());
+        int viewYear = parseInt(req.getParameter("viewYear"), LocalDate.now().getYear());
         int viewMonth = parseInt(req.getParameter("viewMonth"), LocalDate.now().getMonthValue());
         req.setAttribute("viewEmployeeID", viewEmpID);
         req.setAttribute("viewYear", viewYear);
@@ -108,23 +117,13 @@ public class ShiftRosterController extends HttpServlet {
             }
         }
 
-        if (error != null) req.setAttribute("error", error);
-        if (success != null) req.setAttribute("success", success);
+        if (error != null)
+            req.setAttribute("error", error);
+        if (success != null)
+            req.setAttribute("success", success);
         req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 
-    /* ==================== ASSIGN 1 NGÀY (giữ nguyên nhưng hỗ trợ nhiều nhân viên) ==================== */
-
-    /**
-     * Xử lý gán ca theo ngày cho một hoặc nhiều nhân viên cùng lúc.
-     * Phương thức này nhận danh sách mã nhân viên (employeeIDs), mã ca (templateID) và ngày gán ca.
-     * Tiến hành kiểm tra điều kiện trùng ca và thực hiện gán ca lần lượt cho từng nhân viên.
-     *
-     * @param req  đối tượng HttpServletRequest chứa các tham số yêu cầu (employeeIDs, templateID, date)
-     * @param resp đối tượng HttpServletResponse để điều hướng hoặc trả về phản hồi
-     * @throws ServletException nếu có lỗi xảy ra trong servlet
-     * @throws IOException      nếu có lỗi vào ra dữ liệu
-     */
     private void handleAssign(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String[] empIDsStr = req.getParameterValues("employeeIDs");
@@ -141,6 +140,13 @@ public class ShiftRosterController extends HttpServlet {
             return;
         }
 
+        YearMonth targetYm = YearMonth.from(date);
+        YearMonth nowYm = YearMonth.now();
+        if (!targetYm.equals(nowYm) && !targetYm.equals(nowYm.plusMonths(1))) {
+            showRoster(req, resp, "Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.", null);
+            return;
+        }
+
         EmployeeShiftDAO dao = new EmployeeShiftDAO();
         int successCount = 0;
         int overlapCount = 0;
@@ -148,7 +154,8 @@ public class ShiftRosterController extends HttpServlet {
 
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
-            if (employeeID <= 0) continue;
+            if (employeeID <= 0)
+                continue;
 
             if (dao.hasOverlap(employeeID, sqlDate, templateID)) {
                 overlapCount++;
@@ -175,7 +182,8 @@ public class ShiftRosterController extends HttpServlet {
         }
 
         if (successCount > 0 && overlapCount == 0 && failedCount == 0) {
-            resp.sendRedirect(req.getContextPath() + "/owner/shift-roster?date=" + date + "&msg=assigned_multi&cnt=" + successCount);
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-roster?date=" + date + "&msg=assigned_multi&cnt="
+                    + successCount);
         } else {
             showRoster(req, resp, errorMsg, successMsg);
         }
@@ -195,26 +203,15 @@ public class ShiftRosterController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/owner/shift-roster?date=" + date + "&msg=" + msg);
     }
 
-    /* ==================== PHÂN CA THEO THÁNG ==================== */
-
-    /**
-     * Xử lý phân ca tự động cả tháng cho một hoặc nhiều nhân viên cùng lúc.
-     * Cho phép gán hàng loạt ca lặp lại cho các ngày trong tháng (bỏ qua ngày đã có hoặc thay thế toàn bộ).
-     * Tạo bản ghi lịch sử phân ca hàng tháng (MonthlyShiftPlan) sau khi gán thành công.
-     *
-     * @param req  đối tượng HttpServletRequest chứa các tham số (employeeIDs, templateID, year, month, assignMode)
-     * @param resp đối tượng HttpServletResponse để điều hướng hoặc trả về phản hồi
-     * @throws ServletException nếu có lỗi xảy ra trong servlet
-     * @throws IOException      nếu có lỗi vào ra dữ liệu
-     */
     private void handleAssignMonth(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String[] empIDsStr = req.getParameterValues("employeeIDs");
         int templateID = parseInt(req.getParameter("templateID"), 0);
-        int year       = parseInt(req.getParameter("year"), 0);
-        int month      = parseInt(req.getParameter("month"), 0);
-        String mode    = req.getParameter("assignMode");
-        if (mode == null) mode = "SKIP_EXISTING";
+        int year = parseInt(req.getParameter("year"), 0);
+        int month = parseInt(req.getParameter("month"), 0);
+        String mode = req.getParameter("assignMode");
+        if (mode == null)
+            mode = "SKIP_EXISTING";
 
         if (empIDsStr == null || empIDsStr.length == 0 || templateID <= 0 || month < 1 || month > 12 || year < 2024) {
             showRoster(req, resp, "Tham số phân ca tháng không hợp lệ hoặc chưa chọn nhân viên.", null);
@@ -222,7 +219,7 @@ public class ShiftRosterController extends HttpServlet {
         }
 
         YearMonth target = YearMonth.of(year, month);
-        YearMonth nowYm  = YearMonth.now();
+        YearMonth nowYm = YearMonth.now();
 
         Integer ownerId = currentEmployeeID(req);
         if (ownerId == null) {
@@ -230,7 +227,7 @@ public class ShiftRosterController extends HttpServlet {
             return;
         }
 
-        if (target.isAfter(nowYm.plusMonths(1))) {
+        if (target.isBefore(nowYm) || target.isAfter(nowYm.plusMonths(1))) {
             showRoster(req, resp, "Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.", null);
             return;
         }
@@ -244,7 +241,8 @@ public class ShiftRosterController extends HttpServlet {
 
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
-            if (employeeID <= 0) continue;
+            if (employeeID <= 0)
+                continue;
 
             int rows;
             if ("REPLACE_ALL".equals(mode)) {
@@ -260,13 +258,13 @@ public class ShiftRosterController extends HttpServlet {
             } else {
                 successEmployees++;
                 totalAssignedRows += rows;
-                // Lưu plan history
                 try {
                     int planID = planDao.saveOrUpdate(employeeID, templateID, year, month, ownerId);
                     if (planID > 0) {
                         planDao.updateStatus(planID, MonthlyShiftPlan.APPLIED);
                     }
-                } catch (Exception ignore) {}
+                } catch (Exception ignore) {
+                }
             }
         }
 
@@ -289,61 +287,50 @@ public class ShiftRosterController extends HttpServlet {
     private void handleCancelPlan(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         int planID = parseInt(req.getParameter("planID"), 0);
-        int year   = parseInt(req.getParameter("planYear"), LocalDate.now().getYear());
-        int month  = parseInt(req.getParameter("planMonth"), LocalDate.now().getMonthValue());
+        int year = parseInt(req.getParameter("planYear"), java.time.LocalDate.now().getYear());
+        int month = parseInt(req.getParameter("planMonth"), java.time.LocalDate.now().getMonthValue());
         if (planID <= 0) {
             showRoster(req, resp, "planID không hợp lệ.", null);
             return;
         }
         MonthlyShiftPlanDAO dao = new MonthlyShiftPlanDAO();
-        boolean ok = dao.cancelIfPending(planID);
+        boolean ok = dao.cancelPlan(planID);
         redirectToPlanMonth(req, resp, year, month, ok ? "plan_cancelled" : "plan_cancel_failed");
     }
 
-    /* ==================== HELPERS ==================== */
-
-    private void sendShiftNotificationNow(int planID, int employeeID, int templateID, int year, int month) {
-        ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
-        ShiftTemplates tpl = tplDao.findById(templateID);
-        String shiftName = tpl == null ? "?" : tpl.getShiftName();
-        String startStr  = tpl == null || tpl.getStartTime() == null ? "?" : tpl.getStartTime().toString();
-        String endStr    = tpl == null || tpl.getEndTime()   == null ? "?" : tpl.getEndTime().toString();
-
-        Notifications n = new Notifications();
-        n.setRecipientID(employeeID);
-        n.setRecipientType("staff");
-        n.setType("shift_plan");
-        n.setMessage(String.format(
-                "Lịch ca tháng %02d/%d của bạn: ca %s (%s - %s), bắt đầu ngày 01/%02d/%d.",
-                month, year, shiftName, startStr, endStr, month, year));
-        n.setIsRead(0);
-        new NotificationDAO().insert(n);
-    }
-
     private void redirectToPlanMonth(HttpServletRequest req, HttpServletResponse resp,
-                                     int year, int month, String msg) throws IOException {
+            int year, int month, String msg) throws IOException {
         resp.sendRedirect(req.getContextPath()
                 + "/owner/shift-roster?planYear=" + year + "&planMonth=" + month + "&msg=" + msg);
     }
 
     private static Integer currentEmployeeID(HttpServletRequest req) {
         HttpSession ss = req.getSession(false);
-        if (ss == null) return null;
+        if (ss == null)
+            return null;
         Object v = ss.getAttribute("employeeID");
-        if (v instanceof Integer) return (Integer) v;
+        if (v instanceof Integer)
+            return (Integer) v;
         Object emp = ss.getAttribute("employee");
-        if (emp instanceof Employee) return ((Employee) emp).getEmployeeID();
+        if (emp instanceof Employee)
+            return ((Employee) emp).getEmployeeID();
         return null;
     }
 
     private static LocalDate parseDateOrToday(String s) {
-        if (s == null || s.isBlank()) return LocalDate.now();
-        try { return LocalDate.parse(s); } catch (Exception e) { return LocalDate.now(); }
+        if (s == null || s.isBlank())
+            return LocalDate.now();
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
     }
 
     private static YearMonth parseYearMonth(String yStr, String mStr, YearMonth defVal) {
         try {
-            if (yStr == null || mStr == null) return defVal;
+            if (yStr == null || mStr == null)
+                return defVal;
             int y = Integer.parseInt(yStr);
             int m = Integer.parseInt(mStr);
             return YearMonth.of(y, m);
@@ -373,43 +360,18 @@ public class ShiftRosterController extends HttpServlet {
             showRoster(req, resp, "Không tìm thấy yêu cầu.", null);
             return;
         }
-        if ("swap".equals(detail.getRequestType()) && detail.getTargetShiftID() != null) {
-            EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-            if (esDAO.hasConflictingShift(detail.getReqEmployeeID(), detail.getTargetWorkDate(), detail.getRequesterShiftID())) {
-                showRoster(req, resp, "Không thể phê duyệt: Nhân viên " + detail.getReqEmployeeName() + " đã có ca làm việc khác vào ngày " + detail.getTargetWorkDate() + "!", null);
-                return;
-            }
-            if (esDAO.hasConflictingShift(detail.getTargetEmployeeID(), detail.getReqWorkDate(), detail.getTargetShiftID())) {
-                showRoster(req, resp, "Không thể phê duyệt: Nhân viên " + detail.getTargetEmployeeName() + " đã có ca làm việc khác vào ngày " + detail.getReqWorkDate() + "!", null);
-                return;
-            }
-        }
 
         boolean success = reqDAO.updateStatus(swapID, "approved", emp.getEmployeeID());
         if (success) {
-            // Notify employee(s) about the approval!
             NotificationDAO notifDAO = new NotificationDAO();
-            
-            // Notify requester
+
             Notifications n1 = new Notifications();
             n1.setRecipientID(detail.getReqEmployeeID());
             n1.setRecipientType("staff");
             n1.setType("shift_request_approved");
-            String reqTypeStr = "leave".equals(detail.getRequestType()) ? "xin nghỉ" : "đổi ca";
-            n1.setMessage("Yêu cầu " + reqTypeStr + " của bạn cho ca ngày " + detail.getReqWorkDate() + " đã được phê duyệt.");
+            n1.setMessage("Yêu cầu xin nghỉ của bạn cho ca ngày " + detail.getReqWorkDate() + " đã được phê duyệt.");
             n1.setIsRead(0);
             notifDAO.insert(n1);
-
-            // If it is a swap, notify the target employee as well!
-            if ("swap".equals(detail.getRequestType()) && detail.getTargetEmployeeID() != null) {
-                Notifications n2 = new Notifications();
-                n2.setRecipientID(detail.getTargetEmployeeID());
-                n2.setRecipientType("staff");
-                n2.setType("shift_request_approved");
-                n2.setMessage("Ca làm việc của bạn ngày " + detail.getTargetWorkDate() + " đã được đổi với " + detail.getReqEmployeeName() + ".");
-                n2.setIsRead(0);
-                notifDAO.insert(n2);
-            }
 
             resp.sendRedirect(req.getContextPath() + "/owner/shift-roster?msg=approved_success");
         } else {
@@ -441,14 +403,12 @@ public class ShiftRosterController extends HttpServlet {
 
         boolean success = reqDAO.updateStatus(swapID, "rejected", emp.getEmployeeID());
         if (success) {
-            // Notify requester
             NotificationDAO notifDAO = new NotificationDAO();
             Notifications n1 = new Notifications();
             n1.setRecipientID(detail.getReqEmployeeID());
             n1.setRecipientType("staff");
             n1.setType("shift_request_rejected");
-            String reqTypeStr = "leave".equals(detail.getRequestType()) ? "xin nghỉ" : "đổi ca";
-            n1.setMessage("Yêu cầu " + reqTypeStr + " của bạn cho ca ngày " + detail.getReqWorkDate() + " đã bị từ chối.");
+            n1.setMessage("Yêu cầu xin nghỉ của bạn cho ca ngày " + detail.getReqWorkDate() + " đã bị từ chối.");
             n1.setIsRead(0);
             notifDAO.insert(n1);
 
@@ -459,7 +419,12 @@ public class ShiftRosterController extends HttpServlet {
     }
 
     private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank()) return def;
-        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
+        if (s == null || s.isBlank())
+            return def;
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 }

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import model.Invoices;
 import util.Config;
 
 @WebServlet(name = "PaymentReturnController", urlPatterns = {"/vnpay_return"})
@@ -69,9 +70,21 @@ public class PaymentReturnController extends HttpServlet {
                 Integer invoiceID = (Integer) session.getAttribute("invoiceID");
                 Integer orderID = (Integer) session.getAttribute("orderID"); // Bổ sung lấy orderID
 
-                // CHÍNH THỨC CẬP NHẬT DATABASE (Invoice -> paid, Table -> cleaning)
-                if (invoiceID != null && orderID != null) {
-                    invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "vnpay");
+                // [FIX VNPAY] Phân biệt hóa đơn cọc và hóa đơn thanh toán cuối.
+                // DEP-: chỉ xác nhận đã cọc; OrderDAOSon sẽ đồng bộ
+                // pending/reserved -> reserved/reserved.
+                // INV-: thanh toán bữa ăn xong -> completed/cleaning.
+                if (invoiceID != null) {
+                    Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
+                    if (invoice != null
+                            && invoice.getInvoiceNumber() != null
+                            && invoice.getInvoiceNumber().startsWith("DEP-")) {
+                        invoicesDAO.updateInvoiceStatus(
+                                invoiceID, "paid", "vnpay");
+                    } else if (invoice != null && orderID != null) {
+                        invoicesDAO.updatePaymentSuccessAndCleaningTable(
+                                invoiceID, orderID, "vnpay");
+                    }
                 }
 
                 // Dọn dẹp session để khách có thể quét mã gọi món lượt mới
@@ -87,6 +100,17 @@ public class PaymentReturnController extends HttpServlet {
 
             } else {
                 // === GIAO DỊCH LỖI HOẶC BỊ HỦY ===
+                // [FIX VNPAY] Ghi nhận thất bại để đơn cọc pending được
+                // OrderDAOSon chuyển thành cancelled/available.
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    Integer invoiceID
+                            = (Integer) session.getAttribute("invoiceID");
+                    if (invoiceID != null) {
+                        invoicesDAO.updateInvoiceStatus(
+                                invoiceID, "failed", "vnpay");
+                    }
+                }
                 out.println("<h2 style='color: red; text-align: center; margin-top: 50px;'>❌ THANH TOÁN THẤT BẠI HOẶC BỊ HỦY!</h2>");
                 out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/order?action=cart'>Quay lại Giỏ hàng</a></div>");
             }

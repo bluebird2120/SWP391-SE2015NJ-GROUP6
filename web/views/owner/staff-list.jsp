@@ -61,6 +61,76 @@
         .empty { text-align: center; padding: 40px; color: #a0714f; }
         .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
         .inline-form { display: inline; }
+
+        /* Custom confirmation modal style */
+        .custom-confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 100000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .custom-confirm-modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        .custom-confirm-content {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.2s ease;
+            border: 1px solid #ede0d8;
+        }
+        .custom-confirm-modal.show .custom-confirm-content {
+            transform: translateY(0);
+        }
+        .custom-confirm-message {
+            font-size: 15px;
+            color: #4A3B32;
+            margin-bottom: 24px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        .custom-confirm-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .custom-confirm-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .custom-confirm-btn-cancel {
+            background-color: #f1ebd9;
+            color: #76493b;
+        }
+        .custom-confirm-btn-cancel:hover {
+            background-color: #e5dac1;
+        }
+        .custom-confirm-btn-ok {
+            background-color: #76493b;
+            color: #fff;
+        }
+        .custom-confirm-btn-ok:hover {
+            background-color: #5f3a2f;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +146,17 @@
                 <a class="btn btn-primary" href="${pageContext.request.contextPath}/owner/staff?action=create">
                     <i class="fas fa-plus"></i> Add Staff
                 </a>
+            </div>
+
+            <!-- Local Custom confirmation modal -->
+            <div id="localConfirmModal" class="custom-confirm-modal">
+                <div class="custom-confirm-content">
+                    <div id="localConfirmMessage" class="custom-confirm-message"></div>
+                    <div class="custom-confirm-buttons">
+                        <button id="localConfirmCancelBtn" class="custom-confirm-btn custom-confirm-btn-cancel">Huỷ</button>
+                        <button id="localConfirmOkBtn" class="custom-confirm-btn custom-confirm-btn-ok">Đồng ý</button>
+                    </div>
+                </div>
             </div>
 
             <c:if test="${param.msg == 'created'}">
@@ -166,7 +247,7 @@
                                                 </a>
                                                 <c:choose>
                                                     <c:when test="${s.isActive == 1}">
-                                                        <form method="post" class="inline-form" action="${pageContext.request.contextPath}/owner/staff" onsubmit="return confirm('Deactivate this staff member?');">
+                                                         <form method="post" class="inline-form" action="${pageContext.request.contextPath}/owner/staff" onsubmit="return showCustomConfirm(this, event, 'Deactivate this staff member?');">
                                                             <input type="hidden" name="action" value="deactivate">
                                                             <input type="hidden" name="id" value="${s.employeeID}">
                                                             <input type="hidden" name="keyword" value="${keyword}">
@@ -178,7 +259,7 @@
                                                         </form>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <form method="post" class="inline-form" action="${pageContext.request.contextPath}/owner/staff">
+                                                         <form method="post" class="inline-form" action="${pageContext.request.contextPath}/owner/staff" onsubmit="return showCustomConfirm(this, event, 'Reactivate this staff member?');">
                                                             <input type="hidden" name="action" value="reactivate">
                                                             <input type="hidden" name="id" value="${s.employeeID}">
                                                             <input type="hidden" name="keyword" value="${keyword}">
@@ -235,5 +316,47 @@
                             </main>
                         </div>
     <%@ include file="/views/includes/footer.jsp" %>
+    <script>
+        var activeConfirmForm = null;
+
+        function showCustomConfirm(form, event, message) {
+            if (event) {
+                event.preventDefault();
+            }
+            activeConfirmForm = form;
+            
+            var modal = document.getElementById('localConfirmModal');
+            var msgEl = document.getElementById('localConfirmMessage');
+            if (modal && msgEl) {
+                msgEl.textContent = message;
+                modal.classList.add('show');
+            }
+            return false;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var cancelBtn = document.getElementById('localConfirmCancelBtn');
+            var okBtn = document.getElementById('localConfirmOkBtn');
+            var modal = document.getElementById('localConfirmModal');
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    if (modal) modal.classList.remove('show');
+                    activeConfirmForm = null;
+                });
+            }
+
+            if (okBtn) {
+                okBtn.addEventListener('click', function() {
+                    if (modal) modal.classList.remove('show');
+                    if (activeConfirmForm) {
+                        var form = activeConfirmForm;
+                        form.submit();
+                    }
+                    activeConfirmForm = null;
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -36,10 +36,16 @@ public enum UserRole {
         if (name == null) {
             return null;
         }
-        try {
-            return UserRole.valueOf(name.trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            return null;
+        String cleanName = name.trim().toUpperCase();
+        if (cleanName.equals("OWNER") || cleanName.equals("RESTAURANT_OWNER")) {
+            return RESTAURANT_OWNER;
         }
+        if (cleanName.equals("STAFF") || cleanName.equals("RESTAURANT_STAFF")) {
+            return RESTAURANT_STAFF;
+        }
+        if (cleanName.equals("CUSTOMER")) {
+            return CUSTOMER;
+        }
+        return null;
     }
 }

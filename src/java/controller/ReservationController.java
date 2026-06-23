@@ -1,6 +1,8 @@
 package controller;
 
 import dal.OrderDAOSon;
+import dal.OrderDAO;
+import dal.MenuItemDAO;
 import dal.TableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -19,15 +21,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import model.Customer;
+import model.MenuItem;
 import model.Order;
+import model.OrderItem;
 import model.OrderReservationDetail;
 import model.Table;
 
-@WebServlet(name = "ReservationController", urlPatterns = {"/reservation"})
+@WebServlet(name = "ReservationController", urlPatterns = { "/reservation" })
 public class ReservationController extends HttpServlet {
 
     private final TableDAO tableDAO = new TableDAO();
     private final OrderDAOSon orderDAO = new OrderDAOSon();
+    private final OrderDAO preorderDAO = new OrderDAO();
+    private final MenuItemDAO menuItemDAO = new MenuItemDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -36,6 +42,12 @@ public class ReservationController extends HttpServlet {
         orderDAO.synchronizeDepositStatus();
         cleanFinishedReservationSession(request);
         String action = request.getParameter("action");
+
+        // [FIX PREORDER CART] Hiển thị giỏ riêng của đơn đặt bàn online.
+        if ("preorderCart".equals(action)) {
+            showPreorderCart(request, response);
+            return;
+        }
 
         if ("history".equals(action)) {
             Customer customer = getCustomer(request);
@@ -111,9 +123,8 @@ public class ReservationController extends HttpServlet {
 
             Order order = (Order) session.getAttribute("lastReservation");
             @SuppressWarnings("unchecked")
-            List<OrderReservationDetail> details
-                    = (List<OrderReservationDetail>) session.getAttribute(
-                            "lastReservationDetails");
+            List<OrderReservationDetail> details = (List<OrderReservationDetail>) session.getAttribute(
+                    "lastReservationDetails");
 
             session.removeAttribute("lastReservation");
             session.removeAttribute("lastReservationDetails");
@@ -135,6 +146,27 @@ public class ReservationController extends HttpServlet {
 
         orderDAO.synchronizeDepositStatus();
         cleanFinishedReservationSession(request);
+        String action = request.getParameter("action");
+
+        // [FIX PREORDER CART] Các thao tác giỏ đặt trước được xử lý trước
+        // form đặt bàn để không yêu cầu lại orderTime/areaType.
+        if ("addPreorderItem".equals(action)) {
+            addPreorderItem(request, response);
+            return;
+        }
+        if ("updatePreorderItem".equals(action)) {
+            updatePreorderItem(request, response);
+            return;
+        }
+        if ("removePreorderItem".equals(action)) {
+            removePreorderItem(request, response);
+            return;
+        }
+        if ("confirmPreorder".equals(action)) {
+            confirmPreorder(request, response);
+            return;
+        }
+
         String dateTimeStr = request.getParameter("orderTime");
         String areaType = request.getParameter("areaType");
 
@@ -211,7 +243,7 @@ public class ReservationController extends HttpServlet {
                 showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
                         selectedQuantities,
                         "Số lượng bàn " + detail.getCapacity()
-                        + " chỗ không còn đủ. Vui lòng chọn lại.");
+                                + " chỗ không còn đủ. Vui lòng chọn lại.");
                 return;
             }
         }
@@ -256,6 +288,148 @@ public class ReservationController extends HttpServlet {
 
         response.sendRedirect(request.getContextPath()
                 + "/menu?reservation=true&orderID=" + orderID);
+    }
+
+    /**
+     * [FIX PREORDER CART] Mở trang giỏ món riêng của khách đặt bàn trước.
+     */
+    private void showPreorderCart(HttpServletRequest request,
+            HttpServletResponse response) throws ServletException, IOException {
+        Integer orderID = getPendingReservationOrderID(request);
+        if (orderID == null) {
+            response.sendRedirect(request.getContextPath() + "/reservation");
+            return;
+        }
+
+        request.setAttribute("orderID", orderID);
+        request.setAttribute("orderItems",
+                preorderDAO.getOrderItemsByOrderId(orderID));
+        request.setAttribute("menuItems",
+                preorderDAO.getMenuItemsByOrderId(orderID));
+        request.getRequestDispatcher(
+                "/views/customer/reservation-cart.jsp")
+                .forward(request, response);
+    }
+
+    private void addPreorderItem(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        Integer orderID = getPendingReservationOrderID(request);
+        int itemID = toInt(request.getParameter("itemID"), -1);
+        int quantity = Math.max(1,
+                Math.min(99, toInt(request.getParameter("quantity"), 1)));
+
+        if (orderID == null || itemID <= 0) {
+            response.sendRedirect(request.getContextPath() + "/reservation");
+            return;
+        }
+
+        MenuItem item = menuItemDAO.getMenuItemById(itemID);
+        if (item == null || item.getIsAvailable() != 1) {
+            response.sendRedirect(request.getContextPath()
+                    + "/menu?reservation=true&orderID=" + orderID
+                    + "&error=item_unavailable");
+            return;
+        }
+
+        int price = item.getDiscountPercent() > 0
+                ? item.getDiscountedPrice() : item.getPrice();
+        preorderDAO.addOrderItem(
+                orderID, itemID, null, quantity, price, null);
+
+        response.sendRedirect(request.getContextPath()
+                + "/menu?reservation=true&orderID=" + orderID
+                + "&success=added");
+    }
+
+    private void updatePreorderItem(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        Integer orderID = getPendingReservationOrderID(request);
+        int orderItemID = toInt(request.getParameter("orderItemID"), -1);
+        int quantity = toInt(request.getParameter("quantity"), 1);
+
+        if (orderID != null && quantity >= 1 && quantity <= 99
+                && ownsPreorderItem(orderID, orderItemID)) {
+            preorderDAO.updateOrderItemQuantity(orderItemID, quantity);
+        }
+        redirectToPreorderCart(request, response);
+    }
+
+    private void removePreorderItem(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        Integer orderID = getPendingReservationOrderID(request);
+        int orderItemID = toInt(request.getParameter("orderItemID"), -1);
+
+        if (orderID != null && ownsPreorderItem(orderID, orderItemID)) {
+            preorderDAO.removeOrderItem(orderItemID);
+        }
+        redirectToPreorderCart(request, response);
+    }
+
+    private void confirmPreorder(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        Integer orderID = getPendingReservationOrderID(request);
+        Customer customer = getCustomer(request);
+        if (orderID == null || customer == null
+                || preorderDAO.getOrderItemsByOrderId(orderID).isEmpty()) {
+            redirectToPreorderCart(request, response);
+            return;
+        }
+
+        Order reservation = orderDAO.getOrderByID(orderID);
+        int invoiceID = reservation.getInvoiceID() != null
+                ? reservation.getInvoiceID()
+                : orderDAO.createDepositInvoice(
+                        orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+
+        if (invoiceID < 0) {
+            orderDAO.cancelReservation(orderID, customer.getCustomerID());
+            cleanFinishedReservationSession(request);
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=history");
+            return;
+        }
+
+        HttpSession session = request.getSession();
+        session.setAttribute("orderID", orderID);
+        session.setAttribute("invoiceID", invoiceID);
+        response.sendRedirect(request.getContextPath() + "/payment");
+    }
+
+    /**
+     * Chỉ cho thao tác trên đơn pending thuộc đúng khách đang đăng nhập.
+     */
+    private Integer getPendingReservationOrderID(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        Customer customer = getCustomer(request);
+        Integer orderID = session == null ? null
+                : (Integer) session.getAttribute("reservationOrderID");
+        if (orderID == null || customer == null) {
+            return null;
+        }
+
+        Order reservation = orderDAO.getOrderByID(orderID);
+        if (reservation == null
+                || reservation.getCustomerID() == null
+                || reservation.getCustomerID() != customer.getCustomerID()
+                || !"pending".equals(reservation.getOrderStatus())) {
+            return null;
+        }
+        return orderID;
+    }
+
+    private boolean ownsPreorderItem(int orderID, int orderItemID) {
+        for (OrderItem item : preorderDAO.getOrderItemsByOrderId(orderID)) {
+            if (item.getOrderItemID() == orderItemID) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void redirectToPreorderCart(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        response.sendRedirect(request.getContextPath()
+                + "/reservation?action=preorderCart");
     }
 
     private Table findGroup(List<Table> groups, int capacity) {
