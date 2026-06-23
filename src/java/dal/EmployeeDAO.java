@@ -55,8 +55,8 @@ public class EmployeeDAO extends DBContext {
             }
         }
     }
-    
-     public Employee findByEmail(String email) {
+
+    public Employee findByEmail(String email) {
         // Đã xóa salary
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
@@ -189,7 +189,7 @@ public class EmployeeDAO extends DBContext {
             ps.setString(6, e.getAddress());
             ps.setString(7, e.getImage());
             ps.setInt(8, e.getEmployeeID());
-            
+
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -268,9 +268,12 @@ public class EmployeeDAO extends DBContext {
      */
     public List<Employee> listStaffPaged(String keyword, Integer status, int page, int pageSize) {
         List<Employee> list = new ArrayList<>();
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 5;  //số lượng sản phẩm có trong trang
-
+        if (page < 1) {
+            page = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 5;  //số lượng sản phẩm có trong trang
+        }
         // Đã xóa salary
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
@@ -356,7 +359,28 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-    /** Lấy danh sách ID của các Owner active để gửi notification. */
+    public boolean checkCurrentPassword(int employeeID, String rawPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT password FROM Employee WHERE employeeID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password") == null ? "" : rs.getString("password");
+                    return util.PasswordUtil.verify(rawPassword, storedPassword);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Lấy danh sách ID của các Owner active để gửi notification.
+     */
     public List<Integer> getActiveOwnerIDs() {
         List<Integer> list = new ArrayList<>();
         String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
@@ -372,7 +396,6 @@ public class EmployeeDAO extends DBContext {
         }
         return list;
     }
-
 
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
@@ -394,20 +417,21 @@ public class EmployeeDAO extends DBContext {
         }
         return list;
     }
+
     // =========================================================
     // THUẬT TOÁN ĐIỀU PHỐI (LOAD BALANCING) THÔNG MINH
     // =========================================================
     public int getLeastBusyAndLongestIdleStaffID() {
-        String sql = "SELECT e.employeeID, " +
-                     "COUNT(CASE WHEN o.orderStatus NOT IN ('completed', 'cancelled') THEN 1 END) AS activeOrders, " +
-                     "COUNT(CASE WHEN o.orderStatus = 'completed' AND DATE(o.createdAt) = CURDATE() THEN 1 END) AS completedOrdersToday " +
-                     "FROM Employee e " +
-                     "LEFT JOIN `Order` o ON e.employeeID = o.employeeID " +
-                     "WHERE e.roleID = ? AND e.isActive = 1 " + 
-                     "GROUP BY e.employeeID, e.fullName " +
-                     "ORDER BY activeOrders ASC, completedOrdersToday ASC " +
-                     "LIMIT 1";
-                     
+        String sql = "SELECT e.employeeID, "
+                + "COUNT(CASE WHEN o.orderStatus NOT IN ('completed', 'cancelled') THEN 1 END) AS activeOrders, "
+                + "COUNT(CASE WHEN o.orderStatus = 'completed' AND DATE(o.createdAt) = CURDATE() THEN 1 END) AS completedOrdersToday "
+                + "FROM Employee e "
+                + "LEFT JOIN `Order` o ON e.employeeID = o.employeeID "
+                + "WHERE e.roleID = ? AND e.isActive = 1 "
+                + "GROUP BY e.employeeID, e.fullName "
+                + "ORDER BY activeOrders ASC, completedOrdersToday ASC "
+                + "LIMIT 1";
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
             try (ResultSet rs = ps.executeQuery()) {

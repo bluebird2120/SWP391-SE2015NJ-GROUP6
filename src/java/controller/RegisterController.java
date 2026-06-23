@@ -208,8 +208,8 @@ public class RegisterController extends HttpServlet {
         if (password == null || password.isBlank()) {
             return "Vui lòng nhập mật khẩu.";
         }
-        if (password.length() < 6) {
-            return "Mật khẩu phải có ít nhất 6 ký tự.";
+        if (password.length() < 6 || password.length() > 50) {
+            return "Mật khẩu phải có ít nhất 6 đến 50 ký tự.";
         }
         return null;
     }
