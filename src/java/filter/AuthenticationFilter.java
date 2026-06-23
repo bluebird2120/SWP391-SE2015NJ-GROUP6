@@ -54,6 +54,13 @@ public class AuthenticationFilter implements Filter {
         //Employee (/staff/*, /owner/*): Phân quyền động
         if (uri.startsWith(ctx + "/staff/") || uri.startsWith(ctx + "/owner/")) {
             if (employee == null) {
+                // Đã login customer nhưng cố vào staff/owner
+                if (customer != null) {
+                    response.sendRedirect(ctx + "/unauthorized");
+                    return;
+                }
+
+                //Customer chưa login
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }

@@ -87,6 +87,7 @@
     .nav-section-title i {
         font-size: 0.68rem;
     }
+
     .sidebar ul.nav {
         list-style: none;
         padding: 0;
@@ -98,49 +99,49 @@
         padding: 0;
         margin: 0;
     }
-
 </style>
 
 <nav class="sidebar">
     <div class="sidebar-header">
-        <h5><i class="fas fa-store"></i> Restaurant Management</h5>
+        <h5><i class="fas fa-store"></i> Quản lý nhà hàng</h5>
     </div>
     <ul class="nav flex-column mt-1">
 
-        <!-- Operations -->
+        <!-- Vận hành -->
         <li class="nav-item">
-            <div class="nav-section-title"><i class="fas fa-cog"></i> Operations</div>
+            <div class="nav-section-title"><i class="fas fa-cog"></i> Vận hành</div>
         </li>
+
         <c:if test="${sessionScope.employee.roleID == 2}">
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/dashboard">
-                    <i class="fas fa-house"></i> My Dashboard
+                    <i class="fas fa-house"></i> Trang tổng quan
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('order-management') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/order-management">
-                    <i class="fas fa-clipboard-list"></i> Orders
+                    <i class="fas fa-clipboard-list"></i> Đơn hàng
                 </a>
             </li>
         </c:if>
 
-        <%-- Staff: My Workspace (lịch ca + thông báo) --%>
+        <%-- Staff: Không gian làm việc --%>
         <c:if test="${sessionScope.employee.roleID == 2}">
             <li>
-                <div class="nav-section-title"><i class="fas fa-user-clock"></i> My Workspace</div>
+                <div class="nav-section-title"><i class="fas fa-user-clock"></i> Không gian làm việc</div>
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/my-schedule">
-                    <i class="fas fa-calendar-week"></i> My Schedule
+                    <i class="fas fa-calendar-week"></i> Lịch làm việc
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/notifications">
-                    <i class="fas fa-bell"></i> Notifications
+                    <i class="fas fa-bell"></i> Thông báo
                     <c:if test="${sessionScope.unreadCount > 0}">
                         <span style="background:#dc3545; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; margin-left:auto;">${sessionScope.unreadCount}</span>
                     </c:if>
@@ -148,18 +149,18 @@
             </li>
         </c:if>
 
-        <%-- roleID=1: Owner thấy Order History (đã sửa từ roleID==2 sang 1) --%>
+        <%-- Owner --%>
         <c:if test="${sessionScope.employee.roleID == 1}">
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/order-history">
-                    <i class="fas fa-history"></i> Order History
+                    <i class="fas fa-history"></i> Lịch sử đơn hàng
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/tables') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/manage-table">
-                    <i class="fas fa-chair"></i> Restaurant Tables
+                    <i class="fas fa-chair"></i> Bàn nhà hàng
                 </a>
             </li>
         </c:if>
@@ -167,91 +168,102 @@
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
                href="${pageContext.request.contextPath}/business-hours?action=list">
-                <i class="fas fa-clock"></i> Business Hours
+                <i class="fas fa-clock"></i> Giờ hoạt động
             </a>
         </li>
-        <!-- Workforce — chỉ Owner quản lý nhân sự và phân ca -->
+
+        <!-- Nhân sự — chỉ Owner -->
         <c:if test="${sessionScope.employee.roleID == 1}">
             <li>
-                <div class="nav-section-title"><i class="fas fa-users"></i> Workforce</div>
+                <div class="nav-section-title"><i class="fas fa-users"></i> Nhân sự</div>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('shift-template') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/shift-templates">
-                    <i class="fas fa-calendar-alt"></i> Shift Templates
+                    <i class="fas fa-calendar-alt"></i> Mẫu ca làm việc
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/shift-roster') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/shift-roster">
-                    <i class="fas fa-user-clock"></i> Shift Roster
+                    <i class="fas fa-user-clock"></i> Phân công ca
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/staff') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/staff?action=list">
-                    <i class="fas fa-user-tie"></i> Manage Staff
+                    <i class="fas fa-user-tie"></i> Quản lý nhân viên
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/customers-list') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/customers-list">
-                    <i class="fas fa-users"></i> Customer List
+                    <i class="fas fa-users"></i> Danh sách khách hàng
                 </a>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/attendance">
-                    <i class="fas fa-clipboard-check"></i> Attendance
+                    <i class="fas fa-clipboard-check"></i> Chấm công
                 </a>
             </li>
         </c:if>
 
-        <!-- Finance -->
-        <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Finance</div></li>
+        <!-- Tài chính -->
+        <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Tài chính</div></li>
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
                href="${pageContext.request.contextPath}/invoice?action=list">
-                <i class="fas fa-file-invoice"></i> Invoices
+                <i class="fas fa-file-invoice"></i> Hóa đơn
             </a>
-        </li>      
-        <!-- Menu -->
-        <!-- Menu -->
-        <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Menu</div></li>
+        </li>
+
+        <!-- Thực đơn -->
+        <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
                href="${pageContext.request.contextPath}/category-management">
-                <i class="fas fa-list"></i> Categories
+                <i class="fas fa-list"></i> Danh mục món
             </a>
         </li>
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
                href="${pageContext.request.contextPath}/menu">
-                <i class="fas fa-hamburger"></i> Menu Items
+                <i class="fas fa-hamburger"></i> Món ăn
             </a>
         </li>
 
-        <!-- Analytics — chỉ Owner -->
+        <%-- Chỉ Owner mới thấy Tồn kho hàng ngày --%>
+        <c:if test="${sessionScope.employee.roleID == 1}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('daily-inventory') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/daily-inventory">
+                    <i class="fas fa-boxes"></i> Tồn kho hàng ngày
+                </a>
+            </li>
+        </c:if>
+
+        <!-- Thống kê — chỉ Owner -->
         <c:if test="${sessionScope.employee.roleID == 1}">
             <li class="nav-item">
-                <div class="nav-section-title"><i class="fas fa-chart-pie"></i> Analytics & Reports</div>
+                <div class="nav-section-title"><i class="fas fa-chart-pie"></i> Thống kê & Báo cáo</div>
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('restaurant-analytics-dashboard') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/restaurant-analytics-dashboard">
-                    <i class="fas fa-chart-line"></i> Overview Dashboard
+                    <i class="fas fa-chart-line"></i> Tổng quan
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('top-dishes-report') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/top-dishes-report">
-                    <i class="fas fa-award"></i> Top Selling Dishes
+                    <i class="fas fa-award"></i> Món bán chạy
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('peak-hours-analysis') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/peak-hours-analysis">
-                    <i class="fas fa-clock"></i> Peak Hours
+                    <i class="fas fa-clock"></i> Giờ cao điểm
                 </a>
             </li>
         </c:if>
