@@ -59,11 +59,36 @@ public class CategoryController extends HttpServlet {
      * @throws IOException if an I/O error occurs
      */
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
-
+    private static final int PAGE_SIZE = 8;
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<MenuCategory> categoryList = menuCategoryDAO.getAllMenuCategory();
+        String search = request.getParameter("search");
+        String page_raw = request.getParameter("page");
+
+        if (!checkEmpty(search)) {
+            search = "";
+        }
+        int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        String errorSearch = search.length() > 100 ? "Tìm kiếm vượt quá 100 kí tự" : "";
+        
+        if(checkEmpty(errorSearch)){
+            request.setAttribute("errorSearch", errorSearch);
+            search = "";
+        }
+        
+        int totalCategory = menuCategoryDAO.countSearchCategory(search);
+        int totalPage = (int) Math.ceil((double) totalCategory / PAGE_SIZE);
+        
+        if (page > totalPage && totalPage > 0) {
+            page = totalPage;
+        }
+        
+        int offset = (page - 1) * PAGE_SIZE;
+        List<MenuCategory> categoryList = menuCategoryDAO.searchCategoryPaging(search, offset, PAGE_SIZE);
+        request.setAttribute("categoryList", categoryList);
+        request.setAttribute("totalPage", totalPage);
+        request.setAttribute("currentPage", page);
         for (MenuCategory mc : categoryList) {
             int activeDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 1);
             int inactiveDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 0);
@@ -72,7 +97,6 @@ public class CategoryController extends HttpServlet {
             mc.setInactiveMenuItem(inactiveDish);
             mc.setTotalDish(totalDish);
         }
-        request.setAttribute("categoryList", categoryList);
         request.getRequestDispatcher("views/admin/category-list.jsp").forward(request, response);
     }
 
@@ -91,8 +115,8 @@ public class CategoryController extends HttpServlet {
         String categoryName = request.getParameter("categoryName");
         String status_raw = request.getParameter("status");
         int id = checkEmpty(categoryID) ? Integer.parseInt(categoryID) : 0;
-              
-        if(checkEmpty(status_raw) && id > 0){
+
+        if (checkEmpty(status_raw) && id > 0) {
             int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 0;
             menuCategoryDAO.changeStatusCategory(id, status);
             response.sendRedirect(request.getContextPath() + "/category-management");

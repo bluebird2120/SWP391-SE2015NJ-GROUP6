@@ -75,7 +75,7 @@
             <c:choose>
                 <c:when test="${mode == 'add'}">Thêm Bàn Mới</c:when>
                 <c:when test="${mode == 'edit'}">Cập nhật thông tin Bàn</c:when>
-                <c:when test="${mode == 'detail'}">Hồ sơ Chi tiết: ${table.tableName}</c:when>
+                <c:when test="${mode == 'detail'}">Thông tin: ${table.tableName}</c:when>
             </c:choose>
         </h2>
 

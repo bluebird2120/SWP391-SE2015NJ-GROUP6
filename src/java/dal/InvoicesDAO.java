@@ -118,4 +118,40 @@ public class InvoicesDAO {
         }
         return false;
     }
+    
+    // =========================================================
+    // 5. CẬP NHẬT THANH TOÁN THÀNH CÔNG VÀ CHUYỂN BÀN SANG CHỜ DỌN (CLEANING)
+    // =========================================================
+    public boolean updatePaymentSuccessAndCleaningTable(int invoiceID, int orderID, String paymentMethod) {
+        // 1. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
+        String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? WHERE invoiceID = ?";
+        
+        // 2. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
+        String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', tableStatus = 'cleaning' WHERE orderID = ?";
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false); // Bật chế độ giao dịch an toàn
+
+            try (PreparedStatement ps1 = conn.prepareStatement(sqlInvoice);
+                 PreparedStatement ps2 = conn.prepareStatement(sqlOrder)) {
+
+                ps1.setString(1, paymentMethod);
+                ps1.setInt(2, invoiceID);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, orderID);
+                ps2.executeUpdate();
+
+                conn.commit(); // Lưu thay đổi
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback(); // Hoàn tác nếu có lỗi
+                System.err.println("[InvoicesDAO] updatePaymentSuccessAndCleaningTable lỗi Transaction: " + e.getMessage());
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] updatePaymentSuccessAndCleaningTable lỗi Connection: " + e.getMessage());
+        }
+        return false;
+    }
 }

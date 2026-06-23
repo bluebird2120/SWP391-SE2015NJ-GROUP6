@@ -20,9 +20,9 @@
             .container {
                 width: 100%;
                 max-width: 1100px;
-                margin: 32px auto; 
-                padding: 0 16px;   
-                min-height: 60vh;  
+                margin: 32px auto;
+                padding: 0 16px;
+                min-height: 60vh;
             }
 
             /* Header giỏ hàng */
@@ -112,7 +112,7 @@
                 width: 20px;
                 height: 20px;
                 cursor: pointer;
-                accent-color: #1c4332; 
+                accent-color: #1c4332;
             }
 
             /* Khung ảnh món ăn */
@@ -135,7 +135,7 @@
             .item-name {
                 font-size: 18px;
                 font-weight: 700;
-                color: #1c4332; 
+                color: #1c4332;
                 margin-bottom: 4px;
             }
             .item-description {
@@ -146,7 +146,7 @@
             }
             .item-note {
                 font-size: 12px;
-                color: #bc945c; 
+                color: #bc945c;
                 font-style: italic;
                 font-weight: 500;
             }
@@ -189,8 +189,10 @@
                 font-weight: bold;
                 cursor: pointer;
             }
-            .qty-btn:hover { color: #bc945c; }
-            
+            .qty-btn:hover {
+                color: #bc945c;
+            }
+
             .qty-control-box input[type=number] {
                 width: 40px;
                 background: transparent;
@@ -357,7 +359,9 @@
                 text-decoration: none;
                 font-weight: bold;
             }
-            .empty-state a:hover { text-decoration: underline; }
+            .empty-state a:hover {
+                text-decoration: underline;
+            }
 
             .bottom-count-bar {
                 margin-top: 16px;
@@ -403,7 +407,7 @@
                 <div class="cart-main-layout">
 
                     <div class="cart-items-column">
-                        
+
                         <c:set var="currentTableID" value="-1" />
 
                         <c:forEach var="oi" items="${orderItems}" varStatus="loop">
@@ -446,7 +450,7 @@
                                 <div class="item-image-placeholder" style="padding: 0; overflow: hidden; background: transparent; border: none;">
                                     <c:choose>
                                         <c:when test="${not empty mi.image}">
-                                            <img src="${pageContext.request.contextPath}/${mi.image}" 
+                                            <img src="${mi.image}" 
                                                  alt="${mi.itemName}" 
                                                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
                                         </c:when>
@@ -485,12 +489,12 @@
 
                                         <div class="qty-control-box">
                                             <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
-                                            
+
                                             <input type="number" name="quantity" value="${oi.quantity}" min="1" max="99"
                                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                                                    oninput="checkLiveQty(this)"
                                                    onchange="validateQty(this)">
-                                                   
+
                                             <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
                                         </div>
                                         <span class="qty-error" style="display:none; color:#e74c3c; font-size:11px; margin-top:4px; font-weight:bold;">Yêu cầu: Từ 1-99</span>
@@ -555,7 +559,7 @@
             </c:if>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
-        
+
         <script>
             function toggleAll(source) {
                 document.querySelectorAll('.item-checkbox')
@@ -615,7 +619,8 @@
                 // Nếu ô nhập bị xóa rỗng hoặc gõ số âm lẻ
                 if (isNaN(val) || val < 1) {
                     errorSpan.style.display = 'block';
-                    if (btnCheckout) btnCheckout.disabled = true; // KHÓA CỨNG nút thanh toán để ngăn chặn gửi đơn lỗi
+                    if (btnCheckout)
+                        btnCheckout.disabled = true; // KHÓA CỨNG nút thanh toán để ngăn chặn gửi đơn lỗi
                 } else {
                     errorSpan.style.display = 'none';
                     updateTotal(); // Tính toán lại tiền nong live nếu hợp lệ
@@ -632,7 +637,7 @@
                     input.value = 1;
                     val = 1;
                 }
-                
+
                 if (val > 99) {
                     input.value = 99;
                     val = 99;

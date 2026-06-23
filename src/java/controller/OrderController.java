@@ -56,16 +56,16 @@ public class OrderController extends HttpServlet {
         if ("cart".equals(action)) {
             HttpSession session = request.getSession();
 
-            // Tạm thời fix cứng bằng 2 để test (Nhớ xóa hoặc comment lại khi đưa vào thực tế)
-            Integer orderID = 2;
-            session.setAttribute("orderID", orderID);
-            session.setAttribute("tableID", 2);
+            // LẤY ORDER_ID THẬT TỪ SESSION (Đã sinh ra lúc quét QR)
+            Integer orderID = (Integer) session.getAttribute("orderID");
 
             if (orderID == null) {
+                // Nếu không có Order (khách chưa chọn món nào mà bấm vào giỏ)
                 request.setAttribute("orderItems", null);
                 request.setAttribute("menuItems", null);
+                request.setAttribute("errorMsg", "Giỏ hàng của bạn đang trống!");
             } else {
-                // Lấy 2 list song song — thứ tự index tương ứng nhau
+                // Lấy 2 list song song từ Database dựa trên orderID thật
                 List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
                 List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderId(orderID);
 
