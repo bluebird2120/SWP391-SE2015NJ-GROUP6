@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
@@ -18,51 +14,109 @@ import dal.MenuItemDAO;
 import jakarta.servlet.http.HttpSession;
 import model.MenuItem;
 
-/**
- *
- * @author Admin
- */
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
+// === BẮT ĐẦU PHẦN THÊM MỚI (IMPORT): Nhập thêm thư viện cần thiết ===
+import dal.TableDAO;
+import dal.OrderDAO;
+import model.Table;
+import model.Order;
+import model.Employee;
+// === KẾT THÚC PHẦN THÊM MỚI ===
+
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu", "/scan"})
 public class MenuItemController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet MenuItemController</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet MenuItemController at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+            out.println("<head><title>Servlet MenuItemController</title></head>");
+            out.println("<body><h1>Servlet MenuItemController at " + request.getContextPath() + "</h1></body></html>");
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+
+        // === BẮT ĐẦU PHẦN THÊM MỚI: XỬ LÝ QUÉT MÃ QR BẰNG TOKEN (HOST/GUEST) ===
+        String token = request.getParameter("token");
+        int tableIdFromToken = 0;
+
+        if (token != null && !token.isEmpty()) {
+            TableDAO tableDAO = new TableDAO();
+            Table currentTable = tableDAO.getTableByToken(token);
+
+            if (currentTable != null && currentTable.getIsActive() == 1) {
+                tableIdFromToken = currentTable.getTableID();
+
+                // Lưu thông tin cơ bản vào session
+                session.setAttribute("tableID", currentTable.getTableID());
+                session.setAttribute("currentTableID", currentTable.getTableID());
+                session.setAttribute("areaType", currentTable.getAreaType());
+
+                OrderDAO orderDAO = new OrderDAO();
+                Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
+
+                if (activeOrder != null) {
+//                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
+//
+//                    // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
+//                    if (activeOrder.getIsStaffConfirmed() == 0) {
+//                        session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+//                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
+//                        return; // Khóa luồng, không cho load Menu!
+//                    }
+//                    // --- KẾT THÚC BARIE ---
+
+                    String role = (String) session.getAttribute("roleInTable");
+                    Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+
+                    if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
+                        // Host hoặc Guest đã duyệt -> Cho vào Menu
+                    } else {
+                        // Người lạ -> Xin phép Host
+                        session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                        request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
+                        return;
+                    }
+                } else {
+                    // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG (Người đầu tiên quét)
+                    Order newOrder = new Order();
+                    newOrder.setTableStatus("occupied");
+                    newOrder.setOrderType(1);
+
+                    // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT
+                    newOrder.setIsStaffConfirmed(1);
+
+                    newOrder.setOrderStatus("ordering");
+                    newOrder.setTotalAmount(0);
+                    newOrder.setDepositAmount(0);
+
+                    int newOrderID = orderDAO.createOrder(newOrder);
+                    if (newOrderID > 0) {
+                        orderDAO.linkOrderAndTable(newOrderID, currentTable.getTableID());
+                        session.setAttribute("orderID", newOrderID);
+                        session.setAttribute("roleInTable", "HOST");
+
+                        // TẠM THỜI COMMENT ĐOẠN ĐẨY RA MÀN HÌNH CHỜ
+                        /* session.setAttribute("pendingOrderID", newOrderID);
+                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
+                        return;
+                         */
+                    }
+                }
+            } else {
+                response.sendRedirect(request.getContextPath() + "/error.jsp");
+                return;
+            }
+        }
+        // === KẾT THÚC PHẦN THÊM MỚI ===
+
+        // --- LOGIC GỐC CỦA BẠN CỦA BẠN (GIỮ NGUYÊN 100%) ---
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
         String status_raw = request.getParameter("status");
@@ -72,7 +126,7 @@ public class MenuItemController extends HttpServlet {
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-        
+
         if (!checkEmpty(search)) {
             search = "";
         }
@@ -85,10 +139,26 @@ public class MenuItemController extends HttpServlet {
 
         int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
-        int minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
-        int maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        int minPrice = 0;
+        int maxPrice = 0;
+        try {
+            minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
+        } catch (NumberFormatException e) {
+            minPrice = 0;
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
+
+        try {
+            maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        } catch (NumberFormatException e) {
+            maxPrice = Integer.MAX_VALUE;
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
-        int tableID = checkEmpty(tableID_raw) ? Integer.parseInt(tableID_raw) : 0;
+
+        // Cập nhật lại tableID để tương thích với Token (nếu quét Token thì ưu tiên lấy ID từ Token)
+        int tableID = (tableIdFromToken > 0) ? tableIdFromToken : (checkEmpty(tableID_raw) ? Integer.parseInt(tableID_raw) : 0);
+
         String errorPrice = checkPriceInput(minPrice, maxPrice);
         String errorSearch = isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự");
 
@@ -118,32 +188,33 @@ public class MenuItemController extends HttpServlet {
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
-        HttpSession session = request.getSession();
-        session.setAttribute("currentTableID", tableID);
-        
-        if (checkEmpty(tableID_raw)) {
-            request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
-        } else {
-            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+
+        // Xóa dòng gán currentTableID gốc vì phần token đã gán chuẩn hơn
+        if (tableID > 0) {
+            session.setAttribute("currentTableID", tableID);
         }
+
+        // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
+        Employee loginUser = (Employee) session.getAttribute("employee");
+        Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
+
+        // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
+        if (sessionTableID == null) {
+            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+        } else {
+            // Còn lại (Khách vãng lai, Khách quét QR) -> Trỏ vào trang Menu User
+            request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
+        }
+        // === KẾT THÚC PHẦN CHỈNH SỬA ===
     }
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
     private MenuItemDAO mi = new MenuItemDAO();
     private static final int PAGE_SIZE = 8;
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
     }
 
     private String isValidString(String data, int length, String ms) {
@@ -168,14 +239,8 @@ public class MenuItemController extends HttpServlet {
         return (data != null && !data.trim().isEmpty());
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
     @Override
     public String getServletInfo() {
         return "Short description";
-    }// </editor-fold>
-
+    }
 }

@@ -5,7 +5,7 @@
 package controller;
 
 import dal.CustomerDAO;
-import dal.EmailOTPDAO;
+import dal.EmailDAO;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -40,8 +40,25 @@ public class RegisterController extends HttpServlet {
         if (session != null && session.getAttribute("customer") != null) {
             response.sendRedirect(request.getContextPath() + "/");
             return;
-
         }
+        
+        //fill thông tin khi bấm đăng kí lại tại trang verify-otp
+        if (session != null) {
+            Object pendingUserName = session.getAttribute("pendingUserName");
+            Object pendingPhoneNumber = session.getAttribute("pendingPhoneNumber");
+            Object pendingEmail = session.getAttribute("pendingEmail");
+
+            if (pendingUserName != null) {
+                request.setAttribute("userName", pendingUserName);
+            }
+            if (pendingPhoneNumber != null) {
+                request.setAttribute("phoneNumber", pendingPhoneNumber);
+            }
+            if (pendingEmail != null) {
+                request.setAttribute("email", pendingEmail);
+            }
+        }
+        
         request.getRequestDispatcher("/views/register.jsp").forward(request, response);
     }
 
@@ -133,7 +150,7 @@ public class RegisterController extends HttpServlet {
         int expireMinutes = 5;
         
         try {
-            EmailOTPDAO otpDAO = new EmailOTPDAO();
+            EmailDAO otpDAO = new EmailDAO();
             otpDAO.createOtp(email, otpCode, "register", expireMinutes);
             util.EmailService.sendOtpEmail(email, otpCode, expireMinutes);
         } catch (SQLException e) {
@@ -191,8 +208,8 @@ public class RegisterController extends HttpServlet {
         if (password == null || password.isBlank()) {
             return "Vui lòng nhập mật khẩu.";
         }
-        if (password.length() < 6) {
-            return "Mật khẩu phải có ít nhất 6 ký tự.";
+        if (password.length() < 6 || password.length() > 50) {
+            return "Mật khẩu phải có ít nhất 6 đến 50 ký tự.";
         }
         return null;
     }

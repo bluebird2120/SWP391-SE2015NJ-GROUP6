@@ -14,7 +14,7 @@ import model.MenuCategory;
  *
  * @author Admin
  */
-public class MenuCategoryDAO extends DBContext{
+public class MenuCategoryDAO extends DBContext {
 
     public List<MenuCategory> getAllMenuCategory() {
 
@@ -27,7 +27,7 @@ public class MenuCategoryDAO extends DBContext{
 
             while (rs.next()) {
                 MenuCategory mc = new MenuCategory(
-                        rs.getInt("categoryID"), 
+                        rs.getInt("categoryID"),
                         rs.getString("categoryName"));
                 list.add(mc);
             }
@@ -37,8 +37,8 @@ public class MenuCategoryDAO extends DBContext{
         }
         return list;
     }
-    
-    public int countDishByStatus(int categoryID, int isAvailable){
+
+    public int countDishByStatus(int categoryID, int isAvailable) {
         String sql = "select count(*) from MenuItem "
                 + "where categoryID = ? and isAvailable = ?";
         try {
@@ -46,30 +46,30 @@ public class MenuCategoryDAO extends DBContext{
             ps.setInt(1, categoryID);
             ps.setInt(2, isAvailable);
             ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return rs.getInt(1);   
+            if (rs.next()) {
+                return rs.getInt(1);
             }
         } catch (Exception e) {
         }
         return 0;
     }
-    
-    public int countDishByCategory(int categoryID){
+
+    public int countDishByCategory(int categoryID) {
         String sql = "select count(*) from MenuItem "
                 + "where categoryID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, categoryID);
             ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return rs.getInt(1);   
+            if (rs.next()) {
+                return rs.getInt(1);
             }
         } catch (Exception e) {
         }
         return 0;
     }
-    
-    public boolean updateCategory(String categoryName, int categoryID){
+
+    public boolean updateCategory(String categoryName, int categoryID) {
         String sql = "update MenuCategory set categoryName = ? "
                 + "where categoryID = ?";
         try {
@@ -81,8 +81,8 @@ public class MenuCategoryDAO extends DBContext{
         }
         return false;
     }
-    
-    public boolean insertCategory(String categoryName){
+
+    public boolean insertCategory(String categoryName) {
         String sql = "insert into MenuCategory (categoryName) "
                 + "values(?)";
         try {
@@ -93,8 +93,8 @@ public class MenuCategoryDAO extends DBContext{
         }
         return false;
     }
-    
-    public boolean changeStatusCategory(int categoryID, int status){
+
+    public boolean changeStatusCategory(int categoryID, int status) {
         String sql = "update MenuItem set isAvailable = ? "
                 + "where categoryID = ?";
         try {
@@ -105,5 +105,42 @@ public class MenuCategoryDAO extends DBContext{
         } catch (Exception e) {
         }
         return false;
+    }
+
+    public int countSearchCategory(String search) {
+        int total = 0;
+        String sql = "select count(*) from MenuCategory "
+                + "where categoryName like ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, "%" + search + "%");
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return total = rs.getInt(1);
+            }
+        } catch (Exception e) {
+        }
+        return total;
+    }
+
+    public List<MenuCategory> searchCategoryPaging(String search, int offset, int pageSize) {
+        List<MenuCategory> list = new ArrayList<>();
+        String sql = "select * from MenuCategory "
+                + "where categoryName like ? "
+                + "LIMIT ?, ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, "%" + search + "%");
+            ps.setInt(2, offset);
+            ps.setInt(3, pageSize);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                MenuCategory mc = new MenuCategory(rs.getInt("categoryID"), rs.getString("categoryName"));
+                list.add(mc);
+            }
+
+        } catch (Exception e) {
+        }
+        return list;
     }
 }

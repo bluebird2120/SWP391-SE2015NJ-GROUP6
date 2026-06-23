@@ -87,6 +87,25 @@ public class CustomerDAO extends DBContext {
         }
     }
 
+    public boolean checkCurrentPassword(int customerID, String rawPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT password FROM Customer WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, customerID);
+            try (ResultSet rs = ps.executeQuery()) { 
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password") == null ? "" : rs.getString("password");
+                    return util.PasswordUtil.verify(rawPassword, storedPassword);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer c = new Customer();
         c.setCustomerID(rs.getInt("customerID"));
@@ -97,7 +116,7 @@ public class CustomerDAO extends DBContext {
         c.setLoginProvider(rs.getString("loginProvider"));
         return c;
     }
-    
+
     public boolean registerVerified(String userName, String phoneNumber,
             String email, String hashedPassword) throws SQLException {
         String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified) "
@@ -289,4 +308,16 @@ public class CustomerDAO extends DBContext {
         return 0;
     }
 
+    public boolean updatePassword(int customerID, String newHashedPassword) 
+            throws SQLException{
+        String sql = "UPDATE Customer SET password = ? WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, newHashedPassword);
+            ps.setInt(2, customerID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }

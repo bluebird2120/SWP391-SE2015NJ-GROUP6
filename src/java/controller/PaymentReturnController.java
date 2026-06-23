@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import dal.InvoicesDAO;
@@ -22,12 +18,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import model.Invoices;
 import util.Config;
 
-/**
- *
- * @author taduc
- */
 @WebServlet(name = "PaymentReturnController", urlPatterns = {"/vnpay_return"})
 public class PaymentReturnController extends HttpServlet {
 
@@ -36,7 +29,6 @@ public class PaymentReturnController extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        // Ở đây ta không in HTML mặc định nữa, mà sẽ xử lý logic VNPay
     }
 
     @Override
@@ -76,23 +68,49 @@ public class PaymentReturnController extends HttpServlet {
                 // === THANH TOÁN THÀNH CÔNG ===
                 HttpSession session = request.getSession();
                 Integer invoiceID = (Integer) session.getAttribute("invoiceID");
+                Integer orderID = (Integer) session.getAttribute("orderID"); // Bổ sung lấy orderID
 
-                // CHÍNH THỨC CẬP NHẬT DATABASE TẠI ĐÂY
+                // [FIX VNPAY] Phân biệt hóa đơn cọc và hóa đơn thanh toán cuối.
+                // DEP-: chỉ xác nhận đã cọc; OrderDAOSon sẽ đồng bộ
+                // pending/reserved -> reserved/reserved.
+                // INV-: thanh toán bữa ăn xong -> completed/cleaning.
                 if (invoiceID != null) {
-                    invoicesDAO.updateInvoiceStatus(invoiceID, "paid", "vnpay");
+                    Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
+                    if (invoice != null
+                            && invoice.getInvoiceNumber() != null
+                            && invoice.getInvoiceNumber().startsWith("DEP-")) {
+                        invoicesDAO.updateInvoiceStatus(
+                                invoiceID, "paid", "vnpay");
+                    } else if (invoice != null && orderID != null) {
+                        invoicesDAO.updatePaymentSuccessAndCleaningTable(
+                                invoiceID, orderID, "vnpay");
+                    }
                 }
 
-                // Dọn dẹp session để khách có thể đặt đơn mới
+                // Dọn dẹp session để khách có thể quét mã gọi món lượt mới
                 session.removeAttribute("orderID");
                 session.removeAttribute("invoiceID");
+                session.removeAttribute("tableID"); 
 
-                // In ra thông báo thành công (Bạn có thể sửa thành response.sendRedirect sang 1 trang JSP đẹp hơn)
+                // In ra thông báo thành công
                 out.println("<h2 style='color: green; text-align: center; margin-top: 50px;'>🎉 THANH TOÁN THÀNH CÔNG!</h2>");
                 out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
+                out.println("<p style='text-align: center; color: #bc945c;'><i>Bàn của bạn đang được đưa vào trạng thái chờ dọn dẹp.</i></p>");
                 out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Quay lại Menu</a></div>");
 
             } else {
                 // === GIAO DỊCH LỖI HOẶC BỊ HỦY ===
+                // [FIX VNPAY] Ghi nhận thất bại để đơn cọc pending được
+                // OrderDAOSon chuyển thành cancelled/available.
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    Integer invoiceID
+                            = (Integer) session.getAttribute("invoiceID");
+                    if (invoiceID != null) {
+                        invoicesDAO.updateInvoiceStatus(
+                                invoiceID, "failed", "vnpay");
+                    }
+                }
                 out.println("<h2 style='color: red; text-align: center; margin-top: 50px;'>❌ THANH TOÁN THẤT BẠI HOẶC BỊ HỦY!</h2>");
                 out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/order?action=cart'>Quay lại Giỏ hàng</a></div>");
             }
@@ -111,7 +129,7 @@ public class PaymentReturnController extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Short description";
+        return "VNPay Return Controller";
     }
 
     // Hàm hỗ trợ băm lại các tham số nhận được

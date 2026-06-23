@@ -23,15 +23,10 @@ public class LoginController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        //register -> login
-        if ("true".equals(request.getParameter("registered"))) {
-            request.setAttribute("successMessage",
-                    "Đăng ký thành công. Vui lòng đăng nhập.");
-        }
-
         HttpSession session = request.getSession(false);
 
         if (session != null) {
+            //Đã đăng nhập thì đẩy về trang phù hợp
             if (session.getAttribute("employee") != null) {
                 redirectEmployee(request, response, (Employee) session.getAttribute("employee"));
                 return;
@@ -40,7 +35,28 @@ public class LoginController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/");
                 return;
             }
+
+            String successMessage = (String) session.getAttribute("successMessage");
+            if (successMessage != null) {
+                request.setAttribute("successMessage", successMessage);
+                session.removeAttribute("successMessage");
+            }
         }
+        
+        //register -> login
+        if ("true".equals(request.getParameter("registered"))) {
+            request.setAttribute("successMessage",
+                    "Đăng ký thành công. Vui lòng đăng nhập.");
+            if (session != null) {
+                request.setAttribute("identifier", session.getAttribute("registeredPhone"));
+                request.setAttribute("prefillPassword", session.getAttribute("registeredPassword"));
+
+                // dùng 1 lần rồi xóa
+                session.removeAttribute("registeredPhone");
+                session.removeAttribute("registeredPassword");
+            }
+        }
+
         request.getRequestDispatcher("/views/login.jsp").forward(request, response);
     }
 
@@ -81,11 +97,26 @@ public class LoginController extends HttpServlet {
             //nếu cả 2 null -> sai thông tin
             request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng!");
             request.setAttribute("identifier", phone);
+
+            //Xóa successMessage khi login thất bại
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.removeAttribute("successMessage");
+            }
+
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau");
             request.setAttribute("identifier", phone);
+            
+            //Xóa successMessage khi login thất bại
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.removeAttribute("successMessage");
+            }
+            
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
         }
     }
@@ -165,7 +196,7 @@ public class LoginController extends HttpServlet {
         }
         return null;
     }
-    
+
     private String trim(String str) {
         return str == null ? "" : str.trim();
     }

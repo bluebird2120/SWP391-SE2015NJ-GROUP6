@@ -414,6 +414,93 @@
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                     </c:if>
+        <c:if test="${sessionScope.customer != null}">
+            <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
+                <i class="fa-solid fa-bell"></i>
+                <c:if test="${sessionScope.unreadCount > 0}">
+                    <span class="notif-count">${sessionScope.unreadCount}</span>
+                </c:if>
+            </a>
+            <div class="user-menu" id="menuCustomer">
+                <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
+                    <div class="user-avatar">
+                        <%= customerInitial %>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">${sessionScope.customer.userName}</span>
+                        <span class="role-badge badge-customer">Khách hàng</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="dropdown" id="dropCustomer">
+                    <div class="dd-header">
+                        <div class="dd-name">${sessionScope.customer.userName}</div>
+                        <div class="dd-email">${sessionScope.customer.email}</div>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
+                        <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
+                        <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/customer/reviews"><i class="fa-solid fa-star"></i>Đánh giá của tôi</a>
+                        <a href="${pageContext.request.contextPath}/customer/feedback"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
+                    </div>
+                </div>
+            </div>
+        </c:if>
+
+        <c:if test="${sessionScope.employee != null}">
+            <a href="${pageContext.request.contextPath}/staff/notifications" class="notif-btn">
+                <i class="fa-solid fa-bell"></i>
+                <c:if test="${sessionScope.unreadCount > 0}">
+                    <span class="notif-count">${sessionScope.unreadCount}</span>
+                </c:if>
+            </a>
+            <div class="user-menu" id="menuEmployee">
+                <div class="user-trigger" onclick="toggleMenu('dropEmployee', 'menuEmployee')">
+                    <div class="user-avatar">
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.employee.image}">
+                                <img src="${pageContext.request.contextPath}/${sessionScope.employee.image}" alt="avatar">
+                            </c:when>
+                            <c:otherwise><%= employeeInitial %></c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">${sessionScope.employee.fullName}</span>
+                        <c:choose>
+                            <c:when test="${sessionScope.employee.roleID == 1}">
+                                <span class="role-badge badge-owner">Owner</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="role-badge badge-staff">Nhân viên</span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="dropdown" id="dropEmployee">
+                    <div class="dd-header">
+                        <div class="dd-name">${sessionScope.employee.fullName}</div>
+                        <div class="dd-email">${sessionScope.employee.email}</div>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/staff/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                    </div>
+                    <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
+                        <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
+                    </div>
+                </div>
+            </div>
+        </c:if>
+    </div>
+</header>
 
                     <c:if test="${sessionScope.customer == null && sessionScope.employee == null}">
                         <div class="auth-buttons">

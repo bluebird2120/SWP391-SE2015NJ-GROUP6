@@ -96,8 +96,28 @@ public class TableManageController extends HttpServlet {
                     searchName = ""; // Reset bộ lọc tên nếu vi phạm quy định
                 }
 
-                // 3. Gọi hàm DAO để truy vấn dữ liệu đã lọc
-                List<Table> list = tableDAO.searchTables(searchName, searchCapacity, searchArea, searchStatus);
+                // =========================================================
+                // --- BẮT ĐẦU: XỬ LÝ PHÂN TRANG (CÓ KÈM THEO BỘ LỌC) ---
+                // =========================================================
+                final int PAGE_SIZE = 10; // Bạn có thể đổi thành 10 bàn trên 1 trang tùy ý
+                String page_raw = request.getParameter("page");
+                int page = (page_raw != null && !page_raw.trim().isEmpty()) ? Integer.parseInt(page_raw) : 1;
+
+                // 3.1. Đếm tổng số bàn thỏa mãn điều kiện lọc
+                int totalItem = tableDAO.countSearchTables(searchName, searchCapacity, searchArea, searchStatus);
+                int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
+
+                if (page > totalPage && totalPage > 0) {
+                    page = totalPage;
+                }
+
+                int offSet = (page - 1) * PAGE_SIZE;
+
+                // 3.2. Gọi hàm DAO để truy vấn dữ liệu đã lọc và cắt trang
+                List<Table> list = tableDAO.searchTablesPaging(searchName, searchCapacity, searchArea, searchStatus, offSet, PAGE_SIZE);
+                // =========================================================
+                // --- KẾT THÚC: XỬ LÝ PHÂN TRANG ---
+                // =========================================================
                 
                 // 4. Đẩy ngược các giá trị đã chọn ra Request để giữ trạng thái Form sau khi F5
                 request.setAttribute("searchName", searchName);
@@ -105,8 +125,12 @@ public class TableManageController extends HttpServlet {
                 request.setAttribute("searchArea", request.getParameter("searchArea"));
                 request.setAttribute("searchStatus", request.getParameter("searchStatus"));
                 
+                // Đẩy thông tin phân trang sang JSP
                 request.setAttribute("tableList", list);
+                request.setAttribute("totalPage", totalPage);
+                request.setAttribute("currentPage", page);
                 request.setAttribute("userRole", roleID); 
+                
                 request.getRequestDispatcher("/views/table/table_list.jsp").forward(request, response);
                 break;
         }
@@ -184,7 +208,7 @@ public class TableManageController extends HttpServlet {
         // 4. NẾU KHÔNG CÓ LỖI: LƯU VÀO DATABASE
         Table t = new Table();
         t.setTableID(tableID);
-        t.setEmployeeID(loginUser.getEmployeeID());
+        t.setEmployeeID(0);
         t.setTableName(tableName);
         t.setCapacity(capacity);
         t.setAreaType(areaType);

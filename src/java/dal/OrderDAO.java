@@ -375,6 +375,68 @@ public class OrderDAO {
         }
         return null;
     }
+    
+    // =========================================================
+    // 10. BỔ SUNG: CHỨC NĂNG THÊM MÓN/CỘNG DỒN CHO GIỎ HÀNG
+    // =========================================================
+    public boolean checkItemExistInOrder(int orderID, int itemID) {
+        String sql = "SELECT * FROM OrderItem WHERE orderID = ? AND itemID = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, itemID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next(); // Trả về true nếu món này đã có trong giỏ
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] checkItemExistInOrder lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public void addOrUpdateOrderItem(int orderID, int itemID, int quantity, double price, String notes) {
+        if (checkItemExistInOrder(orderID, itemID)) {
+            // Đã có món này -> Cộng dồn số lượng và nối ghi chú (nếu có)
+            String sql = "UPDATE OrderItem SET quantity = quantity + ?, note = CONCAT(IFNULL(note,''), CASE WHEN ? != '' THEN CONCAT(' | ', ?) ELSE '' END) WHERE orderID = ? AND itemID = ?";
+            try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, quantity);
+                ps.setString(2, notes != null ? notes : "");
+                ps.setString(3, notes != null ? notes : "");
+                ps.setInt(4, orderID);
+                ps.setInt(5, itemID);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("[OrderDAO] addOrUpdateOrderItem (Update) lỗi: " + e.getMessage());
+            }
+        } else {
+            // Chưa có món này -> Thêm mới tinh
+            String sql = "INSERT INTO OrderItem (orderID, itemID, quantity, price, note) VALUES (?, ?, ?, ?, ?)";
+            try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, orderID);
+                ps.setInt(2, itemID);
+                ps.setDouble(3, price);
+                ps.setString(4, notes);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("[OrderDAO] addOrUpdateOrderItem (Insert) lỗi: " + e.getMessage());
+            }
+        }
+    }
+    
+    // =========================================================
+    // 11. BỔ SUNG: NHÂN VIÊN XÁC NHẬN MỞ BÀN (Đổi isStaffConfirmed = 1)
+    // =========================================================
+    public boolean confirmTableOrder(int orderID) {
+        String sql = "UPDATE `Order` SET isStaffConfirmed = 1 WHERE orderID = ?";
+        try (Connection conn = getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+            
+        } catch (java.sql.SQLException e) {
+            System.err.println("[OrderDAO] confirmTableOrder lỗi: " + e.getMessage());
+        }
+        return false;
+    }
 
     // =========================================================
     // HELPER: map ResultSet -> Order (Đã gỡ capacity và areaType)
