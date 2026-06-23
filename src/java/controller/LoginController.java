@@ -42,7 +42,7 @@ public class LoginController extends HttpServlet {
                 session.removeAttribute("successMessage");
             }
         }
-        
+
         //register -> login
         if ("true".equals(request.getParameter("registered"))) {
             request.setAttribute("successMessage",
@@ -110,28 +110,25 @@ public class LoginController extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau");
             request.setAttribute("identifier", phone);
-            
+
             //Xóa successMessage khi login thất bại
             HttpSession session = request.getSession(false);
             if (session != null) {
                 session.removeAttribute("successMessage");
             }
-            
+
             request.getRequestDispatcher("/views/login.jsp").forward(request, response);
         }
     }
 
     private void handleEmployeeLogin(HttpServletRequest request, HttpServletResponse response,
-            Employee employee) throws IOException {
+            Employee employee)
+            throws ServletException, IOException, SQLException {
 
         if (employee.getIsActive() == 0) {
-            try {
-                request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản lý.");
-                request.setAttribute("identifier", employee.getPhoneNumber());
-                request.getRequestDispatcher("/views/login.jsp").forward(request, response);
-            } catch (ServletException e) {
-                e.printStackTrace();
-            }
+            request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa.");
+            request.setAttribute("identifier", employee.getPhoneNumber());
+            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
             return;
         }
 
@@ -151,6 +148,13 @@ public class LoginController extends HttpServlet {
     private void handleCustomerLogin(HttpServletRequest request, HttpServletResponse response,
             Customer customer)
             throws ServletException, IOException, SQLException {
+
+        if (customer.getIsActive() == 0) {
+            request.setAttribute("loginError", "Tài khoản đã bị vô hiệu hóa.");
+            request.setAttribute("identifier", customer.getPhoneNumber());
+            request.getRequestDispatcher("/views/login.jsp").forward(request, response);
+            return;
+        }
 
         HttpSession session = request.getSession(true);
         session.setAttribute("customer", customer);

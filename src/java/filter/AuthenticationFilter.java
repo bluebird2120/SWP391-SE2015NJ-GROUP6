@@ -93,6 +93,17 @@ public class AuthenticationFilter implements Filter {
                 response.sendRedirect(ctx + "/staff/change-password?first=true");
                 return;
             }
+            
+            java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
+            if (lastChanged != null) {
+                long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
+                            / (1000L * 60 * 60 * 24);
+                if (daysSince >= 90 && !uri.contains("staff/change-password")) {
+                    response.sendRedirect(ctx + "/staff/change-password?expired=true");
+                    return;
+                }
+            }
+            
             chain.doFilter(req, res);
             return;
         }

@@ -49,12 +49,20 @@ public class ForgotPasswordController extends HttpServlet {
         }
 
         try {
+            //Giữ lại email đã nhập cho toàn bộ phía dưới
+            request.setAttribute("email", email);
+            
             //Tìm Customer trước
             Customer customer = customerDAO.findByEmail(email);
             Employee employee = (customer == null) ? employeeDAO.findByEmail(email) : null;
             if (customer == null && employee == null) {
                 request.setAttribute("emailError", "Email này chưa được đăng kí hoặc không khả dụng");
-                request.setAttribute("email", email);
+                request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
+                return;
+            }
+
+            if ((customer != null && customer.getIsActive() == 0) || (employee != null && employee.getIsActive() == 0)) {
+                request.setAttribute("generalError","Tài khoản đã bị vô hiệu hóa.");
                 request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
                 return;
             }
@@ -62,7 +70,6 @@ public class ForgotPasswordController extends HttpServlet {
             //Nếu là tài khoản gg thì không thể reset password
             if (customer != null && "google".equalsIgnoreCase(customer.getLoginProvider())) {
                 request.setAttribute("emailError", "Tài khoản này đã đăng kí bằng Google. Vui lòng đăng nhập bằng Google.");
-                request.setAttribute("email", email);
                 request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
                 return;
             }
@@ -79,7 +86,6 @@ public class ForgotPasswordController extends HttpServlet {
 
             if (!updated) {
                 request.setAttribute("generalError", "Lỗi hệ thống. Vui lòng thử lại sau.");
-                request.setAttribute("email", email);
                 request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
                 return;
             }
