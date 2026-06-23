@@ -23,11 +23,18 @@ public class ShiftTemplateController extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (action == null) action = "list";
+        if (action == null) {
+            action = "list";
+        }
         switch (action) {
-            case "create": showCreate(req, resp); break;
-            case "edit":   showEdit(req, resp); break;
-            default:       showList(req, resp);
+            case "create":
+                showCreate(req, resp);
+                break;
+            case "edit":
+                showEdit(req, resp);
+                break;
+            default:
+                showList(req, resp);
         }
     }
 
@@ -35,12 +42,21 @@ public class ShiftTemplateController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (action == null) action = "";
+        if (action == null) {
+            action = "";
+        }
         switch (action) {
-            case "create": handleCreate(req, resp); break;
-            case "edit":   handleEdit(req, resp); break;
-            case "delete": handleDelete(req, resp); break;
-            default: resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            case "create":
+                handleCreate(req, resp);
+                break;
+            case "edit":
+                handleEdit(req, resp);
+                break;
+            case "delete":
+                handleDelete(req, resp);
+                break;
+            default:
+                resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
         }
     }
 
@@ -60,12 +76,22 @@ public class ShiftTemplateController extends HttpServlet {
     private void showEdit(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         int id = parseInt(req.getParameter("id"), 0);
-        if (id <= 0) { resp.sendRedirect(req.getContextPath() + "/owner/shift-templates"); return; }
+        if (id <= 0) {
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            return;
+        }
+
         ShiftTemplateDAO dao = new ShiftTemplateDAO();
         ShiftTemplates t = dao.findById(id);
-        if (t == null) { resp.sendRedirect(req.getContextPath() + "/owner/shift-templates"); return; }
+        if (t == null) {
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            return;
+        }
+
+        int usedCount = dao.countShiftsUsing(id);
+
         req.setAttribute("template", t);
-        req.setAttribute("usedCount", dao.countShiftsUsing(id));
+        req.setAttribute("usedCount", usedCount);
         req.setAttribute("mode", "edit");
         req.getRequestDispatcher(FORM_VIEW).forward(req, resp);
     }
@@ -81,6 +107,7 @@ public class ShiftTemplateController extends HttpServlet {
             req.getRequestDispatcher(FORM_VIEW).forward(req, resp);
             return;
         }
+
         ShiftTemplateDAO dao = new ShiftTemplateDAO();
         int id = dao.insert(t);
         if (id < 0) {
@@ -97,14 +124,21 @@ public class ShiftTemplateController extends HttpServlet {
     private void handleEdit(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         int id = parseInt(req.getParameter("id"), 0);
-        if (id <= 0) { resp.sendRedirect(req.getContextPath() + "/owner/shift-templates"); return; }
+        if (id <= 0) {
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            return;
+        }
 
         ShiftTemplateDAO dao = new ShiftTemplateDAO();
         ShiftTemplates existing = dao.findById(id);
-        if (existing == null) { resp.sendRedirect(req.getContextPath() + "/owner/shift-templates"); return; }
+        if (existing == null) {
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            return;
+        }
 
         int used = dao.countShiftsUsing(id);
         Map<String, String> errors = new HashMap<>();
+
         ShiftTemplates t = bindAndValidate(req, errors, used == 0);
         t.setTemplateID(id);
 
@@ -141,7 +175,11 @@ public class ShiftTemplateController extends HttpServlet {
 
     private void handleDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         int id = parseInt(req.getParameter("id"), 0);
-        if (id <= 0) { resp.sendRedirect(req.getContextPath() + "/owner/shift-templates"); return; }
+        if (id <= 0) {
+            resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
+            return;
+        }
+
         ShiftTemplateDAO dao = new ShiftTemplateDAO();
         if (dao.countShiftsUsing(id) > 0) {
             resp.sendRedirect(req.getContextPath() + "/owner/shift-templates?msg=template_in_use");
@@ -151,9 +189,6 @@ public class ShiftTemplateController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/owner/shift-templates?msg=deleted");
     }
 
-    /**
-     * @param canEditTimes nếu false bỏ qua validate giờ (template đã được dùng).
-     */
     private ShiftTemplates bindAndValidate(HttpServletRequest req, Map<String, String> errors, boolean canEditTimes) {
         String name = trim(req.getParameter("shiftName"));
         String startStr = trim(req.getParameter("startTime"));
@@ -170,21 +205,22 @@ public class ShiftTemplateController extends HttpServlet {
 
         if (canEditTimes) {
             LocalTime start = parseLocalTime(startStr);
-            LocalTime end   = parseLocalTime(endStr);
+            LocalTime end = parseLocalTime(endStr);
 
-            // Giới hạn khung giờ ban ngày được phép (06:00 – 22:00)
-            LocalTime DAY_START  = LocalTime.of(6,  0);
+            LocalTime DAY_START = LocalTime.of(6, 0);
             LocalTime NIGHT_START = LocalTime.of(22, 0);
 
-            if (start == null) errors.put("startTime", "Giờ bắt đầu không hợp lệ (HH:mm).");
-            if (end   == null) errors.put("endTime",   "Giờ kết thúc không hợp lệ (HH:mm).");
+            if (start == null) {
+                errors.put("startTime", "Giờ bắt đầu không hợp lệ (HH:mm).");
+            }
+            if (end == null) {
+                errors.put("endTime", "Giờ kết thúc không hợp lệ (HH:mm).");
+            }
 
             if (start != null && end != null) {
-                // Kiểm tra qua đêm
                 if (!end.isAfter(start)) {
                     errors.put("endTime", "Giờ kết thúc phải sau giờ bắt đầu (ca qua đêm không được hỗ trợ).");
                 } else {
-                    // Kiểm tra khung giờ đêm
                     if (start.isBefore(DAY_START)) {
                         errors.put("startTime", "Giờ bắt đầu không được trước 06:00 — ca làm đêm không được hỗ trợ.");
                     } else if (!start.isBefore(NIGHT_START)) {
@@ -202,7 +238,9 @@ public class ShiftTemplateController extends HttpServlet {
     }
 
     private static LocalTime parseLocalTime(String s) {
-        if (s == null || s.isBlank()) return null;
+        if (s == null || s.isBlank()) {
+            return null;
+        }
         try {
             return s.length() == 5 ? LocalTime.parse(s + ":00") : LocalTime.parse(s);
         } catch (Exception e) {
@@ -211,9 +249,17 @@ public class ShiftTemplateController extends HttpServlet {
     }
 
     private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank()) return def;
-        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
+        if (s == null || s.isBlank()) {
+            return def;
+        }
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 
-    private static String trim(String s) { return s == null ? null : s.trim(); }
+    private static String trim(String s) {
+        return s == null ? null : s.trim();
+    }
 }

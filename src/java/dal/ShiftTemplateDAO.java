@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import model.ShiftTemplates;
 
-/**
- * DAO cho bảng ShiftTemplates.
- * - Block update giờ và delete khi template đã được EmployeeShifts tham chiếu.
- * - updateName an toàn (cosmetic), luôn cho phép.
- */
 public class ShiftTemplateDAO extends DBContext {
 
+    /**
+     * Lấy toàn bộ danh sách các ca làm việc mẫu đang hoạt động trong hệ thống.
+     * 
+     * @return Danh sách các đối tượng ShiftTemplates, sắp xếp theo giờ bắt đầu tăng dần
+     */
     public List<ShiftTemplates> findAll() {
         List<ShiftTemplates> list = new ArrayList<>();
         String sql = "SELECT templateID, shiftName, startTime, endTime "
@@ -31,6 +31,12 @@ public class ShiftTemplateDAO extends DBContext {
         return list;
     }
 
+    /**
+     * Tìm kiếm một mẫu ca cụ thể theo ID.
+     * 
+     * @param id ID của mẫu ca làm việc
+     * @return Đối tượng ShiftTemplates nếu tìm thấy, ngược lại trả về null
+     */
     public ShiftTemplates findById(int id) {
         String sql = "SELECT templateID, shiftName, startTime, endTime "
                 + "FROM ShiftTemplates WHERE templateID = ?";
@@ -45,7 +51,12 @@ public class ShiftTemplateDAO extends DBContext {
         return null;
     }
 
-    /** Caller đã validate endTime > startTime. */
+    /**
+     * Thêm mới một mẫu ca làm việc vào cơ sở dữ liệu.
+     * 
+     * @param t Đối tượng ShiftTemplates chứa tên ca, giờ bắt đầu và giờ kết thúc
+     * @return ID tự sinh của mẫu ca làm việc vừa được chèn, hoặc -1 nếu thất bại
+     */
     public int insert(ShiftTemplates t) {
         String sql = "INSERT INTO ShiftTemplates (shiftName, startTime, endTime) VALUES (?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -62,7 +73,14 @@ public class ShiftTemplateDAO extends DBContext {
         return -1;
     }
 
-    /** Đổi tên: luôn cho phép, không ảnh hưởng lịch sử điểm danh. */
+    /**
+     * Cập nhật tên của mẫu ca làm việc.
+     * Việc đổi tên luôn được cho phép vì không làm ảnh hưởng đến dữ liệu chấm công cũ.
+     * 
+     * @param templateID ID của mẫu ca làm việc
+     * @param newName Tên ca làm việc mới
+     * @return true nếu cập nhật thành công, ngược lại false
+     */
     public boolean updateName(int templateID, String newName) {
         String sql = "UPDATE ShiftTemplates SET shiftName = ? WHERE templateID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -75,7 +93,16 @@ public class ShiftTemplateDAO extends DBContext {
         }
     }
 
-    /** Đổi giờ: caller phải gọi countShiftsUsing trước, chỉ update khi == 0. */
+    /**
+     * Cập nhật khung giờ làm việc của mẫu ca.
+     * Người gọi (Caller) cần đếm số lượng ca đang dùng mẫu này bằng countShiftsUsing trước khi sửa.
+     * Chỉ cho phép đổi giờ khi chưa có ca làm việc thực tế nào áp dụng mẫu ca này.
+     * 
+     * @param templateID ID của mẫu ca làm việc
+     * @param start Giờ bắt đầu mới
+     * @param end Giờ kết thúc mới
+     * @return true nếu cập nhật giờ thành công, ngược lại false
+     */
     public boolean updateTimes(int templateID, Time start, Time end) {
         String sql = "UPDATE ShiftTemplates SET startTime = ?, endTime = ? WHERE templateID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -89,7 +116,13 @@ public class ShiftTemplateDAO extends DBContext {
         }
     }
 
-    /** Delete: caller phải gọi countShiftsUsing trước, chỉ delete khi == 0. */
+    /**
+     * Xóa một mẫu ca làm việc khỏi cơ sở dữ liệu.
+     * Chỉ cho phép xóa khi mẫu ca chưa từng được sử dụng để xếp lịch cho bất kỳ nhân viên nào.
+     * 
+     * @param templateID ID của mẫu ca cần xóa
+     * @return true nếu xóa thành công, ngược lại false
+     */
     public boolean delete(int templateID) {
         String sql = "DELETE FROM ShiftTemplates WHERE templateID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -101,7 +134,13 @@ public class ShiftTemplateDAO extends DBContext {
         }
     }
 
-    /** Đếm số EmployeeShifts đang tham chiếu — dùng để chặn update giờ / delete. */
+    /**
+     * Đếm số lượng ca làm việc thực tế (trong bảng EmployeeShifts) đang liên kết với mẫu ca này.
+     * Dùng để kiểm tra trước khi thực hiện hành động xóa hoặc đổi khung giờ.
+     * 
+     * @param templateID ID của mẫu ca làm việc
+     * @return Số lượng ca làm việc thực tế đang áp dụng mẫu này
+     */
     public int countShiftsUsing(int templateID) {
         String sql = "SELECT COUNT(*) FROM EmployeeShifts WHERE templateID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -115,6 +154,9 @@ public class ShiftTemplateDAO extends DBContext {
         return 0;
     }
 
+    /**
+     * Map một dòng kết quả ResultSet thành đối tượng mẫu ca ShiftTemplates.
+     */
     private ShiftTemplates mapRow(ResultSet rs) throws SQLException {
         ShiftTemplates t = new ShiftTemplates();
         t.setTemplateID(rs.getInt("templateID"));

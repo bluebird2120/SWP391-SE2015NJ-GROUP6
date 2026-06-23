@@ -14,10 +14,10 @@ import java.util.List;
 import model.Employee;
 import model.Notifications;
 
-@WebServlet(name = "StaffNotificationsController", urlPatterns = { "/staff/notifications" })
-public class StaffNotificationsController extends HttpServlet {
+@WebServlet(name = "OwnerNotificationsController", urlPatterns = {"/owner/notifications"})
+public class OwnerNotificationsController extends HttpServlet {
 
-    private static final String VIEW = "/views/staff/notifications.jsp";
+    private static final String VIEW = "/views/owner/notifications.jsp";
     private static final int LIST_LIMIT = 50;
 
     @Override
@@ -25,14 +25,14 @@ public class StaffNotificationsController extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = req.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
-        if (emp == null) {
+        if (emp == null || emp.getRoleID() != 1) {
             resp.sendRedirect(req.getContextPath() + "/login?type=employee");
             return;
         }
 
         NotificationDAO dao = new NotificationDAO();
         List<Notifications> list = dao.listByRecipient(emp.getEmployeeID(), "staff", LIST_LIMIT);
-
+        
         int unread = dao.countUnread(emp.getEmployeeID(), "staff");
         session.setAttribute("unreadCount", unread);
 
@@ -46,7 +46,7 @@ public class StaffNotificationsController extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = req.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
-        if (emp == null) {
+        if (emp == null || emp.getRoleID() != 1) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -58,16 +58,11 @@ public class StaffNotificationsController extends HttpServlet {
                 new NotificationDAO().markRead(notifID, emp.getEmployeeID(), "staff");
             }
         }
-        resp.sendRedirect(req.getContextPath() + "/staff/notifications");
+        resp.sendRedirect(req.getContextPath() + "/owner/notifications");
     }
 
     private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank())
-            return def;
-        try {
-            return Integer.parseInt(s);
-        } catch (NumberFormatException e) {
-            return def;
-        }
+        if (s == null || s.isBlank()) return def;
+        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
     }
 }
