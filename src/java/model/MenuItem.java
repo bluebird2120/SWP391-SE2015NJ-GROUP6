@@ -23,8 +23,9 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(int itemID, String categoryName, Date workingDate, int initialQuantity, int quantityInStock) {
+    public MenuItem(int itemID, String itemName, String categoryName, Date workingDate, int initialQuantity, int quantityInStock) {
         this.itemID = itemID;
+        this.itemName = itemName;
         this.categoryName = categoryName;
         this.workingDate = workingDate;
         this.initialQuantity = initialQuantity;

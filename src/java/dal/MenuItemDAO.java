@@ -354,8 +354,8 @@ public class MenuItemDAO extends DBContext {
         int index = 1;
         String sql = "select * from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
-                + "join DailyInventory di on mi.itemID = di.itemID "
-                + "where mi.itemName like ? ";
+                + "left join DailyInventory di on mi.itemID = di.itemID "
+                + "where mi.itemName like ? and mi.isAvailable = 1 ";
         if (categoryID > 0) {
             sql += "and mi.categoryID = ? ";
         }
@@ -370,9 +370,10 @@ public class MenuItemDAO extends DBContext {
             ps.setInt(index++, pageSize);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {                
-                MenuItem item = new MenuItem(rs.getInt("itemID"), 
+                MenuItem item = new MenuItem(rs.getInt("itemID"),
+                        rs.getString("itemName"),
                         rs.getString("categoryName"), 
-                        rs.getDate("createdAt"), 
+                        rs.getDate("workingDate"), 
                         rs.getInt("initialQuantity"), 
                         rs.getInt("quantityInStock"));
                 list.add(item);

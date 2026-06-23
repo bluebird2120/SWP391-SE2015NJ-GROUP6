@@ -4,6 +4,7 @@
  */
 package controller;
 
+import dal.DailyInventoryDAO;
 import dal.MenuCategoryDAO;
 import dal.MenuItemDAO;
 import java.io.IOException;
@@ -13,7 +14,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import model.MenuCategory;
 import model.MenuItem;
 
@@ -51,7 +54,8 @@ public class DailyStockController extends HttpServlet {
     }
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
-    private static final int PAGE_SIZE = 10;
+    private DailyInventoryDAO dailyInventoryDAO = new DailyInventoryDAO();
+    private static final int PAGE_SIZE = 100;
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -112,15 +116,70 @@ public class DailyStockController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String quantity_raw = request.getParameter("quantity");
-        String itemID_raw = request.getParameter("itemID");
+        String[] initialQuantity = request.getParameterValues("initialQuantity");
+        String[] itemID = request.getParameterValues("itemID");
         
-        int quantity = checkEmpty(quantity_raw) ? Integer.parseInt(quantity_raw) : 0;
-        int itemID = checkEmpty(itemID_raw) ? Integer.parseInt(itemID_raw) : 0;
+        boolean hasError = false;
+        String errorMessage = "";
+        
+        if(initialQuantity == null || itemID == null || initialQuantity.length != itemID.length){
+            hasError = true;
+            errorMessage = "Dữ liệu đầu vào không hợp lệ!";
+        }else{
+            for (int i = 0; i < initialQuantity.length; i++) {
+                String qty = initialQuantity[i];
+                
+                if(!checkEmpty(qty)){
+                    hasError = true;
+                    errorMessage = "Lỗi hệ thống: Bạn bắt buộc phải nhập đầy đủ số lượng các món ăn";
+                    break;
+                }
+                
+                errorMessage = checkQuantity(qty);
+                if(checkEmpty(errorMessage)){
+                    hasError = true;
+                    break;
+                }
+            }
+        }
+        if(hasError){
+            Map<Integer, String> saveInputData = new HashMap<>();
+            if(itemID != null && initialQuantity != null){
+                for (int i = 0; i < itemID.length; i++) {
+                    try {
+                        int itemId = Integer.parseInt(itemID[i]);
+                        String qtyValue = initialQuantity[i];
+                        saveInputData.put(itemId, qtyValue);
+                    } catch (Exception e) {
+                    }
+                }
+            }
+            request.setAttribute("errorMessage", errorMessage);
+            request.setAttribute("saveInputData", saveInputData);
+            doGet(request, response);
+        }else{
+            for (int i = 0; i < itemID.length; i++) {
+                dailyInventoryDAO.updateStockMenuItem(Integer.parseInt(itemID[i]), Integer.parseInt(initialQuantity[i]));
+            }
+            response.sendRedirect(request.getContextPath() + "/daily-stock");
+        }
     }
 
     private boolean checkEmpty(String data) {
         return (data != null && !data.trim().isEmpty());
+    }
+    
+    private String checkQuantity(String quantity){
+        String msg = "";
+        try {
+            int qty = Integer.parseInt(quantity);
+            if(qty < 0){
+                msg = "Số lượng món ăn không được phép là số âm!";
+            }
+        } catch (Exception e) {
+            msg = "Số lượng nhập vào phải là ký tự số hợp lệ!";
+        }
+        return msg;
     }
 
     private boolean checkLength(String data, int length) {

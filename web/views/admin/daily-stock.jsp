@@ -231,6 +231,18 @@
                         📌 <b>LƯU Ý QUAN TRỌNG:</b> Hệ thống bắt buộc phải chốt số lượng món ăn trước giờ nhà hàng mở cửa (<b>${storeOpenTime}</b>). 
                         Nếu đến giờ hoạt động mà Admin chưa cập nhật số lượng, <b>tất cả món ăn sẽ tự động chuyển sang trạng thái Ngưng hoạt động</b> trên thực đơn!
                     </div>
+                        
+                    <c:if test="${not empty errorMessage}">
+                        <div class="danger-warning-box">
+                            ${errorMessage}
+                        </div>
+                    </c:if>
+
+                    <c:if test="${not empty errorSearch}">
+                        <div class="danger-warning-box">
+                            ${errorSearch}
+                        </div>
+                    </c:if>
 
                     <c:if test="${hasLowStockAlert == true}">
                         <div class="danger-warning-box">
@@ -286,9 +298,9 @@
                                         </td>
                                         <td style="text-align: center;">
                                             <input type="hidden" name="itemID" value="${item.itemID}"/>
-                                            <input type="number" name="quantity" 
-                                                   value="${not empty item.quantityInStock ? item.quantityInStock : ''}" 
-                                                   class="input-item-qty field-stock-input" min="0"/>
+                                            <input type="number" name="initialQuantity" 
+                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : 0}" 
+                                                   class="input-item-qty field-stock-input"/>
                                         </td>
                                     </tr>
                                 </c:forEach>

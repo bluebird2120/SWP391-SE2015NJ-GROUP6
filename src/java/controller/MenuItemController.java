@@ -72,7 +72,7 @@ public class MenuItemController extends HttpServlet {
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-        
+             
         if (!checkEmpty(search)) {
             search = "";
         }
@@ -85,8 +85,21 @@ public class MenuItemController extends HttpServlet {
 
         int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
-        int minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
-        int maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        int minPrice = 0;
+        int maxPrice = 0;
+        try {
+            minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
+        } catch (NumberFormatException e) {
+            minPrice = 0; 
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
+
+        try {
+            maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
+        } catch (NumberFormatException e) {
+            maxPrice = Integer.MAX_VALUE;
+            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
+        }
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
         int tableID = checkEmpty(tableID_raw) ? Integer.parseInt(tableID_raw) : 0;
         String errorPrice = checkPriceInput(minPrice, maxPrice);
