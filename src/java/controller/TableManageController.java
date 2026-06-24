@@ -67,7 +67,6 @@ public class TableManageController extends HttpServlet {
                 request.setAttribute("table", tableDetail);
                 request.setAttribute("mode", "detail"); // Truyền cờ trạng thái "Chi tiết"
 
-                // ĐÃ SỬA: Không dùng table_detail.jsp nữa, trỏ chung về table_form.jsp
                 request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
                 break;
 

@@ -22,7 +22,7 @@ import model.Order;
 import model.Employee;
 // === KẾT THÚC PHẦN THÊM MỚI ===
 
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu", "/scan"})
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
 public class MenuItemController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -46,6 +46,7 @@ public class MenuItemController extends HttpServlet {
         String token = request.getParameter("token");
         int tableIdFromToken = 0;
 
+        //logic gộp bàn
         if (token != null && !token.isEmpty()) {
             TableDAO tableDAO = new TableDAO();
             Table currentTable = tableDAO.getTableByToken(token);
@@ -61,7 +62,36 @@ public class MenuItemController extends HttpServlet {
                 OrderDAO orderDAO = new OrderDAO();
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
+                String role = (String) session.getAttribute("roleInTable");
+                Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+
+                // =========================================================
+                // TÍNH NĂNG MỚI: CHỦ BÀN QUÉT MÃ QR ĐỂ GỘP THÊM BÀN TRỐNG
+                // =========================================================
+                if ("HOST".equals(role) && sessionOrderID != null) {
+                    // Nếu khách quét QR của một bàn ĐANG TRỐNG
+                    if (activeOrder == null) {
+                        boolean isAdded = orderDAO.addTableToExistingOrder(sessionOrderID, currentTable.getTableID());
+                        if (isAdded) {
+                            session.setAttribute("successMsg", "Đã gộp thêm bàn thành công vào hóa đơn của bạn!");
+                            // Chuyển thẳng vào Menu gọi món
+                            response.sendRedirect(request.getContextPath() + "/menu");
+                            return;
+                        }
+                    } 
+                    // Nếu khách quét QR của bàn ĐANG CÓ NGƯỜI LẠ NGỒI
+                    else if (activeOrder.getOrderID() != sessionOrderID) {
+                        session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+                    // Nếu activeOrder.getOrderID() == sessionOrderID nghĩa là bàn này khách ĐÃ GỘP TỪ TRƯỚC RỒI
+                    // Hệ thống sẽ không làm gì cả, cứ thả cho code chạy tiếp xuống dưới để vào Menu bình thường.
+                }
+                // =========================================================
+
                 if (activeOrder != null) {
+                    
 //                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
 //
 //                    // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
@@ -70,15 +100,31 @@ public class MenuItemController extends HttpServlet {
 //                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
 //                        return; // Khóa luồng, không cho load Menu!
 //                    }
-//                    // --- KẾT THÚC BARIE ---
-
-                    String role = (String) session.getAttribute("roleInTable");
-                    Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+//                    // --- KẾT THÚC BARIE ---                                       
 
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
-                        // Host hoặc Guest đã duyệt -> Cho vào Menu
+                        // Host hoặc Guest đã duyệt -> Cho vào Menu gọi món bình thường
                     } else {
-                        // Người lạ -> Xin phép Host
+//                        // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
+//                        // Giả sử orderType == 2 là mã của Đơn đặt trước trong Database của bạn
+//                        if (activeOrder.getOrderType() == 2) {
+//                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+//                            // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
+//                            request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
+//                            return; 
+//                        }
+//                        // === KẾT THÚC PHẦN VÁ ===
+                        // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
+                        // Nhận diện đơn đặt trước qua trạng thái 'reserved'
+                        if ("reserved".equals(activeOrder.getTableStatus())) {
+                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                            // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
+                            request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
+                            return; 
+                        }
+                        // === KẾT THÚC PHẦN VÁ ===
+
+                        // Người lạ -> Xin phép Host (Dành cho các bàn khách walk-in bình thường, orderType == 1)
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
