@@ -54,8 +54,9 @@
             .line2 {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                width: auto;
+                gap: 10px;
+                width: max-content; /* 🌟 CHỐT CHẶN 2: Ép cụm sắp xếp + nút Lọc luôn ôm sát lấy nhau thành 1 khối */
+                flex-shrink: 0; /* Không cho phép cụm này bị bóp méo hay co nhỏ lại */
             }
 
             .main-content {
@@ -69,50 +70,51 @@
 
             .filter-form {
                 display: flex;
-                gap: 12px;
-                align-items: center;
+                flex-wrap: wrap; /* Cho phép xuống dòng có tổ chức */
+                gap: 15px; /* Khoảng cách giữa các ô thoáng hơn */
                 background: #f8fafc;
                 border: 1px solid #e2e8f0;
-                color: #475569;
-                padding: 12px;
-                flex-wrap: wrap;
-                /*tự động xuống dòng khi screen nhỏ */
+                padding: 16px;
                 border-radius: 12px;
                 margin-bottom: 20px;
                 font-family: Arial, sans-serif;
+                align-items: center;
             }
 
-            .filter-input,
-            .filter-select {
-                padding: 8px 8px;
-                border: 1px solid #cccccc;
+            .filter-input, .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
                 border-radius: 8px;
                 font-size: 14px;
-                color: #333333;
-                background-color: #ffffff;
+                min-width: 160px; /* Độ rộng tối thiểu để không bị co chữ */
+                flex: 1; /* Tự động co giãn đều nhau để húp trọn hàng 1 */
+            }
+            .filter-form input[name="search"] {
+                flex: 2;
             }
 
             .filter-price {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 font-size: 14px;
-                color: #555555;
             }
-
             .filter-price input {
-                width: 80px;
-                border-radius: 6px;
+                width: 90px;
+                padding: 8px;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
             }
 
             .btn-submit {
                 background-color: #007bff;
                 color: white;
                 border: none;
-                padding: 8px 20px;
+                padding: 9px 24px;
                 border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
+                margin-left: auto; /* Tự động đẩy nút Lọc và cụm đi kèm về sát góc phải hàng 2 */
             }
 
             .btn-submit:hover {
@@ -169,7 +171,7 @@
                 line-height: 1.2em;  /* Chiều cao của mỗi dòng */
                 overflow: hidden;    /* Nếu tên quá dài vượt quá 2 dòng sẽ tự ẩn */
                 display: -webkit-box;
-                -webkit-line-clamp: 2; /* Giới hạn tối đa hiển thị 2 dòng */          
+                -webkit-line-clamp: 2; /* Giới hạn tối đa hiển thị 2 dòng */
             }
 
             .category {
@@ -341,6 +343,15 @@
                         </c:forEach>
                     </select>
 
+                    <select name="cookingMethod" class="filter-select">
+                        <option value="">Tất cả phương thức</option>
+                        <c:forEach var="method" items="${listMethod}">
+                            <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                                ${method.methodName}
+                            </option>
+                        </c:forEach>
+                    </select>
+
                     <c:if test="${sessionScope.employee.roleID == 1}">
                         <select name="status" class="filter-select">
                             <option value="1" ${param.status==1 ? 'selected' : '' }>Đang Bán</option>
@@ -457,89 +468,97 @@
                             </div>
                         </div>
                     </c:forEach>
-                </div>
+                </div> 
+                <c:if test="${empty listItem}">
+                    <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                        <span style="font-size: 50px; display: block; margin-bottom: 10px;">🔍</span>
+                        <b style="font-size: 16px; color: #64748b; display: block;">Không tìm thấy món ăn nào khớp bộ lọc.</b>
+                        <span style="font-size: 13px; display: block; margin-top: 5px;">Vui lòng thử tìm kiếm bằng từ khóa khác hoặc điều chỉnh lại khoảng giá.</span>
+                    </div>
+                </c:if>
             </div>
         </div>
-        <c:if test="${totalPage > 1}">
-            <div class="pagination">
+    </div>
+    <c:if test="${totalPage > 1}">
+        <div class="pagination">
 
-                <c:choose>
-                    <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang trước">Trước</a>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="disabled">Đầu</span>
-                        <span class="disabled">Trước</span>
-                    </c:otherwise>
-                </c:choose>
+            <c:choose>
+                <c:when test="${currentPage > 1}">
+                    <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                       title="Về trang đầu">Đầu</a>
+                    <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                       title="Trang trước">Trước</a>
+                </c:when>
+                <c:otherwise>
+                    <span class="disabled">Đầu</span>
+                    <span class="disabled">Trước</span>
+                </c:otherwise>
+            </c:choose>
 
-                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+            <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
 
-                <c:choose>
-                    <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                           title="Đến trang cuối">Cuối</a>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="disabled">Sau</span>
-                        <span class="disabled">Cuối</span>
-                    </c:otherwise>
-                </c:choose>
+            <c:choose>
+                <c:when test="${currentPage < totalPage}">
+                    <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                       title="Trang sau">Sau</a>
+                    <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
+                       title="Đến trang cuối">Cuối</a>
+                </c:when>
+                <c:otherwise>
+                    <span class="disabled">Sau</span>
+                    <span class="disabled">Cuối</span>
+                </c:otherwise>
+            </c:choose>
 
-            </div>
-        </c:if>
-        <script>
-            const filterForm = document.getElementById('filterForm');
-            const jsErrorSearch = document.getElementById("jsErrorSearch");
-            const jsErrorPrice = document.getElementById("jsErrorPrice");
+        </div>
+    </c:if>
+    <script>
+        const filterForm = document.getElementById('filterForm');
+        const jsErrorSearch = document.getElementById("jsErrorSearch");
+        const jsErrorPrice = document.getElementById("jsErrorPrice");
 
-            filterForm.onsubmit = function (event) {
-                let isValid = true;
+        filterForm.onsubmit = function (event) {
+            let isValid = true;
 
-                const searchInput = filterForm.elements["search"].value.trim();
-                const minPriceInput = filterForm.elements["minPrice"].value.trim();
-                const maxPriceInput = filterForm.elements["maxPrice"].value.trim();
+            const searchInput = filterForm.elements["search"].value.trim();
+            const minPriceInput = filterForm.elements["minPrice"].value.trim();
+            const maxPriceInput = filterForm.elements["maxPrice"].value.trim();
 
-                if (jsErrorSearch) {
-                    if (searchInput.length > 100) {
-                        jsErrorSearch.innerHTML = "Tìm kiếm không vượt quá 100 kí tự";
-                        jsErrorSearch.style.display = "flex";
-                        isValid = false;
-                    } else {
-                        jsErrorSearch.innerHTML = "";
-                        jsErrorSearch.style.display = "none";
-                    }
+            if (jsErrorSearch) {
+                if (searchInput.length > 100) {
+                    jsErrorSearch.innerHTML = "Tìm kiếm không vượt quá 100 kí tự";
+                    jsErrorSearch.style.display = "flex";
+                    isValid = false;
+                } else {
+                    jsErrorSearch.innerHTML = "";
+                    jsErrorSearch.style.display = "none";
                 }
+            }
 
-                if (jsErrorPrice) {
-                    let minPrice = minPriceInput !== "" ? parseInt(minPriceInput) : 0;
-                    let maxPrice = maxPriceInput !== "" ? parseInt(maxPriceInput) : Infinity;
+            if (jsErrorPrice) {
+                let minPrice = minPriceInput !== "" ? parseInt(minPriceInput) : 0;
+                let maxPrice = maxPriceInput !== "" ? parseInt(maxPriceInput) : Infinity;
 
-                    if (minPrice < 0 || maxPrice < 0) {
-                        jsErrorPrice.innerHTML = "Giá món ăn không được là số âm";
-                        jsErrorPrice.style.display = "flex";
-                        isValid = false;
-                    } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
-                        jsErrorPrice.innerHTML = "Giá max phải lớn hơn giá Min";
-                        jsErrorPrice.style.display = "flex";
-                        isValid = false;
-                    } else {
-                        jsErrorPrice.innerHTML = "";
-                        jsErrorPrice.style.display = "none";
-                    }
+                if (minPrice < 0 || maxPrice < 0) {
+                    jsErrorPrice.innerHTML = "Giá món ăn không được là số âm";
+                    jsErrorPrice.style.display = "flex";
+                    isValid = false;
+                } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
+                    jsErrorPrice.innerHTML = "Giá max phải lớn hơn giá Min";
+                    jsErrorPrice.style.display = "flex";
+                    isValid = false;
+                } else {
+                    jsErrorPrice.innerHTML = "";
+                    jsErrorPrice.style.display = "none";
                 }
+            }
 
-                if (!isValid) {
-                    event.preventDefault();
-                }
-            };
-        </script>
-        <%@ include file="/views/includes/footer.jsp" %>
-    </body>
+            if (!isValid) {
+                event.preventDefault();
+            }
+        };
+    </script>
+    <%@ include file="/views/includes/footer.jsp" %>
+</body>
 
 </html>

@@ -1,5 +1,6 @@
 package controller;
 
+import dal.CookingMethodDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,7 @@ import model.MenuItem;
 // === BẮT ĐẦU PHẦN THÊM MỚI (IMPORT): Nhập thêm thư viện cần thiết ===
 import dal.TableDAO;
 import dal.OrderDAO;
+import model.CookingMethod;
 import model.Table;
 import model.Order;
 import model.Employee;
@@ -46,6 +48,7 @@ public class MenuItemController extends HttpServlet {
         String token = request.getParameter("token");
         int tableIdFromToken = 0;
 
+        //logic gộp bàn
         if (token != null && !token.isEmpty()) {
             TableDAO tableDAO = new TableDAO();
             Table currentTable = tableDAO.getTableByToken(token);
@@ -61,7 +64,36 @@ public class MenuItemController extends HttpServlet {
                 OrderDAO orderDAO = new OrderDAO();
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
+                String role = (String) session.getAttribute("roleInTable");
+                Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+
+                // =========================================================
+                // TÍNH NĂNG MỚI: CHỦ BÀN QUÉT MÃ QR ĐỂ GỘP THÊM BÀN TRỐNG
+                // =========================================================
+                if ("HOST".equals(role) && sessionOrderID != null) {
+                    // Nếu khách quét QR của một bàn ĐANG TRỐNG
+                    if (activeOrder == null) {
+                        boolean isAdded = orderDAO.addTableToExistingOrder(sessionOrderID, currentTable.getTableID());
+                        if (isAdded) {
+                            session.setAttribute("successMsg", "Đã gộp thêm bàn thành công vào hóa đơn của bạn!");
+                            // Chuyển thẳng vào Menu gọi món
+                            response.sendRedirect(request.getContextPath() + "/menu");
+                            return;
+                        }
+                    } 
+                    // Nếu khách quét QR của bàn ĐANG CÓ NGƯỜI LẠ NGỒI
+                    else if (activeOrder.getOrderID() != sessionOrderID) {
+                        session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+                    // Nếu activeOrder.getOrderID() == sessionOrderID nghĩa là bàn này khách ĐÃ GỘP TỪ TRƯỚC RỒI
+                    // Hệ thống sẽ không làm gì cả, cứ thả cho code chạy tiếp xuống dưới để vào Menu bình thường.
+                }
+                // =========================================================
+
                 if (activeOrder != null) {
+                    
 //                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
 //
 //                    // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
@@ -70,15 +102,31 @@ public class MenuItemController extends HttpServlet {
 //                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
 //                        return; // Khóa luồng, không cho load Menu!
 //                    }
-//                    // --- KẾT THÚC BARIE ---
-
-                    String role = (String) session.getAttribute("roleInTable");
-                    Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+//                    // --- KẾT THÚC BARIE ---                                       
 
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
-                        // Host hoặc Guest đã duyệt -> Cho vào Menu
+                        // Host hoặc Guest đã duyệt -> Cho vào Menu gọi món bình thường
                     } else {
-                        // Người lạ -> Xin phép Host
+//                        // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
+//                        // Giả sử orderType == 2 là mã của Đơn đặt trước trong Database của bạn
+//                        if (activeOrder.getOrderType() == 2) {
+//                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+//                            // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
+//                            request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
+//                            return; 
+//                        }
+//                        // === KẾT THÚC PHẦN VÁ ===
+                        // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
+                        // Nhận diện đơn đặt trước qua trạng thái 'reserved'
+                        if ("reserved".equals(activeOrder.getTableStatus())) {
+                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                            // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
+                            request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
+                            return; 
+                        }
+                        // === KẾT THÚC PHẦN VÁ ===
+
+                        // Người lạ -> Xin phép Host (Dành cho các bàn khách walk-in bình thường, orderType == 1)
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
@@ -119,6 +167,7 @@ public class MenuItemController extends HttpServlet {
         // --- LOGIC GỐC CỦA BẠN CỦA BẠN (GIỮ NGUYÊN 100%) ---
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
+        String method_raw = request.getParameter("cookingMethod");
         String status_raw = request.getParameter("status");
         String minPrice_raw = request.getParameter("minPrice");
         String maxPrice_raw = request.getParameter("maxPrice");
@@ -126,7 +175,7 @@ public class MenuItemController extends HttpServlet {
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-
+        
         if (!checkEmpty(search)) {
             search = "";
         }
@@ -139,6 +188,7 @@ public class MenuItemController extends HttpServlet {
 
         int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
+        int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
         int minPrice = 0;
         int maxPrice = 0;
         try {
@@ -172,7 +222,7 @@ public class MenuItemController extends HttpServlet {
             search = "";
         }
 
-        int totalItem = mi.countSearchMenuItem(search, categoryId, status, minPrice, maxPrice, priceType);
+        int totalItem = mi.countSearchMenuItem(search, categoryId, methodID, status, minPrice, maxPrice, priceType);
         int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
 
         if (page > totalPage && totalPage > 0) {
@@ -180,10 +230,11 @@ public class MenuItemController extends HttpServlet {
         }
 
         int offSet = (page - 1) * PAGE_SIZE;
-
+        List<CookingMethod> listMethod = cm.getAllCookingMethod();
         List<MenuCategory> list = md.getAllMenuCategory();
-        List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
-
+        List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, methodID, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
+        
+        request.setAttribute("listMethod", listMethod);
         request.setAttribute("list", list);
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
@@ -210,6 +261,7 @@ public class MenuItemController extends HttpServlet {
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
     private MenuItemDAO mi = new MenuItemDAO();
+    private CookingMethodDAO cm = new CookingMethodDAO();
     private static final int PAGE_SIZE = 8;
 
     @Override

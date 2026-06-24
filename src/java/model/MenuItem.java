@@ -6,6 +6,7 @@ public class MenuItem {
 
     private int itemID;
     private int categoryID;
+    private int methodID;
     private String itemName;
     private String description;
     private int price;
@@ -14,32 +15,47 @@ public class MenuItem {
     private String image;
     private int isAvailable;
     private String allergyNotes;
-    private String categoryName;
     
-    private Date workingDate;
+    private String categoryName;
     private int initialQuantity;
+    private Date workingDate;
     private int quantityInStock;
 
     public MenuItem() {
     }
+    
+    
 
-    public MenuItem(int itemID, String categoryName, Date workingDate, int initialQuantity, int quantityInStock) {
+    public MenuItem(int itemID, String itemName, String categoryName, Date workingDate, int initialQuantity, int quantityInStock) {
         this.itemID = itemID;
+        this.itemName = itemName;
         this.categoryName = categoryName;
-        this.workingDate = workingDate;
         this.initialQuantity = initialQuantity;
+        this.workingDate = workingDate;
         this.quantityInStock = quantityInStock;
     }
 
-    public MenuItem(int itemID, int categoryID, String itemName, String description,
-            int price, int discountPercent, int discountedPrice, String image,
-            int isAvailable, String allergyNotes, String categoryName) {
+    public MenuItem(int itemID, int categoryID, int methodID, String itemName, String description, int price, int discountPercent, int discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
+        this.itemID = itemID;
+        this.categoryID = categoryID;
+        this.methodID = methodID;
+        this.itemName = itemName;
+        this.description = description;
+        this.price = price;
+        this.discountPercent = discountPercent;
+        this.discountedPrice = discountedPrice;
+        this.image = image;
+        this.isAvailable = isAvailable;
+        this.allergyNotes = allergyNotes;
+        this.categoryName = categoryName;
+    }
+
+    public MenuItem(int itemID, int categoryID, String itemName, String description, int price, int discountedPrice, String image, int isAvailable, String allergyNotes, String categoryName) {
         this.itemID = itemID;
         this.categoryID = categoryID;
         this.itemName = itemName;
         this.description = description;
         this.price = price;
-        this.discountPercent = discountPercent;
         this.discountedPrice = discountedPrice;
         this.image = image;
         this.isAvailable = isAvailable;
@@ -144,6 +160,14 @@ public class MenuItem {
         this.workingDate = workingDate;
     }
 
+    public int getQuantityInStock() {
+        return quantityInStock;
+    }
+
+    public void setQuantityInStock(int quantityInStock) {
+        this.quantityInStock = quantityInStock;
+    }
+
     public int getInitialQuantity() {
         return initialQuantity;
     }
@@ -152,13 +176,12 @@ public class MenuItem {
         this.initialQuantity = initialQuantity;
     }
 
-    public int getQuantityInStock() {
-        return quantityInStock;
+    public int getMethodID() {
+        return methodID;
     }
 
-    public void setQuantityInStock(int quantityInStock) {
-        this.quantityInStock = quantityInStock;
+    public void setMethodID(int methodID) {
+        this.methodID = methodID;
     }
-    
     
 }

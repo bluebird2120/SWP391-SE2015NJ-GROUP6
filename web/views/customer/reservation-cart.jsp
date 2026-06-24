@@ -91,6 +91,14 @@
                 background:#fff;
                 border-radius:14px;
             }
+            .error-message {
+                margin:0 0 14px;
+                padding:12px 14px;
+                border-radius:10px;
+                background:#fee2e2;
+                color:#b91c1c;
+                font-weight:700;
+            }
             @media (max-width:700px) {
                 .item-row {
                     grid-template-columns:70px 1fr;
@@ -115,7 +123,9 @@
         <%@ include file="/views/includes/header.jsp" %>
         <div class="preorder-wrap">
             <h2>Danh sách món đặt trước </h2>
-            
+            <c:if test="${not empty cartError}">
+                <div class="error-message">${cartError}</div>
+            </c:if>
 
             <c:choose>
                 <c:when test="${empty orderItems}">
@@ -153,9 +163,15 @@
                                            value="updatePreorderItem">
                                     <input type="hidden" name="orderItemID"
                                            value="${oi.orderItemID}">
-                                    <input class="qty" type="number" name="quantity"
-                                           min="1" max="99" value="${oi.quantity}">
-                                    <button class="btn btn-light" type="submit">Cập nhật</button>
+                                    <%--    
+                                        Validate nhập số lượng 
+                                         để bắt được cả chữ/ký tự đặc biệt trước khi submit. --%>
+                                    <input class="qty" type="text" name="quantity"
+                                           inputmode="numeric" maxlength="2"
+                                           value="${oi.quantity}"
+                                           data-old-value="${oi.quantity}"
+                                           onchange="validateQuantityAndSubmit(this)">
+
                                 </form>
                                 <form method="post"
                                       action="${pageContext.request.contextPath}/reservation">
@@ -176,7 +192,32 @@
                         <div>
                             <div>Tổng tiền món dự kiến</div>
                             <h2><fmt:formatNumber value="${total}" type="number"/> VNĐ</h2>
-                            <small>Tiền món thanh toán khi dùng bữa; bước tiếp theo là tiền cọc.</small>
+                            <%-- Hiển thị cùng công thức
+                                 cọc mà ReservationController dùng để tạo hóa đơn. --%>
+                            <div>
+                                Cọc bàn:
+                                <strong>
+                                    <fmt:formatNumber value="${baseDeposit}"
+                                                      type="number"/> VNĐ
+                                </strong>
+                            </div>
+                            <div>
+                                Cọc món (${preorderDepositPercent}%):
+                                <strong>
+                                    <fmt:formatNumber
+                                        value="${total * preorderDepositPercent / 100}"
+                                                      type="number"/> VNĐ
+                                </strong>
+                            </div>
+                            <div>
+                                Tổng tiền cọc:
+                                <strong>
+                                    <fmt:formatNumber
+                                        value="${baseDeposit + total * preorderDepositPercent / 100}"
+                                        type="number"/> VNĐ
+                                </strong>
+                            </div>
+                            <small>Phần tiền món còn lại được thanh toán khi dùng bữa.</small>
                         </div>
                         <div>
                             <a class="btn btn-light"
@@ -188,7 +229,10 @@
                                   style="display:inline;">
                                 <input type="hidden" name="action"
                                        value="confirmPreorder">
-                                <button class="btn btn-main" type="submit">
+                                <%--  Hỏi lại khách trước xác nhận có chắc chắn muốn cọc 
+                                     khi chuyển sang bước thanh toán cọc. --%>
+                                <button class="btn btn-main" type="submit"
+                                        onclick="return confirmDepositPayment();">
                                     Xác nhận món và thanh toán cọc
                                 </button>
                             </form>
@@ -198,5 +242,48 @@
             </c:choose>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
+        <script>
+            
+            
+            // Validate số lượng ở phía giao diện:
+            // chỉ nhận số nguyên dương từ 1 đến 99, không nhận chữ/ký tự/số âm.
+            function validateQuantityAndSubmit(input) {
+                const value = input.value.trim();
+                if (!/^\d+$/.test(value)) {
+                    alert("Số lượng món phải là số nguyên dương từ 1 đến 99.");
+                    input.value = input.dataset.oldValue || "1";
+                    input.focus();
+                    return false;
+                }
+
+                const quantity = Number(value);
+                if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+                    alert("Số lượng món phải là số nguyên dương từ 1 đến 99.");
+                    input.value = input.dataset.oldValue || "1";
+                    input.focus();
+                    return false;
+                }
+
+                input.form.submit();
+                return true;
+            }
+
+            //  Xác nhận lại trước khi tạo/chuyển hóa đơn cọc.
+            function confirmDepositPayment() {
+                const quantityInputs = document.querySelectorAll(".qty");
+                for (const input of quantityInputs) {
+                    const value = input.value.trim();
+                    const quantity = Number(value);
+                    if (!/^\d+$/.test(value)
+                            || !Number.isInteger(quantity)
+                            || quantity < 1 || quantity > 99) {
+                        alert("Vui lòng nhập số lượng món là số nguyên dương từ 1 đến 99 trước khi thanh toán cọc.");
+                        input.focus();
+                        return false;
+                    }
+                }
+                return confirm("Bạn có chắc chắn muốn xác nhận món và thanh toán cọc không?");
+            }
+        </script>
     </body>
 </html>

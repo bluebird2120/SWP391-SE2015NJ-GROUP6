@@ -33,7 +33,8 @@
 
             .main-content {
                 flex: 1;
-                max-width: 1200px;
+                width: 100%; /* 🌟 CHỐT CHẶN 1: Ép khung mở rộng hết nấc theo màn hình */
+                max-width: 95%; /* 🌟 CHỐT CHẶN 2: Thay vì 1200px tù túng, đổi sang 95% để tự giãn rộng trên màn hình máy tính lớn */
                 padding: 24px;
                 box-sizing: border-box;
             }
@@ -126,7 +127,7 @@
                 display: flex;
                 gap: 12px;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-start; /* Xếp các ô nối đuôi nhau từ trái qua phải */
                 background: white;
                 border: 1px solid #e2e8f0;
                 color: #475569;
@@ -134,8 +135,7 @@
                 border-radius: 12px;
                 margin-bottom: 20px;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-                flex-wrap: nowrap !important;
-                overflow-x: auto;
+                flex-wrap: wrap; /* 🌟 CHỐT CHẶN 3: Cho phép co giãn hoặc xuống hàng tự nhiên nếu màn hình laptop quá nhỏ */
             }
 
             .line2 {
@@ -146,8 +146,7 @@
                 white-space: nowrap;
             }
 
-            .filter-input,
-            .filter-select {
+            .filter-input, .filter-select {
                 padding: 8px 12px;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
@@ -155,6 +154,8 @@
                 color: #333333;
                 background-color: #ffffff;
                 outline: none;
+                flex: 1; /* Tự động chia đều đất diễn trên hàng ngang */
+                min-width: 140px; /* Chống bị bóp quá nhỏ chữ */
             }
 
             .filter-input:focus,
@@ -172,8 +173,9 @@
             }
 
             .filter-price input {
-                width: 90px;
-                border-radius: 8px;
+                width: 100px; /* Định dạng cứng độ rộng ô nhập số tiền từ... đến... */
+                min-width: 90px;
+                flex: 0 0 auto;
             }
 
             .btn-submit {
@@ -393,6 +395,15 @@
                         </c:forEach>
                     </select>
 
+                    <select name="cookingMethod" class="filter-select">
+                        <option value="">Tất cả phương thức</option>
+                        <c:forEach var="method" items="${listMethod}">
+                            <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                                ${method.methodName}
+                            </option>
+                        </c:forEach>
+                    </select>
+
                     <div class="filter-price">
                         <span>Giá từ:</span>
                         <input type="number" name="minPrice" value="${param.minPrice}" class="filter-input" />
@@ -467,6 +478,13 @@
                             </div>
                         </div>
                     </c:forEach>
+                    <c:if test="${empty listItem}">
+                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                            <span style="font-size: 50px; display: block; margin-bottom: 10px;">🔍</span>
+                            <b style="font-size: 16px; color: #64748b; display: block;">Không tìm thấy món ăn nào khớp bộ lọc.</b>
+                            <span style="font-size: 13px; display: block; margin-top: 5px;">Vui lòng thử tìm kiếm bằng từ khóa khác hoặc điều chỉnh lại khoảng giá.</span>
+                        </div>
+                    </c:if>
                 </div>
             </div>
         </div>
@@ -545,14 +563,152 @@
                 }
             };
         </script>
+        
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
             
-            <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">
+            <button onclick="openQRScanner()" 
+                    style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; width: 56px; height: 56px; border-radius: 50%; background-color: #D4A373; color: white; border: none; box-shadow: 0 4px 15px rgba(212, 163, 115, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;" 
+                    title="Quét mã QR gộp bàn">
+                <i class="fas fa-qrcode"></i>
+            </button>
+
+            <div id="qr-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
                 
+                <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <h3 style="color: #1c4332; margin-top: 0; margin-bottom: 10px;">📸 Quét QR Gộp Bàn</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Hướng camera về phía mã QR của bàn bên cạnh.</p>
+                    
+                    <div id="qr-reader" style="width: 100%; border-radius: 8px; overflow: hidden; border: 2px dashed #D4A373;"></div>
+                    
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;">
+                        <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block;">Hoặc nhập thủ công để Test:</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="manual-qr-input" placeholder="Dán link bàn hoặc mã Token..." 
+                                   style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; outline: none; font-size: 14px;"
+                                   onkeypress="if(event.key === 'Enter') submitManualQR()">
+                            <button onclick="submitManualQR()" 
+                                    style="background: #1c4332; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                                Gộp
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="closeQRScanner()" style="margin-top: 15px; background: #e74c3c; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">
+                        Hủy quét / Đóng
+                    </button>
+                </div>
+            </div>
+
+            <script src="https://unpkg.com/html5-qrcode"></script>
+            <script>
+                let html5QrcodeScanner = null;
+
+                function openQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "flex";
+                    // Reset lại ô input mỗi lần mở
+                    document.getElementById("manual-qr-input").value = ""; 
+                    
+                    if (!html5QrcodeScanner) {
+                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                    }
+
+                    html5QrcodeScanner.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        (decodedText, decodedResult) => {
+                            closeQRScanner(); 
+                            window.location.href = decodedText; 
+                        },
+                        (errorMessage) => { }
+                    ).catch((err) => {
+                        console.log("Không có camera, sử dụng chế độ nhập tay.");
+                        // Không alert nữa để đỡ phiền khi test trên laptop không có webcam
+                    });
+                }
+
+                function closeQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "none";
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then((ignore) => {
+                            html5QrcodeScanner.clear();
+                        }).catch((err) => { console.log(err); });
+                    }
+                }
+
+                // HÀM XỬ LÝ KHI ẤN ENTER HOẶC BẤM NÚT "GỘP"
+                function submitManualQR() {
+                    let val = document.getElementById("manual-qr-input").value.trim();
+                    if (val !== "") {
+                        // Nếu người dùng chỉ copy mỗi cái mã Token (không có chữ http)
+                        if (!val.startsWith("http")) {
+                            // Tự động ghép thành đường link hoàn chỉnh
+                            val = "${pageContext.request.contextPath}/scan?token=" + val;
+                        }
+                        
+                        closeQRScanner();
+                        // Chuyển hướng trình duyệt
+                        window.location.href = val;
+                    }
+                }
+            </script>
+
+            <script src="https://unpkg.com/html5-qrcode"></script>
+            <script>
+                let html5QrcodeScanner = null;
+
+                function openQRScanner() {
+                    // Hiện khung đen che màn hình
+                    document.getElementById("qr-modal-overlay").style.display = "flex";
+                    
+                    // Khởi tạo máy quét
+                    if (!html5QrcodeScanner) {
+                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                    }
+
+                    // Mở camera mặt sau (environment)
+                    html5QrcodeScanner.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,       // Khung hình trên giây
+                            qrbox: { width: 250, height: 250 } // Vùng quét hình vuông
+                        },
+                        (decodedText, decodedResult) => {
+                            // KHI QUÉT THÀNH CÔNG:
+                            closeQRScanner(); // Tắt camera đi
+                            
+                            // decodedText chính là cái đường link http://localhost:8080/.../scan?token=...
+                            // Chuyển hướng trình duyệt chạy thẳng vào link đó luôn!
+                            window.location.href = decodedText; 
+                        },
+                        (errorMessage) => {
+                            // Đang dò tìm QR (Bỏ qua lỗi này)
+                        }
+                    ).catch((err) => {
+                        alert("Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!");
+                        closeQRScanner();
+                    });
+                }
+
+                function closeQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "none";
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then((ignore) => {
+                            html5QrcodeScanner.clear();
+                        }).catch((err) => {
+                            console.log("Stop failed: ", err);
+                        });
+                    }
+                }
+            </script>
+        </c:if>
+        
+        <c:if test="${sessionScope.roleInTable == 'HOST'}">
+
+            <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">
+
                 <button id="btn-toggle-requests" onclick="toggleRequestPanel()" 
                         style="position: relative; width: 56px; height: 56px; border-radius: 50%; background-color: #1c4332; color: white; border: none; box-shadow: 0 4px 15px rgba(28, 67, 50, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;">
                     <i class="fas fa-users"></i>
-                    
+
                     <span id="request-badge" style="display: none; position: absolute; top: -4px; right: -4px; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">0</span>
                 </button>
 
@@ -565,7 +721,7 @@
                         <div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Đang kiểm tra...</div>
                     </div>
                 </div>
-                
+
             </div>
 
             <script>
@@ -577,7 +733,8 @@
                     const panel = document.getElementById('request-panel');
                     isPanelOpen = !isPanelOpen;
                     panel.style.display = isPanelOpen ? 'block' : 'none';
-                    if(isPanelOpen) fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
+                    if (isPanelOpen)
+                        fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
                 }
 
                 // 2. Chạy ngầm quét dữ liệu mỗi 3 giây
@@ -586,30 +743,30 @@
                 // 3. Hàm gọi API lấy danh sách người đang chờ
                 function fetchPendingRequests() {
                     fetch(apiPath + '?action=getPending')
-                        .then(response => response.json())
-                        .then(data => {
-                            const badge = document.getElementById('request-badge');
-                            const listDiv = document.getElementById('request-list-content');
-                            const panelCount = document.getElementById('panel-count');
+                            .then(response => response.json())
+                            .then(data => {
+                                const badge = document.getElementById('request-badge');
+                                const listDiv = document.getElementById('request-list-content');
+                                const panelCount = document.getElementById('panel-count');
 
-                            // Cập nhật số lượng trên chuông và tiêu đề
-                            panelCount.innerText = data.length;
-                            if (data.length > 0) {
-                                badge.style.display = 'flex';
-                                badge.innerText = data.length;
-                                document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
-                                setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
-                            } else {
-                                badge.style.display = 'none';
-                            }
+                                // Cập nhật số lượng trên chuông và tiêu đề
+                                panelCount.innerText = data.length;
+                                if (data.length > 0) {
+                                    badge.style.display = 'flex';
+                                    badge.innerText = data.length;
+                                    document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
+                                    setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
+                                } else {
+                                    badge.style.display = 'none';
+                                }
 
-                            // Vẽ HTML cho danh sách người chờ
-                            if (data.length === 0) {
-                                listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
-                            } else {
-                                listDiv.innerHTML = '';
-                                data.forEach(req => {
-                                    listDiv.innerHTML += `
+                                // Vẽ HTML cho danh sách người chờ
+                                if (data.length === 0) {
+                                    listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
+                                } else {
+                                    listDiv.innerHTML = '';
+                                    data.forEach(req => {
+                                        listDiv.innerHTML += `
                                     <div style="background: #fbf9f6; border: 1px solid #eae5da; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                                         <div style="font-size: 14px; font-weight: bold; color: #2c2520; margin-bottom: 8px;">
                                             👤 ` + req.name + `
@@ -620,9 +777,9 @@
                                         </div>
                                     </div>
                                     `;
-                                });
-                            }
-                        });
+                                    });
+                                }
+                            });
                 }
 
                 // 4. Hàm Duyệt / Từ chối
@@ -632,21 +789,31 @@
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: 'action=' + actionType + '&requestID=' + reqID
                     })
-                    .then(response => response.text())
-                    .then(res => {
-                        if (res === 'success') {
-                            fetchPendingRequests(); // Tải lại danh sách ngay lập tức
-                        }
-                    });
+                            .then(response => response.text())
+                            .then(res => {
+                                if (res === 'success') {
+                                    fetchPendingRequests(); // Tải lại danh sách ngay lập tức
+                                }
+                            });
                 }
             </script>
             <style>
                 @keyframes shake {
-                  0% { transform: rotate(0deg); }
-                  25% { transform: rotate(-10deg); }
-                  50% { transform: rotate(10deg); }
-                  75% { transform: rotate(-10deg); }
-                  100% { transform: rotate(0deg); }
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    25% {
+                        transform: rotate(-10deg);
+                    }
+                    50% {
+                        transform: rotate(10deg);
+                    }
+                    75% {
+                        transform: rotate(-10deg);
+                    }
+                    100% {
+                        transform: rotate(0deg);
+                    }
                 }
             </style>
         </c:if>
