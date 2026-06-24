@@ -33,7 +33,8 @@
 
             .main-content {
                 flex: 1;
-                max-width: 1200px;
+                width: 100%; /* 🌟 CHỐT CHẶN 1: Ép khung mở rộng hết nấc theo màn hình */
+                max-width: 95%; /* 🌟 CHỐT CHẶN 2: Thay vì 1200px tù túng, đổi sang 95% để tự giãn rộng trên màn hình máy tính lớn */
                 padding: 24px;
                 box-sizing: border-box;
             }
@@ -126,7 +127,7 @@
                 display: flex;
                 gap: 12px;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-start; /* Xếp các ô nối đuôi nhau từ trái qua phải */
                 background: white;
                 border: 1px solid #e2e8f0;
                 color: #475569;
@@ -134,8 +135,7 @@
                 border-radius: 12px;
                 margin-bottom: 20px;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-                flex-wrap: nowrap !important;
-                overflow-x: auto;
+                flex-wrap: wrap; /* 🌟 CHỐT CHẶN 3: Cho phép co giãn hoặc xuống hàng tự nhiên nếu màn hình laptop quá nhỏ */
             }
 
             .line2 {
@@ -146,8 +146,7 @@
                 white-space: nowrap;
             }
 
-            .filter-input,
-            .filter-select {
+            .filter-input, .filter-select {
                 padding: 8px 12px;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
@@ -155,6 +154,8 @@
                 color: #333333;
                 background-color: #ffffff;
                 outline: none;
+                flex: 1; /* Tự động chia đều đất diễn trên hàng ngang */
+                min-width: 140px; /* Chống bị bóp quá nhỏ chữ */
             }
 
             .filter-input:focus,
@@ -172,8 +173,9 @@
             }
 
             .filter-price input {
-                width: 90px;
-                border-radius: 8px;
+                width: 100px; /* Định dạng cứng độ rộng ô nhập số tiền từ... đến... */
+                min-width: 90px;
+                flex: 0 0 auto;
             }
 
             .btn-submit {
@@ -393,6 +395,15 @@
                         </c:forEach>
                     </select>
 
+                    <select name="cookingMethod" class="filter-select">
+                        <option value="">Tất cả phương thức</option>
+                        <c:forEach var="method" items="${listMethod}">
+                            <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                                ${method.methodName}
+                            </option>
+                        </c:forEach>
+                    </select>
+
                     <div class="filter-price">
                         <span>Giá từ:</span>
                         <input type="number" name="minPrice" value="${param.minPrice}" class="filter-input" />
@@ -467,6 +478,13 @@
                             </div>
                         </div>
                     </c:forEach>
+                    <c:if test="${empty listItem}">
+                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                            <span style="font-size: 50px; display: block; margin-bottom: 10px;">🔍</span>
+                            <b style="font-size: 16px; color: #64748b; display: block;">Không tìm thấy món ăn nào khớp bộ lọc.</b>
+                            <span style="font-size: 13px; display: block; margin-top: 5px;">Vui lòng thử tìm kiếm bằng từ khóa khác hoặc điều chỉnh lại khoảng giá.</span>
+                        </div>
+                    </c:if>
                 </div>
             </div>
         </div>
@@ -684,13 +702,13 @@
         </c:if>
         
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
-            
+
             <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">
-                
+
                 <button id="btn-toggle-requests" onclick="toggleRequestPanel()" 
                         style="position: relative; width: 56px; height: 56px; border-radius: 50%; background-color: #1c4332; color: white; border: none; box-shadow: 0 4px 15px rgba(28, 67, 50, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;">
                     <i class="fas fa-users"></i>
-                    
+
                     <span id="request-badge" style="display: none; position: absolute; top: -4px; right: -4px; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">0</span>
                 </button>
 
@@ -703,7 +721,7 @@
                         <div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Đang kiểm tra...</div>
                     </div>
                 </div>
-                
+
             </div>
 
             <script>
@@ -715,7 +733,8 @@
                     const panel = document.getElementById('request-panel');
                     isPanelOpen = !isPanelOpen;
                     panel.style.display = isPanelOpen ? 'block' : 'none';
-                    if(isPanelOpen) fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
+                    if (isPanelOpen)
+                        fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
                 }
 
                 // 2. Chạy ngầm quét dữ liệu mỗi 3 giây
@@ -724,30 +743,30 @@
                 // 3. Hàm gọi API lấy danh sách người đang chờ
                 function fetchPendingRequests() {
                     fetch(apiPath + '?action=getPending')
-                        .then(response => response.json())
-                        .then(data => {
-                            const badge = document.getElementById('request-badge');
-                            const listDiv = document.getElementById('request-list-content');
-                            const panelCount = document.getElementById('panel-count');
+                            .then(response => response.json())
+                            .then(data => {
+                                const badge = document.getElementById('request-badge');
+                                const listDiv = document.getElementById('request-list-content');
+                                const panelCount = document.getElementById('panel-count');
 
-                            // Cập nhật số lượng trên chuông và tiêu đề
-                            panelCount.innerText = data.length;
-                            if (data.length > 0) {
-                                badge.style.display = 'flex';
-                                badge.innerText = data.length;
-                                document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
-                                setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
-                            } else {
-                                badge.style.display = 'none';
-                            }
+                                // Cập nhật số lượng trên chuông và tiêu đề
+                                panelCount.innerText = data.length;
+                                if (data.length > 0) {
+                                    badge.style.display = 'flex';
+                                    badge.innerText = data.length;
+                                    document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
+                                    setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
+                                } else {
+                                    badge.style.display = 'none';
+                                }
 
-                            // Vẽ HTML cho danh sách người chờ
-                            if (data.length === 0) {
-                                listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
-                            } else {
-                                listDiv.innerHTML = '';
-                                data.forEach(req => {
-                                    listDiv.innerHTML += `
+                                // Vẽ HTML cho danh sách người chờ
+                                if (data.length === 0) {
+                                    listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
+                                } else {
+                                    listDiv.innerHTML = '';
+                                    data.forEach(req => {
+                                        listDiv.innerHTML += `
                                     <div style="background: #fbf9f6; border: 1px solid #eae5da; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                                         <div style="font-size: 14px; font-weight: bold; color: #2c2520; margin-bottom: 8px;">
                                             👤 ` + req.name + `
@@ -758,9 +777,9 @@
                                         </div>
                                     </div>
                                     `;
-                                });
-                            }
-                        });
+                                    });
+                                }
+                            });
                 }
 
                 // 4. Hàm Duyệt / Từ chối
@@ -770,21 +789,31 @@
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: 'action=' + actionType + '&requestID=' + reqID
                     })
-                    .then(response => response.text())
-                    .then(res => {
-                        if (res === 'success') {
-                            fetchPendingRequests(); // Tải lại danh sách ngay lập tức
-                        }
-                    });
+                            .then(response => response.text())
+                            .then(res => {
+                                if (res === 'success') {
+                                    fetchPendingRequests(); // Tải lại danh sách ngay lập tức
+                                }
+                            });
                 }
             </script>
             <style>
                 @keyframes shake {
-                  0% { transform: rotate(0deg); }
-                  25% { transform: rotate(-10deg); }
-                  50% { transform: rotate(10deg); }
-                  75% { transform: rotate(-10deg); }
-                  100% { transform: rotate(0deg); }
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    25% {
+                        transform: rotate(-10deg);
+                    }
+                    50% {
+                        transform: rotate(10deg);
+                    }
+                    75% {
+                        transform: rotate(-10deg);
+                    }
+                    100% {
+                        transform: rotate(0deg);
+                    }
                 }
             </style>
         </c:if>

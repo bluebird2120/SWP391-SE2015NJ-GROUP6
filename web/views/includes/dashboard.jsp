@@ -237,7 +237,7 @@
         <c:if test="${sessionScope.employee.roleID == 1}">
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('daily-inventory') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/daily-inventory">
+                   href="${pageContext.request.contextPath}/daily-stock">
                     <i class="fas fa-boxes"></i> Tồn kho hàng ngày
                 </a>
             </li>

@@ -1,5 +1,6 @@
 package controller;
 
+import dal.CookingMethodDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,7 @@ import model.MenuItem;
 // === BẮT ĐẦU PHẦN THÊM MỚI (IMPORT): Nhập thêm thư viện cần thiết ===
 import dal.TableDAO;
 import dal.OrderDAO;
+import model.CookingMethod;
 import model.Table;
 import model.Order;
 import model.Employee;
@@ -165,6 +167,7 @@ public class MenuItemController extends HttpServlet {
         // --- LOGIC GỐC CỦA BẠN CỦA BẠN (GIỮ NGUYÊN 100%) ---
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
+        String method_raw = request.getParameter("cookingMethod");
         String status_raw = request.getParameter("status");
         String minPrice_raw = request.getParameter("minPrice");
         String maxPrice_raw = request.getParameter("maxPrice");
@@ -172,7 +175,7 @@ public class MenuItemController extends HttpServlet {
         String sort = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-
+        
         if (!checkEmpty(search)) {
             search = "";
         }
@@ -185,6 +188,7 @@ public class MenuItemController extends HttpServlet {
 
         int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
         int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
+        int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
         int minPrice = 0;
         int maxPrice = 0;
         try {
@@ -218,7 +222,7 @@ public class MenuItemController extends HttpServlet {
             search = "";
         }
 
-        int totalItem = mi.countSearchMenuItem(search, categoryId, status, minPrice, maxPrice, priceType);
+        int totalItem = mi.countSearchMenuItem(search, categoryId, methodID, status, minPrice, maxPrice, priceType);
         int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
 
         if (page > totalPage && totalPage > 0) {
@@ -226,10 +230,11 @@ public class MenuItemController extends HttpServlet {
         }
 
         int offSet = (page - 1) * PAGE_SIZE;
-
+        List<CookingMethod> listMethod = cm.getAllCookingMethod();
         List<MenuCategory> list = md.getAllMenuCategory();
-        List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
-
+        List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, methodID, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
+        
+        request.setAttribute("listMethod", listMethod);
         request.setAttribute("list", list);
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
@@ -256,6 +261,7 @@ public class MenuItemController extends HttpServlet {
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
     private MenuItemDAO mi = new MenuItemDAO();
+    private CookingMethodDAO cm = new CookingMethodDAO();
     private static final int PAGE_SIZE = 8;
 
     @Override

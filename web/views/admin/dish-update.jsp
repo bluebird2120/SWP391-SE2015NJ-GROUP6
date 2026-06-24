@@ -148,6 +148,16 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">Lựa chọn phương thức chế biến:</label>
+                                    <select name="methodCooking" class="form-input">
+                                        <c:forEach var="method" items="${listMethod}">
+                                            <option value="${method.methodID}" ${(param.methodCooking != null ? param.methodCooking == method.methodID : dish.methodID == method.methodID) ? "selected" : ""}>                    
+                                                ${method.methodName}
+                                            </option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">Nhập mô tả món ăn:</label>
                                     <textarea class="form-input" name="description" required>${param.description != null ? param.description : dish.description}</textarea>
                                     <div class="error-message">${errorDescription}</div>
