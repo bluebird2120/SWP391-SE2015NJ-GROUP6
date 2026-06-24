@@ -1,6 +1,5 @@
 package controller;
 
-
 import dal.EmployeeDAO;
 import dal.EmployeeShiftDAO;
 import dal.NotificationDAO;
@@ -26,9 +25,6 @@ import model.Notifications;
 import model.ShiftSwapRequests;
 import model.ShiftSwapRequestDetail;
 
-/**
- * Staff xem lịch ca của bản thân theo tháng (calendar view) và gửi yêu cầu đổi ca / xin nghỉ.
- */
 @WebServlet(name = "StaffMyScheduleController", urlPatterns = {"/staff/my-schedule"})
 public class StaffMyScheduleController extends HttpServlet {
 
@@ -65,7 +61,6 @@ public class StaffMyScheduleController extends HttpServlet {
         YearMonth prev = ym.minusMonths(1);
         YearMonth next = ym.plusMonths(1);
 
-        // Fetch pending requests map and eligible other shifts for swap dropdown
         ShiftSwapRequestDAO swapDAO = new ShiftSwapRequestDAO();
         Map<Integer, ShiftSwapRequests> pendingRequests = swapDAO.getPendingRequestsMap(emp.getEmployeeID());
         List<ShiftRow> otherShifts = shiftDAO.listEligibleSwaps(emp.getEmployeeID());
@@ -111,11 +106,11 @@ public class StaffMyScheduleController extends HttpServlet {
 
         ShiftSwapRequestDAO swapDAO = new ShiftSwapRequestDAO();
 
-        // Handle colleague approval/rejection actions
         if ("acceptColleagueSwap".equals(action) || "rejectColleagueSwap".equals(action)) {
             try {
                 int swapID = Integer.parseInt(req.getParameter("swapID"));
                 ShiftSwapRequestDetail detail = swapDAO.getDetailById(swapID);
+                
                 if (detail == null || detail.getTargetEmployeeID() != emp.getEmployeeID()) {
                     session.setAttribute("errorMsg", "Không tìm thấy yêu cầu đổi ca phù hợp!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
@@ -125,7 +120,6 @@ public class StaffMyScheduleController extends HttpServlet {
                 NotificationDAO notifDAO = new NotificationDAO();
 
                 if ("acceptColleagueSwap".equals(action)) {
-                    // Re-check for conflicts to ensure no new shifts were assigned in the meantime
                     EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
                     if (detail.getTargetShiftID() != null) {
                         if (esDAO.hasConflictingShift(detail.getReqEmployeeID(), detail.getTargetWorkDate(), detail.getRequesterShiftID())) {
@@ -140,12 +134,10 @@ public class StaffMyScheduleController extends HttpServlet {
                         }
                     }
 
-                    // Directly approve and swap shifts — no owner approval needed
                     boolean success = swapDAO.updateStatus(swapID, "approved", null);
                     if (success) {
                         session.setAttribute("successMsg", "Đổi ca thành công! Lịch làm việc của 2 nhân viên đã được cập nhật.");
 
-                        // Notify the requester that the swap is complete
                         Notifications n1 = new Notifications();
                         n1.setRecipientID(detail.getReqEmployeeID());
                         n1.setRecipientType("staff");
@@ -156,7 +148,6 @@ public class StaffMyScheduleController extends HttpServlet {
                         n1.setIsRead(0);
                         notifDAO.insert(n1);
 
-                        // Notify the acceptor (current employee) as a record
                         Notifications n2 = new Notifications();
                         n2.setRecipientID(emp.getEmployeeID());
                         n2.setRecipientType("staff");
@@ -174,7 +165,6 @@ public class StaffMyScheduleController extends HttpServlet {
                     if (success) {
                         session.setAttribute("successMsg", "Đã từ chối yêu cầu đổi ca từ đồng nghiệp.");
 
-                        // Notify Requester
                         Notifications n1 = new Notifications();
                         n1.setRecipientID(detail.getReqEmployeeID());
                         n1.setRecipientType("staff");
@@ -201,7 +191,6 @@ public class StaffMyScheduleController extends HttpServlet {
         String requesterShiftStr = req.getParameter("requesterShiftID");
         String reason = req.getParameter("reason");
 
-        // Backend Validations
         if (requesterShiftStr == null || requesterShiftStr.trim().isEmpty() || reason == null || reason.trim().isEmpty()) {
             session.setAttribute("errorMsg", "Dữ liệu yêu cầu không hợp lệ hoặc bị thiếu!");
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
@@ -237,7 +226,6 @@ public class StaffMyScheduleController extends HttpServlet {
                 return;
             }
 
-            // Check if there is already a pending request for this shift
             Map<Integer, ShiftSwapRequests> pendingMap = swapDAO.getPendingRequestsMap(emp.getEmployeeID());
             if (pendingMap.containsKey(requesterShiftID)) {
                 session.setAttribute("errorMsg", "Ca làm việc này đang có yêu cầu chờ duyệt!");
@@ -247,6 +235,7 @@ public class StaffMyScheduleController extends HttpServlet {
 
             Integer targetShiftID = null;
             ShiftRow targetShift = null;
+
             if ("requestSwap".equals(action)) {
                 String targetShiftStr = req.getParameter("targetShiftID");
                 if (targetShiftStr == null || targetShiftStr.trim().isEmpty()) {
@@ -275,7 +264,6 @@ public class StaffMyScheduleController extends HttpServlet {
                     return;
                 }
 
-                // Overlap validation
                 if (esDAO.hasConflictingShift(emp.getEmployeeID(), targetShift.getWorkDate(), requesterShiftID)) {
                     session.setAttribute("errorMsg", "Bạn đã có ca làm việc khác vào ngày " + targetShift.getWorkDate() + "!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
@@ -290,7 +278,6 @@ public class StaffMyScheduleController extends HttpServlet {
                 targetShiftID = tarShiftID;
             }
 
-            // Save request
             ShiftSwapRequests reqObj = new ShiftSwapRequests();
             reqObj.setRequesterShiftID(requesterShiftID);
             reqObj.setTargetShiftID(targetShiftID);
@@ -304,7 +291,6 @@ public class StaffMyScheduleController extends HttpServlet {
 
                 NotificationDAO notifDAO = new NotificationDAO();
                 if ("requestSwap".equals(action) && targetShift != null) {
-                    // Notify target colleague
                     Notifications n = new Notifications();
                     n.setRecipientID(targetShift.getEmployeeID());
                     n.setRecipientType("staff");
@@ -313,7 +299,6 @@ public class StaffMyScheduleController extends HttpServlet {
                     n.setIsRead(0);
                     notifDAO.insert(n);
                 } else {
-                    // Notify Owners (for leave request)
                     EmployeeDAO empDAO = new EmployeeDAO();
                     List<Integer> ownerIDs = empDAO.getActiveOwnerIDs();
                     String msgText = String.format("Nhân viên %s vừa gửi yêu cầu xin nghỉ cho ca ngày %s (%s).", 
@@ -332,7 +317,6 @@ public class StaffMyScheduleController extends HttpServlet {
                 session.setAttribute("errorMsg", "Lỗi khi lưu yêu cầu vào cơ sở dữ liệu!");
             }
 
-            // Redirect back to the calendar month of the requester shift
             LocalDate d = reqShift.getWorkDate().toLocalDate();
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule?year=" + d.getYear() + "&month=" + d.getMonthValue());
 
@@ -353,4 +337,3 @@ public class StaffMyScheduleController extends HttpServlet {
         }
     }
 }
-

@@ -10,10 +10,6 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import model.Employee;
 
-/**
- * Controller xử lý trang Dashboard dùng chung cho Staff và Owner.
- * URL: /staff/dashboard (được AuthFilter bảo vệ cho cả hai role).
- */
 @WebServlet(name = "StaffDashboardController", urlPatterns = {"/staff/dashboard"})
 public class StaffDashboardController extends HttpServlet {
 

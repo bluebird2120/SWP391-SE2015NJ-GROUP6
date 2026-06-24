@@ -26,9 +26,9 @@ import util.UserRole;
 
 @WebServlet(name = "StaffManagementController", urlPatterns = { "/owner/staff" })
 @MultipartConfig(
-        fileSizeThreshold = 1024 * 1024,         // 1MB: ghi ra disk nếu vượt quá
-        maxFileSize       = 50L * 1024 * 1024,   // 50MB: Tomcat không crash với MP4 thông thường
-        maxRequestSize    = 55L * 1024 * 1024    // 55MB: giới hạn toàn bộ request
+        fileSizeThreshold = 1024 * 1024,
+        maxFileSize       = 50L * 1024 * 1024,
+        maxRequestSize    = 55L * 1024 * 1024
 )
 public class StaffManagementController extends HttpServlet {
 
@@ -400,13 +400,11 @@ public class StaffManagementController extends HttpServlet {
 
             String safeSubmitted = Paths.get(submitted).getFileName().toString();
 
-            // Kiểm tra extension (chặn video và file khác)
             if (!isValidImageFile(safeSubmitted)) {
                 errors.put("image", "Vui lòng chọn file ảnh (jpg, jpeg, png, webp).");
                 return null;
             }
 
-            // Kiểm tra MIME type (chặn file giả mạo đổi đuôi)
             String contentType = filePart.getContentType();
             if (contentType == null
                     || (!contentType.equals("image/jpeg")
@@ -417,10 +415,8 @@ public class StaffManagementController extends HttpServlet {
             }
 
             String ext = safeSubmitted.substring(safeSubmitted.lastIndexOf('.') + 1).toLowerCase();
-            // Tên file dùng timestamp để tránh trùng
             String fileName = "staff_" + System.currentTimeMillis() + "." + ext;
 
-            // Lưu vào thư mục runtime của Tomcat
             String runtimePath = request.getServletContext().getRealPath("/");
             Path uploadFolder = Paths.get(runtimePath, UPLOAD_DIR);
             Files.createDirectories(uploadFolder);

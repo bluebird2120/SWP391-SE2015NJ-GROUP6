@@ -11,12 +11,12 @@ public class Customer {
     private String email;
     private Timestamp createdAt;      // DATETIME
     private String loginProvider;     // local / google
+    private int isActive;
 
     public Customer() {
     }
 
-    public Customer(int customerID, String userName, String password, String phoneNumber,
-            String email, Timestamp createdAt, String loginProvider) {
+    public Customer(int customerID, String userName, String password, String phoneNumber, String email, Timestamp createdAt, String loginProvider, int isActive) {
         this.customerID = customerID;
         this.userName = userName;
         this.password = password;
@@ -24,6 +24,7 @@ public class Customer {
         this.email = email;
         this.createdAt = createdAt;
         this.loginProvider = loginProvider;
+        this.isActive = isActive;
     }
 
     public int getCustomerID() {
@@ -81,4 +82,14 @@ public class Customer {
     public void setLoginProvider(String loginProvider) {
         this.loginProvider = loginProvider;
     }
+
+    public int getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(int isActive) {
+        this.isActive = isActive;
+    }
+
+    
 }

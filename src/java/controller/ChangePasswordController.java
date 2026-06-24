@@ -17,7 +17,7 @@ import model.Customer;
 import model.Employee;
 import java.sql.SQLException;
 
-@WebServlet(name = "ChangePasswordController", urlPatterns = {"/change-password"})
+@WebServlet(name = "ChangePasswordController", urlPatterns = {"/change-password", "/staff/change-password"})
 public class ChangePasswordController extends HttpServlet {
 
     private final CustomerDAO customerDAO = new CustomerDAO();
@@ -26,6 +26,19 @@ public class ChangePasswordController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        String uri = request.getRequestURI();
+        
+        //Nếu vào từ thằng /staff/change-password thì truyền param xuống jsp
+        if (uri.contains("/staff/change-password")) {
+            String first = request.getParameter("first");
+            String expired = request.getParameter("expired");
+            if ("true".equals(first)) {
+                request.setAttribute("forceReason", "Bạn cần đổi mật khẩu trước khi sử dụng hệ thống.");
+            } else if ("true".equals(expired)) {
+                request.setAttribute("forceReason", "Mật khẩu đã quá hạn 90 ngày, vui lòng đổi mật khẩu mới.");
+            }
+        }
         request.getRequestDispatcher("/views/change-password.jsp").forward(request, response);
     }
 
@@ -52,7 +65,7 @@ public class ChangePasswordController extends HttpServlet {
             //Old Password
             String oldPasswordError = validateOldPassword(oldPassword);
             boolean oldPasswordCorrect = false;
-            
+
             if (oldPasswordError == null) {
                 if (customer != null
                         && !customerDAO.checkCurrentPassword(customer.getCustomerID(), oldPassword)) {
@@ -74,10 +87,9 @@ public class ChangePasswordController extends HttpServlet {
             //New Password
             String newPasswordError = validateNewPassword(newPassword);
             if (newPasswordError == null && oldPasswordCorrect) {
-                if (util.PasswordUtil.hash(newPassword).equals(util.PasswordUtil.hash(oldPassword))) {
-                    
+                if (newPassword.equals(oldPassword)) {
+                    newPasswordError = "Mật khẩu mới phải khác mật khẩu hiện tại.";
                 }
-                newPasswordError = "Mật khẩu mới phải khác mật khẩu hiện tại.";
             }
             if (newPasswordError != null) {
                 request.setAttribute("newPasswordError", newPasswordError);
