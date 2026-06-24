@@ -88,22 +88,24 @@ public class AuthenticationFilter implements Filter {
 
             //Bắt buộc đổi mật khẩu lần đầu (áp dụng cho riêng staff)
             if (uri.startsWith(ctx + "/staff/")
+                    && employee.getRoleID() != OWNER_ROLE_ID
                     && employee.getMustChangePassword() == 1
                     && !uri.contains("/staff/change-password")) {
                 response.sendRedirect(ctx + "/staff/change-password?first=true");
                 return;
             }
-            
-            java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
-            if (lastChanged != null) {
-                long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
+
+            if (employee.getRoleID() != OWNER_ROLE_ID) {
+                java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
+                if (lastChanged != null) {
+                    long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
                             / (1000L * 60 * 60 * 24);
-                if (daysSince >= 90 && !uri.contains("staff/change-password")) {
-                    response.sendRedirect(ctx + "/staff/change-password?expired=true");
-                    return;
+                    if (daysSince >= 90 && !uri.contains("staff/change-password")) {
+                        response.sendRedirect(ctx + "/staff/change-password?expired=true");
+                        return;
+                    }
                 }
             }
-            
             chain.doFilter(req, res);
             return;
         }
