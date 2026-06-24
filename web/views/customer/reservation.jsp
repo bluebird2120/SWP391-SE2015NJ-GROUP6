@@ -499,6 +499,43 @@
                                                         </ul>
                                                     </div>
 
+                                                    <%--  Hiển thị món đặt trước ngay trong đơn đặt bàn --%>
+                                                         
+                                                    <div class="m-0 small mt-2">
+                                                        🍲 Món đặt trước:
+                                                        <c:choose>
+                                                            <c:when test="${not empty preorderItemsByOrder[o.orderID]}">
+                                                                <ul class="mb-1">
+                                                                    <c:forEach var="item"
+                                                                               items="${preorderItemsByOrder[o.orderID]}"
+                                                                               varStatus="loop">
+                                                                        <c:set var="menu"
+                                                                               value="${preorderMenusByOrder[o.orderID][loop.index]}"/>
+                                                                        <li>
+                                                                            <strong>${menu.itemName}</strong>
+                                                                            x ${item.quantity}
+                                                                            -
+                                                                            <fmt:formatNumber
+                                                                                value="${item.price * item.quantity}"
+                                                                                type="number"/> VNĐ
+                                                                        </li>
+                                                                    </c:forEach>
+                                                                </ul>
+                                                                <div>
+                                                                    Tổng tiền món:
+                                                                    <strong>
+                                                                        <fmt:formatNumber
+                                                                            value="${preorderTotalsByOrder[o.orderID]}"
+                                                                            type="number"/> VNĐ
+                                                                    </strong>
+                                                                </div>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <span class="text-muted">Không có</span>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
+
                                                     <p class="m-0 small mt-1">
                                                         📅 Ngày đến:
                                                         <strong>
