@@ -5,7 +5,6 @@
 package dal;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 /**
  *
@@ -15,7 +14,7 @@ public class DailyInventoryDAO extends DBContext {
 
     public boolean updateStockMenuItem(int itemID, int initialQuantity) {
         String sql = "INSERT INTO DailyInventory (itemID, workingDate, initialQuantity, quantityInStock) "
-            + "VALUES (?, CURDATE(), ?, quantityInStock + ?) ";
+            + "VALUES (?, CURDATE(), ?, ?)";
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);

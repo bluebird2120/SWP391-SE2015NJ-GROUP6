@@ -19,43 +19,12 @@ import model.MenuItemImages;
  */
 public class MenuItemDAO extends DBContext {
 
-    public List<MenuItem> getAllMenuItem() {
-
-        List<MenuItem> list = new ArrayList<>();
-        String sql = "select * from MenuItem mi "
-                + "join MenuCategory mc on mi.categoryID = mc.categoryID";
-
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                MenuItem mi = new MenuItem(rs.getInt("itemID"),
-                        rs.getInt("categoryID"),
-                        rs.getString("itemName"),
-                        rs.getString("description"),
-                        rs.getInt("price"),
-                        rs.getInt("discountPercent"),
-                        rs.getInt("discountedPrice"),
-                        rs.getString("image"),
-                        rs.getInt("isAvailable"),
-                        rs.getString("allergyNotes"),
-                        rs.getString("categoryName"));
-
-                list.add(mi);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    public int countSearchMenuItem(String search, int categoryId, int status,
+    public int countSearchMenuItem(String search, int categoryId, int methodID, int status,
             int minPrice, int maxPrice, String priceType) {
         int total = 0;
         String sql = "select count(*) from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "where mi.itemName like ? ";
 
         if (status != -1) {
@@ -63,6 +32,9 @@ public class MenuItemDAO extends DBContext {
         }
         if (categoryId > 0) {
             sql += "and mc.categoryID = ? ";
+        }
+        if (methodID > 0) {
+            sql += "and cm.methodID = ? ";
         }
         if (priceType.equals("price")) {
             sql += "and mi.price >= ? and mi.price <= ? ";
@@ -81,6 +53,9 @@ public class MenuItemDAO extends DBContext {
             if (categoryId > 0) {
                 ps.setInt(index++, categoryId);
             }
+            if (methodID > 0) {
+                ps.setInt(index++, methodID);
+            }
             ps.setInt(index++, minPrice);
             ps.setInt(index++, maxPrice);
 
@@ -94,11 +69,12 @@ public class MenuItemDAO extends DBContext {
         return total;
     }
 
-    public List<MenuItem> searchMenuItemPaging(String search, int categoryId, int status,
+    public List<MenuItem> searchMenuItemPaging(String search, int categoryId, int methodID, int status,
             int minPrice, int maxPrice, String sort, String priceType, int offSet, int pageSize) {
         List<MenuItem> list = new ArrayList<>();
         String sql = "select * from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "where mi.itemName like ? ";
 
         if (status != -1) {
@@ -106,6 +82,9 @@ public class MenuItemDAO extends DBContext {
         }
         if (categoryId > 0) {
             sql += "and mc.categoryID = ? ";
+        }
+        if (methodID > 0) {
+            sql += "and cm.methodID = ? ";
         }
         if (priceType.equals("price")) {
             sql += "and mi.price >= ? "
@@ -129,15 +108,18 @@ public class MenuItemDAO extends DBContext {
             if (categoryId > 0) {
                 ps.setInt(index++, categoryId);
             }
+            if (methodID > 0) {
+                ps.setInt(index++, methodID);
+            }
             ps.setInt(index++, minPrice);
             ps.setInt(index++, maxPrice);
             ps.setInt(index++, offSet);
             ps.setInt(index++, pageSize);
             ResultSet rs = ps.executeQuery();
-            rs = ps.executeQuery();
             while (rs.next()) {
                 MenuItem item = new MenuItem(rs.getInt("itemID"),
                         rs.getInt("categoryID"),
+                        rs.getInt("methodID"),
                         rs.getString("itemName"),
                         rs.getString("description"),
                         rs.getInt("price"),
@@ -159,6 +141,7 @@ public class MenuItemDAO extends DBContext {
         MenuItem mi;
         String sql = "select * from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "where mi.itemID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
@@ -167,6 +150,7 @@ public class MenuItemDAO extends DBContext {
             if (rs.next()) {
                 mi = new MenuItem(rs.getInt("itemID"),
                         rs.getInt("categoryID"),
+                        rs.getInt("methodID"),
                         rs.getString("itemName"),
                         rs.getString("description"),
                         rs.getInt("price"),
@@ -325,20 +309,27 @@ public class MenuItemDAO extends DBContext {
         return null;
     }
 
-    public int countSearchDish(String itemName, int categoryID) {
+    public int countSearchDish(String itemName, int categoryID, int methodID) {
         int total = 0;
         int index = 1;
         String sql = "select count(*) from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "where mi.itemName like ? ";
         if (categoryID > 0) {
             sql += "and mi.categoryID = ?";
+        }
+        if (methodID > 0) {
+            sql += "and cm.methodID = ? ";
         }
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(index++, "%" + itemName + "%");
             if (categoryID > 0) {
                 ps.setInt(index++, categoryID);
+            }
+            if (methodID > 0) {
+                ps.setInt(index++, methodID);
             }
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -349,15 +340,19 @@ public class MenuItemDAO extends DBContext {
         return total;
     }
 
-    public List<MenuItem> searchDishPaging(String itemName, int categoryID, int offset, int pageSize) {
+    public List<MenuItem> searchDishPaging(String itemName, int categoryID, int methodID, int offset, int pageSize) {
         List<MenuItem> list = new ArrayList<>();
         int index = 1;
         String sql = "select * from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
+                + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "left join DailyInventory di on mi.itemID = di.itemID "
                 + "where mi.itemName like ? and mi.isAvailable = 1 ";
         if (categoryID > 0) {
             sql += "and mi.categoryID = ? ";
+        }
+        if (methodID > 0) {
+            sql += "and cm.methodID = ? ";
         }
         sql += "LIMIT ?, ?";
         try {
@@ -366,17 +361,27 @@ public class MenuItemDAO extends DBContext {
             if (categoryID > 0) {
                 ps.setInt(index++, categoryID);
             }
+            if (methodID > 0) {
+                ps.setInt(index++, methodID);
+            }
             ps.setInt(index++, offset);
             ps.setInt(index++, pageSize);
+            
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {                
-                MenuItem item = new MenuItem(rs.getInt("itemID"),
+            while (rs.next()) {
+                MenuItem mi = new MenuItem(rs.getInt("itemID"),
+                        rs.getInt("categoryID"),
+                        rs.getInt("methodID"),
                         rs.getString("itemName"),
-                        rs.getString("categoryName"), 
-                        rs.getDate("workingDate"), 
-                        rs.getInt("initialQuantity"), 
-                        rs.getInt("quantityInStock"));
-                list.add(item);
+                        rs.getString("description"),
+                        rs.getInt("price"),
+                        rs.getInt("discountPercent"),
+                        rs.getInt("discountedPrice"),
+                        rs.getString("image"),
+                        rs.getInt("isAvailable"),
+                        rs.getString("allergyNotes"),
+                        rs.getString("categoryName"));
+                list.add(mi);
             }
         } catch (Exception e) {
         }
