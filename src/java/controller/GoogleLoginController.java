@@ -27,7 +27,7 @@ public class GoogleLoginController extends HttpServlet {
     // ĐỔI 3 GIÁ TRỊ NÀY THEO THÔNG TIN GOOGLE CONSOLE CỦA BẠN
     // ========================================================
     private static final String CLIENT_ID = "1096276853074-s0bkcjnl6fdica04ie5mot0cuiifbllf.apps.googleusercontent.com";
-    private static final String CLIENT_SECRET = "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"; // ← điền secret thật vào đây
+    private static final String CLIENT_SECRET = ""; // ← điền secret thật vào đây
     private static final String REDIRECT_URI = "http://localhost:8080/Restaurant-Reservation-And-Table-Service-System/login/google/callback";
     // ========================================================
 
