@@ -227,14 +227,27 @@
                         <span style="font-size: 14px; color: #64748b;">Thời gian mở cửa cấu hình: <b style="color: #0284c7;">${storeOpenTime}</b></span>
                     </div>
 
-                    <div class="alert-box">
-                        📌 <b>LƯU Ý QUAN TRỌNG:</b> Hệ thống bắt buộc phải chốt số lượng món ăn trước giờ nhà hàng mở cửa (<b>${storeOpenTime}</b>). 
-                        Nếu đến giờ hoạt động mà Admin chưa cập nhật số lượng, <b>tất cả món ăn sẽ tự động chuyển sang trạng thái Ngưng hoạt động</b> trên thực đơn!
-                    </div>
+                    <c:if test="${not empty errorMessage}">
+                        <div class="danger-warning-box">
+                            ${errorMessage}
+                        </div>
+                    </c:if>
 
-                    <c:if test="${hasLowStockAlert == true}">
+                    <c:if test="${not empty errorSearch}">
+                        <div class="danger-warning-box">
+                            ${errorSearch}
+                        </div>
+                    </c:if>
+
+                    <c:if test="${hasLowStock == true}">
                         <div class="danger-warning-box">
                             ⚠️ <b>HỆ THỐNG CẢNH BÁO:</b> Hiện tại trong kho đang có món ăn bị giảm xuống <b>dưới 20%</b> so với số lượng chốt ban đầu! Vui lòng kiểm tra lại cột Số lượng hiện tại bên dưới.
+                        </div>
+                    </c:if>
+
+                    <c:if test="${isConfigYet == true}">
+                        <div class="danger-warning-box">
+                            <b>THÔNG BÁO HỆ THỐNG:</b> Bạn chưa chốt số lượng món ăn cho phiên hôm nay!
                         </div>
                     </c:if>
 
@@ -250,6 +263,15 @@
                             <option value="">Tất cả loại món</option>
                             <c:forEach var="cat" items="${categoryList}">
                                 <option value="${cat.categoryID}" ${param.categoryID == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
+                            </c:forEach>
+                        </select>
+
+                        <select name="cookingMethod" class="filter-select">
+                            <option value="">Tất cả phương thức</option>
+                            <c:forEach var="method" items="${listMethod}">
+                                <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                                    ${method.methodName}
+                                </option>
                             </c:forEach>
                         </select>
 
@@ -286,9 +308,12 @@
                                         </td>
                                         <td style="text-align: center;">
                                             <input type="hidden" name="itemID" value="${item.itemID}"/>
-                                            <input type="number" name="quantity" 
-                                                   value="${not empty item.quantityInStock ? item.quantityInStock : ''}" 
-                                                   class="input-item-qty field-stock-input" min="0"/>
+                                            <input type="number" name="quantityInStock" 
+                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : 0}" 
+                                                   class="input-item-qty field-stock-input"/>
+                                            <c:if test="${item.quantityInStock < item.initialQuantity * 20/100}">
+                                                <br/><small style="color: #e11d48; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
+                                            </c:if>
                                         </td>
                                     </tr>
                                 </c:forEach>
