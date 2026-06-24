@@ -1,6 +1,6 @@
 package dal;
 
-import java.math.BigDecimal;
+// java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -15,15 +15,18 @@ import model.OrderReservationDetail;
 public class OrderDAOSon extends DBContext {
 
     public static final int HOLD_MINUTES = 5;
-    public static final int DEFAULT_DEPOSIT_AMOUNT = 50000;
+    // Tiền cọc cố định khi khách chỉ đặt bàn.
+    public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
+    // Khách đặt kèm món cọc thêm 30% tổng tiền món.
+    public static final int PREORDER_DEPOSIT_PERCENT = 30;
 
     /**
-     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. Order
-     * không còn lưu capacity/areaType; các giá trị đó cùng quantity được lưu
+     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. 
+       
      * tại OrderReservationDetail.
      */
     public int createReservation(int customerID, Timestamp orderTime,
-            List<OrderReservationDetail> details, BigDecimal depositAmount) {
+            List<OrderReservationDetail> details, Integer depositAmount) {
 
         String orderSql
                 = "INSERT INTO `Order` "
@@ -125,8 +128,10 @@ public class OrderDAOSon extends DBContext {
                 + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
                 + " depositDeducted, finalAmount, issuedDate, status) "
                 + "VALUES (?, 'vnpay', ?, 0, 0, ?, CURDATE(), 'unpaid')";
+        //  Lưu cùng lúc invoiceID và số tiền cọc thực tế
+        // để hóa đơn cuối có thể trừ đúng khoản khách đã thanh toán trước.
         String linkSql
-                = "UPDATE `Order` SET invoiceID = ? "
+                = "UPDATE `Order` SET invoiceID = ?, depositAmount = ? "
                 + "WHERE orderID = ? AND orderStatus = 'pending'";
 
         try {
@@ -154,7 +159,8 @@ public class OrderDAOSon extends DBContext {
 
             try (PreparedStatement ps = connection.prepareStatement(linkSql)) {
                 ps.setInt(1, invoiceID);
-                ps.setInt(2, orderID);
+                ps.setInt(2, depositAmount);
+                ps.setInt(3, orderID);
                 if (ps.executeUpdate() == 0) {
                     connection.rollback();
                     return -1;
@@ -178,6 +184,35 @@ public class OrderDAOSon extends DBContext {
             }
         }
         return -1;
+    }
+
+    public boolean updatePendingDepositInvoice(int orderID, int invoiceID,
+            int depositAmount) {
+        // Nếu khách đổi món trước khi thanh toán cọc,
+        // cập nhật lại hóa đơn DEP- chưa paid để số tiền cọc luôn đúng.
+        String sql
+                = "UPDATE Invoices i "
+                + "JOIN `Order` o ON o.invoiceID = i.invoiceID "
+                + "SET i.subTotal = ?, i.finalAmount = ?, "
+                + "    o.depositAmount = ? "
+                + "WHERE o.orderID = ? "
+                + "  AND i.invoiceID = ? "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND i.status = 'unpaid' "
+                + "  AND i.invoiceNumber LIKE 'DEP-%'";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, depositAmount);
+            ps.setInt(2, depositAmount);
+            ps.setInt(3, depositAmount);
+            ps.setInt(4, orderID);
+            ps.setInt(5, invoiceID);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     /**

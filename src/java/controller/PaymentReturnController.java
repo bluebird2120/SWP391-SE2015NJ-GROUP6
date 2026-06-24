@@ -1,6 +1,7 @@
 package controller;
 
 import dal.InvoicesDAO;
+import dal.OrderDAOSon;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,7 @@ import util.Config;
 public class PaymentReturnController extends HttpServlet {
 
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
+    private final OrderDAOSon orderDAOSon = new OrderDAOSon();
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -69,6 +71,7 @@ public class PaymentReturnController extends HttpServlet {
                 HttpSession session = request.getSession();
                 Integer invoiceID = (Integer) session.getAttribute("invoiceID");
                 Integer orderID = (Integer) session.getAttribute("orderID"); // Bổ sung lấy orderID
+                boolean isDepositPayment = false;
 
                 // [FIX VNPAY] Phân biệt hóa đơn cọc và hóa đơn thanh toán cuối.
                 // DEP-: chỉ xác nhận đã cọc; OrderDAOSon sẽ đồng bộ
@@ -79,8 +82,14 @@ public class PaymentReturnController extends HttpServlet {
                     if (invoice != null
                             && invoice.getInvoiceNumber() != null
                             && invoice.getInvoiceNumber().startsWith("DEP-")) {
+                        // Ghi nhớ đây là thanh toán cọc
+                        // để hiển thị đúng thông báo đặt bàn, không dùng câu chờ dọn bàn.
+                        isDepositPayment = true;
                         invoicesDAO.updateInvoiceStatus(
                                 invoiceID, "paid", "vnpay");
+                        // [FIX PAYMENT MESSAGE] Sau khi cọc paid, đồng bộ ngay
+                        // để đơn đặt bàn chuyển pending -> reserved trong lần return này.
+                        orderDAOSon.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {
                         invoicesDAO.updatePaymentSuccessAndCleaningTable(
                                 invoiceID, orderID, "vnpay");
@@ -91,16 +100,27 @@ public class PaymentReturnController extends HttpServlet {
                 session.removeAttribute("orderID");
                 session.removeAttribute("invoiceID");
                 session.removeAttribute("tableID"); 
+                session.removeAttribute("reservationOrderID");
+                session.removeAttribute("reservationFlow");
+                session.removeAttribute("depositAmount");
+                session.removeAttribute("reservationHoldExpiresAt");
 
-                // In ra thông báo thành công
-                out.println("<h2 style='color: green; text-align: center; margin-top: 50px;'>🎉 THANH TOÁN THÀNH CÔNG!</h2>");
-                out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
-                out.println("<p style='text-align: center; color: #bc945c;'><i>Bàn của bạn đang được đưa vào trạng thái chờ dọn dẹp.</i></p>");
-                out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Quay lại Menu</a></div>");
+                
+                // tách nội dung theo loại hóa đơn: DEP- là cọc, hóa đơn thường là thanh toán bữa ăn.
+                out.println("<h2 style='color: green; text-align: center; margin-top: 50px;'>THANH TOÁN THÀNH CÔNG!</h2>");
+                if (isDepositPayment) {
+                    out.println("<p style='text-align: center;'>Đặt cọc thành công. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
+                    out.println("<p style='text-align: center; color: #bc945c;'><i>Đơn đặt bàn của bạn đã được giữ chỗ. Nhà hàng sẽ chuẩn bị theo thời gian bạn đã chọn.</i></p>");
+                    out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/reservation?action=history'>Xem lịch sử đặt bàn</a></div>");
+                } else {
+                    out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
+                    out.println("<p style='text-align: center; color: #bc945c;'><i>Bàn của bạn đang được đưa vào trạng thái chờ dọn dẹp.</i></p>");
+                    out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Quay lại Menu</a></div>");
+                }
 
             } else {
                 // === GIAO DỊCH LỖI HOẶC BỊ HỦY ===
-                // [FIX VNPAY] Ghi nhận thất bại để đơn cọc pending được
+               // Ghi nhận thất bại để đơn cọc pending được
                 // OrderDAOSon chuyển thành cancelled/available.
                 HttpSession session = request.getSession(false);
                 if (session != null) {

@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.math.BigDecimal;
+//import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -43,7 +43,7 @@ public class ReservationController extends HttpServlet {
         cleanFinishedReservationSession(request);
         String action = request.getParameter("action");
 
-        // [FIX PREORDER CART] Hiển thị giỏ riêng của đơn đặt bàn online.
+        // Hiển thị giỏ riêng của đơn đặt bàn online.
         if ("preorderCart".equals(action)) {
             showPreorderCart(request, response);
             return;
@@ -58,9 +58,31 @@ public class ReservationController extends HttpServlet {
             }
 
             int customerID = customer.getCustomerID();
-            request.setAttribute("orders", orderDAO.getReservationsByCustomer(customerID));
+            List<Order> reservations = orderDAO.getReservationsByCustomer(customerID);
+            request.setAttribute("orders", reservations);
             request.setAttribute("reservationDetails",
                     orderDAO.getReservationDetailsByCustomer(customerID));
+            // Gắn món đặt trước vào từng đơn đặt bàn
+            // để khách xem lịch sử là thấy luôn bàn + món + tổng tiền món.
+            Map<Integer, List<OrderItem>> preorderItemsByOrder = new HashMap<>();
+            Map<Integer, List<MenuItem>> preorderMenusByOrder = new HashMap<>();
+            Map<Integer, Integer> preorderTotalsByOrder = new HashMap<>();
+            for (Order reservation : reservations) {
+                List<OrderItem> orderItems
+                        = preorderDAO.getOrderItemsByOrderId(reservation.getOrderID());
+                List<MenuItem> menuItems
+                        = preorderDAO.getMenuItemsByOrderId(reservation.getOrderID());
+                int preorderTotal = 0;
+                for (OrderItem item : orderItems) {
+                    preorderTotal += item.getPrice() * item.getQuantity();
+                }
+                preorderItemsByOrder.put(reservation.getOrderID(), orderItems);
+                preorderMenusByOrder.put(reservation.getOrderID(), menuItems);
+                preorderTotalsByOrder.put(reservation.getOrderID(), preorderTotal);
+            }
+            request.setAttribute("preorderItemsByOrder", preorderItemsByOrder);
+            request.setAttribute("preorderMenusByOrder", preorderMenusByOrder);
+            request.setAttribute("preorderTotalsByOrder", preorderTotalsByOrder);
             request.setAttribute("step", "history");
             forward(request, response);
             return;
@@ -149,7 +171,7 @@ public class ReservationController extends HttpServlet {
         cleanFinishedReservationSession(request);
         String action = request.getParameter("action");
 
-        // [FIX PREORDER CART] Các thao tác giỏ đặt trước được xử lý trước
+        //  Các thao tác giỏ đặt trước được xử lý trước
         // form đặt bàn để không yêu cầu lại orderTime/areaType.
         if ("addPreorderItem".equals(action)) {
             addPreorderItem(request, response);
@@ -251,7 +273,7 @@ public class ReservationController extends HttpServlet {
 
         int orderID = orderDAO.createReservation(
                 customer.getCustomerID(), orderTime, details,
-                BigDecimal.valueOf(OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT));
+                Integer.valueOf(OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT));
 
         if (orderID < 0) {
             showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
@@ -292,7 +314,7 @@ public class ReservationController extends HttpServlet {
     }
 
     /**
-     * [FIX PREORDER CART] Mở trang giỏ món riêng của khách đặt bàn trước.
+     *  Mở trang giỏ món riêng của khách đặt bàn trước.
      */
     private void showPreorderCart(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
@@ -307,6 +329,17 @@ public class ReservationController extends HttpServlet {
                 preorderDAO.getOrderItemsByOrderId(orderID));
         request.setAttribute("menuItems",
                 preorderDAO.getMenuItemsByOrderId(orderID));
+        //  Truyền cấu hình cọc sang JSP để phần hiển thị
+        // dùng đúng cùng công thức với lúc tạo hóa đơn.
+        request.setAttribute("baseDeposit",
+                OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+        request.setAttribute("preorderDepositPercent",
+                OrderDAOSon.PREORDER_DEPOSIT_PERCENT);
+        //  Hiển thị lỗi nhập số lượng món ăn .
+        if ("invalid_quantity".equals(request.getParameter("error"))) {
+            request.setAttribute("cartError",
+                    "Số lượng món phải là số nguyên dương từ 1 đến 99.");
+        }
         request.getRequestDispatcher(
                 "/views/customer/reservation-cart.jsp")
                 .forward(request, response);
@@ -346,11 +379,27 @@ public class ReservationController extends HttpServlet {
             HttpServletResponse response) throws IOException {
         Integer orderID = getPendingReservationOrderID(request);
         int orderItemID = toInt(request.getParameter("orderItemID"), -1);
-        int quantity = toInt(request.getParameter("quantity"), 1);
+        String quantityText = request.getParameter("quantity");
 
-        if (orderID != null && quantity >= 1 && quantity <= 99
+        // validate nhập số lượng chọn món
+        if (orderID == null || orderItemID <= 0
+                || quantityText == null
+                || !quantityText.matches("\\d+")) {
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=preorderCart"
+                    + "&error=invalid_quantity");
+            return;
+        }
+
+        int quantity = toInt(quantityText, -1);
+        if (quantity >= 1 && quantity <= 99
                 && ownsPreorderItem(orderID, orderItemID)) {
             preorderDAO.updateOrderItemQuantity(orderItemID, quantity);
+        } else {
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=preorderCart"
+                    + "&error=invalid_quantity");
+            return;
         }
         redirectToPreorderCart(request, response);
     }
@@ -376,11 +425,31 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        //  Tổng cọc = 100.000đ tiền cọc bàn
+        // + 30% tổng giá trị món đặt trước.
+        long preorderTotal = 0;
+        for (OrderItem item : preorderDAO.getOrderItemsByOrderId(orderID)) {
+            preorderTotal += (long) item.getPrice() * item.getQuantity();
+        }
+        long calculatedDeposit = OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT
+                + preorderTotal * OrderDAOSon.PREORDER_DEPOSIT_PERCENT / 100;
+        int depositAmount = (int) Math.min(
+                calculatedDeposit, Integer.MAX_VALUE);
+
         Order reservation = orderDAO.getOrderByID(orderID);
-        int invoiceID = reservation.getInvoiceID() != null
-                ? reservation.getInvoiceID()
-                : orderDAO.createDepositInvoice(
-                        orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+        int invoiceID;
+        if (reservation.getInvoiceID() != null) {
+            invoiceID = reservation.getInvoiceID();
+            // [FIX DYNAMIC DEPOSIT] Đã có hóa đơn cọc nhưng khách có thể vừa
+            // sửa giỏ món, nên cập nhật lại tiền cọc trước khi sang VNPay.
+            if (!orderDAO.updatePendingDepositInvoice(
+                    orderID, invoiceID, depositAmount)) {
+                invoiceID = -1;
+            }
+        } else {
+            invoiceID = orderDAO.createDepositInvoice(
+                    orderID, depositAmount);
+        }
 
         if (invoiceID < 0) {
             orderDAO.cancelReservation(orderID, customer.getCustomerID());
@@ -393,6 +462,8 @@ public class ReservationController extends HttpServlet {
         HttpSession session = request.getSession();
         session.setAttribute("orderID", orderID);
         session.setAttribute("invoiceID", invoiceID);
+        // [FIX DYNAMIC DEPOSIT] Hiển thị và sử dụng đúng tổng cọc đã tính.
+        session.setAttribute("depositAmount", depositAmount);
         response.sendRedirect(request.getContextPath() + "/payment");
     }
 
