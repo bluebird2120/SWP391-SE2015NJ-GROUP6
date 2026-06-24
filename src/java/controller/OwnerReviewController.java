@@ -101,6 +101,21 @@ public class OwnerReviewController extends HttpServlet {
                     return;
                 }
                 reviewDAO.setOwnerReply(reviewID, trimmed);
+                
+                // Gửi thông báo cho khách hàng
+                model.Reviews r = reviewDAO.getReviewByIdForOwner(reviewID);
+                if (r != null) {
+                    dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                    model.Notifications notif = new model.Notifications();
+                    notif.setRecipientID(r.getCustomerID());
+                    notif.setRecipientType("customer");
+                    notif.setType("feedback_response");
+                    String truncatedReply = trimmed.length() > 50 ? trimmed.substring(0, 47) + "..." : trimmed;
+                    notif.setMessage("Nhà hàng đã phản hồi đánh giá của bạn: \"" + truncatedReply + "\"");
+                    notif.setIsRead(0);
+                    notifDAO.insert(notif);
+                }
+                
                 redirectSuccess(response, request.getContextPath(), page, "replied");
                 return;
             }
