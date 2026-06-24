@@ -168,7 +168,7 @@ public class MenuItemDAO extends DBContext {
     }
 
     public boolean updateMenuItem(int id, int categoryId, String itemName, String description, int price,
-            int discountPercent, String image, int isAvailable, String allergyNotes) {
+            int discountPercent, String image, int isAvailable, String allergyNotes, int methodID) {
         String sql = "update MenuItem "
                 + "set categoryID = ? , "
                 + "itemName = ? , "
@@ -178,7 +178,8 @@ public class MenuItemDAO extends DBContext {
                 + "discountedPrice = ? , "
                 + "image = ? , "
                 + "isAvailable = ? , "
-                + "allergyNotes = ? "
+                + "allergyNotes = ? , "
+                + "methodID = ? "
                 + "where itemID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
@@ -191,7 +192,8 @@ public class MenuItemDAO extends DBContext {
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
-            ps.setInt(10, id);
+            ps.setInt(10, methodID);
+            ps.setInt(11, id);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -200,9 +202,9 @@ public class MenuItemDAO extends DBContext {
     }
 
     public int insertMenuItem(int categoryId, String itemName, String description, int price,
-            int discountPercent, String image, int isAvailable, String allergyNotes) {
-        String sql = "insert into MenuItem (categoryID, itemName, description, price, discountPercent, discountedPrice, image, isAvailable, allergyNotes) "
-                + "values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            int discountPercent, String image, int isAvailable, String allergyNotes, int methodID) {
+        String sql = "insert into MenuItem (categoryID, itemName, description, price, discountPercent, discountedPrice, image, isAvailable, allergyNotes, methodID) "
+                + "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
@@ -215,7 +217,7 @@ public class MenuItemDAO extends DBContext {
             ps.setString(7, image);
             ps.setInt(8, isAvailable);
             ps.setString(9, allergyNotes);
-
+            ps.setInt(10, methodID);
             int affectedRows = ps.executeUpdate();
 
             if (affectedRows > 0) {

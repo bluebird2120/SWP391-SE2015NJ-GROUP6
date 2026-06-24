@@ -175,5 +175,13 @@ public class MenuItem {
     public void setInitialQuantity(int initialQuantity) {
         this.initialQuantity = initialQuantity;
     }
+
+    public int getMethodID() {
+        return methodID;
+    }
+
+    public void setMethodID(int methodID) {
+        this.methodID = methodID;
+    }
     
 }

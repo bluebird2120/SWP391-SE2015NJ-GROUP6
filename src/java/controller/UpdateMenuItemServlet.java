@@ -4,6 +4,7 @@
  */
 package controller;
 
+import dal.CookingMethodDAO;
 import dal.MenuCategoryDAO;
 import dal.MenuItemDAO;
 import java.io.IOException;
@@ -17,8 +18,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import model.CookingMethod;
+import model.MenuCategory;
 import model.MenuItem;
 import model.MenuItemImages;
 
@@ -61,6 +63,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     }
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
+    private CookingMethodDAO cm = new CookingMethodDAO();
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -86,9 +89,11 @@ public class UpdateMenuItemServlet extends HttpServlet {
             List<MenuItemImages> subImages = menuItemDAO.getImagesByMenuItemId(id);
             request.setAttribute("subImages", subImages);
         }
-        List categoryList = menuCategoryDAO.getAllMenuCategory();
+        List<CookingMethod> listMethod = cm.getAllCookingMethod();
+        List<MenuCategory> categoryList = menuCategoryDAO.getAllMenuCategory();
         request.setAttribute("dish", mi);
         request.setAttribute("list", categoryList);
+        request.setAttribute("listMethod", listMethod);
         request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
     }
 
@@ -108,6 +113,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
         String categoryId_raw = request.getParameter("category");
+        String method_raw = request.getParameter("methodCooking");
         String description_raw = request.getParameter("description");
         String price_raw = request.getParameter("price");
         String discountPercent_raw = request.getParameter("discountPercent");
@@ -201,6 +207,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             return;
         }
         int categoryId = Integer.parseInt(categoryId_raw);
+        int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
         int price = Integer.parseInt(price_raw);
         int discountPercent = Integer.parseInt(discountPercent_raw);
         int status = ((isAvailable_raw != null) && (!isAvailable_raw.isEmpty())) ? 1 : 0;
@@ -226,9 +233,9 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 fis.transferTo(fos);
             } catch (Exception e) {
             }
-            int id = menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, "images/" + fileMainImage, status, allergyNotes_raw);
+            int id = menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, "images/" + fileMainImage, status, allergyNotes_raw, methodID);
             for (Part p : subImage) {
-                String saveDbPath = "images/" + p.getSubmittedFileName();
+                String saveDbPath = p.getSubmittedFileName();
 
                 File sourceSubFile = new File(upLoadSource + File.separator + saveDbPath);
                 p.write(sourceSubFile.getAbsolutePath());
@@ -238,7 +245,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
                     fis.transferTo(fos);
                 } catch (Exception e) {
                 }
-                menuItemDAO.insertMenuItemImage(id, saveDbPath);
+                menuItemDAO.insertMenuItemImage(id, "images/" + saveDbPath);
             }
         } else { //lưu ảnh chính và phụ khi cập nhật
             String mainImagePath = oldImage;
@@ -272,7 +279,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
                     menuItemDAO.insertMenuItemImage(itemId, saveDbPath);
                 }
             }
-            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price, discountPercent, mainImagePath, status, allergyNotes_raw);
+            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price, discountPercent, mainImagePath, status, allergyNotes_raw, methodID);
         }
         response.sendRedirect(request.getContextPath() + "/menu");
     }
