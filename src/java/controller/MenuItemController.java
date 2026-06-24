@@ -24,7 +24,7 @@ import model.Order;
 import model.Employee;
 // === KẾT THÚC PHẦN THÊM MỚI ===
 
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu", "/scan"})
 public class MenuItemController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
