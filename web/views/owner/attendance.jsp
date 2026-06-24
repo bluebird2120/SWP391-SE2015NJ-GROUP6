@@ -235,6 +235,76 @@
             /* checkbox col */
             th.col-cb, td.col-cb { width:36px; text-align:center; padding:8px 4px; }
             input[type=checkbox] { width:16px; height:16px; accent-color:#76493b; cursor:pointer; }
+
+            /* Custom confirmation modal style */
+            .custom-confirm-modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.4);
+                z-index: 100000;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+            .custom-confirm-modal.show {
+                display: flex;
+                opacity: 1;
+            }
+            .custom-confirm-content {
+                background-color: #fff;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                padding: 24px;
+                width: 100%;
+                max-width: 400px;
+                text-align: center;
+                transform: translateY(-20px);
+                transition: transform 0.2s ease;
+                border: 1px solid #ede0d8;
+            }
+            .custom-confirm-modal.show .custom-confirm-content {
+                transform: translateY(0);
+            }
+            .custom-confirm-message {
+                font-size: 15px;
+                color: #4A3B32;
+                margin-bottom: 24px;
+                font-weight: 500;
+                line-height: 1.5;
+            }
+            .custom-confirm-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+            }
+            .custom-confirm-btn {
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s ease;
+            }
+            .custom-confirm-btn-cancel {
+                background-color: #f1ebd9;
+                color: #76493b;
+            }
+            .custom-confirm-btn-cancel:hover {
+                background-color: #e5dac1;
+            }
+            .custom-confirm-btn-ok {
+                background-color: #76493b;
+                color: #fff;
+            }
+            .custom-confirm-btn-ok:hover {
+                background-color: #5f3a2f;
+            }
         </style>
     </head>
     <body>
@@ -244,6 +314,17 @@
             <main class="main">
                 <h1 class="page-title">Attendance</h1>
                 <p class="page-sub">Điểm danh nhân viên theo ca</p>
+
+                <!-- Local Custom confirmation modal -->
+                <div id="localConfirmModal" class="custom-confirm-modal">
+                    <div class="custom-confirm-content">
+                        <div id="localConfirmMessage" class="custom-confirm-message"></div>
+                        <div class="custom-confirm-buttons">
+                            <button id="localConfirmCancelBtn" class="custom-confirm-btn custom-confirm-btn-cancel">Huỷ</button>
+                            <button id="localConfirmOkBtn" class="custom-confirm-btn custom-confirm-btn-ok">Đồng ý</button>
+                        </div>
+                    </div>
+                </div>
 
                 <c:if test="${not empty error}"><div class="alert alert-error">${error}</div></c:if>
                 <c:if test="${param.msg == 'checkedin'}"><div class="alert alert-success">Check-in thành công.</div></c:if>
@@ -333,7 +414,7 @@
                                                             <button type="submit" class="btn btn-checkin">Check-in</button>
                                                         </form>
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
-                                                              onsubmit="return confirm('Đánh dấu vắng mặt?');">
+                                                              onsubmit="return showCustomConfirm(this, event, 'Đánh dấu vắng mặt?');">
                                                             <input type="hidden" name="action" value="absent">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
@@ -348,7 +429,7 @@
                                                             <button type="submit" class="btn btn-checkout">Check-out</button>
                                                         </form>
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
-                                                              onsubmit="return confirm('Reset về scheduled?');">
+                                                              onsubmit="return showCustomConfirm(this, event, 'Reset về scheduled?');">
                                                             <input type="hidden" name="action" value="reset">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
@@ -357,7 +438,7 @@
                                                     </c:when>
                                                     <c:when test="${r.status == 'absent'}">
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
-                                                              onsubmit="return confirm('Reset về scheduled?');">
+                                                              onsubmit="return showCustomConfirm(this, event, 'Reset về scheduled?');">
                                                             <input type="hidden" name="action" value="reset">
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
                                                             <input type="hidden" name="date" value="${date}">
@@ -410,6 +491,48 @@
             /* ============ Init ============ */
             document.addEventListener('DOMContentLoaded', function() {
                 filterAttendance('');
+            });
+        </script>
+        <script>
+            var activeConfirmForm = null;
+
+            function showCustomConfirm(form, event, message) {
+                if (event) {
+                    event.preventDefault();
+                }
+                activeConfirmForm = form;
+                
+                var modal = document.getElementById('localConfirmModal');
+                var msgEl = document.getElementById('localConfirmMessage');
+                if (modal && msgEl) {
+                    msgEl.textContent = message;
+                    modal.classList.add('show');
+                }
+                return false;
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                var cancelBtn = document.getElementById('localConfirmCancelBtn');
+                var okBtn = document.getElementById('localConfirmOkBtn');
+                var modal = document.getElementById('localConfirmModal');
+
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function() {
+                        if (modal) modal.classList.remove('show');
+                        activeConfirmForm = null;
+                    });
+                }
+
+                if (okBtn) {
+                    okBtn.addEventListener('click', function() {
+                        if (modal) modal.classList.remove('show');
+                        if (activeConfirmForm) {
+                            var form = activeConfirmForm;
+                            form.submit();
+                        }
+                        activeConfirmForm = null;
+                    });
+                }
             });
         </script>
     </body>

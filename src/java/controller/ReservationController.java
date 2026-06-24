@@ -27,7 +27,7 @@ import model.OrderItem;
 import model.OrderReservationDetail;
 import model.Table;
 
-@WebServlet(name = "ReservationController", urlPatterns = {"/reservation"})
+@WebServlet(name = "ReservationController", urlPatterns = { "/reservation" })
 public class ReservationController extends HttpServlet {
 
     private final TableDAO tableDAO = new TableDAO();
@@ -145,9 +145,8 @@ public class ReservationController extends HttpServlet {
 
             Order order = (Order) session.getAttribute("lastReservation");
             @SuppressWarnings("unchecked")
-            List<OrderReservationDetail> details
-                    = (List<OrderReservationDetail>) session.getAttribute(
-                            "lastReservationDetails");
+            List<OrderReservationDetail> details = (List<OrderReservationDetail>) session.getAttribute(
+                    "lastReservationDetails");
 
             session.removeAttribute("lastReservation");
             session.removeAttribute("lastReservationDetails");
@@ -266,7 +265,7 @@ public class ReservationController extends HttpServlet {
                 showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
                         selectedQuantities,
                         "Số lượng bàn " + detail.getCapacity()
-                        + " chỗ không còn đủ. Vui lòng chọn lại.");
+                                + " chỗ không còn đủ. Vui lòng chọn lại.");
                 return;
             }
         }

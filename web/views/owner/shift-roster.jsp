@@ -444,6 +444,76 @@
                         color: #76493b;
                         font-weight: 600;
                     }
+                    
+                    /* Custom confirmation modal style */
+                    .custom-confirm-modal {
+                        display: none;
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(0, 0, 0, 0.4);
+                        z-index: 100000;
+                        align-items: center;
+                        justify-content: center;
+                        opacity: 0;
+                        transition: opacity 0.2s ease;
+                    }
+                    .custom-confirm-modal.show {
+                        display: flex;
+                        opacity: 1;
+                    }
+                    .custom-confirm-content {
+                        background-color: #fff;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                        padding: 24px;
+                        width: 100%;
+                        max-width: 400px;
+                        text-align: center;
+                        transform: translateY(-20px);
+                        transition: transform 0.2s ease;
+                        border: 1px solid #ede0d8;
+                    }
+                    .custom-confirm-modal.show .custom-confirm-content {
+                        transform: translateY(0);
+                    }
+                    .custom-confirm-message {
+                        font-size: 15px;
+                        color: #4A3B32;
+                        margin-bottom: 24px;
+                        font-weight: 500;
+                        line-height: 1.5;
+                    }
+                    .custom-confirm-buttons {
+                        display: flex;
+                        justify-content: center;
+                        gap: 12px;
+                    }
+                    .custom-confirm-btn {
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        border: none;
+                        transition: all 0.2s ease;
+                    }
+                    .custom-confirm-btn-cancel {
+                        background-color: #f1ebd9;
+                        color: #76493b;
+                    }
+                    .custom-confirm-btn-cancel:hover {
+                        background-color: #e5dac1;
+                    }
+                    .custom-confirm-btn-ok {
+                        background-color: #76493b;
+                        color: #fff;
+                    }
+                    .custom-confirm-btn-ok:hover {
+                        background-color: #5f3a2f;
+                    }
                 </style>
             </head>
 
@@ -454,6 +524,20 @@
                             <main class="main">
                                 <h1 class="page-title">Shift Roster</h1>
                                 <p class="page-sub">Quản lý phân ca nhân viên</p>
+
+                                <!-- Client-side error container -->
+                                <div id="js-alert-container"></div>
+
+                                <!-- Local Custom confirmation modal -->
+                                <div id="localConfirmModal" class="custom-confirm-modal">
+                                    <div class="custom-confirm-content">
+                                        <div id="localConfirmMessage" class="custom-confirm-message"></div>
+                                        <div class="custom-confirm-buttons">
+                                            <button id="localConfirmCancelBtn" class="custom-confirm-btn custom-confirm-btn-cancel">Huỷ</button>
+                                            <button id="localConfirmOkBtn" class="custom-confirm-btn custom-confirm-btn-ok">Đồng ý</button>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <c:if test="${not empty error}">
                                     <div class="alert alert-error">${error}</div>
@@ -558,6 +642,20 @@
                                         </form>
                                     </div>
 
+                                    <!-- Filter Bar for Daily Shift -->
+                                    <div class="card" style="padding: 12px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 0.88rem; font-weight: 600; color: #76493b; white-space: nowrap;">Lọc theo ca:</span>
+                                            <select id="dailyShiftFilter" onchange="filterRosterTable('dailyRosterBody', this.value, 'dailyRosterBadge')" style="padding: 6px 12px; border: 1px solid #d7bfa4; border-radius: 6px; font-size: 0.85rem; color: #4a3528; background: #fff; outline: none; cursor: pointer; font-family: inherit;">
+                                                <option value="">Tất cả các ca</option>
+                                                <c:forEach var="t" items="${templates}">
+                                                    <option value="${t.shiftName}">${t.shiftName}</option>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+                                        <span id="dailyRosterBadge" style="font-size: 0.82rem; color: #8a6e5a; font-weight: 500;"></span>
+                                    </div>
+
                                     <div class="card" style="padding:0;">
                                         <table>
                                             <thead>
@@ -569,9 +667,9 @@
                                                     <th>Thao tác</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
+                                            <tbody id="dailyRosterBody">
                                                 <c:forEach var="r" items="${roster}">
-                                                    <tr>
+                                                    <tr data-shift="${r.shiftName}">
                                                         <td>${r.fullName}</td>
                                                         <td>${r.shiftName}</td>
                                                         <td>
@@ -586,7 +684,7 @@
                                                                     <form method="post"
                                                                         action="${pageContext.request.contextPath}/owner/shift-roster"
                                                                         style="margin:0;"
-                                                                        onsubmit="return confirm('Huỷ ca này?');">
+                                                                        onsubmit="return showCustomConfirm(this, event, 'Huỷ ca này?');">
                                                                         <input type="hidden" name="action"
                                                                             value="unassign">
                                                                         <input type="hidden" name="shiftID"
@@ -741,11 +839,11 @@
                                                         <td>
                                                             <c:choose>
                                                                 <c:when
-                                                                    test="${p.status == 'DRAFT' or p.status == 'NOTIFIED'}">
+                                                                    test="${p.status == 'DRAFT' or p.status == 'NOTIFIED' or p.status == 'APPLIED'}">
                                                                     <form method="post"
                                                                         action="${pageContext.request.contextPath}/owner/shift-roster"
                                                                         style="margin:0;"
-                                                                        onsubmit="return confirm('Huỷ kế hoạch này?');">
+                                                                        onsubmit="return showCustomConfirm(this, event, 'Huỷ kế hoạch này?');">
                                                                         <input type="hidden" name="action"
                                                                             value="cancelPlan">
                                                                         <input type="hidden" name="planID"
@@ -920,9 +1018,7 @@
                                                 <c:forEach var="pr" items="${pendingRequests}">
                                                     <tr>
                                                         <td>
-                                                                <c:otherwise>
-                                                                    <span class="badge" style="background:#f8d7da; color:#842029;">Xin nghỉ</span>
-                                                                </c:otherwise>
+                                                            <span class="badge" style="background:#f8d7da; color:#842029;">Xin nghỉ</span>
                                                         </td>
                                                         <td><strong>${pr.reqEmployeeName}</strong></td>
                                                         <td>
@@ -932,9 +1028,7 @@
                                                             </div>
                                                         </td>
                                                         <td>
-                                                                <c:otherwise>
-                                                                    <span style="color:#a0a0a0;">N/A (Nghỉ ca)</span>
-                                                                </c:otherwise>
+                                                            <span style="color:#a0a0a0;">N/A (Nghỉ ca)</span>
                                                         </td>
                                                         <td style="max-width: 220px; word-wrap: break-word; white-space: normal; font-size:0.82rem; color:#5d3a2e;">
                                                             <c:out value="${pr.reason}" />
@@ -944,7 +1038,7 @@
                                                         </td>
                                                         <td>
                                                             <div style="display:flex; gap:6px;">
-                                                                <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return confirm('Duyệt yêu cầu này?');">
+                                                                <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Duyệt yêu cầu này?');">
                                                                     <input type="hidden" name="action" value="approveRequest">
                                                                     <input type="hidden" name="swapID" value="${pr.swapID}">
                                                                     <input type="hidden" name="date" value="${date}">
@@ -953,7 +1047,7 @@
                                                                         <i class="fas fa-check"></i> Duyệt
                                                                     </button>
                                                                 </form>
-                                                                <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return confirm('Từ chối yêu cầu này?');">
+                                                                <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối yêu cầu này?');">
                                                                     <input type="hidden" name="action" value="rejectRequest">
                                                                     <input type="hidden" name="swapID" value="${pr.swapID}">
                                                                     <input type="hidden" name="date" value="${date}">
@@ -1029,11 +1123,87 @@
                                 }
                             }
 
+                            function showJsError(message) {
+                                // Hide existing server-side alerts
+                                document.querySelectorAll('.alert').forEach(function(el) {
+                                    el.style.display = 'none';
+                                });
+                                var container = document.getElementById('js-alert-container');
+                                if (container) {
+                                    container.innerHTML = '<div class="alert alert-error">' + message + '</div>';
+                                    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                }
+                            }
+
+                            function clearJsError() {
+                                var container = document.getElementById('js-alert-container');
+                                if (container) {
+                                    container.innerHTML = '';
+                                }
+                            }
+
                             function validateRosterForm(form) {
+                                clearJsError();
                                 var checked = form.querySelectorAll('input[name="employeeIDs"]:checked');
                                 if (checked.length === 0) {
-                                    alert('Vui lòng chọn ít nhất một nhân viên.');
+                                    showJsError('Vui lòng chọn ít nhất một nhân viên.');
                                     return false;
+                                }
+
+                                var actionEl = form.querySelector('input[name="action"]');
+                                if (actionEl) {
+                                    var action = actionEl.value;
+                                    if (action === 'assign') {
+                                        var dateVal = form.querySelector('input[name="date"]').value;
+                                        if (!dateVal) {
+                                            showJsError('Vui lòng chọn ngày.');
+                                            return false;
+                                        }
+                                        var parts = dateVal.split('-');
+                                        if (parts.length === 3) {
+                                            var targetYear = parseInt(parts[0], 10);
+                                            var targetMonth = parseInt(parts[1], 10) - 1; // 0-based
+
+                                            var now = new Date();
+                                            var currentYear = now.getFullYear();
+                                            var currentMonth = now.getMonth();
+
+                                            var nextYear = currentYear;
+                                            var nextMonth = currentMonth + 1;
+                                            if (nextMonth > 11) {
+                                                nextMonth = 0;
+                                                nextYear++;
+                                            }
+
+                                            var isValid = (targetYear === currentYear && targetMonth === currentMonth) ||
+                                                          (targetYear === nextYear && targetMonth === nextMonth);
+                                            if (!isValid) {
+                                                showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.');
+                                                return false;
+                                            }
+                                        }
+                                    } else if (action === 'assignMonth') {
+                                        var monthVal = parseInt(form.querySelector('select[name="month"]').value, 10);
+                                        var yearVal = parseInt(form.querySelector('input[name="year"]').value, 10);
+
+                                        var now = new Date();
+                                        var currentYear = now.getFullYear();
+                                        var currentMonth = now.getMonth() + 1; // 1-based
+
+                                        var nextYear = currentYear;
+                                        var nextMonth = currentMonth + 1;
+                                        if (nextMonth > 12) {
+                                            nextMonth = 1;
+                                            nextYear++;
+                                        }
+
+                                        var isValid = (yearVal === currentYear && monthVal === currentMonth) ||
+                                                      (yearVal === nextYear && monthVal === nextMonth);
+                                        if (!isValid) {
+                                            showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.');
+                                            return false;
+                                        }
+                                    }
                                 }
                                 return true;
                             }
@@ -1131,6 +1301,7 @@
                             }
 
                             function switchTab(name) {
+                                clearJsError();
                                 document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
                                 document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
                                 document.getElementById('tab-' + name).classList.add('active');
@@ -1172,6 +1343,47 @@
                                     }
                                 </c:if>
                             })();
+
+                            var activeConfirmForm = null;
+
+                            function showCustomConfirm(form, event, message) {
+                                if (event) {
+                                    event.preventDefault();
+                                }
+                                activeConfirmForm = form;
+                                
+                                var modal = document.getElementById('localConfirmModal');
+                                var msgEl = document.getElementById('localConfirmMessage');
+                                if (modal && msgEl) {
+                                    msgEl.textContent = message;
+                                    modal.classList.add('show');
+                                }
+                                return false;
+                            }
+
+                            document.addEventListener('DOMContentLoaded', function() {
+                                var cancelBtn = document.getElementById('localConfirmCancelBtn');
+                                var okBtn = document.getElementById('localConfirmOkBtn');
+                                var modal = document.getElementById('localConfirmModal');
+
+                                if (cancelBtn) {
+                                    cancelBtn.addEventListener('click', function() {
+                                        if (modal) modal.classList.remove('show');
+                                        activeConfirmForm = null;
+                                    });
+                                }
+
+                                if (okBtn) {
+                                    okBtn.addEventListener('click', function() {
+                                        if (modal) modal.classList.remove('show');
+                                        if (activeConfirmForm) {
+                                            var form = activeConfirmForm;
+                                            form.submit();
+                                        }
+                                        activeConfirmForm = null;
+                                    });
+                                }
+                            });
                         </script>
             </body>
 

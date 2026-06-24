@@ -9,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -16,11 +17,6 @@ import java.time.LocalDate;
 import java.util.List;
 import model.EmployeeShifts;
 
-/**
- * Owner-driven attendance.
- * Today-only rule: chỉ cho check-in/out/absent/reset khi shift.workDate = hôm nay.
- * Date-picker cho phép xem lịch sử nhưng không edit.
- */
 @WebServlet(name = "AttendanceController", urlPatterns = {"/owner/attendance"})
 public class AttendanceController extends HttpServlet {
 
@@ -36,13 +32,24 @@ public class AttendanceController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (action == null) action = "";
+        if (action == null) {
+            action = "";
+        }
         switch (action) {
-            case "checkin":       handle(req, resp, "checkin"); break;
-            case "checkout":      handle(req, resp, "checkout"); break;
-            case "absent":        handle(req, resp, "absent"); break;
-            case "reset":         handle(req, resp, "reset"); break;
-            default: resp.sendRedirect(req.getContextPath() + "/owner/attendance");
+            case "checkin":
+                handle(req, resp, "checkin");
+                break;
+            case "checkout":
+                handle(req, resp, "checkout");
+                break;
+            case "absent":
+                handle(req, resp, "absent");
+                break;
+            case "reset":
+                handle(req, resp, "reset");
+                break;
+            default:
+                resp.sendRedirect(req.getContextPath() + "/owner/attendance");
         }
     }
 
@@ -54,7 +61,6 @@ public class AttendanceController extends HttpServlet {
         EmployeeShiftDAO dao = new EmployeeShiftDAO();
         List<ShiftRow> rows = dao.listByDate(sqlDate);
 
-        // Load danh sách ca template để render dropdown lọc ca
         ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
         List<ShiftTemplates> templates = tplDao.findAll();
 
@@ -63,8 +69,12 @@ public class AttendanceController extends HttpServlet {
         req.setAttribute("isToday", date.equals(LocalDate.now()));
         req.setAttribute("rows", rows);
         req.setAttribute("templates", templates);
-        if (error != null) req.setAttribute("error", error);
-        if (success != null) req.setAttribute("success", success);
+        if (error != null) {
+            req.setAttribute("error", error);
+        }
+        if (success != null) {
+            req.setAttribute("success", success);
+        }
         req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 
@@ -78,16 +88,19 @@ public class AttendanceController extends HttpServlet {
         }
 
         EmployeeShiftDAO dao = new EmployeeShiftDAO();
-        // Layer 1 — controller check
+
         EmployeeShifts s = dao.findById(shiftID);
-        if (s == null) { showAttendance(req, resp, "Không tìm thấy ca.", null); return; }
+        if (s == null) {
+            showAttendance(req, resp, "Không tìm thấy ca.", null);
+            return;
+        }
+
         Date today = Date.valueOf(LocalDate.now());
         if (!s.getWorkDate().toString().equals(today.toString())) {
             showAttendance(req, resp, "Chỉ được sửa điểm danh của ca trong ngày hôm nay.", null);
             return;
         }
 
-        // Layer 2 — DAO update với WHERE workDate = CURRENT_DATE
         boolean ok;
         String successMsg;
         switch (action) {
@@ -120,12 +133,24 @@ public class AttendanceController extends HttpServlet {
     }
 
     private static LocalDate parseDateOrToday(String s) {
-        if (s == null || s.isBlank()) return LocalDate.now();
-        try { return LocalDate.parse(s); } catch (Exception e) { return LocalDate.now(); }
+        if (s == null || s.isBlank()) {
+            return LocalDate.now();
+        }
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
     }
 
     private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank()) return def;
-        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
+        if (s == null || s.isBlank()) {
+            return def;
+        }
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 }
