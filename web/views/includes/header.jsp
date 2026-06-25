@@ -10,6 +10,11 @@
         customerInitial = String.valueOf(cust.getUserName().charAt(0)).toUpperCase();
     if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty())
         employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
+
+    int custUnreadCount = 0;
+    if (cust != null) {
+        custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");
+    }
 %>
 
 
@@ -384,9 +389,9 @@
         <c:if test="${sessionScope.customer != null}">
             <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
-                <c:if test="${sessionScope.unreadCount > 0}">
-                    <span class="notif-count">${sessionScope.unreadCount}</span>
-                </c:if>
+                <% if (custUnreadCount > 0) { %>
+                    <span class="notif-count"><%= custUnreadCount %></span>
+                <% } %>
             </a>
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">

@@ -98,6 +98,27 @@ public class NotificationDAO extends DBContext {
     }
 
     /**
+     * Đánh dấu toàn bộ thông báo của người nhận là đã đọc.
+     * 
+     * @param recipientID ID của người nhận
+     * @param recipientType Loại người nhận
+     * @return true nếu cập nhật thành công, ngược lại false
+     */
+    public boolean markAllRead(int recipientID, String recipientType) {
+        String sql = "UPDATE Notifications SET isRead = 1 "
+                   + "WHERE recipientID = ? AND recipientType = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, recipientID);
+            ps.setString(2, recipientType);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+
+    /**
      * Đếm số lượng thông báo chưa đọc của người nhận.
      * Dùng để hiển thị badge số lượng thông báo mới ở Header giao diện.
      * 

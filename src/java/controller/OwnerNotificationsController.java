@@ -17,7 +17,7 @@ import model.Notifications;
 @WebServlet(name = "OwnerNotificationsController", urlPatterns = {"/owner/notifications"})
 public class OwnerNotificationsController extends HttpServlet {
 
-    private static final String VIEW = "/views/owner/notifications.jsp";
+    private static final String VIEW = "/views/notifications.jsp";
     private static final int LIST_LIMIT = 50;
 
     @Override

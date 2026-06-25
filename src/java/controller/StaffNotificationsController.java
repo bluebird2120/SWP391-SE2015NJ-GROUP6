@@ -17,7 +17,7 @@ import model.Notifications;
 @WebServlet(name = "StaffNotificationsController", urlPatterns = { "/staff/notifications" })
 public class StaffNotificationsController extends HttpServlet {
 
-    private static final String VIEW = "/views/staff/notifications.jsp";
+    private static final String VIEW = "/views/notifications.jsp";
     private static final int LIST_LIMIT = 50;
 
     @Override

@@ -17,8 +17,9 @@ public class ShiftSwapRequestDAO extends DBContext {
 
     /**
      * Thêm mới một yêu cầu đổi ca hoặc xin nghỉ vào cơ sở dữ liệu.
-     * 
-     * @param req Đối tượng ShiftSwapRequests chứa thông tin ca yêu cầu, ca muốn đổi, lý do và loại yêu cầu ('swap' hoặc 'leave')
+     *
+     * @param req Đối tượng ShiftSwapRequests chứa thông tin ca yêu cầu, ca muốn
+     * đổi, lý do và loại yêu cầu ('swap' hoặc 'leave')
      * @return true nếu thêm mới thành công, ngược lại false
      */
     public boolean insert(ShiftSwapRequests req) {
@@ -41,36 +42,36 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Lấy toàn bộ danh sách các yêu cầu đang chờ Owner duyệt (thường là đơn xin nghỉ 'leave' ở trạng thái 'pending').
-     * Truy vấn kết hợp thông tin chi tiết của người gửi yêu cầu (requester) và người liên quan (target).
-     * 
+     * Lấy toàn bộ danh sách các yêu cầu đang chờ Owner duyệt (thường là đơn xin
+     * nghỉ 'leave' ở trạng thái 'pending'). Truy vấn kết hợp thông tin chi tiết
+     * của người gửi yêu cầu (requester) và người liên quan (target).
+     *
      * @return Danh sách chi tiết các yêu cầu đang chờ phê duyệt
      */
     public List<ShiftSwapRequestDetail> listPendingRequests() {
         List<ShiftSwapRequestDetail> list = new ArrayList<>();
         String sql = "SELECT "
-                   + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
-                   + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_st.endTime AS reqEndTime, "
-                   + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_st.endTime AS tarEndTime "
-                   + "FROM ShiftSwapRequests ssr "
-                   + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
-                   + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
-                   + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
-                   + "LEFT JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
-                   + "LEFT JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
-                   + "LEFT JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
-                   + "WHERE ssr.status = 'pending' "
-                   + "ORDER BY ssr.createdAt DESC";
-        try (PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
+                + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_st.endTime AS reqEndTime, "
+                + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_st.endTime AS tarEndTime "
+                + "FROM ShiftSwapRequests ssr "
+                + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
+                + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
+                + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
+                + "LEFT JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
+                + "LEFT JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
+                + "LEFT JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
+                + "WHERE ssr.status = 'pending' AND ssr.requestType = 'leave' "
+                + "ORDER BY ssr.createdAt DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
                 d.setSwapID(rs.getInt("swapID"));
                 d.setRequesterShiftID(rs.getInt("requesterShiftID"));
-                
+
                 int tarShiftID = rs.getInt("targetShiftID");
                 d.setTargetShiftID(rs.wasNull() ? null : tarShiftID);
-                
+
                 d.setStatus(rs.getString("status"));
                 d.setReason(rs.getString("reason"));
                 d.setCreatedAt(rs.getTimestamp("createdAt"));
@@ -102,23 +103,24 @@ public class ShiftSwapRequestDAO extends DBContext {
 
     /**
      * Lấy thông tin chi tiết của một yêu cầu đổi ca/xin nghỉ cụ thể theo ID.
-     * 
+     *
      * @param swapID ID của yêu cầu đổi ca/xin nghỉ
-     * @return Đối tượng ShiftSwapRequestDetail chứa đầy đủ thông tin cá nhân và thời gian ca làm việc liên quan
+     * @return Đối tượng ShiftSwapRequestDetail chứa đầy đủ thông tin cá nhân và
+     * thời gian ca làm việc liên quan
      */
     public ShiftSwapRequestDetail getDetailById(int swapID) {
         String sql = "SELECT "
-                   + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
-                   + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_st.endTime AS reqEndTime, "
-                   + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_st.endTime AS tarEndTime "
-                   + "FROM ShiftSwapRequests ssr "
-                   + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
-                   + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
-                   + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
-                   + "LEFT JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
-                   + "LEFT JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
-                   + "LEFT JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
-                   + "WHERE ssr.swapID = ?";
+                + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
+                + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_st.endTime AS reqEndTime, "
+                + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_st.endTime AS tarEndTime "
+                + "FROM ShiftSwapRequests ssr "
+                + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
+                + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
+                + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
+                + "LEFT JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
+                + "LEFT JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
+                + "LEFT JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
+                + "WHERE ssr.swapID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, swapID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -126,10 +128,10 @@ public class ShiftSwapRequestDAO extends DBContext {
                     ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
                     d.setSwapID(rs.getInt("swapID"));
                     d.setRequesterShiftID(rs.getInt("requesterShiftID"));
-                    
+
                     int tarShiftID = rs.getInt("targetShiftID");
                     d.setTargetShiftID(rs.wasNull() ? null : tarShiftID);
-                    
+
                     d.setStatus(rs.getString("status"));
                     d.setReason(rs.getString("reason"));
                     d.setCreatedAt(rs.getTimestamp("createdAt"));
@@ -161,17 +163,14 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Cập nhật trạng thái phê duyệt yêu cầu đổi ca hoặc xin nghỉ của Owner.
-     * Sử dụng Database Transaction (commit/rollback) để đảm bảo tính nhất quán dữ liệu:
-     * 1. Cập nhật trạng thái của bản ghi yêu cầu đổi/nghỉ (ShiftSwapRequests).
-     * 2. Nếu trạng thái phê duyệt là 'approved':
-     *    - Đối với đơn xin nghỉ ('leave'): Cập nhật trạng thái ca làm việc tương ứng trong bảng EmployeeShifts thành 'absent'.
-     *    - Đối với đơn đổi ca ('swap'): Thực hiện hoán đổi employeeID của hai ca làm việc của hai nhân viên liên quan.
-     * 
-     * @param swapID ID của yêu cầu
-     * @param status Trạng thái mới (ví dụ: 'approved' hoặc 'rejected')
-     * @param approvedByID ID của Owner thực hiện phê duyệt (có thể null nếu đồng nghiệp tự duyệt)
-     * @return true nếu thực hiện thành công toàn bộ giao dịch (Transaction), ngược lại false
+     * Cập nhật trạng thái yêu cầu xin nghỉ hoặc đổi ca.
+     *
+     * Flow hiện tại: - Owner dùng method này để duyệt/từ chối đơn xin nghỉ
+     * (requestType = 'leave'). - Staff dùng method này khi đồng nghiệp đồng ý
+     * đổi ca (requestType = 'swap', approvedByID = null).
+     *
+     * Khi approved: - leave: cập nhật ca của nhân viên thành 'absent'. - swap:
+     * hoán đổi employeeID giữa hai ca làm việc.
      */
     public boolean updateStatus(int swapID, String status, Integer approvedByID) {
         Connection conn = connection;
@@ -236,19 +235,20 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Lấy bản đồ (Map) các yêu cầu đổi ca/xin nghỉ đang chờ xử lý của một nhân viên cụ thể.
-     * Khóa (Key) là shiftID, Giá trị (Value) là đối tượng ShiftSwapRequests.
-     * Giúp Controller kiểm tra nhanh xem một ca làm việc cụ thể có đang nằm trong quá trình đổi ca hoặc xin nghỉ hay không.
-     * 
+     * Lấy bản đồ (Map) các yêu cầu đổi ca/xin nghỉ đang chờ xử lý của một nhân
+     * viên cụ thể. Khóa (Key) là shiftID, Giá trị (Value) là đối tượng
+     * ShiftSwapRequests. Giúp Controller kiểm tra nhanh xem một ca làm việc cụ
+     * thể có đang nằm trong quá trình đổi ca hoặc xin nghỉ hay không.
+     *
      * @param employeeID ID nhân viên cần kiểm tra
      * @return Bản đồ tương quan giữa ID ca làm việc và yêu cầu đang chờ xử lý
      */
     public Map<Integer, ShiftSwapRequests> getPendingRequestsMap(int employeeID) {
         Map<Integer, ShiftSwapRequests> map = new HashMap<>();
         String sql = "SELECT swapID, requesterShiftID, targetShiftID, status, reason, createdAt, requestType "
-                   + "FROM ShiftSwapRequests WHERE (status = 'pending' OR status = 'pending_colleague') AND "
-                   + "(requesterShiftID IN (SELECT shiftID FROM EmployeeShifts WHERE employeeID = ?) "
-                   + " OR targetShiftID IN (SELECT shiftID FROM EmployeeShifts WHERE employeeID = ?))";
+                + "FROM ShiftSwapRequests WHERE (status = 'pending' OR status = 'pending_colleague') AND "
+                + "(requesterShiftID IN (SELECT shiftID FROM EmployeeShifts WHERE employeeID = ?) "
+                + " OR targetShiftID IN (SELECT shiftID FROM EmployeeShifts WHERE employeeID = ?))";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, employeeID);
             ps.setInt(2, employeeID);
@@ -257,10 +257,10 @@ public class ShiftSwapRequestDAO extends DBContext {
                     ShiftSwapRequests r = new ShiftSwapRequests();
                     r.setSwapID(rs.getInt("swapID"));
                     r.setRequesterShiftID(rs.getInt("requesterShiftID"));
-                    
+
                     int tar = rs.getInt("targetShiftID");
                     r.setTargetShiftID(rs.wasNull() ? null : tar);
-                    
+
                     r.setStatus(rs.getString("status"));
                     r.setReason(rs.getString("reason"));
                     r.setCreatedAt(rs.getTimestamp("createdAt"));
@@ -279,26 +279,28 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Lấy danh sách các yêu cầu đổi ca do đồng nghiệp khác gửi tới cho một nhân viên cụ thể (đang chờ đồng nghiệp phản hồi).
-     * 
+     * Lấy danh sách các yêu cầu đổi ca do đồng nghiệp khác gửi tới cho một nhân
+     * viên cụ thể (đang chờ đồng nghiệp phản hồi).
+     *
      * @param targetEmployeeID ID của nhân viên nhận được lời mời đổi ca
-     * @return Danh sách chi tiết các yêu cầu đổi ca đang chờ phản hồi từ đồng nghiệp
+     * @return Danh sách chi tiết các yêu cầu đổi ca đang chờ phản hồi từ đồng
+     * nghiệp
      */
     public List<ShiftSwapRequestDetail> listPendingColleagueRequests(int targetEmployeeID) {
         List<ShiftSwapRequestDetail> list = new ArrayList<>();
         String sql = "SELECT "
-                   + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
-                   + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_es.workDate AS reqWorkDate_2, req_st.endTime AS reqEndTime, "
-                   + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_es.workDate AS tarWorkDate_2, tar_st.endTime AS tarEndTime "
-                   + "FROM ShiftSwapRequests ssr "
-                   + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
-                   + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
-                   + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
-                   + "JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
-                   + "JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
-                   + "JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
-                   + "WHERE ssr.status = 'pending_colleague' AND tar_es.employeeID = ? "
-                   + "ORDER BY ssr.createdAt DESC";
+                + "    ssr.swapID, ssr.requesterShiftID, ssr.targetShiftID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
+                + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_es.workDate AS reqWorkDate_2, req_st.endTime AS reqEndTime, "
+                + "    tar_es.employeeID AS tarEmpID, tar_e.fullName AS tarEmpName, tar_st.shiftName AS tarShiftName, tar_es.workDate AS tarWorkDate, tar_st.startTime AS tarStartTime, tar_es.workDate AS tarWorkDate_2, tar_st.endTime AS tarEndTime "
+                + "FROM ShiftSwapRequests ssr "
+                + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
+                + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
+                + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
+                + "JOIN EmployeeShifts tar_es ON ssr.targetShiftID = tar_es.shiftID "
+                + "JOIN Employee tar_e ON tar_es.employeeID = tar_e.employeeID "
+                + "JOIN ShiftTemplates tar_st ON tar_es.templateID = tar_st.templateID "
+                + "WHERE ssr.status = 'pending_colleague' AND tar_es.employeeID = ? "
+                + "ORDER BY ssr.createdAt DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, targetEmployeeID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -336,8 +338,9 @@ public class ShiftSwapRequestDAO extends DBContext {
     }
 
     /**
-     * Cập nhật trạng thái phản hồi của đồng nghiệp đối với yêu cầu đổi ca ('approved' hoặc 'rejected').
-     * 
+     * Cập nhật trạng thái phản hồi của đồng nghiệp đối với yêu cầu đổi ca
+     * ('approved' hoặc 'rejected').
+     *
      * @param swapID ID của yêu cầu đổi ca
      * @param status Trạng thái mới do đồng nghiệp chọn
      * @return true nếu cập nhật thành công trạng thái, ngược lại false
