@@ -10,6 +10,11 @@
         customerInitial = String.valueOf(cust.getUserName().charAt(0)).toUpperCase();
     if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty())
         employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
+
+    int custUnreadCount = 0;
+    if (cust != null) {
+        custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");
+    }
 %>
 
 
@@ -384,9 +389,9 @@
         <c:if test="${sessionScope.customer != null}">
             <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
-                <c:if test="${sessionScope.unreadCount > 0}">
-                    <span class="notif-count">${sessionScope.unreadCount}</span>
-                </c:if>
+                <% if (custUnreadCount > 0) { %>
+                    <span class="notif-count"><%= custUnreadCount %></span>
+                <% } %>
             </a>
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
@@ -405,7 +410,7 @@
                         <div class="dd-email">${sessionScope.customer.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                         <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
@@ -457,7 +462,7 @@
                         <div class="dd-email">${sessionScope.employee.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/staff/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
