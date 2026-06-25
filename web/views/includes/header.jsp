@@ -410,7 +410,7 @@
                         <div class="dd-email">${sessionScope.customer.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/customer/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                         <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
@@ -462,7 +462,7 @@
                         <div class="dd-email">${sessionScope.employee.email}</div>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/staff/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
+                        <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
