@@ -10,7 +10,6 @@
         width: 220px;
         flex-shrink: 0;
     }
-
     .sidebar-header {
         padding: 0 1.25rem 1rem;
         border-bottom: 1px solid #ede0d8;
@@ -24,11 +23,9 @@
         align-items: center;
         gap: 0.5rem;
     }
-
     .sidebar-header h5 i {
         color: #76493b;
     }
-
     .sidebar .nav-link {
         color: #6b4c3b;
         padding: 0.55rem 1rem;
@@ -42,24 +39,20 @@
         gap: 0.6rem;
         text-decoration: none;
     }
-
     .sidebar .nav-link i {
         font-size: 0.88rem;
         width: 16px;
         text-align: center;
         color: #a0714f;
     }
-
     .sidebar .nav-link:hover {
         background: rgba(118, 73, 59, 0.08);
         color: #76493b;
         transform: translateX(2px);
     }
-
     .sidebar .nav-link:hover i {
         color: #76493b;
     }
-
     .sidebar .nav-link.active {
         background: rgba(118, 73, 59, 0.12);
         color: #76493b;
@@ -67,11 +60,9 @@
         border-left: 3px solid #76493b;
         padding-left: calc(1rem - 3px);
     }
-
     .sidebar .nav-link.active i {
         color: #76493b;
     }
-
     .nav-section-title {
         padding: 0.75rem 1.25rem 0.2rem;
         font-size: 0.68rem;
@@ -83,17 +74,14 @@
         align-items: center;
         gap: 0.35rem;
     }
-
     .nav-section-title i {
         font-size: 0.68rem;
     }
-
     .sidebar ul.nav {
         list-style: none;
         padding: 0;
         margin: 0;
     }
-
     .sidebar li.nav-item {
         list-style: none;
         padding: 0;
@@ -101,18 +89,27 @@
     }
 </style>
 
+<%-- Tạo biến cục bộ cho gọn --%>
+<c:set var="isOwner"    value="${sessionScope.employee.roleID == 1}" />
+<c:set var="isStaff"    value="${sessionScope.employee.roleID == 2}" />
+<c:set var="extraPerms" value="${sessionScope.extraPerms}" />
+<c:set var="hasInventory" value="${isOwner or (extraPerms != null and extraPerms.contains('inventory.access'))}" />
+<c:set var="hasWorkforce" value="${isOwner or (extraPerms != null and extraPerms.contains('workforce.access'))}" />
+<c:set var="hasFinance"   value="${isOwner or (extraPerms != null and extraPerms.contains('finance.access'))}" />
+
 <nav class="sidebar">
     <div class="sidebar-header">
         <h5><i class="fas fa-store"></i> Quản lý nhà hàng</h5>
     </div>
     <ul class="nav flex-column mt-1">
 
-        <!-- Vận hành -->
+        <%-- ===== VẬN HÀNH ===== --%>
         <li class="nav-item">
             <div class="nav-section-title"><i class="fas fa-cog"></i> Vận hành</div>
         </li>
 
-        <c:if test="${sessionScope.employee.roleID == 2}">
+        <%-- Staff: trang tổng quan + đơn hàng --%>
+        <c:if test="${isStaff}">
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/dashboard">
@@ -134,8 +131,31 @@
             </li>
         </c:if>
 
-        <%-- Staff: Không gian làm việc --%>
-        <c:if test="${sessionScope.employee.roleID == 2}">
+        <%-- Owner: lịch sử đơn + bàn nhà hàng --%>
+        <c:if test="${isOwner}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/order-history">
+                    <i class="fas fa-history"></i> Lịch sử đơn hàng
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('manage-table') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/manage-table">
+                    <i class="fas fa-chair"></i> Bàn nhà hàng
+                </a>
+            </li>
+        </c:if>
+
+        <li>
+            <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
+               href="${pageContext.request.contextPath}/business-hours?action=list">
+                <i class="fas fa-clock"></i> Giờ hoạt động
+            </a>
+        </li>
+
+        <%-- ===== KHÔNG GIAN LÀM VIỆC (chỉ Staff) ===== --%>
+        <c:if test="${isStaff}">
             <li>
                 <div class="nav-section-title"><i class="fas fa-user-clock"></i> Không gian làm việc</div>
             </li>
@@ -156,31 +176,8 @@
             </li>
         </c:if>
 
-        <%-- Owner --%>
-        <c:if test="${sessionScope.employee.roleID == 1}">
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/order-history">
-                    <i class="fas fa-history"></i> Lịch sử đơn hàng
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/tables') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/manage-table">
-                    <i class="fas fa-chair"></i> Bàn nhà hàng
-                </a>
-            </li>
-        </c:if>
-
-        <li>
-            <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/business-hours?action=list">
-                <i class="fas fa-clock"></i> Giờ hoạt động
-            </a>
-        </li>
-
-        <!-- Nhân sự — chỉ Owner -->
-        <c:if test="${sessionScope.employee.roleID == 1}">
+        <%-- ===== NHÂN SỰ (Owner gốc hoặc Staff có workforce.access) ===== --%>
+        <c:if test="${hasWorkforce}">
             <li>
                 <div class="nav-section-title"><i class="fas fa-users"></i> Nhân sự</div>
             </li>
@@ -202,12 +199,7 @@
                     <i class="fas fa-user-tie"></i> Quản lý nhân viên
                 </a>
             </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/customers-list') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/customers-list">
-                    <i class="fas fa-users"></i> Danh sách khách hàng
-                </a>
-            </li>
+            <%-- Chấm công --%>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/attendance') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/attendance">
@@ -216,32 +208,42 @@
             </li>
         </c:if>
 
-        <!-- Tài chính -->
-        <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Tài chính</div></li>
-        <li>
-            <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/invoice?action=list">
-                <i class="fas fa-file-invoice"></i> Hóa đơn
-            </a>
-        </li>
+        <%-- Danh sách khách hàng: chỉ Owner gốc --%>
+        <c:if test="${isOwner}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/customers-list') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/customers-list">
+                    <i class="fas fa-users"></i> Danh sách khách hàng
+                </a>
+            </li>
+        </c:if>
 
-        <!-- Thực đơn -->
-        <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
-        <li>
-            <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/category-management">
-                <i class="fas fa-list"></i> Danh mục món
-            </a>
-        </li>
-        <li>
-            <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/menu">
-                <i class="fas fa-hamburger"></i> Món ăn
-            </a>
-        </li>
+        <%-- ===== TÀI CHÍNH (Owner gốc hoặc Staff có finance.access) ===== --%>
+        <c:if test="${hasFinance}">
+            <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Tài chính</div></li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/invoice?action=list">
+                    <i class="fas fa-file-invoice"></i> Hóa đơn
+                </a>
+            </li>
+        </c:if>
 
-        <%-- Chỉ Owner mới thấy Tồn kho hàng ngày --%>
-        <c:if test="${sessionScope.employee.roleID == 1}">
+        <%-- ===== THỰC ĐƠN (Owner gốc hoặc Staff có inventory.access) ===== --%>
+        <c:if test="${hasInventory}">
+            <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/category-management">
+                    <i class="fas fa-list"></i> Danh mục món
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/menu">
+                    <i class="fas fa-hamburger"></i> Món ăn
+                </a>
+            </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('daily-inventory') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/daily-stock">
@@ -250,8 +252,8 @@
             </li>
         </c:if>
 
-        <!-- Thống kê — chỉ Owner -->
-        <c:if test="${sessionScope.employee.roleID == 1}">
+        <%-- ===== THỐNG KÊ (Owner gốc hoặc Staff có finance.access) ===== --%>
+        <c:if test="${hasFinance}">
             <li class="nav-item">
                 <div class="nav-section-title"><i class="fas fa-chart-pie"></i> Thống kê & Báo cáo</div>
             </li>
@@ -271,6 +273,19 @@
                 <a class="nav-link ${pageContext.request.requestURI.contains('peak-hours-analysis') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/peak-hours-analysis">
                     <i class="fas fa-clock"></i> Giờ cao điểm
+                </a>
+            </li>
+        </c:if>
+
+        <%-- ===== PHÂN QUYỀN (chỉ Owner gốc) ===== --%>
+        <c:if test="${isOwner}">
+            <li>
+                <div class="nav-section-title"><i class="fas fa-shield-alt"></i> Hệ thống</div>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/permissions') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/permissions">
+                    <i class="fas fa-key"></i> Phân quyền nhân viên
                 </a>
             </li>
         </c:if>

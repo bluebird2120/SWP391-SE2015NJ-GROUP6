@@ -74,9 +74,20 @@ public class AuthenticationFilter implements Filter {
             }
 
             //Set != List ko cho trùng lặp phần tử
+            // Quyền được cấp theo Role (staff.access, owner.access)
             Set<String> employeePermissions = PermissionCache.getPermissionsForRole(employee.getRoleID());
 
-            if (!employeePermissions.contains(requiredPermission)) {
+            // Gộp thêm extra permissions được cấp riêng cho nhân viên này
+            //@SuppressWarnings("unchecked")
+            // Quyền được cấp riêng cho nhân viên
+            Set<String> extraPerms = (Set<String>) session.getAttribute("extraPerms");
+            // Gộp tất cả quyền của nhân viên
+            Set<String> allPerms = new java.util.HashSet<>(employeePermissions);
+            if (extraPerms != null) {
+                allPerms.addAll(extraPerms);
+            }
+
+            if (!allPerms.contains(requiredPermission)) {
                 //Owner cố vào Staff -> đưa về dashboard Owner
                 if (employee.getRoleID() == OWNER_ROLE_ID && uri.startsWith(ctx + "/staff/")) {
                     response.sendRedirect(ctx + "/owner/dashboard");
