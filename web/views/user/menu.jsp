@@ -373,7 +373,22 @@
                     </div>
                 </div>
 
-                <div class="border-cart"> 
+                <div class="border-cart">
+                    <c:if test="${not empty sessionScope.successMsg}">
+                        <div style="background: #d1fae5; color: #065f46; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center;">
+                            <span>✅ ${sessionScope.successMsg}</span>
+                            <button onclick="this.parentElement.style.display = 'none'" style="background:none; border:none; color:#065f46; font-size:16px; cursor:pointer;">✖</button>
+                        </div>
+                        <c:remove var="successMsg" scope="session"/>
+                    </c:if>
+
+                    <c:if test="${not empty sessionScope.errorMsg}">
+                        <div style="background: #fee2e2; color: #991b1b; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
+                            <span>⚠️ ${sessionScope.errorMsg}</span>
+                            <button onclick="this.parentElement.style.display = 'none'" style="background:none; border:none; color:#991b1b; font-size:16px; cursor:pointer;">✖</button>
+                        </div>
+                        <c:remove var="errorMsg" scope="session"/>
+                    </c:if>
                     <div class="page-header">
                         <h2>Khám phá ẩm thực</h2>
                     </div>
@@ -461,14 +476,28 @@
                                 </div>
                             </div>
 
-                            <div class="button-group">
-                                <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex;">
+                            <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                                <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex; flex-direction: column; gap: 8px;">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
                                     <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
 
-                                    <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white;">
+                                    <c:choose>
+                                        <c:when test="${not empty assignedTables}">
+                                            <select name="tableID" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background-color: #fdf6f0; color: #76493b; font-weight: bold; cursor: pointer;">
+                                                <c:forEach var="t" items="${assignedTables}">
+                                                    <option value="${t.tableID}" ${t.tableID == sessionScope.currentTableID ? 'selected' : ''}>
+                                                        📍 Bưng tới: ${t.tableName}
+                                                    </option>
+                                                </c:forEach>
+                                            </select>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <input type="hidden" name="tableID" value="${sessionScope.currentTableID}">
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white; margin-top: 0;">
                                         Thêm vào giỏ
                                     </button>
                                 </form>
@@ -563,9 +592,9 @@
                 }
             };
         </script>
-        
+
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
-            
+
             <button onclick="openQRScanner()" 
                     style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; width: 56px; height: 56px; border-radius: 50%; background-color: #D4A373; color: white; border: none; box-shadow: 0 4px 15px rgba(212, 163, 115, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;" 
                     title="Quét mã QR gộp bàn">
@@ -573,19 +602,20 @@
             </button>
 
             <div id="qr-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
-                
+
                 <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <h3 style="color: #1c4332; margin-top: 0; margin-bottom: 10px;">📸 Quét QR Gộp Bàn</h3>
                     <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Hướng camera về phía mã QR của bàn bên cạnh.</p>
-                    
+
                     <div id="qr-reader" style="width: 100%; border-radius: 8px; overflow: hidden; border: 2px dashed #D4A373;"></div>
-                    
+
                     <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;">
                         <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block;">Hoặc nhập thủ công để Test:</label>
                         <div style="display: flex; gap: 8px;">
                             <input type="text" id="manual-qr-input" placeholder="Dán link bàn hoặc mã Token..." 
                                    style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; outline: none; font-size: 14px;"
-                                   onkeypress="if(event.key === 'Enter') submitManualQR()">
+                                   onkeypress="if (event.key === 'Enter')
+                                               submitManualQR()">
                             <button onclick="submitManualQR()" 
                                     style="background: #1c4332; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
                                 Gộp
@@ -600,107 +630,111 @@
 
             <script src="https://unpkg.com/html5-qrcode"></script>
             <script>
-                let html5QrcodeScanner = null;
+                        let html5QrcodeScanner = null;
 
-                function openQRScanner() {
-                    document.getElementById("qr-modal-overlay").style.display = "flex";
-                    // Reset lại ô input mỗi lần mở
-                    document.getElementById("manual-qr-input").value = ""; 
-                    
-                    if (!html5QrcodeScanner) {
-                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
-                    }
+                        function openQRScanner() {
+                            document.getElementById("qr-modal-overlay").style.display = "flex";
+                            // Reset lại ô input mỗi lần mở
+                            document.getElementById("manual-qr-input").value = "";
 
-                    html5QrcodeScanner.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        (decodedText, decodedResult) => {
-                            closeQRScanner(); 
-                            window.location.href = decodedText; 
-                        },
-                        (errorMessage) => { }
-                    ).catch((err) => {
-                        console.log("Không có camera, sử dụng chế độ nhập tay.");
-                        // Không alert nữa để đỡ phiền khi test trên laptop không có webcam
-                    });
-                }
+                            if (!html5QrcodeScanner) {
+                                html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                            }
 
-                function closeQRScanner() {
-                    document.getElementById("qr-modal-overlay").style.display = "none";
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.stop().then((ignore) => {
-                            html5QrcodeScanner.clear();
-                        }).catch((err) => { console.log(err); });
-                    }
-                }
+                            html5QrcodeScanner.start(
+                                    {facingMode: "environment"},
+                                    {fps: 10, qrbox: {width: 250, height: 250}},
+                                    (decodedText, decodedResult) => {
+                                closeQRScanner();
+                                window.location.href = decodedText;
+                            },
+                                    (errorMessage) => {
+                            }
+                            ).catch((err) => {
+                                console.log("Không có camera, sử dụng chế độ nhập tay.");
+                                // Không alert nữa để đỡ phiền khi test trên laptop không có webcam
+                            });
+                        }
 
-                // HÀM XỬ LÝ KHI ẤN ENTER HOẶC BẤM NÚT "GỘP"
-                function submitManualQR() {
-                    let val = document.getElementById("manual-qr-input").value.trim();
-                    if (val !== "") {
-                        // Nếu người dùng chỉ copy mỗi cái mã Token (không có chữ http)
-                        if (!val.startsWith("http")) {
-                            // Tự động ghép thành đường link hoàn chỉnh
-                            val = "${pageContext.request.contextPath}/scan?token=" + val;
+                        function closeQRScanner() {
+                            document.getElementById("qr-modal-overlay").style.display = "none";
+                            if (html5QrcodeScanner) {
+                                html5QrcodeScanner.stop().then((ignore) => {
+                                    html5QrcodeScanner.clear();
+                                }).catch((err) => {
+                                    console.log(err);
+                                });
+                            }
+                        }
+
+                        function submitManualQR() {
+                            let inputVal = document.getElementById("manual-qr-input").value.trim();
+                            if (inputVal === "")
+                                return;
+
+                            // Nếu người dùng dán nguyên cái URL đầy đủ (ví dụ: http://localhost:8080/.../scan?token=abc)
+                            // thì ta lấy thẳng giá trị đó. Nếu chỉ dán mã (abc), ta ghép lại.
+                            let targetUrl = "";
+                            if (inputVal.includes("token=")) {
+                                targetUrl = inputVal; // Dán link đầy đủ -> Giữ nguyên
+                            } else {
+                                // Dán mã token -> Ghép vào
+                                targetUrl = "${pageContext.request.contextPath}/scan?token=" + inputVal;
+                            }
+                            
+                            console.log("Đang chuyển hướng đến: " + targetUrl); // 👈 THÊM DÒNG NÀY
+
+                            closeQRScanner();
+                            // Chuyển hướng trình duyệt
+                            window.location.href = targetUrl;
                         }
                         
-                        closeQRScanner();
-                        // Chuyển hướng trình duyệt
-                        window.location.href = val;
-                    }
-                }
-            </script>
+                        function openQRScanner() {
+                            // Hiện khung đen che màn hình
+                            document.getElementById("qr-modal-overlay").style.display = "flex";
 
-            <script src="https://unpkg.com/html5-qrcode"></script>
-            <script>
-                let html5QrcodeScanner = null;
+                            // Khởi tạo máy quét
+                            if (!html5QrcodeScanner) {
+                                html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                            }
 
-                function openQRScanner() {
-                    // Hiện khung đen che màn hình
-                    document.getElementById("qr-modal-overlay").style.display = "flex";
-                    
-                    // Khởi tạo máy quét
-                    if (!html5QrcodeScanner) {
-                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
-                    }
+                            // Mở camera mặt sau (environment)
+                            html5QrcodeScanner.start(
+                                    {facingMode: "environment"},
+                                    {
+                                        fps: 10, // Khung hình trên giây
+                                        qrbox: {width: 250, height: 250} // Vùng quét hình vuông
+                                    },
+                                    (decodedText, decodedResult) => {
+                                // KHI QUÉT THÀNH CÔNG:
+                                closeQRScanner(); // Tắt camera đi
 
-                    // Mở camera mặt sau (environment)
-                    html5QrcodeScanner.start(
-                        { facingMode: "environment" },
-                        {
-                            fps: 10,       // Khung hình trên giây
-                            qrbox: { width: 250, height: 250 } // Vùng quét hình vuông
-                        },
-                        (decodedText, decodedResult) => {
-                            // KHI QUÉT THÀNH CÔNG:
-                            closeQRScanner(); // Tắt camera đi
-                            
-                            // decodedText chính là cái đường link http://localhost:8080/.../scan?token=...
-                            // Chuyển hướng trình duyệt chạy thẳng vào link đó luôn!
-                            window.location.href = decodedText; 
-                        },
-                        (errorMessage) => {
-                            // Đang dò tìm QR (Bỏ qua lỗi này)
+                                // decodedText chính là cái đường link http://localhost:8080/.../scan?token=...
+                                // Chuyển hướng trình duyệt chạy thẳng vào link đó luôn!
+                                window.location.href = decodedText;
+                            },
+                                    (errorMessage) => {
+                                // Đang dò tìm QR (Bỏ qua lỗi này)
+                            }
+                            ).catch((err) => {
+                                alert("Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!");
+                                closeQRScanner();
+                            });
                         }
-                    ).catch((err) => {
-                        alert("Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!");
-                        closeQRScanner();
-                    });
-                }
 
-                function closeQRScanner() {
-                    document.getElementById("qr-modal-overlay").style.display = "none";
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.stop().then((ignore) => {
-                            html5QrcodeScanner.clear();
-                        }).catch((err) => {
-                            console.log("Stop failed: ", err);
-                        });
-                    }
-                }
-            </script>
+                        function closeQRScanner() {
+                            document.getElementById("qr-modal-overlay").style.display = "none";
+                            if (html5QrcodeScanner) {
+                                html5QrcodeScanner.stop().then((ignore) => {
+                                    html5QrcodeScanner.clear();
+                                }).catch((err) => {
+                                    console.log("Stop failed: ", err);
+                                });
+                            }
+                        }
+            </script>          
         </c:if>
-        
+
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
 
             <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">
