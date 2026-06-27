@@ -122,6 +122,13 @@
                     <i class="fas fa-clipboard-list"></i> Đơn hàng
                 </a>
             </li>
+            <%-- [STAFF TABLE] Lối vào màn vận hành, không thay đổi màn quản lý bàn của Owner. --%>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('staff/tables') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/tables">
+                    <i class="fas fa-chair"></i> Vận hành bàn
+                </a>
+            </li>
         </c:if>
 
         <%-- Owner: lịch sử đơn + bàn nhà hàng --%>

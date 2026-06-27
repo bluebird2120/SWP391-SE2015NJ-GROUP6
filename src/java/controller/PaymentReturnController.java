@@ -75,7 +75,6 @@ public class PaymentReturnController extends HttpServlet {
 
                 // [FIX VNPAY] Phân biệt hóa đơn cọc và hóa đơn thanh toán cuối.
                 // DEP-: chỉ xác nhận đã cọc; OrderDAOSon sẽ đồng bộ
-                // pending/reserved -> reserved/reserved.
                 // INV-: thanh toán bữa ăn xong -> completed/cleaning.
                 if (invoiceID != null) {
                     Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
@@ -87,7 +86,7 @@ public class PaymentReturnController extends HttpServlet {
                         isDepositPayment = true;
                         invoicesDAO.updateInvoiceStatus(
                                 invoiceID, "paid", "vnpay");
-                        // [FIX PAYMENT MESSAGE] Sau khi cọc paid, đồng bộ ngay
+                        //  Sau khi cọc paid, đồng bộ ngay
                         // để đơn đặt bàn chuyển pending -> reserved trong lần return này.
                         orderDAOSon.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {

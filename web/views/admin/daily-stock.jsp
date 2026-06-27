@@ -60,6 +60,17 @@
                 font-weight: 600;
             }
 
+            .success-annouce-box {
+                background-color: #dcfce7;
+                border-left: 4px solid #16a34a;
+                padding: 12px 15px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #166534;
+                font-weight: 600;
+            }
+
             /* ⚠️ HỘP BÁO LỖI CHƯA NHẬP ĐỦ MÓN (JAVASCRIPT ĐIỀU KHIỂN) */
             .error-validation-box {
                 display: none; /* Mặc định ẩn, phát hiện lỗi mới hiện */
@@ -224,7 +235,14 @@
 
                     <div class="page-header">
                         <h2>QUẢN LÝ SỐ LƯỢNG MÓN ĂN PHIÊN HÔM NAY</h2>
-                        <span style="font-size: 14px; color: #64748b;">Thời gian mở cửa cấu hình: <b style="color: #0284c7;">${storeOpenTime}</b></span>
+                        <jsp:useBean id="currentDate" class="java.util.Date" />
+
+                        <span style="font-size: 14px; color: #64748b;">
+                            Phiên làm việc ngày: 
+                            <b style="color: #0284c7;">
+                                <fmt:formatDate value="${currentDate}" pattern="dd-MM-yyyy" />
+                            </b>
+                        </span>
                     </div>
 
                     <c:if test="${not empty errorMessage}">
@@ -239,34 +257,47 @@
                         </div>
                     </c:if>
 
+                    <c:if test="${not empty updateFail}">
+                        <div class="danger-warning-box">
+                            ${updateFail}
+                        </div>
+                    </c:if>
+
+                    <c:if test="${not empty updateSuccess}">
+                        <div class="success-annouce-box">
+                            ${updateSuccess}
+                        </div>
+                    </c:if>
+
                     <c:if test="${hasLowStock == true}">
                         <div class="danger-warning-box">
                             ⚠️ <b>HỆ THỐNG CẢNH BÁO:</b> Hiện tại trong kho đang có món ăn bị giảm xuống <b>dưới 20%</b> so với số lượng chốt ban đầu! Vui lòng kiểm tra lại cột Số lượng hiện tại bên dưới.
                         </div>
                     </c:if>
 
-                    <c:if test="${isConfigYet == true}">
+                    <c:if test="${isConfigYet == false}">
                         <div class="danger-warning-box">
                             <b>THÔNG BÁO HỆ THỐNG:</b> Bạn chưa chốt số lượng món ăn cho phiên hôm nay!
                         </div>
                     </c:if>
 
+                    <%-- Khung hiển thị thông báo lỗi bằng JavaScript --%>
                     <div class="error-validation-box" id="errorMessageBox">
-                        ❌ <b>Không thể lưu thay đổi!</b> Bạn chưa nhập số lượng cho một số món ăn sau:
+                        ❌ <b>Không thể lưu thay đổi!</b> Có lỗi xảy ra với dữ liệu nhập vào:
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form">
+                    <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form" id="filterFormID">
                         <input type="text" name="search" value="${param.search}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
 
-                        <select name="categoryID" class="filter-select">
+                        <select name="categoryID" class="filter-select" id="jsSelectCategory">
                             <option value="">Tất cả loại món</option>
                             <c:forEach var="cat" items="${categoryList}">
                                 <option value="${cat.categoryID}" ${param.categoryID == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
                             </c:forEach>
                         </select>
 
-                        <select name="cookingMethod" class="filter-select">
+                        <select name="cookingMethod" class="filter-select" id="jsSelectMethod">
                             <option value="">Tất cả phương thức</option>
                             <c:forEach var="method" items="${listMethod}">
                                 <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
@@ -275,12 +306,18 @@
                             </c:forEach>
                         </select>
 
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <%-- 🌟 Thêm thuộc tính max bằng ngày hôm nay để chặn chọn ngày tương lai ở giao diện --%>
+                            <c:set var="todayString" value="<%= java.time.LocalDate.now().toString() %>" />
+                            <input type="date" name="date" value="${date}" max="${todayString}" class="filter-input" onchange="this.form.submit()"/>
+                        </div>
+
                         <button type="submit" class="btn-search">Lọc kết quả</button>
                     </form>
 
                     <div class="fast-input-box">
                         <span>⚡ <b>Nhập nhanh:</b> Điền số lượng cho <b>tất cả ô nhập</b> bên dưới thành:</span>
-                        <input type="number" id="inputDefaultAll" min="0" value="50" class="input-all-number">
+                        <input type="number" id="inputDefaultAll" min="1" value="50" class="input-all-number">
                         <button type="button" class="btn-apply-all" onclick="applyQuantityToAllFields()">Áp dụng</button>
                     </div>
 
@@ -308,9 +345,9 @@
                                         </td>
                                         <td style="text-align: center;">
                                             <input type="hidden" name="itemID" value="${item.itemID}"/>
-                                            <input type="number" name="quantityInStock" 
-                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : 0}" 
-                                                   class="input-item-qty field-stock-input"/>
+                                            <input  type="number" name="initialQuantity" 
+                                                    value="${not empty saveInputData ? saveInputData[item.itemID] : ""}" 
+                                                    class="input-item-qty field-stock-input"/>
                                             <c:if test="${item.quantityInStock < item.initialQuantity * 20/100}">
                                                 <br/><small style="color: #e11d48; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
                                             </c:if>
@@ -334,8 +371,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${param.search}&categoryID=${param.categoryID}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${param.search}&categoryID=${param.categoryID}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -347,8 +384,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${param.search}&categoryID=${param.categoryID}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${param.search}&categoryID=${param.categoryID}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -367,49 +404,75 @@
         <script>
             function applyQuantityToAllFields() {
                 const defaultValue = document.getElementById('inputDefaultAll').value;
-                const inputFields = document.getElementsByClassName('field-stock-input');
 
+                // Validate giá trị nhập nhanh trước khi áp dụng
+                if (defaultValue === "" || parseInt(defaultValue) <= 0 || isNaN(defaultValue)) {
+                    alert("Số lượng nhập nhanh phải là một số nguyên dương hợp lệ!");
+                    return;
+                }
+
+                const inputFields = document.getElementsByClassName('field-stock-input');
                 for (let i = 0; i < inputFields.length; i++) {
                     inputFields[i].value = defaultValue;
-                    inputFields[i].style.borderColor = "#cbd5e1"; // Reset viền đỏ nếu có
+                    inputFields[i].style.borderColor = "#cbd5e1";
                 }
             }
 
-            // 🌟 SCRIPT KIỂM TRA BẮT BUỘC NHẬP HẾT 100% CÁC MÓN ĂN
             const stockMainForm = document.getElementById('stockMainForm');
             const errorMessageBox = document.getElementById('errorMessageBox');
             const missingItemsList = document.getElementById('missingItemsList');
 
             stockMainForm.onsubmit = function (event) {
                 let isFormValid = true;
-                missingItemsList.innerHTML = ""; // Xóa danh sách lỗi cũ
+                missingItemsList.innerHTML = ""; // Reset danh sách lỗi cũ
 
-                // Thu thập tất cả các hàng dữ liệu món ăn
+                // 1. KIỂM TRA BỘ LỌC ĐANG BẬT (Chặn lưu thiếu món tương tự như Controller)
+                const selectCat = document.getElementById('jsSelectCategory').value;
+                const selectMethod = document.getElementById('jsSelectMethod').value;
+
+                if (selectCat !== "" || selectMethod !== "") {
+                    isFormValid = false;
+                    const li = document.createElement('li');
+                    li.innerText = "Hệ thống phát hiện bạn đang bật bộ lọc ẩn danh mục món ăn! Vui lòng trả bộ lọc về trạng thái 'Tất cả loại món' và 'Tất cả phương thức' để tiến hành chốt toàn bộ kho.";
+                    missingItemsList.appendChild(li);
+                }
+
+                // 2. DUYỆT QUA TỪNG HÀNG ĐỂ KIỂM TRA GIÁ TRỊ NHẬP VÀO
                 const rows = document.getElementsByClassName('dish-data-row');
 
                 for (let i = 0; i < rows.length; i++) {
                     const nameText = rows[i].getElementsByClassName('dish-name-text')[0].innerText;
                     const inputField = rows[i].getElementsByClassName('field-stock-input')[0];
+                    const valueTrim = inputField.value.trim();
 
-                    // Kiểm tra nếu ô nhập bị bỏ trống hoặc rỗng tuếch
-                    if (inputField.value.trim() === "") {
+                    // 2a. Kiểm tra nếu để trống ô nhập
+                    if (valueTrim === "") {
                         isFormValid = false;
-                        inputField.style.borderColor = "#dc3545"; // Đổi viền ô sang màu đỏ cảnh báo
-
-                        // Thêm tên món ăn chưa nhập vào danh sách thông báo lỗi
+                        inputField.style.borderColor = "#dc3545";
                         const li = document.createElement('li');
-                        li.innerText = nameText + " (Chưa nhập)";
+                        li.innerText = "Món '" + nameText + "' đang bị bỏ trống số lượng!";
                         missingItemsList.appendChild(li);
-                    } else {
-                        inputField.style.borderColor = "#cbd5e1"; // Trả về viền xám bình thường nếu hợp lệ
+                    }
+                    // 2b. Kiểm tra nếu nhập gõ chữ, ký tự đặc biệt hoặc số không nguyên dương (<= 0)
+                    else {
+                        const parsedValue = parseInt(valueTrim);
+                        if (isNaN(parsedValue) || parsedValue <= 0 || parseFloat(valueTrim) !== parsedValue) {
+                            isFormValid = false;
+                            inputField.style.borderColor = "#dc3545";
+                            const li = document.createElement('li');
+                            li.innerText = "Món '" + nameText + "' có giá trị nhập vào không hợp lệ (Phải là số nguyên lớn hơn 0)!";
+                            missingItemsList.appendChild(li);
+                        } else {
+                            inputField.style.borderColor = "#cbd5e1"; // Trả lại màu viền xám khi hợp lệ
+                        }
                     }
                 }
 
-                // Nếu phát hiện có lỗi chưa nhập đủ, chặn đứng hành động submit form lên Servlet
+                // Nếu phát hiện bất kỳ lỗi nào, chặn form và cuộn trang lên xem thông báo lỗi
                 if (!isFormValid) {
                     event.preventDefault();
-                    errorMessageBox.style.display = "block"; // Hiển thị khung thông báo lỗi lên đỉnh
-                    window.scrollTo({top: 0, behavior: 'smooth'}); // Cuộn màn hình mượt mà lên trên cùng để xem lỗi
+                    errorMessageBox.style.display = "block";
+                    window.scrollTo({top: 0, behavior: 'smooth'});
                 } else {
                     errorMessageBox.style.display = "none";
                 }

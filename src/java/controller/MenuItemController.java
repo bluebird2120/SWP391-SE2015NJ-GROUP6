@@ -24,7 +24,7 @@ import model.Order;
 import model.Employee;
 // === KẾT THÚC PHẦN THÊM MỚI ===
 
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu", "/scan"})
+@WebServlet(name = "MenuItemController", urlPatterns = "/menu")
 public class MenuItemController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -244,6 +244,15 @@ public class MenuItemController extends HttpServlet {
         if (tableID > 0) {
             session.setAttribute("currentTableID", tableID);
         }
+
+        // === BẮT ĐẦU CHÈN THÊM: LẤY DANH SÁCH BÀN ĐỂ CHỌN LÚC GỌI MÓN ===
+        Integer currentOrderID = (Integer) session.getAttribute("orderID");
+        if (currentOrderID != null) {
+            TableDAO tDAO = new TableDAO();
+            List<Table> assignedTables = tDAO.getTablesByOrderId(currentOrderID);
+            request.setAttribute("assignedTables", assignedTables);
+        }
+        // === KẾT THÚC CHÈN THÊM ===
 
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Employee loginUser = (Employee) session.getAttribute("employee");

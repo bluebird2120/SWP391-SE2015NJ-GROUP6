@@ -15,6 +15,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class DailyStockController extends HttpServlet {
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private DailyInventoryDAO dailyInventoryDAO = new DailyInventoryDAO();
-    private CookingMethodDAO cm = new CookingMethodDAO();
+    private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
     private static final int PAGE_SIZE = 100;
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -76,37 +77,49 @@ public class DailyStockController extends HttpServlet {
         String category_raw = request.getParameter("categoryID");
         String page_raw = request.getParameter("page");
         String method_raw = request.getParameter("cookingMethod");
-
+        String date = request.getParameter("date");
+        
+        if (!checkEmpty(date)) {
+            date = LocalDate.now().toString();
+        }
         if (!checkEmpty(search)) {
             search = "";
         }
 
         String errorSearch = checkLength(search, 100) ? "Tìm kiếm không vượt quá 100 kí tự" : "";
-
+        String errorDate = checkValidDate(date);
+        
         int categoryID = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
         int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        java.sql.Date dateSql = java.sql.Date.valueOf(date);
 
         if (!errorSearch.trim().isEmpty()) {
             request.setAttribute("errorSearch", errorSearch);
             search = "";
         }
-
-        int totalItem = menuItemDAO.countSearchDish(search, categoryID, methodID);
-        int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
         
+        if(checkEmpty(errorDate)){
+            request.setAttribute("errorDate", errorDate);
+            date = LocalDate.now().toString();
+        }
+
+        int totalItem = menuItemDAO.countSearchDish(search, dateSql, categoryID, methodID);
+        int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
+
         if (page > totalPage && totalPage > 0) {
             page = totalPage;
         }
 
         int offSet = (page - 1) * PAGE_SIZE;
-        List<CookingMethod> listMethod = cm.getAllCookingMethod();
+        List<CookingMethod> listMethod = cookingMethodDAO.getAllCookingMethod();
         List<MenuCategory> list = menuCategoryDAO.getAllMenuCategory();
-        List<MenuItem> listItem = menuItemDAO.searchDishPaging(search, categoryID, methodID, offSet, PAGE_SIZE);
-        
+        List<MenuItem> listItem = menuItemDAO.searchDishPaging(search, dateSql, categoryID, methodID, offSet, PAGE_SIZE);
+
+        request.setAttribute("date", date);
         request.setAttribute("listMethod", listMethod);
         request.setAttribute("hasLowStock", checkHasLowStock(listItem));
-        request.setAttribute("isConfigYet", checkConfigYet(listItem));
+        request.setAttribute("isConfigYet", isConfigYet(listItem, date));
         request.setAttribute("categoryList", list);
         request.setAttribute("menuItemList", listItem);
         request.setAttribute("totalPage", totalPage);
@@ -131,9 +144,12 @@ public class DailyStockController extends HttpServlet {
         boolean hasError = false;
         String errorMessage = "";
 
-        if (initialQuantity == null || itemID == null || initialQuantity.length != itemID.length) {
+        java.sql.Date dateSql = java.sql.Date.valueOf(LocalDate.now().toString());
+        int totalDish = menuItemDAO.countSearchDish("", dateSql, 0, 0);
+        if (initialQuantity == null || itemID == null || initialQuantity.length != totalDish) {
             hasError = true;
-            errorMessage = "Dữ liệu đầu vào không hợp lệ!";
+            errorMessage = "Thao tác bị chặn! Bạn đang bật bộ lọc ẩn món ăn. Vui lòng chọn 'Tất cả loại món', 'Tất cả phương thức' và nhập đủ "
+                    + " tất cả món ăn trước khi chốt kho.";
         } else {
             for (int i = 0; i < initialQuantity.length; i++) {
                 String qty = initialQuantity[i];
@@ -168,10 +184,31 @@ public class DailyStockController extends HttpServlet {
             doGet(request, response);
         } else {
             for (int i = 0; i < itemID.length; i++) {
-                dailyInventoryDAO.updateStockMenuItem(Integer.parseInt(itemID[i]), Integer.parseInt(initialQuantity[i]));
+                boolean result = dailyInventoryDAO.updateStockMenuItem(Integer.parseInt(itemID[i]), Integer.parseInt(initialQuantity[i]));
+                if (!result) {
+                    request.setAttribute("updateFail", "Cập nhật thất bại vì bạn đã nhập số lượng cho ngày hôm nay");
+                    doGet(request, response);
+                    return;
+                }
             }
-            response.sendRedirect(request.getContextPath() + "/daily-stock");
+            request.setAttribute("updateSuccess", "Bạn đã cập nhập thành công số lượng món ăn cho ngày hôm nay");
+            doGet(request, response);
         }
+    }
+
+    private String checkValidDate(String dateStr) {
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+
+            if (date.isAfter(LocalDate.now())) {
+                return "Không thể xem hoặc cấu hình kho cho ngày ở tương lai!";
+            }
+
+        } catch (Exception e) {
+            return "Định dạng ngày tháng không hợp lệ!";
+        }
+
+        return "";
     }
 
     private boolean checkHasLowStock(List<MenuItem> list) {
@@ -191,13 +228,14 @@ public class DailyStockController extends HttpServlet {
         return false;
     }
 
-    private boolean checkConfigYet(List<MenuItem> list) {
-        if (list != null && !list.isEmpty()) {
+    private boolean isConfigYet(List<MenuItem> list, String date) {
+        if (list != null && !list.isEmpty() && LocalDate.now().toString().equals(date)) {
             for (MenuItem item : list) {
                 if (item.getInitialQuantity() > 0) {
-                    return false;
+                    return true;
                 }
             }
+            return false;
         }
         return true;
     }
@@ -210,11 +248,11 @@ public class DailyStockController extends HttpServlet {
         String msg = "";
         try {
             int qty = Integer.parseInt(quantity);
-            if (qty < 0) {
-                msg = "Số lượng món ăn không được phép là số âm!";
+            if (qty <= 0) {
+                msg = "Số lượng món ăn phải là số nguyên dương!";
             }
         } catch (Exception e) {
-            msg = "Số lượng nhập vào phải là ký tự số hợp lệ!";
+            msg = "Số lượng nhập vào phải là số nguyên dương!";
         }
         return msg;
     }

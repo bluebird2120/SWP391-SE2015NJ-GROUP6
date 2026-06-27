@@ -37,6 +37,12 @@
             <p class="greeting">Xin chào, <b>${sessionScope.employee.fullName}</b>!</p>
 
             <div class="grid">
+                <%-- [STAFF TABLE] Lối vào màn hình gán và dọn bàn. --%>
+                <a class="card-link" href="${pageContext.request.contextPath}/staff/tables">
+                    <div class="card-icon"><i class="fas fa-chair"></i></div>
+                    <div class="card-title">Vận hành bàn</div>
+                    <div class="card-desc">Gán bàn cho khách đặt trước, theo dõi bàn đang dùng và xác nhận dọn bàn xong.</div>
+                </a>
                 <a class="card-link" href="${pageContext.request.contextPath}/staff/my-schedule">
                     <div class="card-icon"><i class="fas fa-calendar-week"></i></div>
                     <div class="card-title">My Schedule</div>

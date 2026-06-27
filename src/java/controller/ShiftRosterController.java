@@ -26,7 +26,7 @@ import model.ShiftTemplates;
 import dal.ShiftSwapRequestDAO;
 import model.ShiftSwapRequestDetail;
 
-@WebServlet(name = "ShiftRosterController", urlPatterns = { "/owner/shift-roster" })
+@WebServlet(name = "ShiftRosterController", urlPatterns = {"/owner/shift-roster"})
 public class ShiftRosterController extends HttpServlet {
 
     private static final String VIEW = "/views/owner/shift-roster.jsp";
@@ -41,8 +41,9 @@ public class ShiftRosterController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (action == null)
+        if (action == null) {
             action = "";
+        }
         switch (action) {
             case "assign":
                 handleAssign(req, resp);
@@ -117,10 +118,12 @@ public class ShiftRosterController extends HttpServlet {
             }
         }
 
-        if (error != null)
+        if (error != null) {
             req.setAttribute("error", error);
-        if (success != null)
+        }
+        if (success != null) {
             req.setAttribute("success", success);
+        }
         req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 
@@ -154,8 +157,9 @@ public class ShiftRosterController extends HttpServlet {
 
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
-            if (employeeID <= 0)
+            if (employeeID <= 0) {
                 continue;
+            }
 
             if (dao.hasOverlap(employeeID, sqlDate, templateID)) {
                 overlapCount++;
@@ -210,8 +214,9 @@ public class ShiftRosterController extends HttpServlet {
         int year = parseInt(req.getParameter("year"), 0);
         int month = parseInt(req.getParameter("month"), 0);
         String mode = req.getParameter("assignMode");
-        if (mode == null)
+        if (mode == null) {
             mode = "SKIP_EXISTING";
+        }
 
         if (empIDsStr == null || empIDsStr.length == 0 || templateID <= 0 || month < 1 || month > 12 || year < 2024) {
             showRoster(req, resp, "Tham số phân ca tháng không hợp lệ hoặc chưa chọn nhân viên.", null);
@@ -241,8 +246,9 @@ public class ShiftRosterController extends HttpServlet {
 
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
-            if (employeeID <= 0)
+            if (employeeID <= 0) {
                 continue;
+            }
 
             int rows;
             if ("REPLACE_ALL".equals(mode)) {
@@ -306,20 +312,24 @@ public class ShiftRosterController extends HttpServlet {
 
     private static Integer currentEmployeeID(HttpServletRequest req) {
         HttpSession ss = req.getSession(false);
-        if (ss == null)
+        if (ss == null) {
             return null;
+        }
         Object v = ss.getAttribute("employeeID");
-        if (v instanceof Integer)
+        if (v instanceof Integer) {
             return (Integer) v;
+        }
         Object emp = ss.getAttribute("employee");
-        if (emp instanceof Employee)
+        if (emp instanceof Employee) {
             return ((Employee) emp).getEmployeeID();
+        }
         return null;
     }
 
     private static LocalDate parseDateOrToday(String s) {
-        if (s == null || s.isBlank())
+        if (s == null || s.isBlank()) {
             return LocalDate.now();
+        }
         try {
             return LocalDate.parse(s);
         } catch (Exception e) {
@@ -329,8 +339,9 @@ public class ShiftRosterController extends HttpServlet {
 
     private static YearMonth parseYearMonth(String yStr, String mStr, YearMonth defVal) {
         try {
-            if (yStr == null || mStr == null)
+            if (yStr == null || mStr == null) {
                 return defVal;
+            }
             int y = Integer.parseInt(yStr);
             int m = Integer.parseInt(mStr);
             return YearMonth.of(y, m);
@@ -358,6 +369,11 @@ public class ShiftRosterController extends HttpServlet {
         ShiftSwapRequestDetail detail = reqDAO.getDetailById(swapID);
         if (detail == null) {
             showRoster(req, resp, "Không tìm thấy yêu cầu.", null);
+            return;
+        }
+
+        if (!"leave".equals(detail.getRequestType())) {
+            showRoster(req, resp, "Owner chỉ được duyệt yêu cầu xin nghỉ.", null);
             return;
         }
 
@@ -401,6 +417,11 @@ public class ShiftRosterController extends HttpServlet {
             return;
         }
 
+        if (!"leave".equals(detail.getRequestType())) {
+            showRoster(req, resp, "Owner chỉ được từ chối yêu cầu xin nghỉ.", null);
+            return;
+        }
+
         boolean success = reqDAO.updateStatus(swapID, "rejected", emp.getEmployeeID());
         if (success) {
             NotificationDAO notifDAO = new NotificationDAO();
@@ -419,8 +440,9 @@ public class ShiftRosterController extends HttpServlet {
     }
 
     private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank())
+        if (s == null || s.isBlank()) {
             return def;
+        }
         try {
             return Integer.parseInt(s);
         } catch (NumberFormatException e) {

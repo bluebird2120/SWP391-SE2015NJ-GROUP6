@@ -121,6 +121,11 @@
                     <div class="card-title">Revenue Reports</div>
                     <div class="card-desc">Business analytics</div>
                 </a>
+                <a class="card" href="${pageContext.request.contextPath}/owner/reviews">
+                    <div class="card-icon"><i class="fas fa-comment-dots"></i></div>
+                    <div class="card-title">Quản lý đánh giá</div>
+                    <div class="card-desc">Ẩn / phản hồi đánh giá khách hàng</div>
+                </a>
             </div>
         </main>
     </div>
