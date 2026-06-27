@@ -19,6 +19,7 @@ import jakarta.servlet.http.Part;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
 import model.CookingMethod;
 import model.MenuCategory;
 import model.MenuItem;
@@ -146,8 +147,12 @@ public class UpdateMenuItemServlet extends HttpServlet {
             if (!isValidImageFile(fileName)) {
                 errorMainImage = "Ảnh chính không đúng định dạng (.jpg, .png, .webp, .jpeg)";
             } else {
-                if (mainImage.getSize() > MAX_FILE_SIZE) {
-                    errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                if (!isValidImage(mainImage)) {
+                    errorMainImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                } else {
+                    if (mainImage.getSize() > MAX_FILE_SIZE) {
+                        errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                    }
                 }
             }
         } else {
@@ -175,10 +180,16 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 if (!isValidImageFile(p.getSubmittedFileName())) {
                     errorSubImage = "Có file ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
                     break;
-                }
-                if (p.getSize() > MAX_FILE_SIZE) {
-                    errorSubImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
-                    break;
+                } else {
+                    if (!isValidImage(p)) {
+                        errorSubImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                        break;
+                    } else {
+                        if (p.getSize() > MAX_FILE_SIZE) {
+                            errorSubImage = "Dung lượng ảnh phụ vượt quá " + MAX_FILE_SIZE + "MB!";
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -301,6 +312,14 @@ public class UpdateMenuItemServlet extends HttpServlet {
     private boolean isValidImageFile(String imageName) {
         String image = imageName.toLowerCase();
         return (image.endsWith(".webp") || image.endsWith(".jpg") || image.endsWith(".jpeg") || image.endsWith(".png"));
+    }
+
+    private boolean isValidImage(Part filePart) {
+        try {
+            return ImageIO.read(filePart.getInputStream()) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String isValidPositive(String data, String ms1, String ms2) {
