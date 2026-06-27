@@ -311,13 +311,21 @@ public class MenuItemDAO extends DBContext {
         return null;
     }
 
-    public int countSearchDish(String itemName, int categoryID, int methodID) {
+    public int countSearchDish(String itemName, java.sql.Date date, int categoryID, int methodID) {
         int total = 0;
         int index = 1;
         String sql = "select count(*) from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
                 + "join CookingMethod cm on mi.methodID = cm.methodID "
+                + "left join DailyInventory di on mi.itemID = di.itemID and di.workingDate = ? "
                 + "where mi.itemName like ? ";
+                
+        String todayStr = new java.sql.Date(System.currentTimeMillis()).toString();
+        if (date != null && date.toString().equals(todayStr)) {
+            sql += "and (mi.isAvailable = 1 or di.workingDate is not null) ";
+        } else {
+            sql += "and di.workingDate is not null ";
+        }
         if (categoryID > 0) {
             sql += "and mi.categoryID = ?";
         }
@@ -326,6 +334,7 @@ public class MenuItemDAO extends DBContext {
         }
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setDate(index++, date);
             ps.setString(index++, "%" + itemName + "%");
             if (categoryID > 0) {
                 ps.setInt(index++, categoryID);
@@ -342,14 +351,22 @@ public class MenuItemDAO extends DBContext {
         return total;
     }
 
-    public List<MenuItem> searchDishPaging(String itemName, int categoryID, int methodID, int offset, int pageSize) {
+    public List<MenuItem> searchDishPaging(String itemName, java.sql.Date date, int categoryID, int methodID, int offset, int pageSize) {
         List<MenuItem> list = new ArrayList<>();
         int index = 1;
-        String sql = "select * from MenuItem mi "
+        String sql = "select mi.*, mc.categoryName, di.workingDate, di.initialQuantity, di.quantityInStock from MenuItem mi "
                 + "join MenuCategory mc on mi.categoryID = mc.categoryID "
                 + "join CookingMethod cm on mi.methodID = cm.methodID "
-                + "left join DailyInventory di on mi.itemID = di.itemID "
-                + "where mi.itemName like ? and mi.isAvailable = 1 ";
+                + "left join DailyInventory di on mi.itemID = di.itemID and di.workingDate = ? "
+                + "where mi.itemName like ? ";
+        
+        String todayStr = new java.sql.Date(System.currentTimeMillis()).toString();
+        if (date != null && date.toString().equals(todayStr)) {
+            sql += "and (mi.isAvailable = 1 or di.workingDate is not null) ";
+        } else {
+            sql += "and di.workingDate is not null ";
+        }
+        
         if (categoryID > 0) {
             sql += "and mi.categoryID = ? ";
         }
@@ -359,6 +376,7 @@ public class MenuItemDAO extends DBContext {
         sql += "LIMIT ?, ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setDate(index++, date);
             ps.setString(index++, "%" + itemName + "%");
             if (categoryID > 0) {
                 ps.setInt(index++, categoryID);
@@ -368,21 +386,15 @@ public class MenuItemDAO extends DBContext {
             }
             ps.setInt(index++, offset);
             ps.setInt(index++, pageSize);
-            
+
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 MenuItem mi = new MenuItem(rs.getInt("itemID"),
-                        rs.getInt("categoryID"),
-                        rs.getInt("methodID"),
                         rs.getString("itemName"),
-                        rs.getString("description"),
-                        rs.getInt("price"),
-                        rs.getInt("discountPercent"),
-                        rs.getInt("discountedPrice"),
-                        rs.getString("image"),
-                        rs.getInt("isAvailable"),
-                        rs.getString("allergyNotes"),
-                        rs.getString("categoryName"));
+                        rs.getString("categoryName"),
+                        rs.getDate("workingDate"),
+                        rs.getInt("initialQuantity"),
+                        rs.getInt("quantityInStock"));
                 list.add(mi);
             }
         } catch (Exception e) {
