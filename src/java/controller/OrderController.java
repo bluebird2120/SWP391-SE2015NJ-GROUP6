@@ -63,11 +63,18 @@ public class OrderController extends HttpServlet {
                 // Nếu không có Order (khách chưa chọn món nào mà bấm vào giỏ)
                 request.setAttribute("orderItems", null);
                 request.setAttribute("menuItems", null);
+                request.setAttribute("assignedTables", null); // Thêm dòng này
                 request.setAttribute("errorMsg", "Giỏ hàng của bạn đang trống!");
             } else {
                 // Lấy 2 list song song từ Database dựa trên orderID thật
                 List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
                 List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderId(orderID);
+                
+                // === BẮT ĐẦU THÊM MỚI ===
+                TableDAO tableDAO = new TableDAO();
+                List<Table> assignedTables = tableDAO.getTablesByOrderId(orderID);
+                request.setAttribute("assignedTables", assignedTables);
+                // === KẾT THÚC THÊM MỚI ===
 
                 request.setAttribute("orderItems", orderItems);
                 request.setAttribute("menuItems", menuItems);
@@ -136,7 +143,19 @@ public class OrderController extends HttpServlet {
             }
 
             Integer orderID = (Integer) session.getAttribute("orderID");
-            Integer tableID = (Integer) session.getAttribute("tableID");
+            
+            // --- SỬA LOGIC LẤY BÀN ĐỂ CHỌN ĐƯỢC BÀN KHI GỘP ---
+            Integer tableID = null;
+            String selectedTableStr = request.getParameter("tableID"); // Lấy từ Dropdown chọn bàn trên giao diện
+            
+            if (selectedTableStr != null && !selectedTableStr.isEmpty()) {
+                tableID = Integer.parseInt(selectedTableStr); // Lấy bàn khách vừa chọn
+            } else {
+                tableID = (Integer) session.getAttribute("tableID"); // Khách chưa chọn hoặc đơn lẻ thì lấy bàn gốc
+            }
+            // -------------------------------------------------
+
+            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
 
             // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
             if (orderID == null) {
