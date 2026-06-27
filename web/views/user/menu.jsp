@@ -563,6 +563,144 @@
                 }
             };
         </script>
+        
+        <c:if test="${sessionScope.roleInTable == 'HOST'}">
+            
+            <button onclick="openQRScanner()" 
+                    style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; width: 56px; height: 56px; border-radius: 50%; background-color: #D4A373; color: white; border: none; box-shadow: 0 4px 15px rgba(212, 163, 115, 0.4); cursor: pointer; font-size: 22px; transition: transform 0.2s;" 
+                    title="Quét mã QR gộp bàn">
+                <i class="fas fa-qrcode"></i>
+            </button>
+
+            <div id="qr-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
+                
+                <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <h3 style="color: #1c4332; margin-top: 0; margin-bottom: 10px;">📸 Quét QR Gộp Bàn</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Hướng camera về phía mã QR của bàn bên cạnh.</p>
+                    
+                    <div id="qr-reader" style="width: 100%; border-radius: 8px; overflow: hidden; border: 2px dashed #D4A373;"></div>
+                    
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;">
+                        <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block;">Hoặc nhập thủ công để Test:</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="manual-qr-input" placeholder="Dán link bàn hoặc mã Token..." 
+                                   style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; outline: none; font-size: 14px;"
+                                   onkeypress="if(event.key === 'Enter') submitManualQR()">
+                            <button onclick="submitManualQR()" 
+                                    style="background: #1c4332; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                                Gộp
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="closeQRScanner()" style="margin-top: 15px; background: #e74c3c; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">
+                        Hủy quét / Đóng
+                    </button>
+                </div>
+            </div>
+
+            <script src="https://unpkg.com/html5-qrcode"></script>
+            <script>
+                let html5QrcodeScanner = null;
+
+                function openQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "flex";
+                    // Reset lại ô input mỗi lần mở
+                    document.getElementById("manual-qr-input").value = ""; 
+                    
+                    if (!html5QrcodeScanner) {
+                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                    }
+
+                    html5QrcodeScanner.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        (decodedText, decodedResult) => {
+                            closeQRScanner(); 
+                            window.location.href = decodedText; 
+                        },
+                        (errorMessage) => { }
+                    ).catch((err) => {
+                        console.log("Không có camera, sử dụng chế độ nhập tay.");
+                        // Không alert nữa để đỡ phiền khi test trên laptop không có webcam
+                    });
+                }
+
+                function closeQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "none";
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then((ignore) => {
+                            html5QrcodeScanner.clear();
+                        }).catch((err) => { console.log(err); });
+                    }
+                }
+
+                // HÀM XỬ LÝ KHI ẤN ENTER HOẶC BẤM NÚT "GỘP"
+                function submitManualQR() {
+                    let val = document.getElementById("manual-qr-input").value.trim();
+                    if (val !== "") {
+                        // Nếu người dùng chỉ copy mỗi cái mã Token (không có chữ http)
+                        if (!val.startsWith("http")) {
+                            // Tự động ghép thành đường link hoàn chỉnh
+                            val = "${pageContext.request.contextPath}/scan?token=" + val;
+                        }
+                        
+                        closeQRScanner();
+                        // Chuyển hướng trình duyệt
+                        window.location.href = val;
+                    }
+                }
+            </script>
+
+            <script src="https://unpkg.com/html5-qrcode"></script>
+            <script>
+                let html5QrcodeScanner = null;
+
+                function openQRScanner() {
+                    // Hiện khung đen che màn hình
+                    document.getElementById("qr-modal-overlay").style.display = "flex";
+                    
+                    // Khởi tạo máy quét
+                    if (!html5QrcodeScanner) {
+                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                    }
+
+                    // Mở camera mặt sau (environment)
+                    html5QrcodeScanner.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,       // Khung hình trên giây
+                            qrbox: { width: 250, height: 250 } // Vùng quét hình vuông
+                        },
+                        (decodedText, decodedResult) => {
+                            // KHI QUÉT THÀNH CÔNG:
+                            closeQRScanner(); // Tắt camera đi
+                            
+                            // decodedText chính là cái đường link http://localhost:8080/.../scan?token=...
+                            // Chuyển hướng trình duyệt chạy thẳng vào link đó luôn!
+                            window.location.href = decodedText; 
+                        },
+                        (errorMessage) => {
+                            // Đang dò tìm QR (Bỏ qua lỗi này)
+                        }
+                    ).catch((err) => {
+                        alert("Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!");
+                        closeQRScanner();
+                    });
+                }
+
+                function closeQRScanner() {
+                    document.getElementById("qr-modal-overlay").style.display = "none";
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then((ignore) => {
+                            html5QrcodeScanner.clear();
+                        }).catch((err) => {
+                            console.log("Stop failed: ", err);
+                        });
+                    }
+                }
+            </script>
+        </c:if>
+        
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
 
             <div id="host-widget" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999;">

@@ -120,8 +120,8 @@ public class CustomerDAO extends DBContext {
 
     public boolean registerVerified(String userName, String phoneNumber,
             String email, String hashedPassword) throws SQLException {
-        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isVerified, isActive) "
-                + "VALUES (?, ?, ?, ?, 'local', 1, 1)";
+        String sql = "INSERT INTO Customer (userName, phoneNumber, email, password, loginProvider, isActive) "
+                + "VALUES (?, ?, ?, ?, 'local', 1)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, userName);
             ps.setString(2, phoneNumber);
@@ -315,6 +315,21 @@ public class CustomerDAO extends DBContext {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newHashedPassword);
             ps.setInt(2, customerID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateProfile(Customer c) {
+        String sql = "UPDATE Customer SET userName = ?, phoneNumber = ?, email = ? "
+                + "WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, c.getUserName());
+            ps.setString(2, c.getPhoneNumber());
+            ps.setString(3, c.getEmail());
+            ps.setInt(4, c.getCustomerID());
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
