@@ -156,17 +156,25 @@
                 pointer-events: none;
             }
             .error-message {
-                color: #dc3545;
-                font-weight: bold;
-                margin-bottom: 15px;
-                background-color: #fce8e6;
-                border: 1px solid #fbc4c4;
-                padding: 5px 16px;
+                background-color: #fde8e8;
+                border-left: 4px solid #e11d48;
+                padding: 12px 15px;
                 border-radius: 4px;
-                display: inline-block;
-                font-size: 12px
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #9f1239;
+                font-weight: 600;
             }
-            
+            .success-message {
+                background-color: #dcfce7;
+                border-left: 4px solid #16a34a;
+                padding: 12px 15px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #166534;
+                font-weight: 600;
+            }
             .modal-wrapper{
                 display: none;
                 position: fixed;
@@ -231,39 +239,42 @@
             <div style="flex: 1; min-width: 0;">
                 <div class="layout">
                     <div class="page-header">
-                        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-                        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
+                        <h2>DANH SÁCH CÁC PHƯƠNG PHÁP CHẾ BIẾN</h2>
+                        <input class="btn-create" type="button" value="THÊM MỚI CÁCH CHẾ BIẾN" onclick="openCreateModal()"/>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
-                        <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
+                    <form action="${pageContext.request.contextPath}/method-management" method="get" class="search-container">
+                            <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm cách chế biến..." class="search-input"/>
                         <button type="submit" class="btn-search">Tìm kiếm</button>
                     </form>
 
-                    <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
                     <c:if test="${errorSearch != null && !errorSearch.trim().isEmpty()}"><div class="error-message">${errorSearch}</div></c:if>
+                    <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
+                    <c:if test="${isSuccess == true}"><div class="success-message">${annouce}</div></c:if>
+                    <c:if test="${isSuccess == false}"><div class="error-message">${annouce}</div></c:if>
+                    
                         <table border="1">
                             <thead>
                                 <tr>
-                                    <th>Tên Loại Món</th>
+                                    <th>Tên Cách Chế Biến</th>
                                     <th>Tổng Số món</th>
                                     <th>Hoạt Động</th>
                                     <th>Tạm Ngưng</th>
                                     <th>Hành Động</th>
                                 </tr>
                             </thead>
-                        <c:forEach var="cat" items="${categoryList}">
+                        <c:forEach var="method" items="${methodList}">
                             <tr>
-                                <td><div>${cat.categoryName}</div></td>
-                                <td><div>${cat.totalDish}</div></td>
-                                <td><div>${cat.activeMenuItem}</div></td>
-                                <td><div>${cat.inactiveMenuItem}</div></td>
+                                <td><div>${method.methodName}</div></td>
+                                <td><div>${method.totalDish}</div></td>
+                                <td><div>${method.activeMenuItem}</div></td>
+                                <td><div>${method.inactiveMenuItem}</div></td>
                                 <td>
-                                    <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                                    <form action="${pageContext.request.contextPath}/category-management" method="post">
-                                        <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
+                                    <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${method.methodID}', '${method.methodName}')"/>
+                                    <form action="${pageContext.request.contextPath}/method-management" method="post">
+                                        <input type="hidden" value="${method.methodID}" name="methodID"/>
                                         <c:choose>
-                                            <c:when test="${cat.activeMenuItem > 0}">
+                                            <c:when test="${method.activeMenuItem > 0}">
                                                 <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
                                             </c:when>
                                             <c:otherwise>
@@ -280,8 +291,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${param.search}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${param.search}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=1&search=${param.search}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage - 1}&search=${param.search}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -293,8 +304,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${param.search}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${param.search}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage + 1}&search=${param.search}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${totalPage}&search=${param.search}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -310,11 +321,11 @@
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
-                <h3>Chỉnh sửa tên loại món</h3>
-                <form action="category-management" method="post">
-                    <input type="hidden" id="modalCategoryID" name="categoryID"/>
-                    <label>Tên loại:</label><br/>
-                    <input type="text" id="modalCategoryName" name="categoryName" required/><br/>
+                <h3>Chỉnh sửa tên chế biến</h3>
+                <form action="method-management" method="post">
+                    <input type="hidden" id="modalMethodID" name="methodID"/>
+                    <label>Tên cách chế biến:</label><br/>
+                    <input type="text" id="modalMethodName" name="methodName" required/><br/>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -323,11 +334,11 @@
         <div id="createModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
-                <h3>Thêm mới loại món ăn</h3>
-                <form action="category-management" method="post">
-                    <input type="hidden" name="categoryID" value="0"/>
-                    <label>Nhập loại mới:</label><br/>
-                    <input type="text" name="categoryName" required/><br/>
+                <h3>Thêm mới cách chế biến</h3>
+                <form action="method-management" method="post">
+                    <input type="hidden" name="methodID" value="0"/>
+                    <label>Nhập cách chế biến mới:</label><br/>
+                    <input type="text" name="methodName" required/><br/>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -335,8 +346,8 @@
 
         <script>
             function openEditModal(id, name) {
-                document.getElementById('modalCategoryID').value = id;
-                document.getElementById('modalCategoryName').value = name;
+                document.getElementById('modalMethodID').value = id;
+                document.getElementById('modalMethodName').value = name;
                 document.getElementById('editModal').style.display = "block";
             }
 
