@@ -245,6 +245,15 @@ public class MenuItemController extends HttpServlet {
             session.setAttribute("currentTableID", tableID);
         }
 
+        // === BẮT ĐẦU CHÈN THÊM: LẤY DANH SÁCH BÀN ĐỂ CHỌN LÚC GỌI MÓN ===
+        Integer currentOrderID = (Integer) session.getAttribute("orderID");
+        if (currentOrderID != null) {
+            TableDAO tDAO = new TableDAO();
+            List<Table> assignedTables = tDAO.getTablesByOrderId(currentOrderID);
+            request.setAttribute("assignedTables", assignedTables);
+        }
+        // === KẾT THÚC CHÈN THÊM ===
+
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Employee loginUser = (Employee) session.getAttribute("employee");
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");

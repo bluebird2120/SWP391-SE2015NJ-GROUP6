@@ -572,4 +572,26 @@ public class TableDAO extends DBContext {
         }
         return list;
     }
+    
+    // =========================================================
+    // LẤY DANH SÁCH TẤT CẢ CÁC BÀN CỦA MỘT ĐƠN HÀNG (DÙNG CHO GIỎ HÀNG)
+    // =========================================================
+    public List<Table> getTablesByOrderId(int orderID) {
+        List<Table> list = new ArrayList<>();
+        String sql = "SELECT t.* FROM `Table` t "
+                   + "JOIN Order_Table ot ON t.tableID = ot.tableID "
+                   + "WHERE ot.orderID = ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs)); // Tận dụng lại hàm mapRow cực chuẩn của bạn
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] getTablesByOrderId lỗi: " + e.getMessage());
+        }
+        return list;
+    }
 }
