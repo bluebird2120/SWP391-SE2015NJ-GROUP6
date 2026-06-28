@@ -292,7 +292,7 @@
                                 Vị trí không gian:
                             </label>
 
-                            <div class="d-flex flex-column gap-2">
+                            <div class="d-flex flex-column gap-2" >
                                 <c:choose>
                                     <c:when test="${not empty areaTypes}">
                                         <c:forEach var="area" items="${areaTypes}">
@@ -323,7 +323,7 @@
                                             🌿 Ngoài sảnh
                                         </div>
 
-                                        <div class="area-btn ${areaType == 'private' ? 'selected' : ''}"
+                                        <div  class="area-btn ${areaType == 'private' ? 'selected' : ''}"
                                              onclick="selectArea(this, 'private')">
                                             🚪 Trong phòng
                                         </div>
@@ -336,7 +336,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-sidebar-submit w-100 py-2">
+                        <button type="submit" class="btn btn-sidebar-submit w-100 py-2" >
                             🔍 KIỂM TRA TRỐNG
                         </button>
                     </form>
@@ -521,11 +521,12 @@
                                                                         </li>
                                                                     </c:forEach>
                                                                 </ul>
+                                                                
                                                                 <div>
-                                                                    Tổng tiền món:
+                                                                    Tiền cọc trước:
                                                                     <strong>
                                                                         <fmt:formatNumber
-                                                                            value="${preorderTotalsByOrder[o.orderID]}"
+                                                                            value="${o.depositAmount}"
                                                                             type="number"/> VNĐ
                                                                     </strong>
                                                                 </div>
@@ -548,7 +549,7 @@
                                                             <a href="${pageContext.request.contextPath}/reservation?action=cancel&orderID=${o.orderID}"
                                                                class="text-danger small text-decoration-none"
                                                                onclick="return confirm('Bạn chắc chắn muốn hủy đặt bàn #${o.orderID}?')">
-                                                                ❌ Hủy vé giữ chỗ
+                                                                ❌ Hủy giữ chỗ
                                                             </a>
                                                         </div>
                                                     </c:if>
@@ -677,7 +678,9 @@
                                                 <button type="submit"
                                                         name="nextStep"
                                                         value="menu"
-                                                        class="btn-confirm-booking">
+                                                        class="btn-confirm-booking"
+                                                        style="background:#76493b;">
+                                                        
                                                     🍲 ĐẶT MÓN TRƯỚC
                                                 </button>
 
@@ -685,7 +688,7 @@
                                                         name="nextStep"
                                                         value="deposit"
                                                         class="btn-confirm-booking"
-                                                        style="background:#8c6239;">
+                                                        style="background:#76493b;">
                                                     💳 BỎ QUA MÓN - THANH TOÁN CỌC
                                                 </button>
                                             </div>
