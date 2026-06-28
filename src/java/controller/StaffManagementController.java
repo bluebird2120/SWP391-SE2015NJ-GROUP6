@@ -8,14 +8,17 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ public class StaffManagementController extends HttpServlet {
     private static final String FORM_VIEW = "/views/owner/staff-form.jsp";
     private static final int PAGE_SIZE = 5;
     private static final String UPLOAD_DIR = "uploads/staff";
+    private static final long MAX_PROFILE_IMAGE_SIZE = 2L * 1024 * 1024;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10,11}$");
 
@@ -63,27 +67,30 @@ public class StaffManagementController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String action = request.getParameter("action");
+        try {
+            String action = getAction(request);
+            if (action == null) {
+                action = "";
+            }
 
-        if (action == null) {
-            action = "";
-        }
-
-        switch (action) {
-            case "create":
-                handleCreate(request, response);
-                break;
-            case "edit":
-                handleEdit(request, response);
-                break;
-            case "deactivate":
-                handleDeactivate(request, response);
-                break;
-            case "reactivate":
-                handleReactivate(request, response);
-                break;
-            default:
-                response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
+            switch (action) {
+                case "create":
+                    handleCreate(request, response);
+                    break;
+                case "edit":
+                    handleEdit(request, response);
+                    break;
+                case "deactivate":
+                    handleDeactivate(request, response);
+                    break;
+                case "reactivate":
+                    handleReactivate(request, response);
+                    break;
+                default:
+                    response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
+            }
+        } catch (IllegalStateException ex) {
+            showUploadError(request, response);
         }
     }
 
@@ -374,7 +381,7 @@ public class StaffManagementController extends HttpServlet {
     private boolean isValidImageFile(String fileName) {
         String lower = fileName.toLowerCase();
         return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
-                || lower.endsWith(".png") || lower.endsWith(".webp");
+                || lower.endsWith(".png");
     }
 
     private String handleImageUpload(HttpServletRequest request, int employeeId, Map<String, String> errors) {
@@ -385,10 +392,8 @@ public class StaffManagementController extends HttpServlet {
                 return null;
             }
 
-            long maxSize = 2L * 1024 * 1024;
-
-            if (filePart.getSize() > maxSize) {
-                errors.put("image", "Profile photo must not exceed 2MB.");
+            if (filePart.getSize() > MAX_PROFILE_IMAGE_SIZE) {
+                errors.put("image", "Ảnh nhân viên không được vượt quá 2MB.");
                 return null;
             }
 
@@ -401,16 +406,20 @@ public class StaffManagementController extends HttpServlet {
             String safeSubmitted = Paths.get(submitted).getFileName().toString();
 
             if (!isValidImageFile(safeSubmitted)) {
-                errors.put("image", "Vui lòng chọn file ảnh (jpg, jpeg, png, webp).");
+                errors.put("image", "Vui lòng chọn file ảnh (jpg, jpeg, png).");
                 return null;
             }
 
             String contentType = filePart.getContentType();
             if (contentType == null
                     || (!contentType.equals("image/jpeg")
-                        && !contentType.equals("image/png")
-                        && !contentType.equals("image/webp"))) {
-                errors.put("image", "File không hợp lệ. Chỉ chấp nhận ảnh JPG, PNG, WEBP.");
+                        && !contentType.equals("image/png"))) {
+                errors.put("image", "File không hợp lệ. Chỉ chấp nhận ảnh JPG, PNG.");
+                return null;
+            }
+
+            if (!isValidImageContent(filePart)) {
+                errors.put("image", "File không hợp lệ. Vui lòng chọn file ảnh thật JPG hoặc PNG.");
                 return null;
             }
 
@@ -433,6 +442,66 @@ public class StaffManagementController extends HttpServlet {
             errors.put("image", "Không thể upload ảnh. Vui lòng thử lại.");
             return null;
         }
+    }
+
+    private boolean isValidImageContent(Part imagePart) throws IOException {
+        if (imagePart == null || imagePart.getSize() == 0) {
+            return false;
+        }
+
+        try (InputStream input = imagePart.getInputStream()) {
+            return ImageIO.read(input) != null;
+        }
+    }
+
+    private String getAction(HttpServletRequest request) {
+        String action = getQueryParameter(request, "action");
+        if (action != null && !action.isBlank()) {
+            return action;
+        }
+        return request.getParameter("action");
+    }
+
+    private String getQueryParameter(HttpServletRequest request, String name) {
+        String query = request.getQueryString();
+        if (query == null || query.isBlank()) {
+            return null;
+        }
+
+        for (String pair : query.split("&")) {
+            String[] parts = pair.split("=", 2);
+            String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+            if (name.equals(key)) {
+                return parts.length > 1
+                        ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8)
+                        : "";
+            }
+        }
+        return null;
+    }
+
+    private void showUploadError(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("image", "Ảnh nhân viên không được vượt quá 2MB.");
+
+        String action = getQueryParameter(request, "action");
+        if ("edit".equals(action)) {
+            int id = parseIntOrDefault(getQueryParameter(request, "id"), 0);
+            Employee staff = id > 0 ? new EmployeeDAO().findById(id) : null;
+            if (staff == null) {
+                response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
+                return;
+            }
+            request.setAttribute("staff", staff);
+            request.setAttribute("mode", "edit");
+        } else {
+            request.setAttribute("staff", new Employee());
+            request.setAttribute("mode", "create");
+        }
+
+        request.setAttribute("errors", errors);
+        request.getRequestDispatcher(FORM_VIEW).forward(request, response);
     }
 
     private static int parseIntOrDefault(String s, int def) {

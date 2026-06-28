@@ -182,7 +182,8 @@ public class StaffMyScheduleController extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
             return;
         }
-
+    
+        //Đổi ca hoặc xin nghỉ
         if (!"requestSwap".equals(action) && !"requestLeave".equals(action)) {
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
             return;
@@ -209,7 +210,7 @@ public class StaffMyScheduleController extends HttpServlet {
             ShiftRow reqShift = esDAO.getShiftByID(requesterShiftID);
 
             if (reqShift == null) {
-                session.setAttribute("errorMsg", "Không tìm thấy ca làm việc cần đổi/xin nghỉ!");
+                session.setAttribute("errorMsg", "Không tìm thấy ca làm việc cần đổi!");
                 resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                 return;
             }

@@ -24,7 +24,7 @@ import model.Order;
 import model.Employee;
 // === KẾT THÚC PHẦN THÊM MỚI ===
 
-@WebServlet(name = "MenuItemController", urlPatterns = {"/menu", "/scan"})
+@WebServlet(name = "MenuItemController", urlPatterns = {"/menu"})
 public class MenuItemController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -144,11 +144,36 @@ public class MenuItemController extends HttpServlet {
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
 
+                    // === BẮT ĐẦU: TỰ ĐỘNG GÁN NHÂN VIÊN CA HIỆN TẠI ===
+                    dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
+                    Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
+                    if (assignedStaffId != null) {
+                        newOrder.setEmployeeID(assignedStaffId);
+                    }
+                    // === KẾT THÚC: TỰ ĐỘNG GÁN NHÂN VIÊN CA HIỆN TẠI ===
+
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
                         orderDAO.linkOrderAndTable(newOrderID, currentTable.getTableID());
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
+
+                        // === BẮT ĐẦU: TỰ ĐỘNG GỬI THÔNG BÁO CHO NHÂN VIÊN ĐƯỢC GÁN ===
+                        if (newOrder.getEmployeeID() != null) {
+                            try {
+                                dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                                model.Notifications n = new model.Notifications();
+                                n.setRecipientID(newOrder.getEmployeeID());
+                                n.setRecipientType("staff");
+                                n.setType("new_order");
+                                n.setMessage("Bạn được phân công phục vụ Đơn hàng #" + newOrderID + " (Bàn " + currentTable.getTableID() + ") mới tạo.");
+                                n.setIsRead(0);
+                                notifDAO.insert(n);
+                            } catch (Exception e) {
+                                System.err.println("[MenuItemController] Gửi thông báo thất bại: " + e.getMessage());
+                            }
+                        }
+                        // === KẾT THÚC: TỰ ĐỘNG GỬI THÔNG BÁO CHO NHÂN VIÊN ĐƯỢC GÁN ===
 
                         // TẠM THỜI COMMENT ĐOẠN ĐẨY RA MÀN HÌNH CHỜ
                         /* session.setAttribute("pendingOrderID", newOrderID);

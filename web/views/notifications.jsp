@@ -86,7 +86,7 @@
             <c:set var="postAction" value="${pageContext.request.contextPath}/customer/notifications" />
         </c:when>
         <c:when test="${isOwner}">
-            <c:set var="pageSub" value="Thông báo từ hệ thống và yêu cầu của nhân viên" />
+            <c:set var="pageSub" value="Thông báo từ hệ thống, đánh giá khách hàng và yêu cầu của nhân viên" />
             <c:set var="postAction" value="${pageContext.request.contextPath}/owner/notifications" />
         </c:when>
         <c:otherwise>
@@ -143,6 +143,9 @@
                                     </c:when>
                                     <c:when test="${n.type == 'feedback_response'}">
                                         <i class="fas fa-comment-dots"></i>
+                                    </c:when>
+                                    <c:when test="${n.type == 'new_review'}">
+                                        <i class="fas fa-star"></i>
                                     </c:when>
                                     <c:otherwise>
                                         <i class="fas fa-bell"></i>
