@@ -251,6 +251,15 @@
                 </a>
             </li>
         </c:if>
+        <%-- Phương thức chế biến: chỉ Owner gốc --%>
+        <c:if test="${isOwner}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('method-management') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/method-management">
+                    <i class="fas fa-fire-burner"></i> Phương thức chế biến
+                </a>
+            </li>
+        </c:if>
 
         <%-- ===== THỐNG KÊ (Owner gốc hoặc Staff có finance.access) ===== --%>
         <c:if test="${hasFinance}">
