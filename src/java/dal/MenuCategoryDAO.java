@@ -143,4 +143,21 @@ public class MenuCategoryDAO extends DBContext {
         }
         return list;
     }
+    
+    public boolean checkDuplicateCategory(String categoryName, int categoryID){
+        String sql = "select count(*) from MenuCategory "
+                + "where categoryName = ? and categoryID != ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, categoryName);
+            ps.setInt(2, categoryID);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                int total = rs.getInt(1);
+                return total > 0;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
 }
