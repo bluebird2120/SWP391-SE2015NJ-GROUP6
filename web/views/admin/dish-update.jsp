@@ -9,24 +9,49 @@
         <title>JSP Page</title>
         <style>
             body{
-                background-color: #f3f4f6;
+                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt chuẩn Vị An */
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
             .form-container{
                 max-width: 100%;
                 background-color: #ffffff;
                 padding: 30px;
-                border-radius: 8px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Đổ bóng nhẹ sang trọng */
             }
             h2{
                 margin-top: 0;
                 margin-bottom: 25px;
-                color: #111827;
+                color: #78493b; /* 🌟 ĐÃ SỬA: Chữ màu nâu trầm chủ đạo */
                 font-size: 24px;
                 font-weight: 600;
-                border-bottom: 2px solid #e5e7eb;
+                border-bottom: 2px solid #f1ece6;
                 padding-bottom: 10px;
                 text-align: center;
             }
+
+            /* Hộp thông báo Flash Attribute */
+            .alert-success-box {
+                background-color: #edf7ed;
+                border-left: 4px solid #28a745;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #1e4620;
+                font-weight: 600;
+            }
+            .alert-danger-box {
+                background-color: #fdeaea;
+                border-left: 4px solid #dc3545;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #c62828;
+                font-weight: 600;
+            }
+
             .form-layout{
                 display: flex;
                 gap: 30px;
@@ -41,7 +66,7 @@
                 display: block;
                 font-weight: 500;
                 margin-bottom: 8px;
-                color: #374151;
+                color: #4a3f35; /* 🌟 ĐÃ SỬA: Chữ label nâu xám đậm */
                 font-size: 14px;
             }
             .form-input{
@@ -49,23 +74,26 @@
                 padding: 10px 12px;
                 font-size: 14px;
                 border: 1px solid #d1d5db;
-                border-radius: 6px;
+                border-radius: 8px;
                 box-sizing: border-box;
+                transition: all 0.2s ease;
             }
             .form-input:focus{
-                border-color: #2563eb;
+                border-color: #78493b; /* 🌟 ĐÃ SỬA: Viền khi focus đổi sang nâu chủ đạo */
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(120, 73, 59, 0.1);
             }
             textArea.form-input{
                 height: 80px;
                 resize: vertical;
             }
             .form-input[readonly]{
-                background-color: #f3f4f6;
-                color: #6b7280;
+                background-color: #f8f6f2;
+                color: #7c7267;
                 border-style: dashed;
             }
             .error-message {
-                color: #dc2626;
+                color: #dc3545;
                 font-size: 12px;
                 margin-top: 5px;
                 font-weight: 500;
@@ -74,23 +102,25 @@
                 text-align: center;
                 background-color: #ffffff;
                 padding: 15px;
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
+                border: 1px solid #f1ece6;
+                border-radius: 8px;
                 margin-bottom: 15px;
             }
             img{
                 max-width: 100px;
                 max-height: 100px;
-                border-radius: 4px;
+                border-radius: 6px;
                 border: 1px solid #d1d5db;
+                margin: 2px;
             }
-            
+
             .form-changeImage{
                 display: flex;
                 align-items: center;
                 gap: 10px;
                 font-size: 14px;
                 font-weight: 500;
+                margin-bottom: 5px;
             }
             .form-changeImage input{
                 cursor: pointer;
@@ -101,23 +131,29 @@
                 gap: 10px;
                 font-size: 14px;
                 font-weight: 500;
+                margin-top: 15px;
             }
             .form-checkbox input{
-                width: 14px;
-                height: 14px;
+                width: 16px;
+                height: 16px;
                 cursor: pointer;
+                accent-color: #78493b; /* Đổi màu checkbox sang tông nâu */
             }
             .form-submit{
                 width: 100%;
-                background-color: #2563eb;
+                background-color: #de6b48; /* 🌟 ĐÃ SỬA: Nút xác nhận đổi sang cam đất nổi bật giống nút của Vị An */
                 color: #ffffff;
                 padding: 14px;
                 font-size: 16px;
                 font-weight: 600;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
-                margin-top: 10px;
+                margin-top: 20px;
+                transition: background-color 0.2s;
+            }
+            .form-submit:hover{
+                background-color: #c95938; /* Hover cam đậm hơn */
             }
         </style>
     </head>
@@ -128,6 +164,19 @@
             <div style="flex:1; padding:32px; background:#f3f4f6; min-width:0;">
                 <div class="form-container">
                     <h2>${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}</h2>
+
+                    <c:if test="${not empty updateSuccess}">
+                        <div class="alert-success-box">
+                            ✅ <b>Thành công:</b> ${updateSuccess}
+                        </div>
+                    </c:if>
+
+                    <c:if test="${not empty updateFail}">
+                        <div class="alert-danger-box">
+                            ❌ <b>Lỗi hệ thống:</b> ${updateFail}
+                        </div>
+                    </c:if>
+
                     <form id="dishForm" action="${pageContext.request.contextPath}/update-menu" method="post" enctype="multipart/form-data">
                         <input type="hidden" value="${dish.itemID}" name="id"/>
                         <div class="form-layout">
@@ -224,11 +273,11 @@
         <script>
             const form = document.getElementById("dishForm");
             const mainImageInput = document.getElementById("newMainImage");
-            const subImageInput = document.getElementById("newSubImage");   
+            const subImageInput = document.getElementById("newSubImage");
             const errorMainImage = document.getElementById("errorMainImage");
             const errorSubImage = document.getElementById("errorSubImage");
 
-            const MAX_SIZE = 5 * 1024 * 1024; 
+            const MAX_SIZE = 5 * 1024 * 1024;
 
             function checkFileValid(file) {
                 if (!file)
@@ -252,7 +301,7 @@
                 let files = subImageInput.files;
                 if (files.length > 3) {
                     errorSubImage.innerHTML = "Hệ thống chỉ cho phép tải lên tối đa 3 ảnh phụ!";
-                    subImageInput.value = ""; 
+                    subImageInput.value = "";
                     return;
                 }
 
@@ -260,11 +309,11 @@
                     let errorMsg = checkFileValid(file);
                     if (errorMsg !== "") {
                         errorSubImage.innerHTML = errorMsg;
-                        subImageInput.value = ""; 
+                        subImageInput.value = "";
                         return;
                     }
                 }
-                errorSubImage.innerHTML = ""; 
+                errorSubImage.innerHTML = "";
             };
 
             form.onsubmit = function (event) {
@@ -331,7 +380,7 @@
                     isValid = false;
                 } else {
                     let dNum = parseInt(discountPercent);
-                    if (isNaN(dNum) || dNum < 0 || dNum > 100) { 
+                    if (isNaN(dNum) || dNum < 0 || dNum > 100) {
                         errDiscountDiv.innerHTML = "Giảm giá món ăn phải từ 0-100%";
                         isValid = false;
                     } else {

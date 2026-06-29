@@ -1,66 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import dal.CookingMethodDAO;
 import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import model.CookingMethod;
-import model.MenuCategory;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "MethodCookingController", urlPatterns = {"/method-management"})
 public class MethodCookingController extends HttpServlet {
-
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet MethodCookingController</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet MethodCookingController at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
 
     private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
     private static final int PAGE_SIZE = 8;
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -78,6 +34,16 @@ public class MethodCookingController extends HttpServlet {
             search = "";
         }
 
+        HttpSession session = request.getSession();
+        if (session.getAttribute("updateSuccess") != null) {
+            request.setAttribute("updateSuccess", session.getAttribute("updateSuccess"));
+            session.removeAttribute("updateSuccess");
+        }
+        if (session.getAttribute("updateFail") != null) {
+            request.setAttribute("updateFail", session.getAttribute("updateFail"));
+            session.removeAttribute("updateFail");
+        }
+
         int totalCategory = cookingMethodDAO.countSearchMethod(search);
         int totalPage = (int) Math.ceil((double) totalCategory / PAGE_SIZE);
 
@@ -90,6 +56,7 @@ public class MethodCookingController extends HttpServlet {
         request.setAttribute("methodList", methodList);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
+
         for (CookingMethod cookingMethod : methodList) {
             int activeDish = cookingMethodDAO.countMethodByStatus(cookingMethod.getMethodID(), 1);
             int inactiveDish = cookingMethodDAO.countMethodByStatus(cookingMethod.getMethodID(), 0);
@@ -101,65 +68,64 @@ public class MethodCookingController extends HttpServlet {
         request.getRequestDispatcher("views/admin/method-list.jsp").forward(request, response);
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
         String methodID = request.getParameter("methodID");
         String methodName = request.getParameter("methodName");
         String status_raw = request.getParameter("status");
         int id = checkEmpty(methodID) ? Integer.parseInt(methodID) : 0;
+        
+        //lấy các dữ liệu cũ bên jsp để khi vô hiệu hóa trả về đúng trang
+        String page_raw = request.getParameter("page");
+        String search_raw = request.getParameter("search");
+        String currentPage = checkEmpty(page_raw) ? page_raw : "1";
+        String currentSearch = checkEmpty(search_raw) ? search_raw : "";
 
         if (checkEmpty(status_raw) && id > 0) {
             int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 0;
             cookingMethodDAO.changeStatusMethod(id, status);
-            response.sendRedirect(request.getContextPath() + "/method-management");
-            return;
-        }
-        //validate
-        String errorName = isValidString(methodName, 100, "Tên loại không được để trống", "Tên loại phải ít hơn 100 kí tự");
-        if (!errorName.isEmpty()) {
-            List<CookingMethod> methodList = cookingMethodDAO.getAllCookingMethod();
-            for (CookingMethod mc : methodList) {
-                int activeDish = cookingMethodDAO.countMethodByStatus(id, 1);
-                int inactiveDish = cookingMethodDAO.countMethodByStatus(id, 0);
-                int totalDish = cookingMethodDAO.countDishByMethod(id);
-                mc.setActiveMenuItem(activeDish);
-                mc.setInactiveMenuItem(inactiveDish);
-                mc.setTotalDish(totalDish);
-            }
-            request.setAttribute("methodList", methodList);
-            request.setAttribute("errorName", errorName);
-            request.getRequestDispatcher("views/admin/method-list.jsp").forward(request, response);
+            
+            response.sendRedirect(request.getContextPath() + "/method-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8"));
             return;
         }
 
-        //call update and create method
+        // 1. Validate định dạng chuỗi chữ
+        String errorName = isValidString(methodName, 100, "Tên cách chế biến không được để trống", "Tên cách chế biến phải ít hơn 100 kí tự");
+
+        // 2. Kiểm tra trùng lặp tên phương thức chế biến dưới DB
+        if (!checkEmpty(errorName)) {
+            if (cookingMethodDAO.checkDuplicateMethod(methodName, id)) {
+                errorName = "Tên cách chế biến này đã tồn tại trên thực đơn!";
+            }
+        }
+
+        if (!errorName.isEmpty()) {
+            request.setAttribute("errorName", errorName);
+            doGet(request, response);
+            return;
+        }
+
+        // 3. Thực hiện gọi DAO lưu trữ dữ liệu
         boolean isSuccess = false;
         if (id > 0) {
             isSuccess = cookingMethodDAO.updateMethod(methodName, id);
             if (isSuccess) {
-                request.setAttribute("annouce", "Cập nhật cách chế biến thành công");
-            }else{
-                request.setAttribute("annouce", "Cập nhật thất bại vui lòng thử lại");
+                session.setAttribute("updateSuccess", "Cập nhật cách chế biến thành công!");
+            } else {
+                session.setAttribute("updateFail", "Cập nhật thất bại hoặc không phát hiện thay đổi!");
             }
         } else {
             isSuccess = cookingMethodDAO.insertMethod(methodName);
             if (isSuccess) {
-                request.setAttribute("annouce", "Thêm mới cách chế biến thành công");
-            }else{
-                request.setAttribute("annouce", "Thêm mới thất bại vui lòng thử lại");
+                session.setAttribute("updateSuccess", "Thêm mới cách chế biến thành công!");
+            } else {
+                session.setAttribute("updateFail", "Thêm mới cách chế biến thất bại, vui lòng thử lại!");
             }
         }
-        request.setAttribute("isSuccess", isSuccess);
-        doGet(request, response);
+
+        response.sendRedirect(request.getContextPath() + "/method-management");
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {
@@ -175,15 +141,4 @@ public class MethodCookingController extends HttpServlet {
     private boolean checkEmpty(String data) {
         return (data != null && !data.trim().isEmpty());
     }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
 }
