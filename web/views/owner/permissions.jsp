@@ -510,6 +510,18 @@
                 color: #b09080;
                 font-weight: 600;
             }
+            .pg-dots {
+                min-width: 32px;
+                height: 32px;
+                padding: 0 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.82rem;
+                font-weight: 700;
+                color: #b09080;
+                user-select: none;
+            }
 
             @media (max-width: 900px) {
                 .perm-layout {
@@ -623,7 +635,7 @@
                             <span class="pg-info" id="pgInfo"></span>
                         </div>
                     </div>
-                        
+
                     <!-- ══ CỘT PHẢI: Panel phân quyền ══ -->
                     <div class="perm-panel">
                         <div class="panel-header">
@@ -699,7 +711,7 @@
         <%@ include file="/views/includes/footer.jsp" %>
 
         <script>
-        // ── Phân trang + tìm kiếm ──
+            // ── Phân trang + tìm kiếm ──
             var PAGE_SIZE = 5;
             var currentPage = 1;
             var filteredRows = [];
@@ -719,6 +731,7 @@
                     var phone = row.getAttribute('data-phone') || '';
                     return name.includes(kw) || phone.includes(kw);
                 });
+                //quay về trang 1
                 currentPage = 1;
                 renderPage();
             }
@@ -733,16 +746,21 @@
                 var noResult = document.getElementById('noResultRow');
 
                 if (filteredRows.length === 0) {
+                    //hiển thị "Không tìm thấy nhân viên"
                     noResult.style.display = '';
+                    //ẩn thanh phân trang
                     document.getElementById('paginationWrap').style.display = 'none';
                     return;
                 }
+                //có dữ liệu thì ẩn dòng "Không tìm thấy nhân viên"
                 noResult.style.display = 'none';
 
                 var totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+                //nếu trang hiện tại lớn hơn trang thực tế thì đưa về trang cuối cùng (trang 1)
                 if (currentPage > totalPages)
                     currentPage = totalPages;
 
+                //xác định phần tử lấy cho 1 page
                 var start = (currentPage - 1) * PAGE_SIZE;
                 var end = Math.min(start + PAGE_SIZE, filteredRows.length);
                 filteredRows.slice(start, end).forEach(function (r) {
@@ -752,11 +770,13 @@
                 renderPagination(totalPages);
                 document.getElementById('pgInfo').textContent =
                         'Trang ' + currentPage + ' / ' + totalPages;
+                //Trc đó ẩn thì hiện lại thanh phân trang
                 document.getElementById('paginationWrap').style.display = 'flex';
             }
 
             function renderPagination(totalPages) {
                 var wrap = document.getElementById('paginationBtns');
+                // Xóa các phân trang cũ sau khi tìm kiếm
                 wrap.innerHTML = '';
 
                 // Nút Prev
@@ -764,24 +784,62 @@
                 prev.className = 'pg-btn';
                 prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
                 if (currentPage === 1)
+                    //Nếu trang đầu thì tắt nút prev
                     prev.setAttribute('disabled', true);
                 prev.onclick = function () {
                     goPage(currentPage - 1);
                 };
+                //đưa nút lên giao diện
                 wrap.appendChild(prev);
 
-                // Số trang
-                for (var i = 1; i <= totalPages; i++) {
-                    (function (p) {
-                        var btn = document.createElement('button');
-                        btn.className = 'pg-btn' + (p === currentPage ? ' active' : '');
-                        btn.textContent = p;
-                        btn.onclick = function () {
-                            goPage(p);
-                        };
-                        wrap.appendChild(btn);
-                    })(i);
+                // Tính các trang cần hiển thị (dạng thông minh với dấu ...)
+                // Luôn hiện: trang đầu, trang cuối, trang hiện tại ±2
+                var delta = 1;
+                var range = [];
+                var pages = [];
+
+                //trang hiện tại +-1
+                for (var i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+                    range.push(i);
                 }
+
+                // Thêm trang 1 và trang cuối
+                if (totalPages >= 1)
+                    pages.push(1);
+                if (range[0] > 2)
+                    pages.push('...');
+                //lấy từng phẩn tử trong range thêm vào pages = [1, "...", 4, 5, 6];
+                range.forEach(function (p) {
+                    pages.push(p);
+                });
+                //nếu trang cuối trong range cách trang cuối trong hệ thống thì thêm ...
+                if (range[range.length - 1] < totalPages - 1)
+                    pages.push('...');
+                //thêm trang cuối
+                if (totalPages > 1)
+                    pages.push(totalPages);
+
+                // Render các nút trang
+                pages.forEach(function (p) {
+                    //tạo ... trên giao diện
+                    if (p === '...') {
+                        var dots = document.createElement('span');
+                        dots.className = 'pg-dots';
+                        dots.textContent = '...';
+                        wrap.appendChild(dots);
+                    } else {
+                        //tạo nút number trên giao diện
+                        (function (pageNum) {
+                            var btn = document.createElement('button');
+                            btn.className = 'pg-btn' + (pageNum === currentPage ? ' active' : '');
+                            btn.textContent = pageNum;
+                            btn.onclick = function () {
+                                goPage(pageNum);
+                            };
+                            wrap.appendChild(btn);
+                        })(p);
+                    }
+                });
 
                 // Nút Next
                 var next = document.createElement('button');
@@ -804,13 +862,14 @@
                 applyFilter(keyword);
             }
 
-        // Init
+            // Init
             window.addEventListener('DOMContentLoaded', function () {
                 filteredRows = getAllDataRows();
                 renderPage();
             });
 
-        // ── Toggle checkbox quyền ──
+            // ── Toggle checkbox quyền ──
+            //sửa checkbox quyền trên giao diện
             function toggleItem(checkbox) {
                 var key = checkbox.value.replace(/\./g, '_');
                 var label = document.getElementById('item_' + key);
@@ -824,6 +883,7 @@
                 }
             }
 
+            //Bỏ tick tất cả checkbox và cập nhật lại giao diện từng quyền
             function clearAll() {
                 document.querySelectorAll('.perm-list input[type="checkbox"]').forEach(function (cb) {
                     cb.checked = false;
