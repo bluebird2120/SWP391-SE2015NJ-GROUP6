@@ -15,6 +15,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import java.io.File;
 import java.util.ArrayList;
@@ -90,6 +91,17 @@ public class UpdateMenuItemServlet extends HttpServlet {
             List<MenuItemImages> subImages = menuItemDAO.getImagesByMenuItemId(id);
             request.setAttribute("subImages", subImages);
         }
+
+        HttpSession session = request.getSession();
+        if (session.getAttribute("updateSuccess") != null) {
+            request.setAttribute("updateSuccess", session.getAttribute("updateSuccess"));
+            session.removeAttribute("updateSuccess");
+        }
+        if (session.getAttribute("updateFail") != null) {
+            request.setAttribute("updateFail", session.getAttribute("updateFail"));
+            session.removeAttribute("updateFail");
+        }
+
         List<CookingMethod> listMethod = cm.getAllCookingMethod();
         List<MenuCategory> categoryList = menuCategoryDAO.getAllMenuCategory();
         request.setAttribute("dish", mi);
@@ -109,6 +121,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
         MenuItem mi;
         double MAX_FILE_SIZE = 5 * 1024 * 1024;
         String itemName = request.getParameter("name");
@@ -245,18 +258,21 @@ public class UpdateMenuItemServlet extends HttpServlet {
             } catch (Exception e) {
             }
             int id = menuItemDAO.insertMenuItem(categoryId, itemName, description_raw, price, discountPercent, "images/" + fileMainImage, status, allergyNotes_raw, methodID);
-            for (Part p : subImage) {
-                String saveDbPath = p.getSubmittedFileName();
-
-                File sourceSubFile = new File(upLoadSource + File.separator + saveDbPath);
-                p.write(sourceSubFile.getAbsolutePath());
-
-                File cachSubFile = new File(upLoadServer + File.separator + saveDbPath);
-                try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceSubFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cachSubFile)) {
-                    fis.transferTo(fos);
-                } catch (Exception e) {
+            if (id > 0) { // insert thành công món ăn
+                for (Part p : subImage) {
+                    String saveDbPath = p.getSubmittedFileName();
+                    File sourceSubFile = new File(upLoadSource + File.separator + saveDbPath);
+                    p.write(sourceSubFile.getAbsolutePath());
+                    File cachSubFile = new File(upLoadServer + File.separator + saveDbPath);
+                    try (java.io.FileInputStream fis = new java.io.FileInputStream(sourceSubFile); java.io.FileOutputStream fos = new java.io.FileOutputStream(cachSubFile)) {
+                        fis.transferTo(fos);
+                    } catch (Exception e) {
+                    }
+                    menuItemDAO.insertMenuItemImage(id, "images/" + saveDbPath);
                 }
-                menuItemDAO.insertMenuItemImage(id, "images/" + saveDbPath);
+                session.setAttribute("updateSuccess", "Thêm mới món ăn vào thực đơn thành công!");
+            } else {
+                session.setAttribute("updateFail", "Thêm mới món ăn thất bại, vui lòng kiểm tra lại dữ liệu!");
             }
         } else { //lưu ảnh chính và phụ khi cập nhật
             String mainImagePath = oldImage;
@@ -290,9 +306,14 @@ public class UpdateMenuItemServlet extends HttpServlet {
                     menuItemDAO.insertMenuItemImage(itemId, saveDbPath);
                 }
             }
-            menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price, discountPercent, mainImagePath, status, allergyNotes_raw, methodID);
+            boolean isUpdated = menuItemDAO.updateMenuItem(itemId, categoryId, itemName, description_raw, price, discountPercent, mainImagePath, status, allergyNotes_raw, methodID);
+            if (isUpdated) {
+                session.setAttribute("updateSuccess", "Cập nhật thông tin món ăn thành công!");
+            } else {
+                session.setAttribute("updateFail", "Cập nhật món ăn thất bại hoặc không có thay đổi nào được thực hiện!");
+            }
         }
-        response.sendRedirect(request.getContextPath() + "/menu");
+        response.sendRedirect(request.getContextPath() + "/update-menu?id=" + itemId);
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {

@@ -10,28 +10,29 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
+            body {
+                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt hệ thống */
+                color: #333;
+                margin: 0;
+            }
             .page-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                border-bottom: 2px solid #e5e7eb;
+                border-bottom: 2px solid #f1ece6;
                 padding-bottom: 10px;
                 margin-bottom: 25px;
             }
 
             .main-content h2 {
                 margin: 0;
-                border-bottom: none;
-                padding-bottom: 0;
                 font-size: 24px;
                 font-weight: 600;
-                color: #111827;
-                justify-content: center;
+                color: #78493b; /* 🌟 ĐÃ SỬA: Tiêu đề màu nâu trầm */
             }
 
             .btn-add-new {
-                background-color: #10b981;
-                /* Màu xanh lá cây hiện đại */
+                background-color: #4b6b40; /* 🌟 ĐÃ SỬA: Nút thêm mới đổi sang màu xanh rêu sẫm lịch sự */
                 color: white;
                 text-decoration: none;
                 padding: 10px 18px;
@@ -41,6 +42,10 @@
                 display: flex;
                 align-items: center;
                 gap: 6px;
+                transition: background-color 0.2s;
+            }
+            .btn-add-new:hover {
+                background-color: #395231;
             }
 
             .admin-layout {
@@ -55,25 +60,24 @@
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                width: max-content; /* 🌟 CHỐT CHẶN 2: Ép cụm sắp xếp + nút Lọc luôn ôm sát lấy nhau thành 1 khối */
-                flex-shrink: 0; /* Không cho phép cụm này bị bóp méo hay co nhỏ lại */
+                width: max-content;
+                flex-shrink: 0;
             }
 
             .main-content {
                 flex: 1;
-                /* Tự động húp trọn phần khoảng trống còn lại bên phải */
                 padding: 24px;
                 background-color: #ffffff;
                 box-sizing: border-box;
-                /* Bảo hiểm giữ khung, chống tràn viền màn hình */
             }
 
+            /* Thanh lọc kết quả */
             .filter-form {
                 display: flex;
-                flex-wrap: wrap; /* Cho phép xuống dòng có tổ chức */
-                gap: 15px; /* Khoảng cách giữa các ô thoáng hơn */
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+                flex-wrap: wrap;
+                gap: 15px;
+                background: #fdfaf7; /* Nền form lọc hơi ấm vàng */
+                border: 1px solid #ebdcd0; /* 🌟 ĐÃ SỬA: Viền form tiệp màu nâu vàng */
                 padding: 16px;
                 border-radius: 12px;
                 margin-bottom: 20px;
@@ -86,8 +90,12 @@
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
                 font-size: 14px;
-                min-width: 160px; /* Độ rộng tối thiểu để không bị co chữ */
-                flex: 1; /* Tự động co giãn đều nhau để húp trọn hàng 1 */
+                min-width: 160px;
+                flex: 1;
+            }
+            .filter-input:focus, .filter-select:focus {
+                border-color: #78493b;
+                outline: none;
             }
             .filter-form input[name="search"] {
                 flex: 2;
@@ -107,18 +115,19 @@
             }
 
             .btn-submit {
-                background-color: #007bff;
+                background-color: #78493b; /* 🌟 ĐÃ SỬA: Nút Lọc đổi sang màu nâu trầm của Vị An */
                 color: white;
                 border: none;
                 padding: 9px 24px;
                 border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
-                margin-left: auto; /* Tự động đẩy nút Lọc và cụm đi kèm về sát góc phải hàng 2 */
+                margin-left: auto;
+                transition: background-color 0.2s;
             }
 
             .btn-submit:hover {
-                background-color: #0056b3;
+                background-color: #5c352d;
             }
 
             .menu-container {
@@ -129,18 +138,17 @@
             }
 
             .card {
-                border: 1px solid #e0e0e0;
+                border: 1px solid #f1ece6;
                 border-radius: 16px;
                 padding: 16px;
                 background: #ffffff;
-                font-family: Arial, sans-serif;
+                box-shadow: 0 2px 8px rgba(120,73,59,0.03);
             }
 
             .card img {
                 width: 100%;
                 height: 180px;
                 object-fit: cover;
-                /* Giúp ảnh không bị méo khi co giãn */
                 border-radius: 12px;
                 margin-bottom: 12px;
             }
@@ -150,6 +158,7 @@
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 14px;
+                font-weight: 500;
             }
 
             .active {
@@ -166,76 +175,73 @@
                 font-size: 18px;
                 font-weight: bold;
                 margin: 8px 0;
-
-                height: 2.4em;       /* Ép chiều cao cố định bằng 2 dòng chữ */
-                line-height: 1.2em;  /* Chiều cao của mỗi dòng */
-                overflow: hidden;    /* Nếu tên quá dài vượt quá 2 dòng sẽ tự ẩn */
+                color: #1a1512;
+                height: 2.4em;
+                line-height: 1.2em;
+                overflow: hidden;
                 display: -webkit-box;
-                -webkit-line-clamp: 2; /* Giới hạn tối đa hiển thị 2 dòng */
+                -webkit-line-clamp: 2;
             }
 
             .category {
-                color: #666666;
+                color: #7c7267;
                 font-size: 14px;
                 margin: 4px 0;
             }
 
             .price-container {
-                border-bottom: 1px solid #eeeeee;
-                /* Thêm một đường gạch ngang mờ ở dưới giá */
+                border-bottom: 1px solid #f1ece6;
                 display: flex;
                 align-items: center;
                 gap: 10px;
                 padding-bottom: 10px;
-
             }
 
             .price {
-                font-size: 10px;
-                color: #000000;
+                font-size: 11px;
+                color: #9ca3af;
                 text-decoration: line-through;
             }
 
             .discount-percent {
-                font-size: 10px;
-                color: red;
+                font-size: 11px;
+                color: #dc3545;
+                font-weight: 600;
             }
 
             .discount-price {
                 font-size: 18px;
                 font-weight: bold;
-                color: #000000;
+                color: #de6b48; /* 🌟 ĐÃ SỬA: Giá thực tế chuyển sang cam đất cho bắt mắt */
             }
 
             .button-group {
                 display: flex;
                 gap: 12px;
-                /* Khoảng cách giữa 2 nút */
             }
 
             .btn {
                 flex: 1;
-                /* Ép 2 nút tự chia đôi chiều rộng bằng nhau (50% - 50%) */
                 margin-top: 10px;
                 padding: 10px 0;
-                border: 1px solid #cccccc;
+                border: 1px solid #ebdcd0;
                 border-radius: 12px;
-                /* Nút bo góc tròn */
                 background-color: #ffffff;
                 cursor: pointer;
-                font-size: 15px;
+                font-size: 14px;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
-                /* Khoảng cách giữa icon và chữ */
                 text-decoration: none;
-                color: black;
+                color: #78493b; /* 🌟 ĐÃ SỬA: Chữ nút bấm mặc định mang màu nâu trầm thương hiệu */
+                transition: all 0.2s;
             }
 
-            /* Hiệu ứng đổi màu nhẹ khi di chuột vào nút */
             .btn:hover {
-                background-color: #f5f5f5;
+                background-color: #fdfbf7;
+                border-color: #78493b;
             }
 
             .error-msg {
@@ -258,16 +264,14 @@
                 align-items: center;
                 gap: 5px;
                 margin: 30px 0;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
 
-            .pagination a,
-            .pagination span {
+            .pagination a, .pagination span {
                 padding: 6px 12px;
-                border: 1px solid #cbd5e1;
+                border: 1px solid #ebdcd0;
                 border-radius: 4px;
                 text-decoration: none;
-                color: #334155;
+                color: #4a3f35;
                 font-size: 14px;
                 font-weight: 500;
                 background-color: #ffffff;
@@ -275,30 +279,27 @@
             }
 
             .pagination a:hover {
-                background-color: #f8fafc;
-                border-color: #94a3b8;
-                color: #0f172a;
+                background-color: #78493b;
+                border-color: #78493b;
+                color: #ffffff;
             }
 
-            /* Kiểu dáng cho ô hiển thị thông tin số trang ở giữa */
             .pagination .page-info {
-                background-color: #f1f5f9;
-                border-color: #cbd5e1;
-                color: #1e293b;
+                background-color: #fdfaf7;
+                border-color: #ebdcd0;
+                color: #4a3f35;
                 cursor: default;
             }
 
             .pagination .page-info b {
-                color: #007bff;
+                color: #de6b48;
             }
 
-            /* Trạng thái nút bị vô hiệu hóa khi ở trang đầu hoặc trang cuối */
             .pagination .disabled {
-                color: #94a3b8;
+                color: #cbd5e1;
                 background-color: #f8fafc;
                 border-color: #e2e8f0;
                 pointer-events: none;
-                /* Khóa không cho click */
                 cursor: not-allowed;
             }
         </style>
@@ -536,11 +537,16 @@
             }
 
             if (jsErrorPrice) {
-                let minPrice = minPriceInput !== "" ? parseInt(minPriceInput) : 0;
-                let maxPrice = maxPriceInput !== "" ? parseInt(maxPriceInput) : Infinity;
+                let minPrice = minPriceInput !== "" ? parseFloat(minPriceInput) : 0;
+                let maxPrice = maxPriceInput !== "" ? parseFloat(maxPriceInput) : Infinity;
+                const INT_MAX = 2147483647;
 
                 if (minPrice < 0 || maxPrice < 0) {
-                    jsErrorPrice.innerHTML = "Giá món ăn không được là số âm";
+                    jsErrorPrice.innerHTML = "Giá món ăn không được là số âm!";
+                    jsErrorPrice.style.display = "flex";
+                    isValid = false;
+                } else if (minPrice > INT_MAX || (maxPriceInput !== "" && maxPrice > INT_MAX)) {
+                    jsErrorPrice.innerHTML = "Giá tiền nhập vào vượt quá giới hạn cho phép (Tối đa 2 tỷ)!";
                     jsErrorPrice.style.display = "flex";
                     isValid = false;
                 } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
@@ -554,7 +560,7 @@
             }
 
             if (!isValid) {
-                event.preventDefault();
+                event.preventDefault(); // Chặn đứng form không cho submit lên server
             }
         };
     </script>
