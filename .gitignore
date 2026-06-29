@@ -58,4 +58,4 @@ credentials.properties
 
 # Uploaded files
 /web/uploads/
-/build/web/uploads/
+/build/web/uploads/nbproject/private/

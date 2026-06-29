@@ -120,33 +120,47 @@ public class InvoicesDAO {
     }
     
     // =========================================================
-    // 5. CẬP NHẬT THANH TOÁN THÀNH CÔNG VÀ CHUYỂN BÀN SANG CHỜ DỌN (CLEANING)
+    // 5. CẬP NHẬT THANH TOÁN THÀNH CÔNG VÀ CHUYỂN BÀN SANG CHỜ DỌN
+    // Tích hợp: Tự động thêm dòng tiền vào bảng Payments (Giao dịch an toàn ACID)
     // =========================================================
-    public boolean updatePaymentSuccessAndCleaningTable(int invoiceID, int orderID, String paymentMethod) {
-        // 1. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
+    public boolean updatePaymentSuccessAndCleaningTable(int invoiceID, int orderID, String paymentMethod, long amount, String transactionCode) {
+        // 1. Thêm lịch sử giao dịch vào bảng Payments
+        String sqlPayment = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, 'success', NOW())";
+        
+        // 2. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
         String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? WHERE invoiceID = ?";
         
-        // 2. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
+        // 3. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
         String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', tableStatus = 'cleaning' WHERE orderID = ?";
 
         try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false); // Bật chế độ giao dịch an toàn
+            conn.setAutoCommit(false); // Bật chế độ giao dịch an toàn (Transaction)
 
-            try (PreparedStatement ps1 = conn.prepareStatement(sqlInvoice);
+            try (PreparedStatement ps0 = conn.prepareStatement(sqlPayment);
+                 PreparedStatement ps1 = conn.prepareStatement(sqlInvoice);
                  PreparedStatement ps2 = conn.prepareStatement(sqlOrder)) {
 
+                // Insert Payment
+                ps0.setInt(1, invoiceID);
+                ps0.setString(2, transactionCode);
+                ps0.setString(3, paymentMethod);
+                ps0.setLong(4, amount);
+                ps0.executeUpdate();
+
+                // Update Invoice
                 ps1.setString(1, paymentMethod);
                 ps1.setInt(2, invoiceID);
                 ps1.executeUpdate();
 
+                // Update Order
                 ps2.setInt(1, orderID);
                 ps2.executeUpdate();
 
-                conn.commit(); // Lưu thay đổi
+                conn.commit(); // Lưu toàn bộ thay đổi cùng lúc
                 return true;
 
             } catch (SQLException e) {
-                conn.rollback(); // Hoàn tác nếu có lỗi
+                conn.rollback(); // Hoàn tác toàn bộ nếu 1 trong 3 câu lệnh trên bị lỗi
                 System.err.println("[InvoicesDAO] updatePaymentSuccessAndCleaningTable lỗi Transaction: " + e.getMessage());
             }
         } catch (SQLException e) {

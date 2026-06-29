@@ -2,6 +2,7 @@ package controller;
 
 import dal.InvoicesDAO;
 import dal.OrderDAOSon;
+import dal.DBContext; // Thêm import DBContext để dùng cho hàm logPayment
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,6 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -64,34 +67,45 @@ public class PaymentReturnController extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         if (signValue.equals(vnp_SecureHash)) {
+            // === LẤY THÔNG TIN GIAO DỊCH TỪ VNPAY ===
+            String txnRef = request.getParameter("vnp_TxnRef"); // Mã giao dịch
+            long vnpAmount = 0;
+            try {
+                // VNPay nhân số tiền với 100, nên phải chia 100 để lấy giá trị thực
+                vnpAmount = Long.parseLong(request.getParameter("vnp_Amount")) / 100;
+            } catch (Exception e) {
+                System.err.println("Lỗi parse vnp_Amount: " + e.getMessage());
+            }
+
             // Chữ ký hợp lệ -> Kiểm tra trạng thái giao dịch
             if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
 
                 // === THANH TOÁN THÀNH CÔNG ===
                 HttpSession session = request.getSession();
                 Integer invoiceID = (Integer) session.getAttribute("invoiceID");
-                Integer orderID = (Integer) session.getAttribute("orderID"); // Bổ sung lấy orderID
+                Integer orderID = (Integer) session.getAttribute("orderID"); 
                 boolean isDepositPayment = false;
 
-                // [FIX VNPAY] Phân biệt hóa đơn cọc và hóa đơn thanh toán cuối.
-                // DEP-: chỉ xác nhận đã cọc; OrderDAOSon sẽ đồng bộ
-                // INV-: thanh toán bữa ăn xong -> completed/cleaning.
                 if (invoiceID != null) {
                     Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
                     if (invoice != null
                             && invoice.getInvoiceNumber() != null
                             && invoice.getInvoiceNumber().startsWith("DEP-")) {
-                        // Ghi nhớ đây là thanh toán cọc
-                        // để hiển thị đúng thông báo đặt bàn, không dùng câu chờ dọn bàn.
+                        // NHÁNH 1: THANH TOÁN CỌC (DEPOSIT)
                         isDepositPayment = true;
-                        invoicesDAO.updateInvoiceStatus(
-                                invoiceID, "paid", "vnpay");
-                        //  Sau khi cọc paid, đồng bộ ngay
-                        // để đơn đặt bàn chuyển pending -> reserved trong lần return này.
+                        
+                        // Cập nhật trạng thái hóa đơn
+                        invoicesDAO.updateInvoiceStatus(invoiceID, "paid", "vnpay");
+                        
+                        // Ghi nhận trực tiếp vào bảng Payments (Đảm bảo không sót lịch sử dòng tiền)
+                        logPaymentRecord(invoiceID, txnRef, "vnpay", vnpAmount, "success");
+                        
+                        // Đồng bộ đơn đặt bàn
                         orderDAOSon.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {
-                        invoicesDAO.updatePaymentSuccessAndCleaningTable(
-                                invoiceID, orderID, "vnpay");
+                        // NHÁNH 2: THANH TOÁN HÓA ĐƠN ĂN TẠI QUÁN
+                        // Hàm này gọi đến Transaction trong InvoicesDAO, vừa lưu Payment vừa chốt Order
+                        invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "vnpay", vnpAmount, txnRef);
                     }
                 }
 
@@ -104,37 +118,36 @@ public class PaymentReturnController extends HttpServlet {
                 session.removeAttribute("depositAmount");
                 session.removeAttribute("reservationHoldExpiresAt");
 
-                
-                // tách nội dung theo loại hóa đơn: DEP- là cọc, hóa đơn thường là thanh toán bữa ăn.
+                // IN KẾT QUẢ RA MÀN HÌNH
                 out.println("<h2 style='color: green; text-align: center; margin-top: 50px;'>THANH TOÁN THÀNH CÔNG!</h2>");
                 if (isDepositPayment) {
-                    out.println("<p style='text-align: center;'>Đặt cọc thành công. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
+                    out.println("<p style='text-align: center;'>Đặt cọc thành công. Mã giao dịch của bạn là: <b>" + txnRef + "</b></p>");
                     out.println("<p style='text-align: center; color: #bc945c;'><i>Đơn đặt bàn của bạn đã được giữ chỗ. Nhà hàng sẽ chuẩn bị theo thời gian bạn đã chọn.</i></p>");
                     out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/reservation?action=history'>Xem lịch sử đặt bàn</a></div>");
                 } else {
-                    out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + request.getParameter("vnp_TxnRef") + "</b></p>");
+                    out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + txnRef + "</b></p>");
                     out.println("<p style='text-align: center; color: #bc945c;'><i>Bàn của bạn đang được đưa vào trạng thái chờ dọn dẹp.</i></p>");
                     out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Quay lại Menu</a></div>");
                 }
 
             } else {
                 // === GIAO DỊCH LỖI HOẶC BỊ HỦY ===
-               // Ghi nhận thất bại để đơn cọc pending được
-                // OrderDAOSon chuyển thành cancelled/available.
                 HttpSession session = request.getSession(false);
                 if (session != null) {
-                    Integer invoiceID
-                            = (Integer) session.getAttribute("invoiceID");
+                    Integer invoiceID = (Integer) session.getAttribute("invoiceID");
                     if (invoiceID != null) {
-                        invoicesDAO.updateInvoiceStatus(
-                                invoiceID, "failed", "vnpay");
+                        // Cập nhật hóa đơn thành failed
+                        invoicesDAO.updateInvoiceStatus(invoiceID, "failed", "vnpay");
+                        
+                        // GHI NHẬN LỊCH SỬ THANH TOÁN LỖI VÀO BẢNG PAYMENTS
+                        logPaymentRecord(invoiceID, txnRef, "vnpay", vnpAmount, "failed");
                     }
                 }
                 out.println("<h2 style='color: red; text-align: center; margin-top: 50px;'>❌ THANH TOÁN THẤT BẠI HOẶC BỊ HỦY!</h2>");
                 out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/order?action=cart'>Quay lại Giỏ hàng</a></div>");
             }
         } else {
-            // === CHỮ KÝ KHÔNG HỢP LỆ (CÓ THỂ DO HACKER SỬA URL) ===
+            // === CHỮ KÝ KHÔNG HỢP LỆ ===
             out.println("<h2 style='color: red; text-align: center; margin-top: 50px;'>⚠️ CẢNH BÁO: CHỮ KÝ BẢO MẬT KHÔNG HỢP LỆ!</h2>");
             out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/menu'>Về trang chủ</a></div>");
         }
@@ -149,6 +162,26 @@ public class PaymentReturnController extends HttpServlet {
     @Override
     public String getServletInfo() {
         return "VNPay Return Controller";
+    }
+
+    // =========================================================================
+    // HÀM HELPER: Ghi trực tiếp lịch sử vào bảng Payments (Dành cho Cọc & Lỗi)
+    // =========================================================================
+    private void logPaymentRecord(int invoiceID, String transactionCode, String paymentGateway, long amount, String status) {
+        String sql = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, ?, NOW())";
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, invoiceID);
+            ps.setString(2, transactionCode);
+            ps.setString(3, paymentGateway);
+            ps.setLong(4, amount);
+            ps.setString(5, status);
+            ps.executeUpdate();
+            
+        } catch (Exception e) {
+            System.err.println("[PaymentReturnController] Lỗi ghi log Payment: " + e.getMessage());
+        }
     }
 
     // Hàm hỗ trợ băm lại các tham số nhận được
