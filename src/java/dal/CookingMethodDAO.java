@@ -143,4 +143,21 @@ public class CookingMethodDAO extends DBContext{
         }
         return false;
     }
+    
+    public boolean checkDuplicateMethod(String methodName, int methodID){
+        String sql = "select count(*) from CookingMethod "
+                + "where methodName = ? and methodID != ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setString(1, methodName);
+            ps.setInt(2, methodID);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                int total = rs.getInt(1);
+                return total > 0;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
 }
