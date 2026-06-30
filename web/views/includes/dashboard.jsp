@@ -200,13 +200,6 @@
                 </a>
             </li>
 
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/customer-list') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/customer-list">
-                    <i class="fas fa-users"></i> Danh sách khách hàng
-                </a>
-            </li>
-
             <%-- Chấm công --%>
 
             <li>
