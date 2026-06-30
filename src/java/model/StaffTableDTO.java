@@ -18,6 +18,7 @@ public class StaffTableDTO {
     private Timestamp orderTime;
     private int requiredQuantity;
     private int assignedQuantity;
+    private String assignedTableNames;
 
     public int getTableID() { return tableID; }
     public void setTableID(int tableID) { this.tableID = tableID; }
@@ -41,6 +42,10 @@ public class StaffTableDTO {
     public void setRequiredQuantity(int requiredQuantity) { this.requiredQuantity = requiredQuantity; }
     public int getAssignedQuantity() { return assignedQuantity; }
     public void setAssignedQuantity(int assignedQuantity) { this.assignedQuantity = assignedQuantity; }
+    public String getAssignedTableNames() { return assignedTableNames; }
+    public void setAssignedTableNames(String assignedTableNames) {
+        this.assignedTableNames = assignedTableNames;
+    }
     public int getRemainingQuantity() {
         return Math.max(0, requiredQuantity - assignedQuantity);
     }

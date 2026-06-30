@@ -101,6 +101,7 @@ public class ShiftRosterController extends HttpServlet {
         req.setAttribute("currentMonth", LocalDate.now().getMonthValue());
         req.setAttribute("pendingRequests", pendingRequests);
 
+        //Xem lịch của 1 n/v
         int viewEmpID = parseInt(req.getParameter("viewEmployeeID"), 0);
         int viewYear = parseInt(req.getParameter("viewYear"), LocalDate.now().getYear());
         int viewMonth = parseInt(req.getParameter("viewMonth"), LocalDate.now().getMonthValue());
@@ -155,6 +156,7 @@ public class ShiftRosterController extends HttpServlet {
         int overlapCount = 0;
         int failedCount = 0;
 
+        //duyệt qua từng n/v để ktra xem có ca làm việc hay chưa
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
             if (employeeID <= 0) {
@@ -213,7 +215,7 @@ public class ShiftRosterController extends HttpServlet {
         int templateID = parseInt(req.getParameter("templateID"), 0);
         int year = parseInt(req.getParameter("year"), 0);
         int month = parseInt(req.getParameter("month"), 0);
-        String mode = req.getParameter("assignMode");
+        String mode = req.getParameter("assignMode"); //kiểu gán
         if (mode == null) {
             mode = "SKIP_EXISTING";
         }
@@ -267,7 +269,11 @@ public class ShiftRosterController extends HttpServlet {
                 try {
                     int planID = planDao.saveOrUpdate(employeeID, templateID, year, month, ownerId);
                     if (planID > 0) {
-                        planDao.updateStatus(planID, MonthlyShiftPlan.APPLIED);
+                        java.time.YearMonth planYm = java.time.YearMonth.of(year, month);
+                        java.time.YearMonth currentYm = java.time.YearMonth.now();
+                        if (!planYm.isAfter(currentYm)) {
+                            planDao.updateStatus(planID, MonthlyShiftPlan.APPLIED);
+                        }
                     }
                 } catch (Exception ignore) {
                 }
@@ -304,6 +310,7 @@ public class ShiftRosterController extends HttpServlet {
         redirectToPlanMonth(req, resp, year, month, ok ? "plan_cancelled" : "plan_cancel_failed");
     }
 
+    //Lấy ID của nhân viên
     private void redirectToPlanMonth(HttpServletRequest req, HttpServletResponse resp,
             int year, int month, String msg) throws IOException {
         resp.sendRedirect(req.getContextPath()
@@ -352,6 +359,7 @@ public class ShiftRosterController extends HttpServlet {
 
     private void handleApproveRequest(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        //nếu có session thì không tạo session mới
         HttpSession session = req.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
         if (emp == null) {

@@ -64,6 +64,16 @@
         }
         .badge-local { background: #d4edda; color: #155724; }
         .badge-google { background: #e4edff; color: #2456a6; }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-locked { background: #f8d7da; color: #842029; }
+        .btn-lock { background: #dc3545; color: #fff; }
+        .btn-lock:hover { background: #bb2d3b; }
+        .btn-unlock { background: #198754; color: #fff; }
+        .btn-unlock:hover { background: #157347; }
+        .message {
+            background: #fff3cd; color: #664d03; border: 1px solid #ffecb5;
+            border-radius: 8px; padding: 11px 14px; margin-bottom: 14px;
+        }
         .empty { text-align: center; padding: 40px; color: #a0714f; }
         .pagination {
             display: flex; gap: 6px; padding: 14px 16px;
@@ -98,6 +108,11 @@
                     </div>
                 </div>
             </div>
+
+            <c:if test="${not empty sessionScope.customerStatusMessage}">
+                <div class="message">${sessionScope.customerStatusMessage}</div>
+                <c:remove var="customerStatusMessage" scope="session"/>
+            </c:if>
 
             <form method="get"
                   action="${pageContext.request.contextPath}/owner/customer-list"
@@ -139,14 +154,16 @@
                             <th>Email</th>
                             <th>Số điện thoại</th>
                             <th>Loại tài khoản</th>
+                            <th>Trạng thái</th>
                             <th>Ngày tạo</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         <c:choose>
                             <c:when test="${empty customers}">
                                 <tr>
-                                    <td colspan="6" class="empty">
+                                    <td colspan="8" class="empty">
                                         <i class="fas fa-inbox"></i>
                                         Không tìm thấy khách hàng nào.
                                     </td>
@@ -170,8 +187,42 @@
                                             </c:choose>
                                         </td>
                                         <td>
+                                            <c:choose>
+                                                <c:when test="${customer.isActive == 1}">
+                                                    <span class="badge badge-active">Hoạt động</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="badge badge-locked">Đã khóa</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
                                             <fmt:formatDate value="${customer.createdAt}"
                                                             pattern="dd/MM/yyyy HH:mm"/>
+                                        </td>
+                                        <td>
+                                            <form method="post"
+                                                  action="${pageContext.request.contextPath}/owner/customer-list">
+                                                <input type="hidden" name="customerID"
+                                                       value="${customer.customerID}">
+                                                <input type="hidden" name="page" value="${page}">
+                                                <c:choose>
+                                                    <c:when test="${customer.isActive == 1}">
+                                                        <input type="hidden" name="isActive" value="0">
+                                                        <button type="submit" class="btn btn-lock"
+                                                                onclick="return confirm('Bạn chắc chắn muốn khóa tài khoản này?')">
+                                                            <i class="fas fa-lock"></i> Khóa
+                                                        </button>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <input type="hidden" name="isActive" value="1">
+                                                        <button type="submit" class="btn btn-unlock"
+                                                                onclick="return confirm('Bạn chắc chắn muốn mở khóa tài khoản này?')">
+                                                            <i class="fas fa-lock-open"></i> Mở khóa
+                                                        </button>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </form>
                                         </td>
                                     </tr>
                                 </c:forEach>

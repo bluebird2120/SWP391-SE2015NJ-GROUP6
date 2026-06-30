@@ -15,6 +15,11 @@
     if (cust != null) {
         custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");
     }
+    int empUnreadCount = 0;
+    if (emp != null) {
+        empUnreadCount = new dal.NotificationDAO().countUnread(emp.getEmployeeID(), "staff");
+        session.setAttribute("unreadCount", empUnreadCount);
+    }
 %>
 
 

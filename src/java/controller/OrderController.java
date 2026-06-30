@@ -171,6 +171,13 @@ public class OrderController extends HttpServlet {
                 newOrder.setDepositAmount(0);
                 newOrder.setOrderTime(new Timestamp(System.currentTimeMillis()));
 
+
+                dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
+                Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
+                if (assignedStaffId != null) {
+                    newOrder.setEmployeeID(assignedStaffId);
+                }
+
                 // ĐÃ XÓA SẠCH ĐOẠN SET CAPACITY VÀ AREATYPE THEO CHUẨN MODEL MỚI
 
                 int newOrderID = orderDAO.createOrder(newOrder);
@@ -178,6 +185,24 @@ public class OrderController extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/menu?error=create_order_failed");
                     return;
                 }
+
+          
+                if (newOrder.getEmployeeID() != null) {
+                    try {
+                        dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                        model.Notifications n = new model.Notifications();
+                        n.setRecipientID(newOrder.getEmployeeID());
+                        n.setRecipientType("staff");
+                        n.setType("new_order");
+                        String tblMsg = (tableID != null && tableID > 0) ? " (Bàn " + tableID + ")" : "";
+                        n.setMessage("Bạn được phân công phục vụ Đơn hàng #" + newOrderID + tblMsg + " mới tạo.");
+                        n.setIsRead(0);
+                        notifDAO.insert(n);
+                    } catch (Exception e) {
+                        System.err.println("[OrderController] Gửi thông báo thất bại: " + e.getMessage());
+                    }
+                }
+             
 
                 // Lưu liên kết Bàn và Đơn hàng vào bảng Order_Table
                 if (tableID != null && tableID > 0) {

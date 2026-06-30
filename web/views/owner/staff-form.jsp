@@ -70,7 +70,8 @@
                     <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${errors['_global']}</div>
                 </c:if>
 
-                <form method="post" enctype="multipart/form-data" action="${pageContext.request.contextPath}/owner/staff">
+                <form id="staffForm" method="post" enctype="multipart/form-data"
+                      action="${pageContext.request.contextPath}/owner/staff?action=${mode == 'edit' ? 'edit' : 'create'}${mode == 'edit' ? '&id=' : ''}${mode == 'edit' ? staff.employeeID : ''}">
                     <input type="hidden" name="action" value="${mode == 'edit' ? 'edit' : 'create'}">
                     <c:if test="${mode == 'edit'}">
                         <input type="hidden" name="id" value="${staff.employeeID}">
@@ -123,13 +124,11 @@
 
                     <div class="form-group">
                         <label>Profile Photo</label>
-                        <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                        <div class="help-text">JPG, PNG, WEBP — tối đa 2MB.</div>
+                        <input type="file" id="staffImage" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                        <div class="help-text">JPG, PNG — tối đa 2MB.</div>
+                        <div class="err-msg" id="imageError">${errors['image']}</div>
                         <c:if test="${mode == 'edit' && not empty staff.image}">
                             <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
-                        </c:if>
-                        <c:if test="${not empty errors['image']}">
-                            <div class="err-msg">${errors['image']}</div>
                         </c:if>
                     </div>
 
@@ -154,5 +153,49 @@
         </main>
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
+    <script>
+        const staffForm = document.getElementById("staffForm");
+        const staffImage = document.getElementById("staffImage");
+        const imageError = document.getElementById("imageError");
+        const maxImageSize = 2 * 1024 * 1024;
+        const validImageTypes = ["image/jpeg", "image/png"];
+
+        function getImageError(file) {
+            if (!file) {
+                return "";
+            }
+
+            const fileName = file.name.toLowerCase();
+            const validExtension = fileName.endsWith(".jpg")
+                    || fileName.endsWith(".jpeg")
+                    || fileName.endsWith(".png");
+
+            if (!validExtension) {
+                return "Vui lòng chọn file ảnh (jpg, jpeg, png).";
+            }
+
+            if (file.size > maxImageSize) {
+                return "Ảnh nhân viên không được vượt quá 2MB.";
+            }
+
+            if (file.type && !validImageTypes.includes(file.type)) {
+                return "File không hợp lệ. Vui lòng chọn file ảnh JPG hoặc PNG.";
+            }
+
+            return "";
+        }
+
+        function validateImageInput() {
+            const error = getImageError(staffImage.files[0]);
+            imageError.textContent = error;
+            return error === "";
+        }
+
+        staffForm.addEventListener("submit", function (event) {
+            if (!validateImageInput()) {
+                event.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>

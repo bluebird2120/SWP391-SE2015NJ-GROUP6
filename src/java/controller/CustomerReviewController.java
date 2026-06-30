@@ -1,5 +1,7 @@
 package controller;
 
+import dal.EmployeeDAO;
+import dal.NotificationDAO;
 import dal.ReviewDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import model.Customer;
+import model.Notifications;
 import model.Reviews;
 
 @WebServlet(name = "CustomerReviewController", urlPatterns = {"/customer/reviews"})
@@ -23,6 +26,8 @@ public class CustomerReviewController extends HttpServlet {
     private static final String CSRF_TOKEN_SESSION_KEY = "reviewCsrfToken";
 
     private final ReviewDAO reviewDAO = new ReviewDAO();
+    private final EmployeeDAO employeeDAO = new EmployeeDAO();
+    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -143,6 +148,7 @@ public class CustomerReviewController extends HttpServlet {
             return;
         }
 
+        notifyOwnersAboutNewReview(customer, orderID, rating, comment);
         response.sendRedirect(request.getContextPath() + "/customer/reviews?success=created");
     }
 
@@ -228,6 +234,43 @@ public class CustomerReviewController extends HttpServlet {
     private Customer getCustomer(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         return session == null ? null : (Customer) session.getAttribute("customer");
+    }
+
+    private void notifyOwnersAboutNewReview(Customer customer, int orderID, int rating, String comment) {
+        try {
+            List<Integer> ownerIDs = employeeDAO.getActiveOwnerIDs();
+            if (ownerIDs.isEmpty()) {
+                return;
+            }
+
+            String customerName = customer.getUserName() == null || customer.getUserName().isBlank()
+                    ? "Khách hàng #" + customer.getCustomerID()
+                    : customer.getUserName();
+            String shortComment = comment == null || comment.isBlank()
+                    ? "Không có bình luận"
+                    : truncate(comment, 80);
+            String message = customerName + " vừa gửi đánh giá " + rating
+                    + " sao cho đơn #" + orderID + ": \"" + shortComment + "\"";
+
+            for (int ownerID : ownerIDs) {
+                Notifications notif = new Notifications();
+                notif.setRecipientID(ownerID);
+                notif.setRecipientType("staff");
+                notif.setType("new_review");
+                notif.setMessage(message);
+                notif.setIsRead(0);
+                notificationDAO.insert(notif);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength - 3) + "...";
     }
 
     private String getOrCreateCsrfToken(HttpServletRequest request) {

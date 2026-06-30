@@ -676,6 +676,67 @@ public class EmployeeShiftDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Lấy ID của nhân viên Staff đang trong ca trực hoạt động (đã check-in/chưa checkout)
+     * và có số lượng đơn hàng hoạt động ít nhất để gán đơn mới (Cân bằng tải).
+     */
+    public Integer getActiveEmployeeForCurrentShift() {
+        String sql = "SELECT es.employeeID, COUNT(o.orderID) AS active_orders "
+                + "FROM EmployeeShifts es "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "LEFT JOIN `Order` o ON o.employeeID = e.employeeID AND o.orderStatus NOT IN ('completed', 'cancelled') "
+                + "WHERE es.workDate = CURDATE() "
+                + "  AND e.roleID = 2 " // roleID = 2 là Staff
+                + "  AND es.checkOutTime IS NULL "
+                + "  AND es.status IN ('scheduled', 'present', 'late') "
+                + "  AND ( "
+                + "    (st.startTime <= st.endTime AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
+                + "    OR "
+                + "    (st.startTime > st.endTime AND (CURRENT_TIME() >= st.startTime OR CURRENT_TIME() <= st.endTime)) "
+                + "  ) "
+                + "GROUP BY es.employeeID "
+                + "ORDER BY active_orders ASC "
+                + "LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("employeeID");
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Kiểm tra xem nhân viên có đang trong ca trực hoạt động tại thời điểm hiện tại hay không.
+     */
+    public boolean isEmployeeOnShift(int employeeID) {
+        String sql = "SELECT 1 FROM EmployeeShifts es "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "WHERE es.employeeID = ? "
+                + "  AND es.workDate = CURDATE() "
+                + "  AND es.checkOutTime IS NULL "
+                + "  AND es.status IN ('scheduled', 'present', 'late') "
+                + "  AND ( "
+                + "    (st.startTime <= st.endTime AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
+                + "    OR "
+                + "    (st.startTime > st.endTime AND (CURRENT_TIME() >= st.startTime OR CURRENT_TIME() <= st.endTime)) "
+                + "  ) "
+                + "LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
     static String computeStatus(Timestamp checkInTime, Time startTime) {
         long checkInMs = checkInTime.getTime();
         java.util.Calendar cal = java.util.Calendar.getInstance();
