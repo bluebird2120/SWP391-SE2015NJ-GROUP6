@@ -10,7 +10,7 @@ import java.util.List;
 import model.Customer;
 import model.Employee;
 
-@WebServlet(name = "CustomerListController", urlPatterns = {"/owner/customers-list"})
+@WebServlet(name = "CustomerListController", urlPatterns = {"/owner/customer-list"})
 public class CustomerListController extends HttpServlet {
 
     private final CustomerDAO customerDAO = new CustomerDAO();
