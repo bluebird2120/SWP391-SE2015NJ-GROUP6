@@ -10,11 +10,11 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Chốt Số Lượng Món Trong Ngày</title>
+        <title>Chốt Số Lượng Món Trong Ngày - Vị An</title>
         <style>
             body {
-                font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-                background-color: #f8f9fa;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt chuẩn Vị An */
                 color: #333;
                 margin: 0;
             }
@@ -23,20 +23,20 @@
                 padding: 35px;
                 max-width: 1050px;
                 margin: 30px auto;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                box-shadow: 0 4px 12px rgba(120,73,59,0.03);
                 border-radius: 12px;
             }
             .page-header {
-                border-bottom: 2px solid #e5e7eb;
+                border-bottom: 2px solid #f1ece6;
                 padding-bottom: 15px;
                 margin-bottom: 20px;
             }
             .page-header h2 {
                 margin: 0 0 5px 0;
-                color: #1e293b;
+                color: #78493b; /* 🌟 ĐÃ SỬA: Màu nâu trầm chủ đạo */
             }
 
-            /* ⚠️ HỘP THÔNG BÁO QUY ĐỊNH NGHIỆP VỤ */
+            /* Hộp thông báo và cảnh báo hệ thống */
             .alert-box {
                 background-color: #fffaf0;
                 border-left: 4px solid #dd6b20;
@@ -48,74 +48,82 @@
                 line-height: 1.5;
             }
 
-            /* 🚨 DÒNG THÔNG BÁO CẢNH BÁO MÓN DƯỚI 20% (MỚI THÊM) */
             .danger-warning-box {
-                background-color: #fde8e8;
-                border-left: 4px solid #e11d48;
+                background-color: #fdeaea;
+                border-left: 4px solid #dc3545;
                 padding: 12px 15px;
-                border-radius: 4px;
+                border-radius: 6px;
                 margin-bottom: 20px;
                 font-size: 14px;
-                color: #9f1239;
+                color: #c62828;
                 font-weight: 600;
             }
 
             .success-annouce-box {
-                background-color: #dcfce7;
-                border-left: 4px solid #16a34a;
+                background-color: #edf7ed;
+                border-left: 4px solid #28a745;
                 padding: 12px 15px;
-                border-radius: 4px;
+                border-radius: 6px;
                 margin-bottom: 20px;
                 font-size: 14px;
-                color: #166534;
+                color: #1e4620;
                 font-weight: 600;
             }
 
-            /* ⚠️ HỘP BÁO LỖI CHƯA NHẬP ĐỦ MÓN (JAVASCRIPT ĐIỀU KHIỂN) */
             .error-validation-box {
-                display: none; /* Mặc định ẩn, phát hiện lỗi mới hiện */
-                background-color: #fff5f5;
-                border: 1px solid #feb2b2;
+                display: none;
+                background-color: #fdeaea;
+                border: 1px solid #fbc4c4;
                 padding: 15px;
                 border-radius: 6px;
                 margin-bottom: 20px;
                 font-size: 14px;
-                color: #c53030;
+                color: #c62828;
             }
 
-            /* 🔍 THANH BỘ LỌC TÌM KIẾM */
+            /* Thanh bộ lọc tìm kiếm */
             .filter-form {
                 display: flex;
                 gap: 12px;
                 align-items: center;
-                background: #f1f5f9;
+                background: #fdfaf7;
+                border: 1px solid #ebdcd0;
                 padding: 15px;
-                border-radius: 8px;
+                border-radius: 12px;
                 margin-bottom: 20px;
             }
             .filter-input, .filter-select {
                 padding: 8px 12px;
                 border: 1px solid #cbd5e1;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
                 background-color: white;
+                transition: border-color 0.2s;
+            }
+            .filter-input:focus, .filter-select:focus {
+                border-color: #78493b;
+                outline: none;
             }
             .btn-search {
-                background-color: #475569;
+                background-color: #78493b; /* 🌟 ĐÃ SỬA: Đổi sang màu nâu trầm */
                 color: white;
                 border: none;
                 padding: 8px 16px;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: 600;
+                transition: background-color 0.2s;
+            }
+            .btn-search:hover {
+                background-color: #5c352d;
             }
 
-            /* ⚡ KHỐI NHẬP NHANH SỐ LƯỢNG MẶC ĐỊNH */
+            /* Khối nhập nhanh số lượng mặc định */
             .fast-input-box {
-                background-color: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background-color: #fdfaf7;
+                border: 1px solid #ebdcd0;
                 padding: 12px 20px;
-                border-radius: 8px;
+                border-radius: 12px;
                 margin-bottom: 20px;
                 display: flex;
                 align-items: center;
@@ -126,36 +134,45 @@
                 width: 80px;
                 padding: 6px;
                 border: 1px solid #cbd5e1;
-                border-radius: 4px;
+                border-radius: 6px;
                 text-align: center;
             }
+            .input-all-number:focus {
+                border-color: #78493b;
+                outline: none;
+            }
             .btn-apply-all {
-                background-color: #0284c7;
+                background-color: #4b6b40; /* 🌟 ĐÃ SỬA: Đổi sang xanh rêu nền nã */
                 color: white;
                 border: none;
                 padding: 6px 14px;
-                border-radius: 4px;
+                border-radius: 6px;
                 cursor: pointer;
                 font-weight: 600;
+                transition: background-color 0.2s;
+            }
+            .btn-apply-all:hover {
+                background-color: #395231;
             }
 
-            /* BẢNG DỮ LIỆU TỐI GIẢN */
+            /* Bảng dữ liệu */
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 25px;
             }
             th {
-                background-color: #f8fafc;
-                color: #475569;
+                background-color: #fcf9f5;
+                color: #4a3f35;
                 font-weight: 600;
-                padding: 12px;
+                padding: 14px 12px;
                 text-align: left;
-                border-bottom: 2px solid #cbd5e1;
+                border-bottom: 2px solid #ebdcd0;
             }
             td {
-                padding: 12px;
-                border-bottom: 1px solid #e2e8f0;
+                padding: 14px 12px;
+                border-bottom: 1px solid #f1ece6;
+                color: #4a3f35;
             }
             .input-item-qty {
                 width: 90px;
@@ -164,32 +181,38 @@
                 border-radius: 6px;
                 font-size: 14px;
                 text-align: center;
+                transition: border-color 0.2s;
+            }
+            .input-item-qty:focus {
+                border-color: #78493b;
+                outline: none;
             }
             .stock-label {
-                background-color: #e2e8f0;
-                color: #334155;
+                background-color: #f1ece6;
+                color: #4a3f35;
                 padding: 4px 10px;
                 border-radius: 12px;
                 font-weight: 600;
-                font-size: 14px;
+                font-size: 13px;
             }
 
             .btn-submit {
-                background-color: #28a745;
+                background-color: #de6b48; /* 🌟 ĐÃ SỬA: Nút submit chuyển thành màu cam đất thương hiệu */
                 color: white;
                 border: none;
                 padding: 12px 40px;
                 font-size: 15px;
                 font-weight: bold;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 float: right;
+                transition: background-color 0.2s;
             }
             .btn-submit:hover {
-                background-color: #218838;
+                background-color: #c44d2d;
             }
 
-            /* 📄 PHÂN TRANG */
+            /* Phân trang */
             .pagination {
                 display: flex;
                 justify-content: center;
@@ -199,25 +222,30 @@
             }
             .pagination a, .pagination span {
                 padding: 6px 12px;
-                border: 1px solid #cbd5e1;
+                border: 1px solid #ebdcd0;
                 border-radius: 4px;
                 text-decoration: none;
-                color: #334155;
+                color: #4a3f35;
                 font-size: 14px;
                 font-weight: 500;
                 background-color: #ffffff;
+                transition: all 0.2s;
             }
             .pagination a:hover {
-                background-color: #f8fafc;
-                border-color: #94a3b8;
+                background-color: #78493b;
+                border-color: #78493b;
+                color: white;
             }
             .pagination .page-info {
-                background-color: #f1f5f9;
-                border-color: #cbd5e1;
+                background-color: #fdfaf7;
+                border-color: #ebdcd0;
                 cursor: default;
             }
+            .pagination .page-info b {
+                color: #de6b48;
+            }
             .pagination .disabled {
-                color: #94a3b8;
+                color: #cbd5e1;
                 background-color: #f8fafc;
                 border-color: #e2e8f0;
                 pointer-events: none;
@@ -237,9 +265,9 @@
                         <h2>QUẢN LÝ SỐ LƯỢNG MÓN ĂN PHIÊN HÔM NAY</h2>
                         <jsp:useBean id="currentDate" class="java.util.Date" />
 
-                        <span style="font-size: 14px; color: #64748b;">
+                        <span style="font-size: 14px; color: #7c7267;">
                             Phiên làm việc ngày: 
-                            <b style="color: #0284c7;">
+                            <b style="color: #de6b48;">
                                 <fmt:formatDate value="${currentDate}" pattern="dd-MM-yyyy" />
                             </b>
                         </span>
@@ -281,7 +309,6 @@
                         </div>
                     </c:if>
 
-                    <%-- Khung hiển thị thông báo lỗi bằng JavaScript --%>
                     <div class="error-validation-box" id="errorMessageBox">
                         ❌ <b>Không thể lưu thay đổi!</b> Có lỗi xảy ra với dữ liệu nhập vào:
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
@@ -307,7 +334,6 @@
                         </select>
 
                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <%-- 🌟 Thêm thuộc tính max bằng ngày hôm nay để chặn chọn ngày tương lai ở giao diện --%>
                             <c:set var="todayString" value="<%= java.time.LocalDate.now().toString() %>" />
                             <input type="date" name="date" value="${date}" max="${todayString}" class="filter-input" onchange="this.form.submit()"/>
                         </div>
@@ -336,7 +362,7 @@
                                     <tr class="dish-data-row">
                                         <td>
                                             <div class="dish-name-text" style="font-weight: 600; color: #1e293b;">${item.itemName}</div>
-                                            <small style="color: #64748b;">Loại: ${item.categoryName}</small>
+                                            <small style="color: #7c7267;">Loại: ${item.categoryName}</small>
                                         </td>
                                         <td style="text-align: center;">
                                             <span class="stock-label">
@@ -349,7 +375,7 @@
                                                     value="${not empty saveInputData ? saveInputData[item.itemID] : ""}" 
                                                     class="input-item-qty field-stock-input"/>
                                             <c:if test="${item.quantityInStock < item.initialQuantity * 20/100}">
-                                                <br/><small style="color: #e11d48; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
+                                                <br/><small style="color: #dc3545; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
                                             </c:if>
                                         </td>
                                     </tr>
@@ -405,7 +431,6 @@
             function applyQuantityToAllFields() {
                 const defaultValue = document.getElementById('inputDefaultAll').value;
 
-                // Validate giá trị nhập nhanh trước khi áp dụng
                 if (defaultValue === "" || parseInt(defaultValue) <= 0 || isNaN(defaultValue)) {
                     alert("Số lượng nhập nhanh phải là một số nguyên dương hợp lệ!");
                     return;
@@ -424,9 +449,8 @@
 
             stockMainForm.onsubmit = function (event) {
                 let isFormValid = true;
-                missingItemsList.innerHTML = ""; // Reset danh sách lỗi cũ
+                missingItemsList.innerHTML = "";
 
-                // 1. KIỂM TRA BỘ LỌC ĐANG BẬT (Chặn lưu thiếu món tương tự như Controller)
                 const selectCat = document.getElementById('jsSelectCategory').value;
                 const selectMethod = document.getElementById('jsSelectMethod').value;
 
@@ -437,7 +461,6 @@
                     missingItemsList.appendChild(li);
                 }
 
-                // 2. DUYỆT QUA TỪNG HÀNG ĐỂ KIỂM TRA GIÁ TRỊ NHẬP VÀO
                 const rows = document.getElementsByClassName('dish-data-row');
 
                 for (let i = 0; i < rows.length; i++) {
@@ -445,15 +468,13 @@
                     const inputField = rows[i].getElementsByClassName('field-stock-input')[0];
                     const valueTrim = inputField.value.trim();
 
-                    // 2a. Kiểm tra nếu để trống ô nhập
                     if (valueTrim === "") {
                         isFormValid = false;
                         inputField.style.borderColor = "#dc3545";
                         const li = document.createElement('li');
                         li.innerText = "Món '" + nameText + "' đang bị bỏ trống số lượng!";
                         missingItemsList.appendChild(li);
-                    }
-                    // 2b. Kiểm tra nếu nhập gõ chữ, ký tự đặc biệt hoặc số không nguyên dương (<= 0)
+                    } 
                     else {
                         const parsedValue = parseInt(valueTrim);
                         if (isNaN(parsedValue) || parsedValue <= 0 || parseFloat(valueTrim) !== parsedValue) {
@@ -463,12 +484,11 @@
                             li.innerText = "Món '" + nameText + "' có giá trị nhập vào không hợp lệ (Phải là số nguyên lớn hơn 0)!";
                             missingItemsList.appendChild(li);
                         } else {
-                            inputField.style.borderColor = "#cbd5e1"; // Trả lại màu viền xám khi hợp lệ
+                            inputField.style.borderColor = "#cbd5e1";
                         }
                     }
                 }
 
-                // Nếu phát hiện bất kỳ lỗi nào, chặn form và cuộn trang lên xem thông báo lỗi
                 if (!isFormValid) {
                     event.preventDefault();
                     errorMessageBox.style.display = "block";

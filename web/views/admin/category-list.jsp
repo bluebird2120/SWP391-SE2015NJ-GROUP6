@@ -4,41 +4,43 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>JSP Page</title>
+        <title>Danh sách loại món ăn - Vị An</title>
         <style>
-            .layout{
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #fdfbf7; /* Nền kem nhạt hệ thống Vị An */
+                color: #333;
+                margin: 0;
+            }
+            .layout {
                 background-color: white;
                 padding: 40px;
                 max-width: 1000px;
                 margin: 30px auto;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.03);
                 border-radius: 12px;
             }
-            .page-header{
+            .page-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                border-bottom: 2px solid #e5e7eb;
+                border-bottom: 2px solid #f1ece6;
                 padding-bottom: 15px;
                 margin-bottom: 25px;
                 width: 100%;
                 max-width: 100%;
             }
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f8f9fa;
-                color: #333;
-                margin: 0;
-            }
             h2 {
-                color: #2c3e50;
-                margin-bottom: 12px;
+                color: #78493b; /* Nâu trầm Vị An */
+                margin: 0;
+                font-size: 24px;
+                font-weight: 600;
             }
             .search-container {
-                background-color: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background-color: #fdfaf7;
+                border: 1px solid #ebdcd0;
                 padding: 12px 20px;
-                border-radius: 8px;
+                border-radius: 12px;
                 margin-bottom: 20px;
                 display: flex;
                 align-items: center;
@@ -47,77 +49,101 @@
             .search-input {
                 padding: 8px 12px;
                 border: 1px solid #cbd5e1;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
                 width: 250px;
                 outline: none;
+                transition: border-color 0.2s;
+            }
+            .search-input:focus {
+                border-color: #78493b;
             }
             .btn-search {
-                background-color: #6c757d;
+                background-color: #78493b;
                 color: white;
                 border: none;
                 padding: 8px 16px;
                 font-size: 14px;
                 font-weight: 600;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            .btn-search:hover {
+                background-color: #5c352d;
             }
             .btn-create {
-                background-color: #007bff;
+                background-color: #4b6b40; /* Màu xanh rêu tinh tế cho nút Thêm mới */
                 color: white;
                 border: none;
                 padding: 10px 20px;
                 font-size: 14px;
                 font-weight: 600;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            .btn-create:hover {
+                background-color: #395231;
             }
             table {
                 width: 100%;
                 max-width: 100%;
                 border-collapse: collapse;
                 background-color: white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                box-shadow: 0 2px 8px rgba(120,73,59,0.02);
                 border-radius: 10px;
                 overflow: hidden;
                 border: none;
+                margin-top: 15px;
             }
             th {
-                background-color: #f1f3f5;
-                color: #495057;
+                background-color: #fcf9f5;
+                color: #4a3f35;
                 font-weight: 600;
-                padding: 12px 15px;
+                padding: 14px 15px;
                 text-align: left;
-                border-bottom: 2px solid #dee2e6;
+                border-bottom: 2px solid #ebdcd0;
             }
             td {
-                padding: 12px 15px;
-                border-bottom: 1px solid #dee2e6;
-                color: #495057;
+                padding: 14px 15px;
+                border-bottom: 1px solid #f1ece6;
+                color: #4a3f35;
             }
-            form{
+            form {
                 display: inline-block;
             }
             .btn-table {
-                padding: 6px 12px;
+                padding: 6px 14px;
                 font-size: 12px;
                 font-weight: bold;
                 border: none;
-                border-radius: 4px;
+                border-radius: 6px;
                 cursor: pointer;
                 margin-right: 5px;
+                transition: all 0.2s;
             }
             .btn-edit {
-                background-color: #ffc107;
-                color: #212529;
+                background-color: #fdfbf7;
+                border: 1px solid #ebdcd0;
+                color: #78493b;
+            }
+            .btn-edit:hover {
+                background-color: #f5ece5;
             }
             .btn-disable {
-                background-color: #dc3545;
-                color: white;
+                background-color: #fdeaea;
+                color: #c62828;
             }
-            .btn-enable{
-                background-color: #28a745;
-                color: white;
+            .btn-disable:hover {
+                background-color: #fbc4c4;
+            }
+            .btn-enable {
+                background-color: #edf7ed;
+                color: #1e4620;
+            }
+            .btn-enable:hover {
+                background-color: #d1ebd1;
             }
             .pagination {
                 display: flex;
@@ -126,48 +152,63 @@
                 gap: 5px;
                 margin-top: 25px;
             }
-            .pagination a,
-            .pagination span {
+            .pagination a, .pagination span {
                 padding: 6px 12px;
-                border: 1px solid #cbd5e1;
+                border: 1px solid #ebdcd0;
                 border-radius: 4px;
                 text-decoration: none;
-                color: #334155;
+                color: #4a3f35;
                 font-size: 14px;
                 font-weight: 500;
                 background-color: #ffffff;
+                transition: all 0.2s;
             }
             .pagination a:hover {
-                background-color: #f1f5f9;
-                border-color: #94a3b8;
+                background-color: #78493b;
+                color: white;
+                border-color: #78493b;
             }
             .pagination .page-info {
-                background-color: #f1f5f9;
-                border-color: #cbd5e1;
+                background-color: #fdfaf7;
+                border-color: #ebdcd0;
                 cursor: default;
             }
             .pagination .page-info b {
-                color: #007bff;
+                color: #de6b48;
             }
             .pagination .disabled {
-                color: #94a3b8;
+                color: #cbd5e1;
                 background-color: #f8fafc;
                 border-color: #e2e8f0;
                 pointer-events: none;
             }
+
+            /* Hộp thông báo và lỗi */
             .error-message {
-                color: #dc3545;
-                font-weight: bold;
-                margin-bottom: 15px;
-                background-color: #fce8e6;
-                border: 1px solid #fbc4c4;
-                padding: 5px 16px;
-                border-radius: 4px;
-                display: inline-block;
-                font-size: 12px
+                background-color: #fdeaea;
+                border-left: 4px solid #dc3545;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #c62828;
+                font-weight: 600;
+                display: block;
             }
-            
-            .modal-wrapper{
+            .success-message {
+                background-color: #edf7ed;
+                border-left: 4px solid #28a745;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #1e4620;
+                font-weight: 600;
+                display: block;
+            }
+
+            /* Modal Popup */
+            .modal-wrapper {
                 display: none;
                 position: fixed;
                 z-index: 1000;
@@ -181,15 +222,18 @@
                 background-color: white;
                 margin: 12% auto;
                 padding: 25px;
-                width: 350px;
-                border-radius: 8px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                width: 380px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
                 position: relative;
                 box-sizing: border-box;
             }
-            h3{
-                border-bottom: 2px solid #e5e7eb;
-                margin-bottom: 5px;
+            h3 {
+                border-bottom: 2px solid #f1ece6;
+                margin-top: 0;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+                color: #78493b;
             }
             .close-icon {
                 position: absolute;
@@ -203,22 +247,38 @@
             .modal-box input[type="text"] {
                 width: 100%;
                 padding: 10px;
-                margin: 12px 0 20px 0;
-                border: 1px solid #ccc;
-                border-radius: 4px;
+                margin: 12px 0 5px 0; /* Thu hẹp margin-bottom để chỗ cho thẻ báo lỗi nhỏ */
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
                 font-size: 14px;
                 box-sizing: border-box;
             }
+            .modal-box input[type="text"]:focus {
+                border-color: #78493b;
+                outline: none;
+            }
             .btn-submit {
                 width: 100%;
-                background-color: #28a745;
+                background-color: #de6b48; /* Màu cam đất nổi bật của Vị An */
                 color: white;
                 border: none;
-                padding: 10px;
+                padding: 12px;
                 font-size: 14px;
                 font-weight: bold;
-                border-radius: 4px;
+                border-radius: 6px;
                 cursor: pointer;
+                transition: background-color 0.2s;
+                margin-top: 15px;
+            }
+            .btn-submit:hover {
+                background-color: #c44d2d;
+            }
+            .modal-error-text {
+                color: #dc3545;
+                font-size: 12px;
+                font-weight: 500;
+                margin-bottom: 10px;
+                display: block;
             }
         </style>
     </head>
@@ -232,50 +292,65 @@
                 <div class="layout">
                     <div class="page-header">
                         <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
-                        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN ĂN" onclick="openCreateModal()"/>
+                        <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN" onclick="openCreateModal()"/>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
+                    <form id="searchForm" action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
                         <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
                         <button type="submit" class="btn-search">Tìm kiếm</button>
                     </form>
 
-                    <c:if test="${errorName != null && !errorName.trim().isEmpty()}"><div class="error-message">${errorName}</div></c:if>
-                    <c:if test="${errorSearch != null && !errorSearch.trim().isEmpty()}"><div class="error-message">${errorSearch}</div></c:if>
-                        <table border="1">
-                            <thead>
-                                <tr>
-                                    <th>Tên Loại Món</th>
-                                    <th>Tổng Số món</th>
-                                    <th>Hoạt Động</th>
-                                    <th>Tạm Ngưng</th>
-                                    <th>Hành Động</th>
-                                </tr>
-                            </thead>
-                        <c:forEach var="cat" items="${categoryList}">
+                    <c:if test="${not empty updateSuccess}">
+                        <div class="success-message">✅ <b>Thành công:</b> ${updateSuccess}</div>
+                    </c:if>
+                    <c:if test="${not empty updateFail}">
+                        <div class="error-message">❌ <b>Thất bại:</b> ${updateFail}</div>
+                    </c:if>
+                    <c:if test="${not empty errorName}">
+                        <div class="error-message">⚠️ <b>Lỗi nhập liệu:</b> ${errorName}</div>
+                    </c:if>
+                    <c:if test="${not empty errorSearch}">
+                        <div class="error-message">⚠️ <b>Lỗi tìm kiếm:</b> ${errorSearch}</div>
+                    </c:if>
+
+                    <table>
+                        <thead>
                             <tr>
-                                <td><div>${cat.categoryName}</div></td>
-                                <td><div>${cat.totalDish}</div></td>
-                                <td><div>${cat.activeMenuItem}</div></td>
-                                <td><div>${cat.inactiveMenuItem}</div></td>
-                                <td>
-                                    <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                                    <form action="${pageContext.request.contextPath}/category-management" method="post">
-                                        <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
-                                        <c:choose>
-                                            <c:when test="${cat.activeMenuItem > 0}">
-                                                <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <button class="btn-table btn-enable" type="submit" name="status" value="1">KÍCH HOẠT</button>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </form>
-                                </td>
+                                <th>Tên Loại Món</th>
+                                <th>Tổng Số Món</th>
+                                <th>Hoạt Động</th>
+                                <th>Tạm Ngưng</th>
+                                <th style="text-align: center;">Hành Động</th>
                             </tr>
-                        </c:forEach>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="cat" items="${categoryList}">
+                                <tr>
+                                    <td><b style="color: #1e293b;">${cat.categoryName}</b></td>
+                                    <td>${cat.totalDish} món</td>
+                                    <td><span style="font-weight: 500;">${cat.activeMenuItem} món</span></td>
+                                    <td><span style="font-weight: 500;">${cat.inactiveMenuItem} món</span></td>
+                                    <td style="text-align: center;">
+                                        <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
+                                        <form action="${pageContext.request.contextPath}/category-management" method="post">
+                                            <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
+                                            <input type="hidden" value="${currentPage}" name="page"/>
+                                            <input type="hidden" value="${param.search}" name="search"/>
+                                            <c:choose>
+                                                <c:when test="${cat.activeMenuItem > 0}">
+                                                    <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <button class="btn-table btn-enable" type="submit" name="status" value="1">KÍCH HOẠT</button>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
                     </table>
-                    
+
                     <c:if test="${totalPage > 1}">
                         <div class="pagination">
                             <c:choose>
@@ -307,27 +382,31 @@
             </div>
         </div>
 
+        <%-- Modal chỉnh sửa --%>
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
                 <h3>Chỉnh sửa tên loại món</h3>
-                <form action="category-management" method="post">
+                <form id="editForm" action="category-management" method="post">
                     <input type="hidden" id="modalCategoryID" name="categoryID"/>
-                    <label>Tên loại:</label><br/>
-                    <input type="text" id="modalCategoryName" name="categoryName" required/><br/>
+                    <label class="form-label">Tên loại:</label>
+                    <input type="text" id="modalCategoryName" name="categoryName"/>
+                    <span class="modal-error-text" id="editErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
         </div>
 
+        <%-- Modal tạo mới --%>
         <div id="createModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
                 <h3>Thêm mới loại món ăn</h3>
-                <form action="category-management" method="post">
+                <form id="createForm" action="category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
-                    <label>Nhập loại mới:</label><br/>
-                    <input type="text" name="categoryName" required/><br/>
+                    <label class="form-label">Nhập loại mới:</label>
+                    <input type="text" id="createCategoryName" name="categoryName"/>
+                    <span class="modal-error-text" id="createErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -337,10 +416,13 @@
             function openEditModal(id, name) {
                 document.getElementById('modalCategoryID').value = id;
                 document.getElementById('modalCategoryName').value = name;
+                document.getElementById('editErrorName').innerHTML = ""; // Reset lỗi cũ
                 document.getElementById('editModal').style.display = "block";
             }
 
             function openCreateModal() {
+                document.getElementById('createCategoryName').value = "";
+                document.getElementById('createErrorName').innerHTML = ""; // Reset lỗi cũ
                 document.getElementById('createModal').style.display = "block";
             }
 
@@ -351,6 +433,47 @@
             function closeCreateModal() {
                 document.getElementById('createModal').style.display = "none";
             }
+
+            function validateFormInput(inputElement, errorElement) {
+                const value = inputElement.value.trim();
+                if (value === "") {
+                    errorElement.innerHTML = "Tên loại không được để trống";
+                    return false;
+                }
+                if (value.length > 100) {
+                    errorElement.innerHTML = "Tên loại phải ít hơn 100 kí tự";
+                    return false;
+                }
+                errorElement.innerHTML = "";
+                return true;
+            }
+
+            // Gắn sự kiện submit cho form tạo mới
+            document.getElementById("createForm").onsubmit = function (event) {
+                const input = document.getElementById("createCategoryName");
+                const error = document.getElementById("createErrorName");
+                if (!validateFormInput(input, error)) {
+                    event.preventDefault(); // Chặn submit lên servlet
+                }
+            };
+
+            // Gắn sự kiện submit cho form chỉnh sửa
+            document.getElementById("editForm").onsubmit = function (event) {
+                const input = document.getElementById("modalCategoryName");
+                const error = document.getElementById("editErrorName");
+                if (!validateFormInput(input, error)) {
+                    event.preventDefault(); // Chặn submit lên servlet
+                }
+            };
+
+            // Kiểm tra thêm form thanh tìm kiếm
+            document.getElementById("searchForm").onsubmit = function (event) {
+                const searchVal = this.elements["search"].value;
+                if (searchVal.length > 100) {
+                    alert("Tìm kiếm không vượt quá 100 kí tự");
+                    event.preventDefault();
+                }
+            };
         </script>
         <%@ include file="/views/includes/footer.jsp" %>
     </body>

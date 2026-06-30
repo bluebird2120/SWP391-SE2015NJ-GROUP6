@@ -182,7 +182,16 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                     <td>#${r.orderID}</td>
                                     <td><fmt:formatDate value="${r.orderTime}" pattern="HH:mm - dd/MM/yyyy"/></td>
                                     <td>${r.capacity} chỗ - ${r.areaType}</td>
-                                    <td>${r.assignedQuantity}/${r.requiredQuantity}</td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty r.assignedTableNames}">
+                                                ${r.assignedTableNames}
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="empty">Chưa gán</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
                                     <td>
                                         <c:choose>
                                             <c:when test="${r.remainingQuantity > 0}">

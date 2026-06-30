@@ -309,6 +309,19 @@ public class CustomerDAO extends DBContext {
         return 0;
     }
 
+    /**
+     * Khóa hoặc mở khóa tài khoản khách hàng.
+     */
+    public boolean updateActiveStatus(int customerID, int isActive)
+            throws SQLException {
+        String sql = "UPDATE Customer SET isActive = ? WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, isActive);
+            ps.setInt(2, customerID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean updatePassword(int customerID, String newHashedPassword)
             throws SQLException {
         String sql = "UPDATE Customer SET password = ? WHERE customerID = ?";

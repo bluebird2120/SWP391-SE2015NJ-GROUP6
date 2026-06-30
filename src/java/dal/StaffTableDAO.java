@@ -48,7 +48,10 @@ public class StaffTableDAO extends DBContext {
         String sql = "SELECT o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
                 + "d.capacity, d.areaType, d.quantity AS requiredQuantity, "
                 + "COUNT(DISTINCT CASE WHEN t.capacity = d.capacity "
-                + "AND t.areaType = d.areaType THEN t.tableID END) assignedQuantity "
+                + "AND t.areaType = d.areaType THEN t.tableID END) assignedQuantity, "
+                + "GROUP_CONCAT(DISTINCT CASE WHEN t.capacity = d.capacity "
+                + "AND t.areaType = d.areaType THEN t.tableName END "
+                + "ORDER BY t.tableName SEPARATOR ', ') assignedTableNames "
                 + "FROM `Order` o "
                 + "JOIN order_reservation_detail d ON d.orderID = o.orderID "
                 + "LEFT JOIN Order_Table ot ON ot.orderID = o.orderID "
@@ -72,6 +75,7 @@ public class StaffTableDAO extends DBContext {
                 row.setAreaType(rs.getString("areaType"));
                 row.setRequiredQuantity(rs.getInt("requiredQuantity"));
                 row.setAssignedQuantity(rs.getInt("assignedQuantity"));
+                row.setAssignedTableNames(rs.getString("assignedTableNames"));
                 rows.add(row);
             }
         } catch (SQLException e) {
