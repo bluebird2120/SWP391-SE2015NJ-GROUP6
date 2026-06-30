@@ -9,9 +9,22 @@ import model.PublicReview;
 import model.Reviews;
 import util.UserRole;
 
+/**
+ * DAO xử lý toàn bộ thao tác dữ liệu liên quan đến bảng Reviews.
+ *
+ * Class này phục vụ 3 nhóm chức năng chính:
+ * - Hiển thị review công khai cho khách xem.
+ * - Quản lý review cá nhân của customer.
+ * - Cho owner ẩn/hiện review và phản hồi công khai.
+ */
 public class ReviewDAO extends DBContext {
 
-    /** Cột Reviews dùng cho mọi SELECT (giữ DRY). */
+    /**
+     * Danh sách cột mặc định của bảng Reviews được tái sử dụng trong nhiều câu SELECT.
+     *
+     * Mục đích là tránh lặp lại cùng một danh sách cột ở nhiều method, giúp các truy vấn
+     * lấy review luôn đồng bộ cấu trúc dữ liệu.
+     */
     private static final String REVIEW_COLUMNS =
             "reviewID, customerID, orderID, rating, comment, createdAt, "
           + "isHidden, ownerReply, ownerReplyAt";
@@ -24,6 +37,7 @@ public class ReviewDAO extends DBContext {
      * Chỉ lấy review có comment khác rỗng để giao diện không bị trống.
      *
      * @param limit số lượng review tối đa muốn lấy (>0).
+     * @return danh sách review công khai đã được lọc và sắp xếp mới nhất trước.
      */
     public List<PublicReview> getPublicReviews(int limit) {
         List<PublicReview> reviews = new ArrayList<>();
@@ -65,6 +79,15 @@ public class ReviewDAO extends DBContext {
         return reviews;
     }
 
+    /**
+     * Lấy toàn bộ review của một customer cụ thể.
+     *
+     * Method này dùng cho trang "Đánh giá của tôi", chỉ trả về review thuộc đúng
+     * customer đang đăng nhập.
+     *
+     * @param customerID ID của customer cần lấy review.
+     * @return danh sách review của customer, sắp xếp theo thời gian tạo mới nhất trước.
+     */
     public List<Reviews> getReviewsByCustomer(int customerID) {
         List<Reviews> reviews = new ArrayList<>();
         String sql = "SELECT " + REVIEW_COLUMNS
@@ -83,6 +106,16 @@ public class ReviewDAO extends DBContext {
         return reviews;
     }
 
+    /**
+     * Lấy một review theo reviewID và customerID.
+     *
+     * Việc lọc thêm customerID giúp đảm bảo customer chỉ có thể xem/sửa/xóa review
+     * thuộc về chính họ.
+     *
+     * @param reviewID ID của review cần tìm.
+     * @param customerID ID của customer sở hữu review.
+     * @return đối tượng Reviews nếu tìm thấy, ngược lại trả về null.
+     */
     public Reviews getReviewByIdAndCustomer(int reviewID, int customerID) {
         String sql = "SELECT " + REVIEW_COLUMNS
                 + " FROM Reviews WHERE reviewID = ? AND customerID = ?";
@@ -101,6 +134,16 @@ public class ReviewDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Lấy review của một đơn hàng theo orderID và customerID.
+     *
+     * Method này thường được dùng để kiểm tra một đơn hàng đã được customer đánh giá
+     * hay chưa.
+     *
+     * @param orderID ID của đơn hàng.
+     * @param customerID ID của customer sở hữu đơn hàng.
+     * @return review tương ứng nếu tồn tại, ngược lại trả về null.
+     */
     public Reviews getReviewByOrderAndCustomer(int orderID, int customerID) {
         String sql = "SELECT " + REVIEW_COLUMNS
                 + " FROM Reviews WHERE orderID = ? AND customerID = ?";
@@ -119,10 +162,28 @@ public class ReviewDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Kiểm tra customer đã đánh giá một đơn hàng hay chưa.
+     *
+     * @param orderID ID của đơn hàng cần kiểm tra.
+     * @param customerID ID của customer cần kiểm tra.
+     * @return true nếu đã có review cho đơn hàng này, false nếu chưa có.
+     */
     public boolean hasReviewedOrder(int orderID, int customerID) {
         return getReviewByOrderAndCustomer(orderID, customerID) != null;
     }
 
+    /**
+     * Kiểm tra customer có đủ điều kiện đánh giá một đơn hàng hay không.
+     *
+     * Điều kiện hiện tại:
+     * - Đơn hàng thuộc về customer đó.
+     * - Trạng thái đơn hàng là completed.
+     *
+     * @param orderID ID của đơn hàng cần đánh giá.
+     * @param customerID ID của customer đang gửi đánh giá.
+     * @return true nếu customer được phép đánh giá đơn hàng, false nếu không hợp lệ.
+     */
     public boolean canCustomerReviewOrder(int orderID, int customerID) {
         String sql = "SELECT 1 FROM `Order` "
                 + "WHERE orderID = ? AND customerID = ? AND orderStatus = 'completed'";
@@ -139,6 +200,20 @@ public class ReviewDAO extends DBContext {
         return false;
     }
 
+    /**
+     * Tạo review mới cho một đơn hàng đã hoàn tất.
+     *
+     * Câu INSERT dùng SELECT ... WHERE EXISTS để đảm bảo ở tầng database rằng:
+     * - Đơn hàng tồn tại, thuộc customer đang gửi.
+     * - Đơn hàng đã completed.
+     * - Customer chưa từng review đơn hàng này.
+     *
+     * @param customerID ID của customer tạo review.
+     * @param orderID ID của đơn hàng được review.
+     * @param rating số sao đánh giá.
+     * @param comment nội dung bình luận.
+     * @return true nếu thêm review thành công, false nếu không đủ điều kiện hoặc có lỗi.
+     */
     public boolean createReview(int customerID, Integer orderID, int rating, String comment) {
         if (orderID == null) {
             return false;
@@ -165,6 +240,17 @@ public class ReviewDAO extends DBContext {
         return false;
     }
 
+    /**
+     * Cập nhật rating và comment của một review.
+     *
+     * Method lọc theo cả reviewID và customerID để tránh customer sửa review của người khác.
+     *
+     * @param reviewID ID của review cần cập nhật.
+     * @param customerID ID của customer sở hữu review.
+     * @param rating số sao mới.
+     * @param comment nội dung bình luận mới.
+     * @return true nếu cập nhật thành công, false nếu không tìm thấy review hoặc có lỗi.
+     */
     public boolean updateReview(int reviewID, int customerID, int rating, String comment) {
         String sql = "UPDATE Reviews SET rating = ?, comment = ? "
                 + "WHERE reviewID = ? AND customerID = ?";
@@ -181,6 +267,16 @@ public class ReviewDAO extends DBContext {
         return false;
     }
 
+    /**
+     * Xóa review của một customer.
+     *
+     * Method lọc theo cả reviewID và customerID để đảm bảo customer chỉ xóa được
+     * review của chính họ.
+     *
+     * @param reviewID ID của review cần xóa.
+     * @param customerID ID của customer sở hữu review.
+     * @return true nếu xóa thành công, false nếu không tìm thấy review hoặc có lỗi.
+     */
     public boolean deleteReview(int reviewID, int customerID) {
         String sql = "DELETE FROM Reviews WHERE reviewID = ? AND customerID = ?";
 
@@ -198,7 +294,16 @@ public class ReviewDAO extends DBContext {
     // Owner moderation
     // =========================================================
 
-    /** Owner ẩn / hiện lại review (soft hide). */
+    /**
+     * Cập nhật trạng thái ẩn/hiện của review.
+     *
+     * Đây là soft hide: review không bị xóa khỏi database, chỉ đổi cờ isHidden để
+     * quyết định có hiển thị công khai hay không.
+     *
+     * @param reviewID ID của review cần cập nhật.
+     * @param hidden true nếu muốn ẩn review, false nếu muốn hiện lại.
+     * @return true nếu cập nhật thành công, false nếu không tìm thấy review hoặc có lỗi.
+     */
     public boolean setHidden(int reviewID, boolean hidden) {
         String sql = "UPDATE Reviews SET isHidden = ? WHERE reviewID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -212,9 +317,15 @@ public class ReviewDAO extends DBContext {
     }
 
     /**
-     * Owner đặt / xóa reply.
-     * - reply rỗng / null  → xóa reply (cả 2 cột về NULL).
-     * - reply có nội dung → set reply + ownerReplyAt = NOW().
+     * Lưu hoặc xóa phản hồi của owner cho một review.
+     *
+     * Quy tắc xử lý:
+     * - reply null hoặc rỗng: xóa phản hồi, đưa ownerReply và ownerReplyAt về NULL.
+     * - reply có nội dung: lưu phản hồi sau khi trim và cập nhật ownerReplyAt = NOW().
+     *
+     * @param reviewID ID của review cần phản hồi.
+     * @param reply nội dung phản hồi của owner, hoặc null/rỗng nếu muốn xóa phản hồi.
+     * @return true nếu cập nhật thành công, false nếu không tìm thấy review hoặc có lỗi.
      */
     public boolean setOwnerReply(int reviewID, String reply) {
         boolean clear = reply == null || reply.trim().isEmpty();
@@ -236,7 +347,15 @@ public class ReviewDAO extends DBContext {
         return false;
     }
 
-    /** Trả 1 review không lọc theo customer — dành cho owner moderation. */
+    /**
+     * Lấy một review theo reviewID dành cho owner.
+     *
+     * Khác với getReviewByIdAndCustomer, method này không lọc theo customerID vì owner
+     * có quyền quản lý toàn bộ review trong hệ thống.
+     *
+     * @param reviewID ID của review cần lấy.
+     * @return review nếu tồn tại, ngược lại trả về null.
+     */
     public Reviews getReviewByIdForOwner(int reviewID) {
         String sql = "SELECT " + REVIEW_COLUMNS + " FROM Reviews WHERE reviewID = ?";
 
@@ -255,7 +374,12 @@ public class ReviewDAO extends DBContext {
 
     /**
      * Liệt kê review cho trang quản trị, kèm userName của khách.
+     *
      * customerUserName được set qua transient field của Reviews.
+     *
+     * @param offset vị trí bắt đầu lấy dữ liệu, dùng cho phân trang.
+     * @param limit số lượng review tối đa cần lấy.
+     * @return danh sách review cho owner, kèm tên customer và sắp xếp mới nhất trước.
      */
     public List<Reviews> getAllReviewsForOwner(int offset, int limit) {
         List<Reviews> reviews = new ArrayList<>();
@@ -283,6 +407,13 @@ public class ReviewDAO extends DBContext {
         return reviews;
     }
 
+    /**
+     * Đếm tổng số review trong hệ thống.
+     *
+     * Method này dùng để tính tổng số trang ở màn hình quản lý review của owner.
+     *
+     * @return tổng số review, hoặc 0 nếu có lỗi truy vấn.
+     */
     public int countAllReviews() {
         String sql = "SELECT COUNT(*) FROM Reviews";
         try (PreparedStatement ps = connection.prepareStatement(sql);
@@ -296,6 +427,16 @@ public class ReviewDAO extends DBContext {
         return 0;
     }
 
+    /**
+     * Chuyển một dòng ResultSet thành đối tượng Reviews.
+     *
+     * Method này gom logic mapping dữ liệu từ database sang model để các method SELECT
+     * không phải lặp lại cùng một đoạn code set field.
+     *
+     * @param rs ResultSet đang trỏ tới dòng dữ liệu cần map.
+     * @return đối tượng Reviews chứa dữ liệu của dòng hiện tại.
+     * @throws SQLException nếu đọc dữ liệu từ ResultSet xảy ra lỗi.
+     */
     private Reviews mapRow(ResultSet rs) throws SQLException {
         Reviews review = new Reviews();
         review.setReviewID(rs.getInt("reviewID"));

@@ -87,7 +87,8 @@ public class ShiftTemplateController extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
             return;
         }
-
+        
+        //Đếm số ca làm việc đang được sử dụng
         int usedCount = dao.countShiftsUsing(id);
 
         req.setAttribute("template", t);
@@ -203,6 +204,7 @@ public class ShiftTemplateController extends HttpServlet {
             errors.put("shiftName", "Tên ca tối đa 100 ký tự.");
         }
 
+        //Code ĐB
         if (canEditTimes) {
             LocalTime start = parseLocalTime(startStr);
             LocalTime end = parseLocalTime(endStr);

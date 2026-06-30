@@ -51,9 +51,9 @@ public class ShiftPlanTask implements Runnable {
 
             if (MonthlyShiftPlan.NOTIFIED.equals(p.getStatus()) && !today.isBefore(firstOfMonth)) {
                 if (shiftDao.hasAnyShiftInMonth(p.getEmployeeID(), p.getEffectiveYear(), p.getEffectiveMonth())) {
-                    // Đã có người gán thủ công vào tháng này → bỏ qua, không apply, đánh CANCELLED
-                    System.out.println("[ShiftPlanTask] Skip apply — conflict planID=" + p.getPlanID());
-                    planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.CANCELLED);
+                    // Đã có ca gán sẵn hoặc tự động tạo trước đó -> cập nhật thành APPLIED luôn thay vì CANCELLED
+                    System.out.println("[ShiftPlanTask] Already has shifts — mark as APPLIED for planID=" + p.getPlanID());
+                    planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
                     continue;
                 }
                 int rows = shiftDao.assignMonth(p.getEmployeeID(), p.getTemplateID(),

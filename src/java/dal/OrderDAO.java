@@ -139,7 +139,11 @@ public class OrderDAO {
             ps.setInt(1, tableID);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return mapToOrder(rs);
+                Order order = mapToOrder(rs);
+                // === BẮT ĐẦU: TỰ ĐỘNG BÀN GIAO ĐƠN HÀNG KHI HẾT CA ===
+                reassignOrderIfShiftEnded(order);
+                // === KẾT THÚC: TỰ ĐỘNG BÀN GIAO ĐƠN HÀNG KHI HẾT CA ===
+                return order;
             }
 
         } catch (SQLException e) {
@@ -147,6 +151,62 @@ public class OrderDAO {
         }
         return null;
     }
+
+    // === BẮT ĐẦU: CÁC HÀM PHỤ TRỢ BÀN GIAO ĐƠN HÀNG ===
+    /**
+     * Cập nhật nhân viên phục vụ mới cho đơn hàng.
+     */
+    public boolean updateOrderEmployee(int orderID, Integer employeeID) {
+        String sql = "UPDATE `Order` SET employeeID = ? WHERE orderID = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (employeeID != null) {
+                ps.setInt(1, employeeID);
+            } else {
+                ps.setNull(1, Types.INTEGER);
+            }
+            ps.setInt(2, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] updateOrderEmployee error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Tự động kiểm tra và chuyển giao đơn hàng nếu nhân viên cũ đã hết ca.
+     */
+    public void reassignOrderIfShiftEnded(Order order) {
+        if (order == null || "completed".equals(order.getOrderStatus()) || "cancelled".equals(order.getOrderStatus())) {
+            return;
+        }
+        EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+        Integer currentEmpID = order.getEmployeeID();
+        if (currentEmpID == null || currentEmpID <= 0 || !esDAO.isEmployeeOnShift(currentEmpID)) {
+            Integer newEmpID = esDAO.getActiveEmployeeForCurrentShift();
+            if (newEmpID != null && !newEmpID.equals(currentEmpID)) {
+                boolean success = updateOrderEmployee(order.getOrderID(), newEmpID);
+                if (success) {
+                    order.setEmployeeID(newEmpID);
+
+                    // === BẮT ĐẦU: GỬI THÔNG BÁO CHO NHÂN VIÊN MỚI ĐƯỢC BÀN GIAO ===
+                    try {
+                        NotificationDAO notifDAO = new NotificationDAO();
+                        model.Notifications n = new model.Notifications();
+                        n.setRecipientID(newEmpID);
+                        n.setRecipientType("staff");
+                        n.setType("shift_handover");
+                        n.setMessage("Bạn đã được tự động phân công tiếp quản Đơn hàng #" + order.getOrderID() + " từ ca trực trước.");
+                        n.setIsRead(0);
+                        notifDAO.insert(n);
+                    } catch (Exception e) {
+                        System.err.println("[OrderDAO] Không thể gửi thông báo chuyển ca: " + e.getMessage());
+                    }
+                    // === KẾT THÚC: GỬI THÔNG BÁO CHO NHÂN VIÊN MỚI ĐƯỢC BÀN GIAO ===
+                }
+            }
+        }
+    }
+    // === KẾT THÚC: CÁC HÀM PHỤ TRỢ BÀN GIAO ĐƠN HÀNG ===
 
     // =========================================================
     // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER (orderID)
