@@ -269,7 +269,11 @@ public class ShiftRosterController extends HttpServlet {
                 try {
                     int planID = planDao.saveOrUpdate(employeeID, templateID, year, month, ownerId);
                     if (planID > 0) {
-                        planDao.updateStatus(planID, MonthlyShiftPlan.APPLIED);
+                        java.time.YearMonth planYm = java.time.YearMonth.of(year, month);
+                        java.time.YearMonth currentYm = java.time.YearMonth.now();
+                        if (!planYm.isAfter(currentYm)) {
+                            planDao.updateStatus(planID, MonthlyShiftPlan.APPLIED);
+                        }
                     }
                 } catch (Exception ignore) {
                 }

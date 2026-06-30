@@ -87,7 +87,8 @@ public class ShiftTemplateController extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/owner/shift-templates");
             return;
         }
-
+        
+        //Đếm số ca làm việc đang được sử dụng
         int usedCount = dao.countShiftsUsing(id);
 
         req.setAttribute("template", t);
