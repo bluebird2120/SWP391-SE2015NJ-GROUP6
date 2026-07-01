@@ -265,7 +265,7 @@
 
         <div class="admin-layout">
 
-            <c:if test="${currentTableID == 0 || empty currentTableID}">
+            <c:if test="${not empty sessionScope.employee}">
                 <%@ include file="/views/includes/dashboard.jsp" %>
             </c:if>
 
