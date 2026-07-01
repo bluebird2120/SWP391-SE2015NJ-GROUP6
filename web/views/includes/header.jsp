@@ -88,28 +88,7 @@
         gap: 16px;
     }
 
-    /* ── SEARCH ── */
-    .search-box {
-        position: relative;
-    }
-    .search-box input {
-        width: 240px;
-        height: 40px;
-        border: none;
-        outline: none;
-        border-radius: 6px;
-        background: #d7bfa4;
-        padding: 0 42px 0 14px;
-        font-size: 14px;
-    }
-    .search-box i {
-        position: absolute;
-        right: 13px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #76493b;
-        cursor: pointer;
-    }
+    /* (search-box đã chuyển sang trang chủ, không còn dùng ở header) */
 
     /* ── AUTH BUTTONS ── */
     .auth-buttons {
@@ -373,13 +352,6 @@
     </nav>
 
     <div class="right-header">
-        <c:if test="${sessionScope.employee == null}">
-            <div class="search-box">
-                <input type="text" placeholder="Tìm kiếm món ăn...">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </div>
-        </c:if>
-
         <c:if test="${sessionScope.customer == null && sessionScope.employee == null}">
             <div class="auth-buttons">
                 <a href="${pageContext.request.contextPath}/login" class="auth-link">
