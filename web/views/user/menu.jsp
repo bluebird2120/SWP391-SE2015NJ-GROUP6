@@ -389,12 +389,19 @@
                         </div>
                         <c:remove var="errorMsg" scope="session"/>
                     </c:if>
+                    
                     <div class="page-header">
                         <h2>Khám phá ẩm thực</h2>
                     </div>
-                    <a class="cart-btn" href="${pageContext.request.contextPath}/order">
-                        <i class="fas fa-shopping-cart"></i> GIỎ HÀNG
-                    </a>
+                    
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <a class="cart-btn" href="${pageContext.request.contextPath}/payment-info">
+                            <i class="fas fa-file-invoice-dollar"></i> HÓA ĐƠN
+                        </a>
+                        <a class="cart-btn" href="${pageContext.request.contextPath}/order">
+                            <i class="fas fa-shopping-cart"></i> GIỎ HÀNG
+                        </a>
+                    </div>
                 </div>
 
                 <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
