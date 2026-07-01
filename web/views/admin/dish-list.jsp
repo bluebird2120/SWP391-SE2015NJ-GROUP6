@@ -308,7 +308,7 @@
     <body>
         <%@ include file="/views/includes/header.jsp" %>
         <div class="admin-layout">
-            <c:if test="${sessionScope.employee.roleID != null}">
+            <c:if test="${not empty sessionScope.employee.roleID}">
                 <%@ include file="/views/includes/dashboard.jsp" %>
             </c:if>
 
