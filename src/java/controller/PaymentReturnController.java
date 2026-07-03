@@ -123,7 +123,17 @@ public class PaymentReturnController extends HttpServlet {
                 if (isDepositPayment) {
                     out.println("<p style='text-align: center;'>Đặt cọc thành công. Mã giao dịch của bạn là: <b>" + txnRef + "</b></p>");
                     out.println("<p style='text-align: center; color: #bc945c;'><i>Đơn đặt bàn của bạn đã được giữ chỗ. Nhà hàng sẽ chuẩn bị theo thời gian bạn đã chọn.</i></p>");
-                    out.println("<div style='text-align: center;'><a href='" + request.getContextPath() + "/reservation?action=history'>Xem lịch sử đặt bàn</a></div>");
+                    out.println("<div style='text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;'>");
+                    if (orderID != null) {
+                        out.println("<a style='padding:10px 18px;background:#76493b;color:white;text-decoration:none;border-radius:7px;' href='"
+                                + request.getContextPath()
+                                + "/reservation?action=preorder&orderID="
+                                + orderID + "'>🍲 Đặt món trước</a>");
+                    }
+                    out.println("<a style='padding:10px 18px;border:1px solid #76493b;color:#76493b;text-decoration:none;border-radius:7px;' href='"
+                            + request.getContextPath()
+                            + "/reservation?action=history'>Xem lịch sử đặt bàn</a>");
+                    out.println("</div>");
                 } else {
                     out.println("<p style='text-align: center;'>Cảm ơn bạn đã đặt món. Mã giao dịch của bạn là: <b>" + txnRef + "</b></p>");
                     out.println("<p style='text-align: center; color: #bc945c;'><i>Bàn của bạn đang được đưa vào trạng thái chờ dọn dẹp.</i></p>");
