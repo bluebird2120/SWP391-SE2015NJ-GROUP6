@@ -49,6 +49,13 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        // [PREORDER AFTER DEPOSIT] Khách chỉ được chọn món sau khi
+        // tiền cọc bàn đã thanh toán và đơn chuyển sang reserved.
+        if ("preorder".equals(action)) {
+            openPreorder(request, response);
+            return;
+        }
+
         if ("history".equals(action)) {
             Customer customer = getCustomer(request);
             if (customer == null) {
@@ -291,23 +298,43 @@ public class ReservationController extends HttpServlet {
                 + OrderDAOSon.HOLD_MINUTES * 60_000L);
         session.removeAttribute("redirectAfterLogin");
 
-        if ("deposit".equals(request.getParameter("nextStep"))) {
-            int invoiceID = orderDAO.createDepositInvoice(
-                    orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
-            if (invoiceID < 0) {
-                orderDAO.cancelReservation(
-                        orderID, customer.getCustomerID());
-                cleanFinishedReservationSession(request);
-                showChooseTable(request, response, tableGroups,
-                        dateTimeStr, areaType, selectedQuantities,
-                        "Không thể tạo hóa đơn cọc. Vui lòng thử lại.");
-                return;
-            }
-            session.setAttribute("invoiceID", invoiceID);
-            response.sendRedirect(request.getContextPath() + "/payment");
+        // [DEPOSIT FIRST] Sau khi chọn bàn luôn thanh toán cọc bàn ngay.
+        // Thời gian giữ chỗ 5 phút chỉ dành cho bước thanh toán này.
+        int invoiceID = orderDAO.createDepositInvoice(
+                orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+        if (invoiceID < 0) {
+            orderDAO.cancelReservation(
+                    orderID, customer.getCustomerID());
+            cleanFinishedReservationSession(request);
+            showChooseTable(request, response, tableGroups,
+                    dateTimeStr, areaType, selectedQuantities,
+                    "Không thể tạo hóa đơn cọc. Vui lòng thử lại.");
+            return;
+        }
+        session.setAttribute("invoiceID", invoiceID);
+        response.sendRedirect(request.getContextPath() + "/payment");
+    }
+
+    private void openPreorder(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        Customer customer = getCustomer(request);
+        if (customer == null) {
+            saveRedirectAndGoLogin(request, response,
+                    request.getContextPath() + "/reservation?action=history");
             return;
         }
 
+        int orderID = toInt(request.getParameter("orderID"), -1);
+        Order reservation = orderDAO.getOrderByID(orderID);
+        if (!isEditableReservedOrder(reservation, customer)) {
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=history");
+            return;
+        }
+
+        HttpSession session = request.getSession(true);
+        session.setAttribute("reservationOrderID", orderID);
+        session.setAttribute("reservationFlow", true);
         response.sendRedirect(request.getContextPath()
                 + "/menu?reservation=true&orderID=" + orderID);
     }
@@ -328,12 +355,9 @@ public class ReservationController extends HttpServlet {
                 preorderDAO.getOrderItemsByOrderId(orderID));
         request.setAttribute("menuItems",
                 preorderDAO.getMenuItemsByOrderId(orderID));
-        //  Truyền cấu hình cọc sang JSP để phần hiển thị
-        // dùng đúng cùng công thức với lúc tạo hóa đơn.
-        request.setAttribute("baseDeposit",
-                OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
-        request.setAttribute("preorderDepositPercent",
-                OrderDAOSon.PREORDER_DEPOSIT_PERCENT);
+        Order reservation = orderDAO.getOrderByID(orderID);
+        request.setAttribute("depositAmount",
+                reservation == null ? 0 : reservation.getDepositAmount());
         //  Hiển thị lỗi nhập số lượng món ăn .
         if ("invalid_quantity".equals(request.getParameter("error"))) {
             request.setAttribute("cartError",
@@ -424,50 +448,17 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        //  Tổng cọc = 100.000đ tiền cọc bàn
-        // + 30% tổng giá trị món đặt trước.
-        long preorderTotal = 0;
-        for (OrderItem item : preorderDAO.getOrderItemsByOrderId(orderID)) {
-            preorderTotal += (long) item.getPrice() * item.getQuantity();
-        }
-        long calculatedDeposit = OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT
-                + preorderTotal * OrderDAOSon.PREORDER_DEPOSIT_PERCENT / 100;
-        int depositAmount = (int) Math.min(
-                calculatedDeposit, Integer.MAX_VALUE);
-
-        Order reservation = orderDAO.getOrderByID(orderID);
-        int invoiceID;
-        if (reservation.getInvoiceID() != null) {
-            invoiceID = reservation.getInvoiceID();
-            // [FIX DYNAMIC DEPOSIT] Đã có hóa đơn cọc nhưng khách có thể vừa
-            // sửa giỏ món, nên cập nhật lại tiền cọc trước khi sang VNPay.
-            if (!orderDAO.updatePendingDepositInvoice(
-                    orderID, invoiceID, depositAmount)) {
-                invoiceID = -1;
-            }
-        } else {
-            invoiceID = orderDAO.createDepositInvoice(
-                    orderID, depositAmount);
-        }
-
-        if (invoiceID < 0) {
-            orderDAO.cancelReservation(orderID, customer.getCustomerID());
-            cleanFinishedReservationSession(request);
-            response.sendRedirect(request.getContextPath()
-                    + "/reservation?action=history");
-            return;
-        }
-
+        // [PREORDER AFTER DEPOSIT] Món đã nằm trong OrderItem của orderID.
+        // Chỉ kết thúc phiên chọn món, không tạo/cập nhật hóa đơn cọc.
         HttpSession session = request.getSession();
-        session.setAttribute("orderID", orderID);
-        session.setAttribute("invoiceID", invoiceID);
-        // [FIX DYNAMIC DEPOSIT] Hiển thị và sử dụng đúng tổng cọc đã tính.
-        session.setAttribute("depositAmount", depositAmount);
-        response.sendRedirect(request.getContextPath() + "/payment");
+        session.removeAttribute("reservationOrderID");
+        session.removeAttribute("reservationFlow");
+        response.sendRedirect(request.getContextPath()
+                + "/reservation?action=history&preorderSaved=true");
     }
 
     /**
-     * Chỉ cho thao tác trên đơn pending thuộc đúng khách đang đăng nhập.
+     * Chỉ cho thao tác món trên đơn đã thanh toán cọc và đang giữ bàn.
      */
     private Integer getPendingReservationOrderID(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -481,11 +472,22 @@ public class ReservationController extends HttpServlet {
         Order reservation = orderDAO.getOrderByID(orderID);
         if (reservation == null
                 || reservation.getCustomerID() == null
-                || reservation.getCustomerID() != customer.getCustomerID()
-                || !"pending".equals(reservation.getOrderStatus())) {
+                || !isEditableReservedOrder(reservation, customer)) {
             return null;
         }
         return orderID;
+    }
+
+    private boolean isEditableReservedOrder(
+            Order reservation, Customer customer) {
+        return reservation != null
+                && customer != null
+                && reservation.getCustomerID() != null
+                && reservation.getCustomerID() == customer.getCustomerID()
+                && "reserved".equals(reservation.getOrderStatus())
+                && "reserved".equals(reservation.getTableStatus())
+                && reservation.getInvoiceID() != null
+                && reservation.getDepositAmount() > 0;
     }
 
     private boolean ownsPreorderItem(int orderID, int orderItemID) {
@@ -601,9 +603,12 @@ public class ReservationController extends HttpServlet {
         }
 
         Order reservation = orderDAO.getOrderByID(reservationOrderID);
+        boolean editingPreorder
+                = Boolean.TRUE.equals(session.getAttribute("reservationFlow"));
         if (reservation == null
                 || "cancelled".equals(reservation.getOrderStatus())
-                || "reserved".equals(reservation.getOrderStatus())) {
+                || ("reserved".equals(reservation.getOrderStatus())
+                    && !editingPreorder)) {
             Integer sessionOrderID
                     = (Integer) session.getAttribute("orderID");
             if (reservationOrderID.equals(sessionOrderID)) {

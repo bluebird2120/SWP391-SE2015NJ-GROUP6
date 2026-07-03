@@ -72,6 +72,10 @@ public class PaymentInfoController extends HttpServlet {
         request.setAttribute("order", order);
         request.setAttribute("orderItems", orderItems);
         request.setAttribute("menuItems", menuItems);
+        // phân biệt cọc và thanh toán khi ăn xong 
+        request.setAttribute("isDepositPayment",
+                invoice.getInvoiceNumber() != null
+                && invoice.getInvoiceNumber().startsWith("DEP-"));
 
         request.getRequestDispatcher("/views/user/payment_info.jsp").forward(request, response);
     }

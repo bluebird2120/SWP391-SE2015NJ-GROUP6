@@ -192,32 +192,14 @@
                         <div>
                             <div>Tổng tiền món dự kiến</div>
                             <h2><fmt:formatNumber value="${total}" type="number"/> VNĐ</h2>
-                            <%-- Hiển thị cùng công thức
-                                 cọc mà ReservationController dùng để tạo hóa đơn. --%>
                             <div>
-                                Cọc bàn:
+                                Cọc bàn đã thanh toán:
                                 <strong>
-                                    <fmt:formatNumber value="${baseDeposit}"
+                                    <fmt:formatNumber value="${depositAmount}"
                                                       type="number"/> VNĐ
                                 </strong>
                             </div>
-                            <div>
-                                Cọc món (${preorderDepositPercent}%):
-                                <strong>
-                                    <fmt:formatNumber
-                                        value="${total * preorderDepositPercent / 100}"
-                                                      type="number"/> VNĐ
-                                </strong>
-                            </div>
-                            <div>
-                                Tổng tiền cọc:
-                                <strong>
-                                    <fmt:formatNumber
-                                        value="${baseDeposit + total * preorderDepositPercent / 100}"
-                                        type="number"/> VNĐ
-                                </strong>
-                            </div>
-                            <small>Phần tiền món còn lại được thanh toán khi dùng bữa.</small>
+                            <small>Tiền món được thanh toán khi dùng bữa.</small>
                         </div>
                         <div>
                             <a class="btn btn-light"
@@ -229,11 +211,9 @@
                                   style="display:inline;">
                                 <input type="hidden" name="action"
                                        value="confirmPreorder">
-                                <%--  Hỏi lại khách trước xác nhận có chắc chắn muốn cọc 
-                                     khi chuyển sang bước thanh toán cọc. --%>
                                 <button class="btn btn-main" type="submit"
-                                        onclick="return confirmDepositPayment();">
-                                    Xác nhận món và thanh toán cọc
+                                        onclick="return confirmSavePreorder();">
+                                    Lưu món đặt trước
                                 </button>
                             </form>
                         </div>
@@ -268,8 +248,7 @@
                 return true;
             }
 
-            //  Xác nhận lại trước khi tạo/chuyển hóa đơn cọc.
-            function confirmDepositPayment() {
+            function confirmSavePreorder() {
                 const quantityInputs = document.querySelectorAll(".qty");
                 for (const input of quantityInputs) {
                     const value = input.value.trim();
@@ -277,12 +256,12 @@
                     if (!/^\d+$/.test(value)
                             || !Number.isInteger(quantity)
                             || quantity < 1 || quantity > 99) {
-                        alert("Vui lòng nhập số lượng món là số nguyên dương từ 1 đến 99 trước khi thanh toán cọc.");
+                        alert("Vui lòng nhập số lượng món là số nguyên dương từ 1 đến 99 trước khi lưu.");
                         input.focus();
                         return false;
                     }
                 }
-                return confirm("Bạn có chắc chắn muốn xác nhận món và thanh toán cọc không?");
+                return confirm("Bạn có chắc chắn muốn lưu các món đặt trước này không?");
             }
         </script>
     </body>
