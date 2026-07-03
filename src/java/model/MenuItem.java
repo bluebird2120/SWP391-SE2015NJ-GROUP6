@@ -20,12 +20,14 @@ public class MenuItem {
     private int initialQuantity;
     private Date workingDate;
     private int quantityInStock;
-
+    private String methodName;
+    private int totalQuantity;
+    private String menuTag;
+    private String tagClass;
+    
     public MenuItem() {
     }
     
-    
-
     public MenuItem(int itemID, String itemName, String categoryName, Date workingDate, int initialQuantity, int quantityInStock) {
         this.itemID = itemID;
         this.itemName = itemName;
@@ -183,5 +185,36 @@ public class MenuItem {
     public void setMethodID(int methodID) {
         this.methodID = methodID;
     }
-    
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public void setMethodName(String methodName) {
+        this.methodName = methodName;
+    }
+
+    public int getTotalQuantity() {
+        return totalQuantity;
+    }
+
+    public void setTotalQuantity(int totalQuantity) {
+        this.totalQuantity = totalQuantity;
+    }
+
+    public String getMenuTag() {
+        return menuTag;
+    }
+
+    public void setMenuTag(String menuTag) {
+        this.menuTag = menuTag;
+    }
+
+    public String getTagClass() {
+        return tagClass;
+    }
+
+    public void setTagClass(String tagClass) {
+        this.tagClass = tagClass;
+    }
 }
