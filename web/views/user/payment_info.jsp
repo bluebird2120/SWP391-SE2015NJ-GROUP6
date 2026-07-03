@@ -224,6 +224,16 @@
                             <button type="submit" class="btn-action btn-pay">Thử Thanh Toán Lại</button>
                         </form>
                     </c:if>
+
+                    <c:if test="${isDepositPayment
+                                  && invoice.status == 'paid'
+                                  && not empty order
+                                  && order.orderStatus == 'reserved'}">
+                        <a href="${pageContext.request.contextPath}/reservation?action=preorder&orderID=${order.orderID}"
+                           class="btn-action btn-pay">
+                            🍲 Đặt món trước
+                        </a>
+                    </c:if>
                     
                     <a href="${pageContext.request.contextPath}/home" class="btn-action btn-home">Về Trang Chủ</a>
                 </div>
