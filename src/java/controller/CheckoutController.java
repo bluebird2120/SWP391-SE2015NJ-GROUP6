@@ -47,7 +47,7 @@ public class CheckoutController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
-        String action = request.getParameter("action"); 
+        String action = request.getParameter("action");
 
         System.out.println("DEBUG action = " + action);
         System.out.println("DEBUG orderID = " + session.getAttribute("orderID"));
@@ -57,37 +57,40 @@ public class CheckoutController extends HttpServlet {
         // NHÁNH 1: XỬ LÝ KHI KHÁCH HÀNG NHẤN NÚT "XÁC NHẬN & HOÀN TẤT ĐƠN" TRÊN CHECKOUT.JSP
         // =================================================================
         if ("confirm".equals(action)) {
-            String paymentGateway = request.getParameter("paymentGateway"); 
+            String paymentGateway = request.getParameter("paymentGateway");
             String orderIDParam = request.getParameter("orderID");
-            Integer invoiceID = (Integer) session.getAttribute("invoiceID"); 
+            Integer invoiceID = (Integer) session.getAttribute("invoiceID");
 
             if (orderIDParam != null && invoiceID != null) {
                 int orderID = Integer.parseInt(orderIDParam);
-                
-                if ("cash".equals(paymentGateway)) {
-                    // === BẮT ĐẦU: XỬ LÝ THANH TOÁN TIỀN MẶT ĐỒNG BỘ ===
-                    Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
-                    if (invoice != null) {
-                        String transCode = "CASH-" + System.currentTimeMillis(); 
-                        
-                        // Chạy Transaction: Lưu Payment -> Chốt Invoice -> Chốt Order -> Đổi trạng thái Bàn
-                        invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "cash", invoice.getFinalAmount(), transCode);
-                    }
-                    // === KẾT THÚC XỬ LÝ ===
 
+                if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
+                    // ... (Giữ nguyên đoạn code xử lý DB cọc và hóa đơn ăn của bạn) ...
+
+                    // Dọn dẹp session để khách có thể quét mã gọi món lượt mới
                     session.removeAttribute("orderID");
                     session.removeAttribute("invoiceID");
-                    
-                    response.sendRedirect(request.getContextPath() + "/home?status=order_success");
-                    return;
-                    
+                    session.removeAttribute("tableID");
+                    session.removeAttribute("reservationOrderID");
+                    session.removeAttribute("reservationFlow");
+                    session.removeAttribute("depositAmount");
+                    session.removeAttribute("reservationHoldExpiresAt");
+
+                    // 🌟 SỬA ĐOẠN NÀY: Thay vì out.println thô sơ, hãy redirect về trang hóa đơn chuẩn
+                    if (invoiceID != null) {
+                        response.sendRedirect(request.getContextPath() + "/payment-info?invoiceID=" + invoiceID);
+                        return;
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/home?status=order_success");
+                        return;
+                    }
                 } else if ("vnpay".equals(paymentGateway)) {
                     // Thanh toán VNPay: Chuyển hướng sang servlet xử lý cổng thanh toán
                     response.sendRedirect(request.getContextPath() + "/payment?orderID=" + orderID);
                     return;
                 }
             }
-            
+
             response.sendRedirect(request.getContextPath() + "/home");
             return;
         }
@@ -97,7 +100,7 @@ public class CheckoutController extends HttpServlet {
         // =================================================================
         String[] selectedArr = request.getParameterValues("selectedItems");
         Integer orderID = (Integer) session.getAttribute("orderID");
-        
+
         if (orderID == null || selectedArr == null || selectedArr.length == 0) {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;

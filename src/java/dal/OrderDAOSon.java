@@ -17,8 +17,6 @@ public class OrderDAOSon extends DBContext {
     public static final int HOLD_MINUTES = 5;
     // Tiền cọc cố định khi khách chỉ đặt bàn.
     public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
-    // Khách đặt kèm món cọc thêm 30% tổng tiền món.
-    public static final int PREORDER_DEPOSIT_PERCENT = 30;
 
     /**
      * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. 
@@ -184,35 +182,6 @@ public class OrderDAOSon extends DBContext {
             }
         }
         return -1;
-    }
-
-    public boolean updatePendingDepositInvoice(int orderID, int invoiceID,
-            int depositAmount) {
-        // Nếu khách đổi món trước khi thanh toán cọc,
-        // cập nhật lại hóa đơn DEP- chưa paid để số tiền cọc luôn đúng.
-        String sql
-                = "UPDATE Invoices i "
-                + "JOIN `Order` o ON o.invoiceID = i.invoiceID "
-                + "SET i.subTotal = ?, i.finalAmount = ?, "
-                + "    o.depositAmount = ? "
-                + "WHERE o.orderID = ? "
-                + "  AND i.invoiceID = ? "
-                + "  AND o.orderStatus = 'pending' "
-                + "  AND i.status = 'unpaid' "
-                + "  AND i.invoiceNumber LIKE 'DEP-%'";
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, depositAmount);
-            ps.setInt(2, depositAmount);
-            ps.setInt(3, depositAmount);
-            ps.setInt(4, orderID);
-            ps.setInt(5, invoiceID);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return false;
     }
 
     /**
