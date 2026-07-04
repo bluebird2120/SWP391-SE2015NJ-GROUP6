@@ -236,6 +236,7 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                     <td><span class="badge ${t.physicalStatus}">${t.physicalStatus}</span></td>
                                     <td><c:if test="${not empty t.orderID}">#${t.orderID}</c:if></td>
                                         <td>
+                                        <%-- Nút Dọn bàn (Giữ nguyên) --%>
                                         <c:if test="${t.physicalStatus == 'cleaning'}">
                                             <form method="post" action="${pageContext.request.contextPath}/staff/tables">
                                                 <input type="hidden" name="action" value="cleaned">
@@ -243,6 +244,30 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                                 <button class="clean" type="submit"
                                                         onclick="return confirm('Xác nhận đã dọn xong toàn bộ bàn của đơn #${t.orderID}?')">
                                                     Đã dọn dẹp xong
+                                                </button>
+                                            </form>
+                                        </c:if>
+                                        
+                                        <%-- Nút Khách Đặt Trước đã đến (Giữ nguyên) --%>
+                                        <c:if test="${t.physicalStatus == 'reserved'}">
+                                            <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                                <input type="hidden" name="action" value="checkin">
+                                                <input type="hidden" name="orderID" value="${t.orderID}">
+                                                <button class="checkin" type="submit"
+                                                        onclick="return confirm('Xác nhận khách của đơn #${t.orderID} đã đến và nhận bàn?')">
+                                                    <i class="fas fa-check-circle"></i> Khách đã đến
+                                                </button>
+                                            </form>
+                                        </c:if>
+
+                                        <%-- 🌟 THÊM MỚI: NÚT XÁC NHẬN MỞ BÀN CHO KHÁCH QUÉT QR LẦN ĐẦU --%>
+                                        <c:if test="${t.physicalStatus == 'pending'}">
+                                            <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                                <input type="hidden" name="action" value="open_table">
+                                                <input type="hidden" name="orderID" value="${t.orderID}">
+                                                <button type="submit" style="background: #e67e22; font-weight: bold;"
+                                                        onclick="return confirm('Xác nhận mở bàn #${t.orderID} để khách có thể bắt đầu gọi món?')">
+                                                    <i class="fas fa-unlock"></i> Xác nhận mở bàn
                                                 </button>
                                             </form>
                                         </c:if>
