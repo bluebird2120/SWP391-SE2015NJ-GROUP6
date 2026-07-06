@@ -90,6 +90,22 @@
                         </div>
                     </div>
 
+                    <%-- [PHAN QUYEN NHAN SU] Owner chi chon Phuc vu hoac Le tan. --%>
+                    <div class="form-group ${not empty errors['roleID'] ? 'has-error' : ''}">
+                        <label>Role <span class="required">*</span></label>
+                        <select name="roleID" required>
+                            <option value="2" ${empty staff.roleID || staff.roleID == 2 ? 'selected' : ''}>
+                                Nhân viên phục vụ
+                            </option>
+                            <option value="3" ${staff.roleID == 3 ? 'selected' : ''}>
+                                Lễ tân
+                            </option>
+                        </select>
+                        <c:if test="${not empty errors['roleID']}">
+                            <div class="err-msg">${errors['roleID']}</div>
+                        </c:if>
+                    </div>
+
                     <div class="row">
                         <div class="form-group ${not empty errors['phoneNumber'] ? 'has-error' : ''}">
                             <label>Phone Number <span class="required">*</span></label>

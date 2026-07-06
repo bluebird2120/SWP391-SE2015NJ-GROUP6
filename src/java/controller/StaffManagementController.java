@@ -98,6 +98,7 @@ public class StaffManagementController extends HttpServlet {
             throws ServletException, IOException {
         String keyword = request.getParameter("keyword");
         String statusStr = request.getParameter("status");
+        String roleStr = request.getParameter("role");
 
         Integer status = null;
 
@@ -105,6 +106,17 @@ public class StaffManagementController extends HttpServlet {
             try {
                 status = Integer.parseInt(statusStr);
             } catch (NumberFormatException ignored) {
+            }
+        }
+
+        // [LOC THEO ROLE] Chi chap nhan Phuc vu (2) hoac Le tan (3).
+        Integer roleID = null;
+        if (roleStr != null && !roleStr.isBlank()) {
+            int parsedRole = parseIntOrDefault(roleStr, 0);
+            if (isManagedStaffRole(parsedRole)) {
+                roleID = parsedRole;
+            } else {
+                roleStr = "";
             }
         }
 
@@ -116,7 +128,7 @@ public class StaffManagementController extends HttpServlet {
 
         EmployeeDAO dao = new EmployeeDAO();
 
-        int total = dao.countStaff(keyword, status);
+        int total = dao.countStaff(keyword, status, roleID);
         int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
 
         if (totalPages == 0) {
@@ -127,11 +139,13 @@ public class StaffManagementController extends HttpServlet {
             page = totalPages;
         }
 
-        List<Employee> staffList = dao.listStaffPaged(keyword, status, page, PAGE_SIZE);
+        List<Employee> staffList = dao.listStaffPaged(
+                keyword, status, roleID, page, PAGE_SIZE);
 
         request.setAttribute("staffList", staffList);
         request.setAttribute("keyword", keyword);
         request.setAttribute("status", statusStr);
+        request.setAttribute("role", roleStr);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalRecords", total);
@@ -208,7 +222,7 @@ public class StaffManagementController extends HttpServlet {
         EmployeeDAO dao = new EmployeeDAO();
         Employee e = dao.findById(id);
 
-        if (e == null || e.getRoleID() != UserRole.RESTAURANT_STAFF.getRoleID()) {
+        if (e == null || !isManagedStaffRole(e.getRoleID())) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
@@ -230,7 +244,7 @@ public class StaffManagementController extends HttpServlet {
         EmployeeDAO dao = new EmployeeDAO();
         Employee existing = dao.findById(id);
 
-        if (existing == null || existing.getRoleID() != UserRole.RESTAURANT_STAFF.getRoleID()) {
+        if (existing == null || !isManagedStaffRole(existing.getRoleID())) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
@@ -287,7 +301,12 @@ public class StaffManagementController extends HttpServlet {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
 
         if (id > 0) {
-            new EmployeeDAO().softDelete(id);
+            EmployeeDAO dao = new EmployeeDAO();
+            Employee target = dao.findById(id);
+            // [PHAN QUYEN NHAN SU] Chan request gia mao khoa tai khoan Owner.
+            if (target != null && isManagedStaffRole(target.getRoleID())) {
+                dao.softDelete(id);
+            }
         }
 
         response.sendRedirect(buildListBackUrl(request, "deactivated"));
@@ -298,7 +317,12 @@ public class StaffManagementController extends HttpServlet {
         int id = parseIntOrDefault(request.getParameter("id"), 0);
 
         if (id > 0) {
-            new EmployeeDAO().reactivate(id);
+            EmployeeDAO dao = new EmployeeDAO();
+            Employee target = dao.findById(id);
+            // [PHAN QUYEN NHAN SU] Chi mo lai tai khoan role 2/3.
+            if (target != null && isManagedStaffRole(target.getRoleID())) {
+                dao.reactivate(id);
+            }
         }
 
         response.sendRedirect(buildListBackUrl(request, "reactivated"));
@@ -317,6 +341,16 @@ public class StaffManagementController extends HttpServlet {
         String dobStr = trim(request.getParameter("dob"));
         String address = trim(request.getParameter("address"));
         String password = request.getParameter("password");
+        String roleIDStr = trim(request.getParameter("roleID"));
+
+        // [PHAN QUYEN NHAN SU] Form chi duoc gan Phuc vu (2) hoac Le tan (3).
+        // Khong chap nhan Owner (1), ke ca khi gui request thu cong.
+        int selectedRoleID = parseIntOrDefault(roleIDStr, 0);
+        if (!isManagedStaffRole(selectedRoleID)) {
+            errors.put("roleID", "Please select Staff or Receptionist.");
+        } else {
+            e.setRoleID(selectedRoleID);
+        }
 
         request.setAttribute("dobValue", dobStr);
 
@@ -531,12 +565,22 @@ public class StaffManagementController extends HttpServlet {
         return s == null ? null : s.trim();
     }
 
+    /**
+     * [PHAN QUYEN NHAN SU] Man hinh nay chi quan ly role 2 va role 3,
+     * tuyet doi khong tao/chinh sua tai khoan Owner.
+     */
+    private static boolean isManagedStaffRole(int roleID) {
+        return roleID == UserRole.RESTAURANT_STAFF.getRoleID()
+                || roleID == UserRole.RECEPTIONIST.getRoleID();
+    }
+
     private String buildListBackUrl(HttpServletRequest request, String msg) {
         StringBuilder url = new StringBuilder(request.getContextPath())
                 .append("/owner/staff?action=list");
 
         String kw = request.getParameter("keyword");
         String st = request.getParameter("status");
+        String role = request.getParameter("role");
         String pg = request.getParameter("page");
 
         if (kw != null && !kw.isBlank()) {
@@ -545,6 +589,11 @@ public class StaffManagementController extends HttpServlet {
 
         if (st != null && !st.isBlank()) {
             url.append("&status=").append(st);
+        }
+
+        // [LOC THEO ROLE] Giu bo loc sau khi khoa/mo khoa tai khoan.
+        if (role != null && !role.isBlank()) {
+            url.append("&role=").append(role);
         }
 
         if (pg != null && !pg.isBlank()) {

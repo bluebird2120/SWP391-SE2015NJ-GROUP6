@@ -1,4 +1,4 @@
-F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
@@ -195,7 +195,8 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                     <td>
                                         <c:choose>
                                             <c:when test="${r.remainingQuantity > 0}">
-                                                <form method="post" action="${pageContext.request.contextPath}/staff/tables" class="inline">
+                                                <%-- [PHAN QUYEN LE TAN] Chi le tan co form gan ban. --%>
+                                                <form method="post" action="${pageContext.request.contextPath}/reception/tables" class="inline">
                                                     <input type="hidden" name="action" value="assign">
                                                     <input type="hidden" name="orderID" value="${r.orderID}">
                                                     <select name="tableID" required>
@@ -237,8 +238,9 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                     <td><c:if test="${not empty t.orderID}">#${t.orderID}</c:if></td>
                                         <td>
                                         <%-- Nút Dọn bàn (Giữ nguyên) --%>
-                                        <c:if test="${t.physicalStatus == 'cleaning'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                        <%-- [PHAN QUYEN LE TAN] Le tan khong duoc xac nhan don dep. --%>
+                                        <c:if test="${false}">
+                                            <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="cleaned">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="clean" type="submit"
@@ -250,7 +252,7 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
                                         
                                         <%-- Nút Khách Đặt Trước đã đến (Giữ nguyên) --%>
                                         <c:if test="${t.physicalStatus == 'reserved'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                            <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="checkin">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="checkin" type="submit"
@@ -262,7 +264,7 @@ F<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
                                         <%-- 🌟 THÊM MỚI: NÚT XÁC NHẬN MỞ BÀN CHO KHÁCH QUÉT QR LẦN ĐẦU --%>
                                         <c:if test="${t.physicalStatus == 'pending'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                            <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="open_table">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit" style="background: #e67e22; font-weight: bold;"

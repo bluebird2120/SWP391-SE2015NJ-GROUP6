@@ -9,7 +9,9 @@ package util;
 public enum UserRole {
     CUSTOMER(0),
     RESTAURANT_OWNER(1),
-    RESTAURANT_STAFF(2);
+    RESTAURANT_STAFF(2),
+    // [PHAN QUYEN LE TAN] Tach le tan khoi nhan vien phuc vu.
+    RECEPTIONIST(3);
 
     private final int roleID;
 
@@ -42,6 +44,9 @@ public enum UserRole {
         }
         if (cleanName.equals("STAFF") || cleanName.equals("RESTAURANT_STAFF")) {
             return RESTAURANT_STAFF;
+        }
+        if (cleanName.equals("RECEPTIONIST") || cleanName.equals("LE_TAN")) {
+            return RECEPTIONIST;
         }
         if (cleanName.equals("CUSTOMER")) {
             return CUSTOMER;

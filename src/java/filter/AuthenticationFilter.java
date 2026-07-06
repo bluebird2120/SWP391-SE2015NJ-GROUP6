@@ -12,12 +12,15 @@ import model.Employee;
 @WebFilter(filterName = "AuthenticationFilter", urlPatterns = {
     "/customer/*",
     "/staff/*",
-    "/owner/*"
+    "/owner/*",
+    "/reception/*"
 })
 public class AuthenticationFilter implements Filter {
 
     private static final int OWNER_ROLE_ID = 1;
     private static final int STAFF_ROLE_ID = 2;
+    // [PHAN QUYEN LE TAN] Role 3 chi quan ly va gan ban.
+    private static final int RECEPTIONIST_ROLE_ID = 3;
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -50,7 +53,9 @@ public class AuthenticationFilter implements Filter {
         }
 
         //Employee (/staff/*, /owner/*): Phân quyền theo Role
-        if (uri.startsWith(ctx + "/staff/") || uri.startsWith(ctx + "/owner/")) {
+        if (uri.startsWith(ctx + "/staff/")
+                || uri.startsWith(ctx + "/owner/")
+                || uri.startsWith(ctx + "/reception/")) {
             if (employee == null) {
                 // Đã login customer nhưng cố vào staff/owner
                 if (customer != null) {
@@ -70,8 +75,24 @@ public class AuthenticationFilter implements Filter {
             }
             
             // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
-            if (uri.startsWith(ctx + "/staff/") 
+            // [PHAN QUYEN LE TAN] Le tan duoc dung dashboard, lich va thong bao.
+            boolean receptionistSharedPage = employee.getRoleID() == RECEPTIONIST_ROLE_ID
+                    && (uri.equals(ctx + "/staff/dashboard")
+                    || uri.startsWith(ctx + "/staff/my-schedule")
+                    || uri.startsWith(ctx + "/staff/notifications")
+                    || uri.startsWith(ctx + "/staff/change-password"));
+
+            if (uri.startsWith(ctx + "/staff/")
                     && employee.getRoleID() != STAFF_ROLE_ID 
+                    && employee.getRoleID() != OWNER_ROLE_ID
+                    && !receptionistSharedPage) {
+                response.sendRedirect(ctx + "/unauthorized");
+                return;
+            }
+
+            // [PHAN QUYEN LE TAN] Chi Le tan va Owner duoc vao khu tiep nhan.
+            if (uri.startsWith(ctx + "/reception/")
+                    && employee.getRoleID() != RECEPTIONIST_ROLE_ID
                     && employee.getRoleID() != OWNER_ROLE_ID) {
                 response.sendRedirect(ctx + "/unauthorized");
                 return;

@@ -345,7 +345,8 @@
         <a href="#">Album ảnh</a>
         <a href="#">Liên hệ</a>
         <c:if test="${sessionScope.employee != null}">
-            <a href="${pageContext.request.contextPath}/staff/dashboard">
+            <%-- [PHAN QUYEN LE TAN] Dieu huong dung man hinh theo role. --%>
+            <a href="${pageContext.request.contextPath}${sessionScope.employee.roleID == 1 ? '/owner/dashboard' : '/staff/dashboard'}">
                 <i class="fa-solid fa-gauge-high"></i>Quản lý
             </a>
         </c:if>
@@ -424,6 +425,10 @@
                         <c:choose>
                             <c:when test="${sessionScope.employee.roleID == 1}">
                                 <span class="role-badge badge-owner">Owner</span>
+                            </c:when>
+                            <c:when test="${sessionScope.employee.roleID == 3}">
+                                <%-- [PHAN QUYEN LE TAN] Hien dung ten vai tro. --%>
+                                <span class="role-badge badge-staff">Lễ tân</span>
                             </c:when>
                             <c:otherwise>
                                 <span class="role-badge badge-staff">Nhân viên</span>
