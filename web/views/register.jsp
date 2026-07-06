@@ -274,8 +274,6 @@
     </head>
     <body>
 
-        <%@include file="/views/includes/header.jsp" %>
-
         <div class="page-body">
             <div class="register-box">
 
@@ -316,7 +314,7 @@
                                     <input type="text"
                                            id="userName"
                                            name="userName"
-                                           maxlength="30"
+                                           maxlength="50"
                                            value="${userName}"
                                            class="${not empty userNameError ? 'input-error' : ''}"
                                            required>
@@ -441,7 +439,6 @@
             </div>
         </div>
 
-        <%@include file="/views/includes/footer.jsp" %>
         <script>
             document.querySelector("form").addEventListener("submit", function (e) {
 
@@ -465,9 +462,9 @@
                     document.getElementById("userNameError").textContent =
                             "Vui lòng nhập tên của bạn.";
                     hasError = true;
-                } else if (userName.value.trim().length > 30) {
+                } else if (userName.value.trim().length < 2 || userName.value.trim().length > 50) {
                     document.getElementById("userNameError").textContent =
-                            "Tên trong khoảng từ 1-30 kí tự.";
+                            "Tên hiển thị phải từ 2 đến 50 ký tự.";
                     hasError = true;
                 }
 

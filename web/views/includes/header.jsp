@@ -337,7 +337,7 @@
     </a>
 
     <nav class="navbar">
-        <a href="#">Giới thiệu</a>
+        <a href="${pageContext.request.contextPath}/views/template/about.jsp">Giới thiệu</a>
         <a href="#">Thực đơn</a>
         <c:if test="${sessionScope.employee == null}">
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
