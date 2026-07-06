@@ -40,7 +40,7 @@ public class StaffManagementController extends HttpServlet {
     private static final int PAGE_SIZE = 5;
     private static final String UPLOAD_DIR = "uploads/staff";
     private static final long MAX_PROFILE_IMAGE_SIZE = 2L * 1024 * 1024;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,10}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10,11}$");
 
     @Override
@@ -325,8 +325,8 @@ public class StaffManagementController extends HttpServlet {
 
         if (fullName == null || fullName.isBlank()) {
             errors.put("fullName", "Full name is required.");
-        } else if (fullName.length() < 2 || fullName.length() > 150) {
-            errors.put("fullName", "Full name must be 2-150 characters.");
+        } else if (fullName.length() < 2 || fullName.length() > 50) {
+            errors.put("fullName", "Full name must be 2-50 characters.");
         }
 
         EmployeeDAO dao = new EmployeeDAO();
@@ -350,8 +350,8 @@ public class StaffManagementController extends HttpServlet {
         if (isCreate) {
             if (password == null || password.isBlank()) {
                 errors.put("password", "Password is required.");
-            } else if (password.length() < 6) {
-                errors.put("password", "Password must be at least 6 characters.");
+            } else if (password.length() < 6 || password.length() > 50) {
+                errors.put("password", "Password must be 6-50 characters.");
             }
         }
 
