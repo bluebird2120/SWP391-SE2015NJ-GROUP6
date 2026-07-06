@@ -17,7 +17,7 @@ public class EmployeeDAO extends DBContext {
             throws SQLException {
 
         String sql = "SELECT e.employeeID, e.roleID, "
-                + "       e.fullName, e.phoneNumber, e.email, "
+                + "       e.fullName, e.dob, e.phoneNumber, e.email, "
                 + "       e.isActive, e.address, e.image, "
                 + "       e.createdAt, e.lastPasswordChangedAt, "
                 + "       e.mustChangePassword, e.password "
@@ -37,22 +37,7 @@ public class EmployeeDAO extends DBContext {
                 if (!util.PasswordUtil.verify(rawPassword, storedPassword)) {
                     return null;
                 }
-
-                Employee emp = new Employee();
-                emp.setEmployeeID(rs.getInt("employeeID"));
-                emp.setRoleID(rs.getInt("roleID"));
-
-                emp.setFullName(rs.getString("fullName"));
-                emp.setPhoneNumber(rs.getString("phoneNumber"));
-                emp.setEmail(rs.getString("email"));
-                emp.setIsActive(rs.getInt("isActive"));
-                emp.setAddress(rs.getString("address"));
-                emp.setImage(rs.getString("image"));
-                emp.setCreatedAt(rs.getTimestamp("createdAt"));
-                emp.setLastPasswordChangedAt(rs.getTimestamp("lastPasswordChangedAt"));
-                emp.setMustChangePassword(rs.getInt("mustChangePassword"));
-
-                return emp;
+                return mapRow(rs);
             }
         }
     }

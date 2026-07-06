@@ -319,7 +319,7 @@ public class MenuItemDAO extends DBContext {
                 + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "left join DailyInventory di on mi.itemID = di.itemID and di.workingDate = ? "
                 + "where mi.itemName like ? ";
-                
+
         String todayStr = new java.sql.Date(System.currentTimeMillis()).toString();
         if (date != null && date.toString().equals(todayStr)) {
             sql += "and (mi.isAvailable = 1 or di.workingDate is not null) ";
@@ -359,14 +359,14 @@ public class MenuItemDAO extends DBContext {
                 + "join CookingMethod cm on mi.methodID = cm.methodID "
                 + "left join DailyInventory di on mi.itemID = di.itemID and di.workingDate = ? "
                 + "where mi.itemName like ? ";
-        
+
         String todayStr = new java.sql.Date(System.currentTimeMillis()).toString();
         if (date != null && date.toString().equals(todayStr)) {
             sql += "and (mi.isAvailable = 1 or di.workingDate is not null) ";
         } else {
             sql += "and di.workingDate is not null ";
         }
-        
+
         if (categoryID > 0) {
             sql += "and mi.categoryID = ? ";
         }
@@ -402,4 +402,131 @@ public class MenuItemDAO extends DBContext {
         return list;
     }
 
+    public List<MenuItem> getPerformanceDish(String search, int categoryId, int methodId,
+            String startDate, String endDate, int offset, int pageSize) {
+
+        List<MenuItem> dishList = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT mi.itemName, "
+                + "cm.methodName, "
+                + "mc.categoryName, "
+                + "IFNULL(SUM(CASE "
+                + "WHEN o.orderID IS NOT NULL THEN oi.quantity "
+                + "ELSE 0 END), 0) AS totalQuantity "
+                + "FROM MenuItem mi "
+                + "JOIN MenuCategory mc ON mi.categoryID = mc.categoryID "
+                + "JOIN CookingMethod cm ON mi.methodID = cm.methodID "
+                + "LEFT JOIN OrderItem oi ON oi.itemID = mi.itemID "
+                + "LEFT JOIN `Order` o ON o.orderID = oi.orderID "
+                + "AND o.orderStatus = 'completed' "
+                + "AND o.createdAt BETWEEN ? AND ? "
+                + "WHERE 1=1 ");
+
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND mi.itemName LIKE ? ");
+        }
+
+        if (categoryId > 0) {
+            sql.append("AND mi.categoryID = ? ");
+        }
+
+        if (methodId > 0) {
+            sql.append("AND mi.methodID = ? ");
+        }
+
+        sql.append("GROUP BY mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
+        sql.append("ORDER BY totalQuantity DESC, ");
+        sql.append("SUM(CASE WHEN o.orderID IS NOT NULL THEN oi.quantity * oi.price ELSE 0 END) DESC ");
+        sql.append("LIMIT ? OFFSET ?");
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql.toString());
+
+            int index = 1;
+
+            ps.setString(index++, startDate + " 00:00:00");
+            ps.setString(index++, endDate + " 23:59:59");
+
+            if (search != null && !search.trim().isEmpty()) {
+                ps.setString(index++, "%" + search.trim() + "%");
+            }
+
+            if (categoryId > 0) {
+                ps.setInt(index++, categoryId);
+            }
+
+            if (methodId > 0) {
+                ps.setInt(index++, methodId);
+            }
+
+            ps.setInt(index++, pageSize);
+            ps.setInt(index++, offset);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                MenuItem mi = new MenuItem();
+
+                mi.setItemName(rs.getString("itemName"));
+                mi.setCategoryName(rs.getString("categoryName"));
+                mi.setMethodName(rs.getString("methodName"));
+                mi.setTotalQuantity(rs.getInt("totalQuantity"));
+
+                dishList.add(mi);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return dishList;
+    }
+
+    public int getTotalPerformanceDishCount(String search, int categoryId, int methodId, String startDate, String endDate) {
+        int total = 0;
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(DISTINCT mi.itemID) AS total "
+                + "FROM MenuItem mi "
+                + "JOIN MenuCategory mc ON mi.categoryID = mc.categoryID "
+                + "JOIN CookingMethod cm ON mi.methodID = cm.methodID "
+                + "LEFT JOIN OrderItem oi ON oi.itemID = mi.itemID "
+                + "LEFT JOIN `Order` o ON o.orderID = oi.orderID "
+                + "AND o.orderStatus = 'completed' "
+                + "AND o.createdAt BETWEEN ? AND ? "
+                + "WHERE 1=1 "
+        );
+        if (search != null && !search.trim().isEmpty()) {
+
+            sql.append("AND mi.itemName LIKE ? ");
+        }
+        if (categoryId > 0) {
+            sql.append("AND mi.categoryID = ? ");
+        }
+        if (methodId > 0) {
+            sql.append("AND mi.methodID = ? ");
+        }
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql.toString());
+            int index = 1;
+            ps.setString(index++, startDate + " 00:00:00");
+            ps.setString(index++, endDate + " 23:59:59");
+            if (search != null && !search.trim().isEmpty()) {
+                ps.setString(index++, "%" + search.trim() + "%");
+            }
+            if (categoryId > 0) {
+                ps.setInt(index++, categoryId);
+            }
+            if (methodId > 0) {
+                ps.setInt(index++, methodId);
+            }
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
 }

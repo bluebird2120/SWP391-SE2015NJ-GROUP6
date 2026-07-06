@@ -6,11 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
 import model.Customer;
 import model.Employee;
-import model.RoutePermission;
 
 @WebFilter(filterName = "AuthenticationFilter", urlPatterns = {
     "/customer/*",
@@ -20,6 +17,7 @@ import model.RoutePermission;
 public class AuthenticationFilter implements Filter {
 
     private static final int OWNER_ROLE_ID = 1;
+    private static final int STAFF_ROLE_ID = 2;
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -51,7 +49,7 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
-        //Employee (/staff/*, /owner/*): Phân quyền động
+        //Employee (/staff/*, /owner/*): Phân quyền theo Role
         if (uri.startsWith(ctx + "/staff/") || uri.startsWith(ctx + "/owner/")) {
             if (employee == null) {
                 // Đã login customer nhưng cố vào staff/owner
@@ -64,35 +62,17 @@ public class AuthenticationFilter implements Filter {
                 response.sendRedirect(ctx + "/login?msg=required");
                 return;
             }
-
-            // Tìm permission cần thiết cho route này (từ dữ liệu DB, có cache)
-            String requiredPermission = findRequiredPermission(ctx, uri);
-
-            if (requiredPermission == null) {
+            
+            // /owner/* chỉ dành cho Owner (roleID = 1)
+            if (uri.startsWith(ctx + "/owner/") && employee.getRoleID() != OWNER_ROLE_ID) {
                 response.sendRedirect(ctx + "/unauthorized");
                 return;
             }
-
-            //Set != List ko cho trùng lặp phần tử
-            // Quyền được cấp theo Role (staff.access, owner.access)
-            Set<String> employeePermissions = PermissionCache.getPermissionsForRole(employee.getRoleID());
-
-            // Gộp thêm extra permissions được cấp riêng cho nhân viên này
-            //@SuppressWarnings("unchecked")
-            // Quyền được cấp riêng cho nhân viên
-            Set<String> extraPerms = (Set<String>) session.getAttribute("extraPerms");
-            // Gộp tất cả quyền của nhân viên
-            Set<String> allPerms = new java.util.HashSet<>(employeePermissions);
-            if (extraPerms != null) {
-                allPerms.addAll(extraPerms);
-            }
-
-            if (!allPerms.contains(requiredPermission)) {
-                //Owner cố vào Staff -> đưa về dashboard Owner
-                if (employee.getRoleID() == OWNER_ROLE_ID && uri.startsWith(ctx + "/staff/")) {
-                    response.sendRedirect(ctx + "/owner/dashboard");
-                    return;
-                }
+            
+            // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
+            if (uri.startsWith(ctx + "/staff/") 
+                    && employee.getRoleID() != STAFF_ROLE_ID 
+                    && employee.getRoleID() != OWNER_ROLE_ID) {
                 response.sendRedirect(ctx + "/unauthorized");
                 return;
             }
@@ -121,16 +101,5 @@ public class AuthenticationFilter implements Filter {
             return;
         }
         chain.doFilter(req, res);
-    }
-
-    private String findRequiredPermission(String ctx, String uri) {
-        List<RoutePermission> rules = PermissionCache.getRouteRules();
-        for (RoutePermission rule : rules) {
-            if (uri.startsWith(ctx + rule.getRoutePrefix())) {
-                //owner.access / staff.access
-                return rule.getPermissionKey();
-            }
-        }
-        return null;
     }
 }

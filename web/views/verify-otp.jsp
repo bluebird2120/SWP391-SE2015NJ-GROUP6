@@ -226,8 +226,6 @@
     </head>
     <body>
 
-        <%@include file="/views/includes/header.jsp" %>
-
         <div class="page-body">
             <div class="otp-box">
 
@@ -295,8 +293,6 @@
                 </div>
             </div>
         </div>
-
-        <%@include file="/views/includes/footer.jsp" %>
 
         <script>
             document.getElementById("otpForm").addEventListener("submit", function (e) {

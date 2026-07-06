@@ -436,6 +436,12 @@
                             Lịch sử đơn đặt bàn của bạn
                         </div>
 
+                        <c:if test="${param.preorderSaved == 'true'}">
+                            <div class="alert alert-success">
+                                Đã lưu món đặt trước vào đơn của bạn.
+                            </div>
+                        </c:if>
+
                         <c:choose>
                             <c:when test="${not empty orders}">
                                 <div class="row g-3">
@@ -545,7 +551,19 @@
                                                     </p>
 
                                                     <c:if test="${o.orderStatus == 'reserved'}">
-                                                        <div class="text-end mt-2">
+                                                        <div class="d-flex justify-content-end gap-3 mt-2">
+                                                            <a href="${pageContext.request.contextPath}/reservation?action=preorder&orderID=${o.orderID}"
+                                                               class="small text-decoration-none"
+                                                               style="color:#76493b;font-weight:600;">
+                                                                <c:choose>
+                                                                    <c:when test="${not empty preorderItemsByOrder[o.orderID]}">
+                                                                        ✏️ Xem / chỉnh sửa món
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        🍲 Đặt món trước
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                            </a>
                                                             <a href="${pageContext.request.contextPath}/reservation?action=cancel&orderID=${o.orderID}"
                                                                class="text-danger small text-decoration-none"
                                                                onclick="return confirm('Bạn chắc chắn muốn hủy đặt bàn #${o.orderID}?')">
@@ -657,19 +675,19 @@
 
                                             <div class="mb-4 mt-4">
                                                 <div class="section-title">
-                                                    4. Đặt trước thực đơn (Tùy chọn)
+                                                    4. Thanh toán cọc giữ bàn
                                                 </div>
 
                                                 <div class="menu-placeholder">
                                                     <span class="fs-4">🍲</span>
 
                                                     <h6 class="fw-bold text-secondary small mt-1">
-                                                        Bạn có muốn đặt món trước không?
+                                                        Thanh toán cọc để xác nhận giữ bàn
                                                     </h6>
 
                                                     <p class="text-muted mb-0" style="font-size:.8rem;">
-                                                        Chọn <strong>Đặt món trước</strong> để sang thực đơn,
-                                                        hoặc bỏ qua món ăn và đi thẳng đến thanh toán cọc.
+                                                        Sau khi thanh toán cọc thành công, bạn có thể
+                                                        đặt món ngay hoặc quay lại chọn món sau trong lịch sử.
                                                     </p>
                                                 </div>
                                             </div>
@@ -677,19 +695,10 @@
                                             <div class="d-flex flex-column flex-md-row gap-2 mt-2">
                                                 <button type="submit"
                                                         name="nextStep"
-                                                        value="menu"
-                                                        class="btn-confirm-booking"
-                                                        style="background:#76493b;">
-                                                        
-                                                    🍲 ĐẶT MÓN TRƯỚC
-                                                </button>
-
-                                                <button type="submit"
-                                                        name="nextStep"
                                                         value="deposit"
                                                         class="btn-confirm-booking"
                                                         style="background:#76493b;">
-                                                    💳 BỎ QUA MÓN - THANH TOÁN CỌC
+                                                    💳 THANH TOÁN CỌC BÀN
                                                 </button>
                                             </div>
                                         </c:when>
