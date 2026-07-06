@@ -92,6 +92,8 @@
 <%-- Phân quyền cứng theo Role: Owner (roleID=1) / Staff (roleID=2) --%>
 <c:set var="isOwner" value="${sessionScope.employee.roleID == 1}" />
 <c:set var="isStaff" value="${sessionScope.employee.roleID == 2}" />
+<%-- [PHAN QUYEN LE TAN] Role 3 co menu tiep nhan rieng. --%>
+<c:set var="isReceptionist" value="${sessionScope.employee.roleID == 3}" />
 
 <nav class="sidebar">
     <div class="sidebar-header">
@@ -112,22 +114,54 @@
                     <i class="fas fa-house"></i> Trang tổng quan
                 </a>
             </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('order-management') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/order-management">
-                    <i class="fas fa-clipboard-list"></i> Đơn hàng
-                </a>
-            </li>
+           
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/tables') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/tables">
-                    <i class="fas fa-chair"></i> Vận hành bàn
+                    <i class="fas fa-chair"></i> Bàn phục vụ 
                 </a>
             </li>
         </c:if>
 
         <%-- Owner: lịch sử đơn + bàn nhà hàng --%>
+        <c:if test="${isReceptionist}">
+            <%-- [PHAN QUYEN LE TAN] Dashboard giong nhan vien nhung menu gon hon. --%>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/dashboard">
+                    <i class="fas fa-house"></i> Trang tổng quan
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/reception/tables">
+                    <i class="fas fa-chair"></i> Tiếp nhận và gán bàn
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/my-schedule">
+                    <i class="fas fa-calendar-week"></i> Lịch làm việc
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/notifications">
+                    <i class="fas fa-bell"></i> Thông báo
+                    <c:if test="${sessionScope.unreadCount > 0}">
+                        <span style="background:#dc3545;color:#fff;font-size:.65rem;padding:1px 7px;border-radius:10px;margin-left:auto;">${sessionScope.unreadCount}</span>
+                    </c:if>
+                </a>
+            </li>
+        </c:if>
+
         <c:if test="${isOwner}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/reception/tables">
+                    <i class="fas fa-concierge-bell"></i> Tiếp nhận và gán bàn
+                </a>
+            </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/owner/order-history">
@@ -142,14 +176,16 @@
             </li>
         </c:if>
 
+        <c:if test="${!isReceptionist}">
         <li>
             <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
                href="${pageContext.request.contextPath}/business-hours?action=list">
                 <i class="fas fa-clock"></i> Giờ hoạt động
             </a>
         </li>
+        </c:if>
 
-        <%-- ===== KHÔNG GIAN LÀM VIỆC (chỉ Staff) ===== --%>
+        <%-- [PHAN QUYEN PHUC VU] Giu nguyen cac menu rieng cua Staff. --%>
         <c:if test="${isStaff}">
             <li>
                 <div class="nav-section-title"><i class="fas fa-user-clock"></i> Không gian làm việc</div>

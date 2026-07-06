@@ -14,7 +14,7 @@ public class StaffTableDAO extends DBContext {
 
     public List<StaffTableDTO> getPhysicalTables() {
         List<StaffTableDTO> tables = new ArrayList<>();
-        // 🌟 ĐÃ SỬA: Thêm 'pending' và 'occupied' vào câu lệnh CASE và IN
+        // ĐÃ SỬA: Thêm 'pending' và 'occupied' vào câu lệnh CASE và IN
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
                 + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
                 + "CASE "
@@ -37,6 +37,39 @@ public class StaffTableDAO extends DBContext {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 tables.add(mapTable(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return tables;
+    }
+
+    /**
+     * [PHAN QUYEN PHUC VU] Chi lay ban/don duoc giao cho nhan vien dang
+     * dang nhap. Le tan van dung getPhysicalTables() de xem toan bo nha hang.
+     */
+    public List<StaffTableDTO> getTablesForEmployee(int employeeID) {
+        List<StaffTableDTO> tables = new ArrayList<>();
+        String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
+                + "CASE "
+                + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
+                + "WHEN o.tableStatus IN ('serving','occupied') THEN 'serving' "
+                + "WHEN o.tableStatus='reserved' THEN 'reserved' "
+                + "WHEN o.tableStatus='pending' THEN 'pending' "
+                + "ELSE 'available' END physicalStatus "
+                + "FROM `Order` o "
+                + "JOIN Order_Table ot ON ot.orderID=o.orderID "
+                + "JOIN `Table` t ON t.tableID=ot.tableID "
+                + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' "
+                + "AND o.tableStatus IN ('reserved','serving','occupied','cleaning','pending') "
+                + "ORDER BY o.orderTime,t.tableName";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tables.add(mapTable(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -127,7 +160,7 @@ public class StaffTableDAO extends DBContext {
         return summary;
     }
 
-    public String assignTable(int orderID, int tableID, int employeeID) {
+    public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
             conn.setAutoCommit(false);
@@ -140,6 +173,23 @@ public class StaffTableDAO extends DBContext {
                 return "Bàn này đang được sử dụng hoặc đang chờ dọn.";
             }
 
+            // [PHAN QUYEN LE TAN] Le tan chi gan ban. Nhan vien phuc vu
+            // duoc he thong chon tu dong theo ca va so don dang phuc vu.
+            // Neu don da co phuc vu (vi du don nhieu ban), giu nguyen nguoi do.
+            Integer servingEmployeeID = findAssignedServingEmployee(conn, orderID);
+            if (servingEmployeeID == null) {
+                servingEmployeeID = findLeastLoadedServingEmployee(conn);
+            }
+            // [DU PHONG GAN PHUC VU] Neu chua xep ca hoac hien tai ngoai gio ca,
+            // van chon nhan vien role 2 dang hoat dong va co it don nhat.
+            if (servingEmployeeID == null) {
+                servingEmployeeID = findLeastLoadedActiveServingEmployee(conn);
+            }
+            if (servingEmployeeID == null) {
+                conn.rollback();
+                return "Khong co nhan vien phuc vu dang hoat dong de nhan don.";
+            }
+
             try (PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO Order_Table(orderID,tableID) VALUES(?,?)")) {
                 ps.setInt(1, orderID);
@@ -150,7 +200,7 @@ public class StaffTableDAO extends DBContext {
             try (PreparedStatement ps = conn.prepareStatement(
                     "UPDATE `Order` SET employeeID=?, isStaffConfirmed=1 "
                     + "WHERE orderID=?")) {
-                ps.setInt(1, employeeID);
+                ps.setInt(1, servingEmployeeID);
                 ps.setInt(2, orderID);
                 ps.executeUpdate();
             }
@@ -174,16 +224,82 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
-    public boolean markCleaningCompleted(int orderID) {
+    /**
+     * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
+     */
+    public boolean markCleaningCompleted(int orderID, int employeeID) {
         String sql = "UPDATE `Order` SET tableStatus='available' "
-                + "WHERE orderID=? AND orderStatus='completed' "
-                + "AND tableStatus='cleaning'";
+                + "WHERE orderID=? AND employeeID=? "
+                + "AND orderStatus='completed' AND tableStatus='cleaning'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, orderID);
+            ps.setInt(2, employeeID);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * [TU DONG GAN PHUC VU] Chi chon role 2 dang hoat dong, dang trong ca,
+     * uu tien nguoi co it don chua hoan tat nhat.
+     */
+    private Integer findLeastLoadedServingEmployee(Connection conn)
+            throws SQLException {
+        String sql = "SELECT es.employeeID,COUNT(o.orderID) active_orders "
+                + "FROM EmployeeShifts es "
+                + "JOIN ShiftTemplates st ON st.templateID=es.templateID "
+                + "JOIN Employee e ON e.employeeID=es.employeeID "
+                + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "WHERE es.workDate=CURDATE() AND e.roleID=2 AND e.isActive=1 "
+                + "AND es.checkOutTime IS NULL "
+                + "AND es.status IN ('scheduled','present','late') "
+                + "AND ((st.startTime<=st.endTime "
+                + "AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
+                + "OR (st.startTime>st.endTime "
+                + "AND (CURRENT_TIME()>=st.startTime OR CURRENT_TIME()<=st.endTime))) "
+                + "GROUP BY es.employeeID "
+                + "ORDER BY active_orders ASC,es.employeeID ASC LIMIT 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt("employeeID") : null;
+        }
+    }
+
+    /**
+     * [TU DONG GAN PHUC VU] Don nhieu ban van chi thuoc mot nhan vien.
+     */
+    private Integer findAssignedServingEmployee(Connection conn, int orderID)
+            throws SQLException {
+        String sql = "SELECT o.employeeID FROM `Order` o "
+                + "JOIN Employee e ON e.employeeID=o.employeeID "
+                + "WHERE o.orderID=? AND e.roleID=2 LIMIT 1 FOR UPDATE";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt("employeeID") : null;
+            }
+        }
+    }
+
+    /**
+     * [DU PHONG GAN PHUC VU] Dung khi khong tim thay nhan vien trong ca.
+     * Chi xet nhan vien phuc vu role 2 dang hoat dong, khong xet Le tan/Owner.
+     */
+    private Integer findLeastLoadedActiveServingEmployee(Connection conn)
+            throws SQLException {
+        String sql = "SELECT e.employeeID,COUNT(o.orderID) active_orders "
+                + "FROM Employee e "
+                + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "WHERE e.roleID=2 AND e.isActive=1 "
+                + "GROUP BY e.employeeID "
+                + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt("employeeID") : null;
         }
     }
 

@@ -186,6 +186,15 @@
                         <option value="0" ${status == '0' ? 'selected' : ''}>Inactive</option>
                     </select>
                 </div>
+                <%-- [LOC THEO ROLE] Loc rieng Phuc vu hoac Le tan. --%>
+                <div class="field">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="" ${empty role ? 'selected' : ''}>All</option>
+                        <option value="2" ${role == '2' ? 'selected' : ''}>Nhân viên phục vụ</option>
+                        <option value="3" ${role == '3' ? 'selected' : ''}>Lễ tân</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-search"></i> Search
                 </button>
@@ -201,6 +210,8 @@
                             <th style="width: 60px;">#</th>
                             <th style="width: 60px;">Photo</th>
                             <th>Full Name</th>
+                            <%-- [PHAN QUYEN NHAN SU] Phan biet Phuc vu va Le tan. --%>
+                            <th>Role</th>
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Status</th>
@@ -210,7 +221,7 @@
                     <tbody>
                         <c:choose>
                             <c:when test="${empty staffList}">
-                                <tr><td colspan="7" class="empty"><i class="fas fa-inbox"></i> No staff found.</td></tr>
+                                <tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i> No staff found.</td></tr>
                             </c:when>
                             <c:otherwise>
                                 <c:forEach var="s" items="${staffList}" varStatus="loop">
@@ -227,6 +238,16 @@
                                             </c:choose>
                                         </td>
                                         <td><strong>${s.fullName}</strong></td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${s.roleID == 3}">
+                                                    <span class="badge">Lễ tân</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="badge">Nhân viên phục vụ</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
                                         <td>${s.email}</td>
                                         <td>${s.phoneNumber}</td>
 
@@ -252,6 +273,7 @@
                                                             <input type="hidden" name="id" value="${s.employeeID}">
                                                             <input type="hidden" name="keyword" value="${keyword}">
                                                             <input type="hidden" name="status" value="${status}">
+                                                            <input type="hidden" name="role" value="${role}">
                                                             <input type="hidden" name="page" value="${currentPage}">
                                                             <button class="btn btn-sm btn-danger" type="submit">
                                                                 <i class="fas fa-lock"></i> Deactivate
@@ -264,6 +286,7 @@
                                                             <input type="hidden" name="id" value="${s.employeeID}">
                                                             <input type="hidden" name="keyword" value="${keyword}">
                                                             <input type="hidden" name="status" value="${status}">
+                                                            <input type="hidden" name="role" value="${role}">
                                                             <input type="hidden" name="page" value="${currentPage}">
                                                             <button class="btn btn-sm btn-success" type="submit">
                                                                 <i class="fas fa-unlock"></i> Reactivate
@@ -284,7 +307,8 @@
                     <div class="pagination">
                         <c:set var="kw" value="${keyword != null ? keyword : ''}"/>
                         <c:set var="st" value="${status != null ? status : ''}"/>
-                        <c:set var="qs" value="action=list&keyword=${kw}&status=${st}"/>
+                        <c:set var="rl" value="${role != null ? role : ''}"/>
+                        <c:set var="qs" value="action=list&keyword=${kw}&status=${st}&role=${rl}"/>
 
                         <c:if test="${currentPage > 1}">
                             <a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=${currentPage - 1}">

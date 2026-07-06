@@ -87,7 +87,7 @@ public class EmployeeDAO extends DBContext {
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
-                + "FROM Employee WHERE roleID = ?");
+                + "FROM Employee WHERE roleID IN (?,?)");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
             sql.append(" AND (fullName LIKE ? OR email LIKE ? OR phoneNumber LIKE ?)");
@@ -96,11 +96,13 @@ public class EmployeeDAO extends DBContext {
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            // [PHAN QUYEN NHAN SU] Owner quan ly ca phuc vu va le tan.
+            ps.setInt(2, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
                 String like = "%" + keyword.trim() + "%";
-                ps.setString(2, like);
                 ps.setString(3, like);
                 ps.setString(4, like);
+                ps.setString(5, like);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -158,22 +160,24 @@ public class EmployeeDAO extends DBContext {
      */
     public boolean update(Employee e) {
         // Đã xóa salary
-        String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
+        // [PHAN QUYEN NHAN SU] Luu role 2/3 da duoc Controller kiem tra.
+        String sql = "UPDATE Employee SET roleID = ?, fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
                 + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, e.getFullName());
+            ps.setInt(1, e.getRoleID());
+            ps.setString(2, e.getFullName());
             if (e.getDob() != null) {
-                ps.setDate(2, e.getDob());
+                ps.setDate(3, e.getDob());
             } else {
-                ps.setNull(2, java.sql.Types.DATE);
+                ps.setNull(3, java.sql.Types.DATE);
             }
-            ps.setString(3, e.getPhoneNumber());
-            ps.setString(4, e.getEmail());
+            ps.setString(4, e.getPhoneNumber());
+            ps.setString(5, e.getEmail());
             // Điều chỉnh lại index sau khi bỏ salary
-            ps.setInt(5, e.getIsActive());
-            ps.setString(6, e.getAddress());
-            ps.setString(7, e.getImage());
-            ps.setInt(8, e.getEmployeeID());
+            ps.setInt(6, e.getIsActive());
+            ps.setString(7, e.getAddress());
+            ps.setString(8, e.getImage());
+            ps.setInt(9, e.getEmployeeID());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
@@ -216,8 +220,9 @@ public class EmployeeDAO extends DBContext {
      * fullName/phoneNumber/email (có thể null/blank). status: 1 = active, 0 =
      * inactive, null = tất cả.
      */
-    public int countStaff(String keyword, Integer status) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Employee WHERE roleID = ?");
+    public int countStaff(String keyword, Integer status, Integer roleID) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM Employee WHERE roleID IN (?,?)");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
             sql.append(" AND (fullName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?)");
@@ -225,9 +230,15 @@ public class EmployeeDAO extends DBContext {
         if (status != null) {
             sql.append(" AND isActive = ?");
         }
+        // [LOC THEO ROLE] Chi loc trong hai role nhan su duoc phep.
+        if (roleID != null) {
+            sql.append(" AND roleID = ?");
+        }
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int idx = 1;
             ps.setInt(idx++, UserRole.RESTAURANT_STAFF.getRoleID());
+            // [PHAN QUYEN NHAN SU] Dem ca le tan trong man hinh nhan su.
+            ps.setInt(idx++, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
                 String like = "%" + keyword.trim() + "%";
                 ps.setString(idx++, like);
@@ -236,6 +247,9 @@ public class EmployeeDAO extends DBContext {
             }
             if (status != null) {
                 ps.setInt(idx++, status);
+            }
+            if (roleID != null) {
+                ps.setInt(idx++, roleID);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -251,7 +265,9 @@ public class EmployeeDAO extends DBContext {
     /**
      * Lấy danh sách staff có phân trang + filter. page bắt đầu từ 1.
      */
-    public List<Employee> listStaffPaged(String keyword, Integer status, int page, int pageSize) {
+    public List<Employee> listStaffPaged(
+            String keyword, Integer status, Integer roleID,
+            int page, int pageSize) {
         List<Employee> list = new ArrayList<>();
         if (page < 1) {
             page = 1;
@@ -263,7 +279,7 @@ public class EmployeeDAO extends DBContext {
         StringBuilder sql = new StringBuilder(
                 "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
-                + "FROM Employee WHERE roleID = ?");
+                + "FROM Employee WHERE roleID IN (?,?)");
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
             sql.append(" AND (fullName LIKE ? OR phoneNumber LIKE ? OR email LIKE ?)");
@@ -271,11 +287,17 @@ public class EmployeeDAO extends DBContext {
         if (status != null) {
             sql.append(" AND isActive = ?");
         }
+        // [LOC THEO ROLE] roleID da duoc Controller gioi han la 2 hoac 3.
+        if (roleID != null) {
+            sql.append(" AND roleID = ?");
+        }
         sql.append(" ORDER BY employeeID DESC LIMIT ? OFFSET ?");
 
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int idx = 1;
             ps.setInt(idx++, UserRole.RESTAURANT_STAFF.getRoleID());
+            // [PHAN QUYEN NHAN SU] Danh sach gom role 2 va role 3.
+            ps.setInt(idx++, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
                 String like = "%" + keyword.trim() + "%";
                 ps.setString(idx++, like);
@@ -284,6 +306,9 @@ public class EmployeeDAO extends DBContext {
             }
             if (status != null) {
                 ps.setInt(idx++, status);
+            }
+            if (roleID != null) {
+                ps.setInt(idx++, roleID);
             }
             ps.setInt(idx++, pageSize);
             ps.setInt(idx++, (page - 1) * pageSize);
@@ -385,10 +410,12 @@ public class EmployeeDAO extends DBContext {
     public List<Employee> listActiveStaff() {
         List<Employee> list = new ArrayList<>();
         String sql = "SELECT employeeID, fullName FROM Employee "
-                + "WHERE roleID = ? AND isActive = 1 ORDER BY fullName";
+                + "WHERE roleID IN (?,?) AND isActive = 1 ORDER BY fullName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // Đảm bảo UserRole.RESTAURANT_STAFF.getRoleID() khớp với ID thực tế trong bảng Role
             ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            // [PHAN QUYEN NHAN SU] Le tan cung can duoc xep ca lam viec.
+            ps.setInt(2, UserRole.RECEPTIONIST.getRoleID());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Employee e = new Employee();
