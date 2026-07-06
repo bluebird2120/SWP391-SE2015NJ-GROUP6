@@ -165,44 +165,6 @@
                 font-style:italic;
                 font-size:0.82rem;
             }
-            /* === Filter bar === */
-            .filter-bar {
-                display:flex;
-                align-items:center;
-                gap:10px;
-                margin-bottom:12px;
-                flex-wrap:wrap;
-            }
-            .filter-bar label {
-                font-size:0.82rem;
-                font-weight:600;
-                color:#76493b;
-                text-transform:none;
-                letter-spacing:0;
-                white-space:nowrap;
-            }
-            .filter-bar select {
-                padding:7px 32px 7px 10px;
-                border:1px solid #d7bfa4;
-                border-radius:8px;
-                font-family:inherit;
-                font-size:0.88rem;
-                background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2376493b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-                -webkit-appearance:none;
-                appearance:none;
-                color:#333;
-                cursor:pointer;
-                min-width:160px;
-            }
-            .filter-bar select:focus { outline:none; border-color:#76493b; }
-            .filter-count {
-                font-size:0.78rem;
-                color:#8a6e5a;
-                background:#f5ece4;
-                border-radius:12px;
-                padding:3px 10px;
-                font-weight:600;
-            }
             /* === Bulk action bar === */
             .bulk-bar {
                 display:none;
@@ -349,16 +311,6 @@
                         </div>
                     </form>
                 </div>
-                <div class="filter-bar">
-                    <label for="filterShift">Lọc theo ca:</label>
-                    <select id="filterShift" onchange="filterAttendance(this.value)">
-                        <option value="">-- Tất cả ca --</option>
-                        <c:forEach var="t" items="${templates}">
-                            <option value="${t.shiftName}">${t.shiftName}</option>
-                        </c:forEach>
-                    </select>
-                    <span class="filter-count" id="attendanceCountBadge"></span>
-                </div>
                 <div class="card" style="padding:0;">
                     <table>
                         <thead>
@@ -374,7 +326,7 @@
                         </thead>
                         <tbody id="attendanceBody">
                             <c:forEach var="r" items="${rows}">
-                                <tr data-shift="${r.shiftName}">
+                                <tr>
                                     <td>${r.fullName}</td>
                                     <td>${r.shiftName}</td>
                                     <td>
@@ -465,34 +417,6 @@
             </main>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
-        <script>
-            /* ============ Filter ============ */
-            function filterAttendance(shiftName) {
-                var tbody = document.getElementById('attendanceBody');
-                if (!tbody) return;
-                var rows = tbody.querySelectorAll('tr[data-shift]');
-                var visible = 0;
-                rows.forEach(function(tr) {
-                    if (!shiftName || tr.dataset.shift === shiftName) {
-                        tr.style.display = '';
-                        visible++;
-                    } else {
-                        tr.style.display = 'none';
-                    }
-                });
-                var badge = document.getElementById('attendanceCountBadge');
-                if (badge) {
-                    badge.textContent = shiftName
-                        ? visible + ' nhân viên'
-                        : rows.length + ' nhân viên';
-                }
-            }
-
-            /* ============ Init ============ */
-            document.addEventListener('DOMContentLoaded', function() {
-                filterAttendance('');
-            });
-        </script>
         <script>
             var activeConfirmForm = null;
 

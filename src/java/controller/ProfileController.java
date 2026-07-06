@@ -24,9 +24,9 @@ import model.Employee;
 
 @WebServlet(name = "ProfileController", urlPatterns = {"/profile"})
 @MultipartConfig(
-        fileSizeThreshold = 1024 * 1024,    //Ngưỡng phân loại < lưu vào RAM, > lưu vào ổ cứng
-        maxFileSize = 5L * 1024 * 1024,     //Kích thước tối đa ảnh
-        maxRequestSize = 6L * 1024 * 1024   //Kích thước tối đa bao gồm ảnh, tên, địa chỉ của 1 request
+        fileSizeThreshold = 1024 * 1024, //Ngưỡng phân loại < lưu vào RAM, > lưu vào ổ cứng
+        maxFileSize = 5L * 1024 * 1024, //Kích thước tối đa ảnh
+        maxRequestSize = 6L * 1024 * 1024 //Kích thước tối đa bao gồm ảnh, tên, địa chỉ của 1 request
 )
 public class ProfileController extends HttpServlet {
 
@@ -85,8 +85,8 @@ public class ProfileController extends HttpServlet {
 
         if (userName.isEmpty()) {
             errors.put("userName", "Vui lòng nhập tên hiển thị.");
-        } else if (userName.length() < 1 || userName.length() > 30) {
-            errors.put("userName", "Tên hiển thị phải từ 1 đến 30 ký tự.");
+        } else if (userName.length() < 2 || userName.length() > 50) {
+            errors.put("userName", "Tên hiển thị phải từ 2-50 ký tự.");
         } else if (customerDAO.isUserNameExists(userName, customer.getCustomerID())) {
             errors.put("userName", "Tên này đã được sử dụng.");
         }
@@ -124,8 +124,12 @@ public class ProfileController extends HttpServlet {
 
         if (fullName.isEmpty()) {
             errors.put("fullName", "Vui lòng nhập họ tên.");
-        } else if (fullName.length() < 1 || fullName.length() > 30) {
-            errors.put("fullName", "Họ tên phải từ 1 đến 30 ký tự.");
+        } else if (fullName.length() < 2 || fullName.length() > 50) {
+            errors.put("fullName", "Họ tên phải từ 2 đến 50 ký tự.");
+        }
+
+        if (address.length() > 255) {
+            errors.put("address", "Địa chỉ không được vượt quá 255 ký tự.");
         }
 
         String imagePath = null;
@@ -239,15 +243,15 @@ public class ProfileController extends HttpServlet {
      */
     private String detectImageType(byte[] header) {
         // JPEG: FF D8 FF
-        if (header[0] == (byte) 0xFF 
-                && header[1] == (byte) 0xD8 
+        if (header[0] == (byte) 0xFF
+                && header[1] == (byte) 0xD8
                 && header[2] == (byte) 0xFF) {
             return "jpg";
         }
         // PNG: 89 50 4E 47 0D 0A 1A 0A
-        if (header[0] == (byte) 0x89 
+        if (header[0] == (byte) 0x89
                 && header[1] == (byte) 0x50
-                && header[2] == (byte) 0x4E 
+                && header[2] == (byte) 0x4E
                 && header[3] == (byte) 0x47) {
             return "png";
         }

@@ -753,7 +753,8 @@
                                             <input type="text" id="address" name="address"
                                                    class="form-control"
                                                    value="${not empty param.address ? param.address : sessionScope.employee.address}"
-                                                   maxlength="255" placeholder="Nhập địa chỉ của bạn...">
+                                                   maxlength="255"
+                                                   placeholder="Nhập địa chỉ của bạn...">
                                         </div>
 
                                         <%-- Ảnh đại diện — CÓ THỂ SỬA --%>
@@ -881,6 +882,104 @@
                         current.style.display = '';
                 }
             });
+
+            // ── VALIDATE FORM CUSTOMER ──────────────────────────────
+            const customerForm = document.querySelector('form[action*="/profile"]:not([enctype])');
+            if (customerForm) {
+                customerForm.addEventListener('submit', function (e) {
+                    let hasError = false;
+                    clearErrors(this);
+
+                    const userName = document.getElementById('userName');
+                    if (!userName)
+                        return;
+
+                    const val = userName.value.trim();
+                    if (val === '') {
+                        showProfileError(userName, 'Vui lòng nhập tên hiển thị.');
+                        hasError = true;
+                    } else if (val.length < 2 || val.length > 50) {
+                        showProfileError(userName, 'Tên hiển thị phải từ 2 đến 50 ký tự.');
+                        hasError = true;
+                    }
+
+                    if (hasError)
+                        e.preventDefault();
+                });
+            }
+
+            // ── VALIDATE FORM EMPLOYEE ──────────────────────────────
+            const employeeForm = document.querySelector('form[enctype="multipart/form-data"]');
+            if (employeeForm) {
+                employeeForm.addEventListener('submit', function (e) {
+                    let hasError = false;
+                    clearErrors(this);
+
+                    // FULL NAME
+                    const fullName = document.getElementById('fullName');
+                    if (fullName) {
+                        const val = fullName.value.trim();
+                        if (val === '') {
+                            showProfileError(fullName, 'Vui lòng nhập họ tên.');
+                            hasError = true;
+                        } else if (val.length < 2 || val.length > 50) {
+                            showProfileError(fullName, 'Họ tên phải từ 2 đến 50 ký tự.');
+                            hasError = true;
+                        }
+                    }
+
+                    // ĐỊA CHỈ
+                    const address = document.getElementById('address');
+                    if (address && address.value.trim().length > 255) {
+                        showProfileError(address, 'Địa chỉ không được vượt quá 255 ký tự.');
+                        hasError = true;
+                    }
+
+                    // ẢNH (nếu chọn file mới)
+                    const imageInput = document.getElementById('image');
+                    if (imageInput && imageInput.files.length > 0 && !imageInput.disabled) {
+                        const file = imageInput.files[0];
+                        const allowedExt = /\.(jpg|jpeg|png|webp)$/i;
+                        if (!allowedExt.test(file.name)) {
+                            showProfileError(imageInput, 'Chỉ chấp nhận ảnh jpg, jpeg, png, webp.');
+                            hasError = true;
+                        } else if (file.size > 2 * 1024 * 1024) {
+                            showProfileError(imageInput, 'Ảnh không vượt quá 2MB.');
+                            hasError = true;
+                        }
+                    }
+
+                    if (hasError)
+                        e.preventDefault();
+                });
+            }
+
+            // ── HELPER ──────────────────────────────────────────────
+            function showProfileError(input, message) {
+                input.classList.add('error-field');
+                // Tìm error-msg gần nhất
+                const group = input.closest('.form-group');
+                if (group) {
+                    let errSpan = group.querySelector('.error-msg');
+                    if (!errSpan) {
+                        errSpan = document.createElement('span');
+                        errSpan.className = 'error-msg';
+                        errSpan.style.color = '#c0392b';
+                        errSpan.style.fontSize = '0.8rem';
+                        errSpan.style.marginTop = '4px';
+                        errSpan.style.display = 'block';
+                        input.parentNode.appendChild(errSpan);
+                    }
+                    errSpan.textContent = message;
+                }
+            }
+
+            function clearErrors(form) {
+                form.querySelectorAll('.error-field').forEach(el => el.classList.remove('error-field'));
+                form.querySelectorAll('.error-msg').forEach(el => el.textContent = '');
+            }
+
+
         </script>
 
     </body>

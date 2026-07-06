@@ -188,8 +188,8 @@ public class RegisterController extends HttpServlet {
         if (userName == null || userName.isBlank()) {
             return "Vui lòng nhập tên của bạn.";
         }
-        if (userName.length() <= 0 || userName.length() > 30) {
-            return "Tên trong khoảng từ 1-30 kí tự.";
+        if (userName.length() < 2 || userName.length() > 50) {
+            return "Tên trong khoảng từ 2-50 kí tự.";
         }
         return null;
     }
@@ -198,7 +198,7 @@ public class RegisterController extends HttpServlet {
         if (phone == null || phone.isBlank()) {
             return "Vui lòng nhập số điện thoại";
         }
-        if (!phone.matches("\\d{10,11}")) {
+        if (!phone.matches("^[0-9]{10,11}$")) {
             return "Số điện thoại phải có đúng 10-11 chữ số.";
         }
         return null;
