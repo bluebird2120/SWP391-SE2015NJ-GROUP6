@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,24 @@ public class StaffMyScheduleController extends HttpServlet {
         int month = ym.getMonthValue();
 
         EmployeeShiftDAO shiftDAO = new EmployeeShiftDAO();
-        List<ShiftRow> rows = shiftDAO.listByEmployeeAndMonth(emp.getEmployeeID(), year, month);
+        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
+        EmployeeDAO employeeDAO = new EmployeeDAO();
+
+        if (!shiftDAO.isConnectionAvailable() || !requestDAO.isConnectionAvailable() || !employeeDAO.isConnectionAvailable()) {
+            setEmptyScheduleAttributes(req, year, month, ym, "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+            req.getRequestDispatcher(VIEW).forward(req, resp);
+            return;
+        }
+
+        List<ShiftRow> rows;
+        try {
+            rows = shiftDAO.listByEmployeeAndMonth(emp.getEmployeeID(), year, month);
+        } catch (RuntimeException ex) {
+            ex.printStackTrace();
+            setEmptyScheduleAttributes(req, year, month, ym, "Không thể tải lịch làm việc. Vui lòng kiểm tra database.");
+            req.getRequestDispatcher(VIEW).forward(req, resp);
+            return;
+        }
 
         Map<String, List<ShiftRow>> byDay = new LinkedHashMap<>();
         for (ShiftRow r : rows) {
@@ -61,10 +79,17 @@ public class StaffMyScheduleController extends HttpServlet {
         YearMonth prev = ym.minusMonths(1);
         YearMonth next = ym.plusMonths(1);
 
-        ShiftSwapRequestDAO swapDAO = new ShiftSwapRequestDAO();
-        Map<Integer, ShiftSwapRequests> pendingRequests = swapDAO.getPendingRequestsMap(emp.getEmployeeID());
-        List<ShiftRow> otherShifts = shiftDAO.listEligibleSwaps(emp.getEmployeeID());
-        List<ShiftSwapRequestDetail> colleagueRequests = swapDAO.listPendingColleagueRequests(emp.getEmployeeID());
+        Map<Integer, ShiftSwapRequests> pendingRequests = requestDAO.getPendingRequestsMap(emp.getEmployeeID());
+        Map<String, List<Employee>> availableCoverStaffByDate = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now();
+        for (ShiftRow row : rows) {
+            LocalDate workDate = row.getWorkDate().toLocalDate();
+            String key = workDate.toString();
+            if ("scheduled".equals(row.getStatus()) && !workDate.isBefore(today) && !availableCoverStaffByDate.containsKey(key)) {
+                availableCoverStaffByDate.put(key, employeeDAO.listAvailableStaffByDate(row.getWorkDate(), emp.getEmployeeID()));
+            }
+        }
+        List<ShiftSwapRequestDetail> colleagueRequests = requestDAO.listPendingColleagueRequests(emp.getEmployeeID());
 
         req.setAttribute("scheduleMap", byDay);
         req.setAttribute("year", year);
@@ -82,10 +107,36 @@ public class StaffMyScheduleController extends HttpServlet {
         req.setAttribute("totalShifts", rows.size());
 
         req.setAttribute("pendingRequests", pendingRequests);
-        req.setAttribute("otherShifts", otherShifts);
+        req.setAttribute("availableCoverStaffByDate", availableCoverStaffByDate);
         req.setAttribute("colleagueRequests", colleagueRequests);
 
         req.getRequestDispatcher(VIEW).forward(req, resp);
+    }
+
+    private void setEmptyScheduleAttributes(HttpServletRequest req, int year, int month, YearMonth ym, String errorMessage) {
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        int firstDow = firstDay.getDayOfWeek().getValue() % 7;
+        YearMonth prev = ym.minusMonths(1);
+        YearMonth next = ym.plusMonths(1);
+
+        req.setAttribute("scheduleMap", Collections.emptyMap());
+        req.setAttribute("year", year);
+        req.setAttribute("month", month);
+        req.setAttribute("daysInMonth", ym.lengthOfMonth());
+        req.setAttribute("firstDow", firstDow);
+        req.setAttribute("today", LocalDate.now().toString());
+        req.setAttribute("currentYear", LocalDate.now().getYear());
+        req.setAttribute("currentMonth", LocalDate.now().getMonthValue());
+        req.setAttribute("currentDay", LocalDate.now().getDayOfMonth());
+        req.setAttribute("prevYear", prev.getYear());
+        req.setAttribute("prevMonth", prev.getMonthValue());
+        req.setAttribute("nextYear", next.getYear());
+        req.setAttribute("nextMonth", next.getMonthValue());
+        req.setAttribute("totalShifts", 0);
+        req.setAttribute("pendingRequests", Collections.emptyMap());
+        req.setAttribute("availableCoverStaffByDate", Collections.emptyMap());
+        req.setAttribute("colleagueRequests", Collections.emptyList());
+        req.setAttribute("errorMsg", errorMessage);
     }
 
     @Override
@@ -104,47 +155,54 @@ public class StaffMyScheduleController extends HttpServlet {
             return;
         }
 
-        ShiftSwapRequestDAO swapDAO = new ShiftSwapRequestDAO();
+        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
+        if (!requestDAO.isConnectionAvailable()) {
+            session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+            return;
+        }
 
-        if ("acceptColleagueSwap".equals(action) || "rejectColleagueSwap".equals(action)) {
+        if ("acceptCoverRequest".equals(action) || "rejectCoverRequest".equals(action)) {
             try {
-                int swapID = Integer.parseInt(req.getParameter("swapID"));
-                ShiftSwapRequestDetail detail = swapDAO.getDetailById(swapID);
+                int requestID = Integer.parseInt(req.getParameter("requestID"));
+                ShiftSwapRequestDetail detail = requestDAO.getDetailById(requestID);
                 
-                if (detail == null || detail.getTargetEmployeeID() != emp.getEmployeeID()) {
-                    session.setAttribute("errorMsg", "Không tìm thấy yêu cầu đổi ca phù hợp!");
+                if (detail == null || detail.getTargetEmployeeID() == null || detail.getTargetEmployeeID() != emp.getEmployeeID()) {
+                    session.setAttribute("errorMsg", "Không tìm thấy yêu cầu làm thay phù hợp!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
                 NotificationDAO notifDAO = new NotificationDAO();
 
-                if ("acceptColleagueSwap".equals(action)) {
+                if ("acceptCoverRequest".equals(action)) {
                     EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-                    if (detail.getTargetShiftID() != null) {
-                        if (esDAO.hasConflictingShift(detail.getReqEmployeeID(), detail.getTargetWorkDate(), detail.getRequesterShiftID())) {
-                            session.setAttribute("errorMsg", "Không thể đổi ca: " + detail.getReqEmployeeName() + " đã có ca khác vào ngày " + detail.getTargetWorkDate() + "!");
-                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                            return;
-                        }
-                        if (esDAO.hasConflictingShift(detail.getTargetEmployeeID(), detail.getReqWorkDate(), detail.getTargetShiftID())) {
-                            session.setAttribute("errorMsg", "Không thể đổi ca: Bạn đã có ca khác vào ngày " + detail.getReqWorkDate() + "!");
-                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                            return;
-                        }
+                    if (!esDAO.isConnectionAvailable()) {
+                        session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
+                    }
+                    if (!"cover".equals(detail.getRequestType())) {
+                        session.setAttribute("errorMsg", "Yêu cầu này không phải yêu cầu làm thay.");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
+                    }
+                    if (esDAO.hasConflictingShift(emp.getEmployeeID(), detail.getReqWorkDate(), 0)) {
+                        session.setAttribute("errorMsg", "Không thể nhận làm thay: Bạn đã có ca khác vào ngày " + detail.getReqWorkDate() + "!");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
                     }
 
-                    boolean success = swapDAO.updateStatus(swapID, "approved", null);
+                    boolean success = requestDAO.updateStatus(requestID, "approved", null);
                     if (success) {
-                        session.setAttribute("successMsg", "Đổi ca thành công! Lịch làm việc của 2 nhân viên đã được cập nhật.");
+                        session.setAttribute("successMsg", "Đã nhận làm thay thành công! Ca làm việc đã được chuyển sang lịch của bạn.");
 
                         Notifications n1 = new Notifications();
                         n1.setRecipientID(detail.getReqEmployeeID());
                         n1.setRecipientType("staff");
                         n1.setType("shift_request_approved");
-                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý đổi ca. Ca ngày "
-                                + detail.getReqWorkDate() + " của bạn đã được đổi thành công với ca ngày "
-                                + detail.getTargetWorkDate() + ".");
+                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý làm thay ca ngày "
+                                + detail.getReqWorkDate() + " của bạn. Ca này đã được chuyển sang lịch của đồng nghiệp.");
                         n1.setIsRead(0);
                         notifDAO.insert(n1);
 
@@ -152,24 +210,23 @@ public class StaffMyScheduleController extends HttpServlet {
                         n2.setRecipientID(emp.getEmployeeID());
                         n2.setRecipientType("staff");
                         n2.setType("shift_request_approved");
-                        n2.setMessage("Bạn đã đồng ý đổi ca với " + detail.getReqEmployeeName() + ". Ca ngày "
-                                + detail.getTargetWorkDate() + " của bạn đã được đổi thành công với ca ngày "
-                                + detail.getReqWorkDate() + ".");
+                        n2.setMessage("Bạn đã đồng ý làm thay ca ngày " + detail.getReqWorkDate()
+                                + " của " + detail.getReqEmployeeName() + ".");
                         n2.setIsRead(0);
                         notifDAO.insert(n2);
                     } else {
-                        session.setAttribute("errorMsg", "Lỗi khi thực hiện đổi ca. Vui lòng thử lại!");
+                        session.setAttribute("errorMsg", "Lỗi khi nhận làm thay. Vui lòng thử lại!");
                     }
                 } else {
-                    boolean success = swapDAO.updateColleagueStatus(swapID, "colleague_rejected");
+                    boolean success = requestDAO.updateColleagueStatus(requestID, "colleague_rejected");
                     if (success) {
-                        session.setAttribute("successMsg", "Đã từ chối yêu cầu đổi ca từ đồng nghiệp.");
+                        session.setAttribute("successMsg", "Đã từ chối yêu cầu làm thay từ đồng nghiệp.");
 
                         Notifications n1 = new Notifications();
                         n1.setRecipientID(detail.getReqEmployeeID());
                         n1.setRecipientType("staff");
                         n1.setType("shift_request_colleague_rejected");
-                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã từ chối yêu cầu đổi ca ngày " + detail.getReqWorkDate() + " của bạn.");
+                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã từ chối yêu cầu làm thay ca ngày " + detail.getReqWorkDate() + " của bạn.");
                         n1.setIsRead(0);
                         notifDAO.insert(n1);
                     } else {
@@ -183,8 +240,8 @@ public class StaffMyScheduleController extends HttpServlet {
             return;
         }
     
-        //Đổi ca hoặc xin nghỉ
-        if (!"requestSwap".equals(action) && !"requestLeave".equals(action)) {
+        // Nhờ làm thay hoặc xin nghỉ
+        if (!"requestCover".equals(action) && !"requestLeave".equals(action)) {
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
             return;
         }
@@ -207,6 +264,11 @@ public class StaffMyScheduleController extends HttpServlet {
         try {
             int requesterShiftID = Integer.parseInt(requesterShiftStr);
             EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+            if (!esDAO.isConnectionAvailable()) {
+                session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                return;
+            }
             ShiftRow reqShift = esDAO.getShiftByID(requesterShiftID);
 
             if (reqShift == null) {
@@ -227,76 +289,72 @@ public class StaffMyScheduleController extends HttpServlet {
                 return;
             }
 
-            Map<Integer, ShiftSwapRequests> pendingMap = swapDAO.getPendingRequestsMap(emp.getEmployeeID());
+            Map<Integer, ShiftSwapRequests> pendingMap = requestDAO.getPendingRequestsMap(emp.getEmployeeID());
             if (pendingMap.containsKey(requesterShiftID)) {
                 session.setAttribute("errorMsg", "Ca làm việc này đang có yêu cầu chờ duyệt!");
                 resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                 return;
             }
 
-            Integer targetShiftID = null;
-            ShiftRow targetShift = null;
+            Integer coverEmployeeID = null;
+            Employee coverEmployee = null;
 
-            if ("requestSwap".equals(action)) {
-                String targetShiftStr = req.getParameter("targetShiftID");
-                if (targetShiftStr == null || targetShiftStr.trim().isEmpty()) {
-                    session.setAttribute("errorMsg", "Vui lòng chọn ca muốn đổi cùng!");
+            if ("requestCover".equals(action)) {
+                String targetEmployeeStr = req.getParameter("targetEmployeeID");
+                if (targetEmployeeStr == null || targetEmployeeStr.trim().isEmpty()) {
+                    session.setAttribute("errorMsg", "Vui lòng chọn nhân viên làm thay!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
-                int tarShiftID = Integer.parseInt(targetShiftStr);
-                targetShift = esDAO.getShiftByID(tarShiftID);
-
-                if (targetShift == null) {
-                    session.setAttribute("errorMsg", "Không tìm thấy ca muốn đổi cùng!");
+                int targetEmployeeID = Integer.parseInt(targetEmployeeStr);
+                EmployeeDAO employeeDAO = new EmployeeDAO();
+                if (!employeeDAO.isConnectionAvailable()) {
+                    session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
+                coverEmployee = employeeDAO.findById(targetEmployeeID);
 
-                if (targetShift.getEmployeeID() == emp.getEmployeeID()) {
-                    session.setAttribute("errorMsg", "Không thể tự đổi ca với chính mình!");
-                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                    return;
-                }
-
-                if (!"scheduled".equals(targetShift.getStatus())) {
-                    session.setAttribute("errorMsg", "Ca muốn đổi cùng phải ở trạng thái scheduled!");
+                if (coverEmployee == null || !employeeDAO.isActiveStaff(targetEmployeeID)) {
+                    session.setAttribute("errorMsg", "Không tìm thấy nhân viên làm thay phù hợp!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                if (esDAO.hasConflictingShift(emp.getEmployeeID(), targetShift.getWorkDate(), requesterShiftID)) {
-                    session.setAttribute("errorMsg", "Bạn đã có ca làm việc khác vào ngày " + targetShift.getWorkDate() + "!");
-                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                    return;
-                }
-                if (esDAO.hasConflictingShift(targetShift.getEmployeeID(), reqShift.getWorkDate(), targetShift.getShiftID())) {
-                    session.setAttribute("errorMsg", "Đồng nghiệp " + targetShift.getFullName() + " đã có ca làm việc khác vào ngày " + reqShift.getWorkDate() + "!");
+                if (targetEmployeeID == emp.getEmployeeID()) {
+                    session.setAttribute("errorMsg", "Không thể tự chọn chính mình làm thay!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                targetShiftID = tarShiftID;
+                if (esDAO.hasConflictingShift(targetEmployeeID, reqShift.getWorkDate(), 0)) {
+                    session.setAttribute("errorMsg", "Nhân viên " + coverEmployee.getFullName() + " đã có ca làm việc vào ngày " + reqShift.getWorkDate() + "!");
+                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                    return;
+                }
+
+                coverEmployeeID = targetEmployeeID;
             }
 
             ShiftSwapRequests reqObj = new ShiftSwapRequests();
             reqObj.setRequesterShiftID(requesterShiftID);
-            reqObj.setTargetShiftID(targetShiftID);
-            reqObj.setStatus("requestSwap".equals(action) ? "pending_colleague" : "pending");
+            reqObj.setApprovedByID(coverEmployeeID);
+            reqObj.setStatus("requestCover".equals(action) ? "pending_colleague" : "pending");
             reqObj.setReason(reason.trim());
-            reqObj.setRequestType("requestSwap".equals(action) ? "swap" : "leave");
+            reqObj.setRequestType("requestCover".equals(action) ? "cover" : "leave");
 
-            boolean success = swapDAO.insert(reqObj);
+            boolean success = requestDAO.insert(reqObj);
             if (success) {
                 session.setAttribute("successMsg", "Gửi yêu cầu thành công!");
 
                 NotificationDAO notifDAO = new NotificationDAO();
-                if ("requestSwap".equals(action) && targetShift != null) {
+                if ("requestCover".equals(action) && coverEmployee != null) {
                     Notifications n = new Notifications();
-                    n.setRecipientID(targetShift.getEmployeeID());
+                    n.setRecipientID(coverEmployee.getEmployeeID());
                     n.setRecipientType("staff");
                     n.setType("shift_request_colleague_pending");
-                    n.setMessage("Đồng nghiệp " + emp.getFullName() + " muốn đổi ca ngày " + reqShift.getWorkDate() + " với ca ngày " + targetShift.getWorkDate() + " của bạn. Vui lòng xác nhận.");
+                    n.setMessage("Đồng nghiệp " + emp.getFullName() + " muốn nhờ bạn làm thay ca ngày "
+                            + reqShift.getWorkDate() + " (" + reqShift.getShiftName() + "). Vui lòng xác nhận.");
                     n.setIsRead(0);
                     notifDAO.insert(n);
                 } else {

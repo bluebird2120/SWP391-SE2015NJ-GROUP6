@@ -6,22 +6,20 @@ public class ShiftSwapRequests {
 
     private int swapID;
     private int requesterShiftID;
-    private Integer targetShiftID; // Can be null for leave requests
-    private Integer approvedByID;  // Can be null initially
+    private Integer approvedByID;  // Employee asked to cover, or owner who approved leave
     private String status;         // pending / approved / rejected
     private String reason;
     private Timestamp createdAt;   // DATETIME
-    private String requestType;    // swap / leave
+    private String requestType;    // cover / leave
 
     public ShiftSwapRequests() {
-        this.requestType = "swap"; // default
+        this.requestType = "cover";
     }
 
-    public ShiftSwapRequests(int swapID, int requesterShiftID, Integer targetShiftID,
+    public ShiftSwapRequests(int swapID, int requesterShiftID,
             Integer approvedByID, String status, String reason, Timestamp createdAt, String requestType) {
         this.swapID = swapID;
         this.requesterShiftID = requesterShiftID;
-        this.targetShiftID = targetShiftID;
         this.approvedByID = approvedByID;
         this.status = status;
         this.reason = reason;
@@ -30,6 +28,10 @@ public class ShiftSwapRequests {
     }
 
     public int getSwapID() {
+        return swapID;
+    }
+
+    public int getRequestID() {
         return swapID;
     }
 
@@ -43,14 +45,6 @@ public class ShiftSwapRequests {
 
     public void setRequesterShiftID(int requesterShiftID) {
         this.requesterShiftID = requesterShiftID;
-    }
-
-    public Integer getTargetShiftID() {
-        return targetShiftID;
-    }
-
-    public void setTargetShiftID(Integer targetShiftID) {
-        this.targetShiftID = targetShiftID;
     }
 
     public Integer getApprovedByID() {

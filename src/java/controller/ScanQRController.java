@@ -107,35 +107,11 @@ public class ScanQRController extends HttpServlet {
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
 
-
-                    dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
-                    Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
-                    if (assignedStaffId != null) {
-                        newOrder.setEmployeeID(assignedStaffId);
-                    }
-
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
                         orderDAO.linkOrderAndTable(newOrderID, currentTable.getTableID());
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
-
-
-                        if (newOrder.getEmployeeID() != null) {
-                            try {
-                                dal.NotificationDAO notifDAO = new dal.NotificationDAO();
-                                model.Notifications n = new model.Notifications();
-                                n.setRecipientID(newOrder.getEmployeeID());
-                                n.setRecipientType("staff");
-                                n.setType("new_order");
-                                n.setMessage("Bạn được phân công phục vụ Đơn hàng #" + newOrderID + " (Bàn "
-                                        + currentTable.getTableID() + ") mới tạo.");
-                                n.setIsRead(0);
-                                notifDAO.insert(n);
-                            } catch (Exception e) {
-                                System.err.println("[ScanQRController] Gửi thông báo thất bại: " + e.getMessage());
-                            }
-                        }
 
                         // TẠM THỜI COMMENT ĐOẠN ĐẨY RA MÀN HÌNH CHỜ
                         /*

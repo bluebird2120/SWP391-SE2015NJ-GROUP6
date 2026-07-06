@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 import model.Employee;
@@ -93,7 +94,7 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * List staff (roleID = 2) có search theo tên/email/phone. Owner gọi để hiển
+     * List staff (roleID = 2) Owner gọi để hiển
      * thị bảng quản lý.
      */
     public List<Employee> listStaff(String keyword) {
@@ -416,6 +417,48 @@ public class EmployeeDAO extends DBContext {
             ex.printStackTrace();
         }
         return list;
+    }
+
+    public List<Employee> listAvailableStaffByDate(Date workDate, int excludeEmployeeID) {
+        List<Employee> list = new ArrayList<>();
+        String sql = "SELECT e.employeeID, e.fullName "
+                + "FROM Employee e "
+                + "WHERE e.roleID = ? AND e.isActive = 1 AND e.employeeID <> ? "
+                + "AND NOT EXISTS ("
+                + "    SELECT 1 FROM EmployeeShifts es "
+                + "    WHERE es.employeeID = e.employeeID AND es.workDate = ?"
+                + ") "
+                + "ORDER BY e.fullName";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            ps.setInt(2, excludeEmployeeID);
+            ps.setDate(3, workDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Employee e = new Employee();
+                    e.setEmployeeID(rs.getInt("employeeID"));
+                    e.setFullName(rs.getString("fullName"));
+                    list.add(e);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    public boolean isActiveStaff(int employeeID) {
+        String sql = "SELECT 1 FROM Employee WHERE employeeID = ? AND roleID = ? AND isActive = 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            ps.setInt(2, UserRole.RESTAURANT_STAFF.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
     }
 
     // =========================================================

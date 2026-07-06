@@ -33,8 +33,8 @@
             outline: none; border-color: #76493b;
             box-shadow: 0 0 0 3px rgba(118, 73, 59, 0.12);
         }
-        .form-group .err-msg { color: #dc3545; font-size: 0.8rem; margin-top: 4px; }
-        .form-group .has-error input, .form-group .has-error select { border-color: #dc3545; }
+        .form-group .err-msg { color: #dc3545; font-size: 0.8rem; margin-top: 4px; min-height: 14px; }
+        .form-group.has-error input, .form-group.has-error select, .form-group.has-error textarea { border-color: #dc3545; }
         .form-actions { display: flex; gap: 10px; margin-top: 8px; }
         .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
                font-size: 0.9rem; font-weight: 600; text-decoration: none;
@@ -70,7 +70,7 @@
                     <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${errors['_global']}</div>
                 </c:if>
 
-                <form id="staffForm" method="post" enctype="multipart/form-data"
+                <form id="staffForm" method="post" enctype="multipart/form-data" autocomplete="off" novalidate
                       action="${pageContext.request.contextPath}/owner/staff?action=${mode == 'edit' ? 'edit' : 'create'}${mode == 'edit' ? '&id=' : ''}${mode == 'edit' ? staff.employeeID : ''}">
                     <input type="hidden" name="action" value="${mode == 'edit' ? 'edit' : 'create'}">
                     <c:if test="${mode == 'edit'}">
@@ -80,52 +80,42 @@
                     <div class="row">
                         <div class="form-group ${not empty errors['fullName'] ? 'has-error' : ''}">
                             <label>Full Name <span class="required">*</span></label>
-                            <input type="text" name="fullName" value="${staff.fullName}" maxlength="150">
-                            <c:if test="${not empty errors['fullName']}">
-                                <div class="err-msg">${errors['fullName']}</div>
-                            </c:if>
+                            <input type="text" name="fullName" value="${staff.fullName}" maxlength="150" autocomplete="off" required>
+                            <div class="err-msg" id="fullNameError">${errors['fullName']}</div>
                         </div>
                         <div class="form-group ${not empty errors['email'] ? 'has-error' : ''}">
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="email">
-                            <c:if test="${not empty errors['email']}">
-                                <div class="err-msg">${errors['email']}</div>
-                            </c:if>
+                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="off" required>
+                            <div class="err-msg" id="emailError">${errors['email']}</div>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="form-group ${not empty errors['phoneNumber'] ? 'has-error' : ''}">
                             <label>Phone Number <span class="required">*</span></label>
-                            <input type="text" name="phoneNumber" value="${staff.phoneNumber}" maxlength="20" placeholder="0901234567">
-                            <c:if test="${not empty errors['phoneNumber']}">
-                                <div class="err-msg">${errors['phoneNumber']}</div>
-                            </c:if>
+                            <input type="text" name="phoneNumber" value="${staff.phoneNumber}" maxlength="20" placeholder="0901234567" autocomplete="off" required>
+                            <div class="err-msg" id="phoneNumberError">${errors['phoneNumber']}</div>
                         </div>
                         <div class="form-group ${not empty errors['dob'] ? 'has-error' : ''}">
-                            <label>Date of Birth</label>
-                            <input type="date" name="dob" value="${staff.dob}">
-                            <c:if test="${not empty errors['dob']}">
-                                <div class="err-msg">${errors['dob']}</div>
-                            </c:if>
+                            <label>Date of Birth <c:if test="${mode != 'edit'}"><span class="required">*</span></c:if></label>
+                            <input type="date" name="dob" value="${dobValue != null ? dobValue : staff.dob}" ${mode != 'edit' ? 'required' : ''}>
+                            <div class="err-msg" id="dobError">${errors['dob']}</div>
                         </div>
                     </div>
 
                     <c:if test="${mode != 'edit'}">
                         <div class="form-group ${not empty errors['password'] ? 'has-error' : ''}">
                             <label>Password <span class="required">*</span></label>
-                            <input type="password" name="password" minlength="6">
+                            <input type="password" name="password" minlength="6" autocomplete="new-password" required>
                             <div class="help-text">Minimum 6 characters. Staff will be required to change it on first login.</div>
-                            <c:if test="${not empty errors['password']}">
-                                <div class="err-msg">${errors['password']}</div>
-                            </c:if>
+                            <div class="err-msg" id="passwordError">${errors['password']}</div>
                         </div>
                     </c:if>
 
                     <div class="form-group">
                         <label>Profile Photo</label>
                         <input type="file" id="staffImage" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                        <div class="help-text">JPG, PNG — tối đa 2MB.</div>
+                        <div class="help-text">Không bắt buộc. JPG, PNG — tối đa 2MB.</div>
                         <div class="err-msg" id="imageError">${errors['image']}</div>
                         <c:if test="${mode == 'edit' && not empty staff.image}">
                             <img src="${pageContext.request.contextPath}/${staff.image}" class="current-img" alt="Current photo">
@@ -133,11 +123,9 @@
                     </div>
 
                     <div class="form-group ${not empty errors['address'] ? 'has-error' : ''}">
-                        <label>Address</label>
-                        <textarea name="address" rows="2" maxlength="255">${staff.address}</textarea>
-                        <c:if test="${not empty errors['address']}">
-                            <div class="err-msg">${errors['address']}</div>
-                        </c:if>
+                        <label>Address <c:if test="${mode != 'edit'}"><span class="required">*</span></c:if></label>
+                        <textarea name="address" rows="2" maxlength="255" ${mode != 'edit' ? 'required' : ''}>${staff.address}</textarea>
+                        <div class="err-msg" id="addressError">${errors['address']}</div>
                     </div>
 
                     <div class="form-actions">
@@ -153,49 +141,5 @@
         </main>
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
-    <script>
-        const staffForm = document.getElementById("staffForm");
-        const staffImage = document.getElementById("staffImage");
-        const imageError = document.getElementById("imageError");
-        const maxImageSize = 2 * 1024 * 1024;
-        const validImageTypes = ["image/jpeg", "image/png"];
-
-        function getImageError(file) {
-            if (!file) {
-                return "";
-            }
-
-            const fileName = file.name.toLowerCase();
-            const validExtension = fileName.endsWith(".jpg")
-                    || fileName.endsWith(".jpeg")
-                    || fileName.endsWith(".png");
-
-            if (!validExtension) {
-                return "Vui lòng chọn file ảnh (jpg, jpeg, png).";
-            }
-
-            if (file.size > maxImageSize) {
-                return "Ảnh nhân viên không được vượt quá 2MB.";
-            }
-
-            if (file.type && !validImageTypes.includes(file.type)) {
-                return "File không hợp lệ. Vui lòng chọn file ảnh JPG hoặc PNG.";
-            }
-
-            return "";
-        }
-
-        function validateImageInput() {
-            const error = getImageError(staffImage.files[0]);
-            imageError.textContent = error;
-            return error === "";
-        }
-
-        staffForm.addEventListener("submit", function (event) {
-            if (!validateImageInput()) {
-                event.preventDefault();
-            }
-        });
-    </script>
 </body>
 </html>

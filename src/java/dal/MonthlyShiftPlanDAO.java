@@ -153,52 +153,49 @@ public class MonthlyShiftPlanDAO extends DBContext {
         if (plan == null)
             return false;
 
-        if (MonthlyShiftPlan.CANCELLED.equals(plan.getStatus())) {
-            return true;
-        }
-
         boolean originalAuto = true;
         try {
+            if (connection == null) {
+                System.err.println("[MonthlyShiftPlanDAO] cancelPlan lỗi: Không thể kết nối database.");
+                return false;
+            }
             originalAuto = connection.getAutoCommit();
             connection.setAutoCommit(false);
 
-            if (MonthlyShiftPlan.APPLIED.equals(plan.getStatus())) {
-                List<Integer> shiftIDs = new ArrayList<>();
-                String selectSql = "SELECT shiftID FROM EmployeeShifts "
-                        + "WHERE employeeID = ? AND templateID = ? "
-                        + "  AND YEAR(workDate) = ? AND MONTH(workDate) = ? "
-                        + "  AND status = 'scheduled'";
-                try (PreparedStatement psSel = connection.prepareStatement(selectSql)) {
-                    psSel.setInt(1, plan.getEmployeeID());
-                    psSel.setInt(2, plan.getTemplateID());
-                    psSel.setInt(3, plan.getEffectiveYear());
-                    psSel.setInt(4, plan.getEffectiveMonth());
-                    try (ResultSet rs = psSel.executeQuery()) {
-                        while (rs.next()) {
-                            shiftIDs.add(rs.getInt("shiftID"));
-                        }
+            List<Integer> shiftIDs = new ArrayList<>();
+            String selectSql = "SELECT shiftID FROM EmployeeShifts "
+                    + "WHERE employeeID = ? AND templateID = ? "
+                    + "  AND YEAR(workDate) = ? AND MONTH(workDate) = ? "
+                    + "  AND status = 'scheduled'";
+            try (PreparedStatement psSel = connection.prepareStatement(selectSql)) {
+                psSel.setInt(1, plan.getEmployeeID());
+                psSel.setInt(2, plan.getTemplateID());
+                psSel.setInt(3, plan.getEffectiveYear());
+                psSel.setInt(4, plan.getEffectiveMonth());
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        shiftIDs.add(rs.getInt("shiftID"));
                     }
                 }
+            }
 
-                if (!shiftIDs.isEmpty()) {
-                    String deleteReqSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ? OR targetShiftID = ?";
-                    try (PreparedStatement psReq = connection.prepareStatement(deleteReqSql)) {
-                        for (int id : shiftIDs) {
-                            psReq.setInt(1, id);
-                            psReq.setInt(2, id);
-                            psReq.addBatch();
-                        }
-                        psReq.executeBatch();
+            if (!shiftIDs.isEmpty()) {
+                String deleteReqSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ?";
+                try (PreparedStatement psReq = connection.prepareStatement(deleteReqSql)) {
+                    for (int id : shiftIDs) {
+                        psReq.setInt(1, id);
+                        psReq.addBatch();
                     }
+                    psReq.executeBatch();
+                }
 
-                    String deleteShiftSql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
-                    try (PreparedStatement psShift = connection.prepareStatement(deleteShiftSql)) {
-                        for (int id : shiftIDs) {
-                            psShift.setInt(1, id);
-                            psShift.addBatch();
-                        }
-                        psShift.executeBatch();
+                String deleteShiftSql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
+                try (PreparedStatement psShift = connection.prepareStatement(deleteShiftSql)) {
+                    for (int id : shiftIDs) {
+                        psShift.setInt(1, id);
+                        psShift.addBatch();
                     }
+                    psShift.executeBatch();
                 }
             }
 
@@ -214,13 +211,17 @@ public class MonthlyShiftPlanDAO extends DBContext {
         } catch (SQLException ex) {
             ex.printStackTrace();
             try {
-                connection.rollback();
+                if (connection != null) {
+                    connection.rollback();
+                }
             } catch (SQLException ignore) {
             }
             return false;
         } finally {
             try {
-                connection.setAutoCommit(originalAuto);
+                if (connection != null) {
+                    connection.setAutoCommit(originalAuto);
+                }
             } catch (SQLException ignore) {
             }
         }
