@@ -404,34 +404,45 @@ public class MenuItemDAO extends DBContext {
 
     public List<MenuItem> getPerformanceDish(String search, int categoryId, int methodId,
             String startDate, String endDate, int offset, int pageSize) {
+
         List<MenuItem> dishList = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder(
-                "select mi.itemName, cm.methodName, mc.categoryName, IFNULL(SUM(oi.quantity), 0) AS totalQuantity "
-                + "from MenuItem mi "
-                + "join MenuCategory mc on mi.categoryID = mc.categoryID "
-                + "join CookingMethod cm on mi.methodID = cm.methodID "
-                + "left join OrderItem oi on oi.itemID = mi.itemID "
-                + "left join `Order` o on o.orderID = oi.orderID and o.orderStatus = 'completed' "
-                + "and o.createdAt between ? and ? "
-                + "where 1=1 "
-        );
+                "SELECT mi.itemName, "
+                + "cm.methodName, "
+                + "mc.categoryName, "
+                + "IFNULL(SUM(CASE "
+                + "WHEN o.orderID IS NOT NULL THEN oi.quantity "
+                + "ELSE 0 END), 0) AS totalQuantity "
+                + "FROM MenuItem mi "
+                + "JOIN MenuCategory mc ON mi.categoryID = mc.categoryID "
+                + "JOIN CookingMethod cm ON mi.methodID = cm.methodID "
+                + "LEFT JOIN OrderItem oi ON oi.itemID = mi.itemID "
+                + "LEFT JOIN `Order` o ON o.orderID = oi.orderID "
+                + "AND o.orderStatus = 'completed' "
+                + "AND o.createdAt BETWEEN ? AND ? "
+                + "WHERE 1=1 ");
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("and mi.itemName LIKE ? ");
+            sql.append("AND mi.itemName LIKE ? ");
         }
+
         if (categoryId > 0) {
-            sql.append("and mi.categoryID = ? ");
+            sql.append("AND mi.categoryID = ? ");
         }
+
         if (methodId > 0) {
-            sql.append("and mi.methodID = ? ");
+            sql.append("AND mi.methodID = ? ");
         }
-        sql.append("group by mi.itemName, cm.methodName, mc.categoryName ");
-        sql.append("order by totalQuantity desc ");
-        sql.append("LIMIT ? OFFSET ?"); // Phân trang bằng MySQL
+
+        sql.append("GROUP BY mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
+        sql.append("ORDER BY totalQuantity DESC, ");
+        sql.append("SUM(CASE WHEN o.orderID IS NOT NULL THEN oi.quantity * oi.price ELSE 0 END) DESC ");
+        sql.append("LIMIT ? OFFSET ?");
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql.toString());
+
             int index = 1;
 
             ps.setString(index++, startDate + " 00:00:00");
@@ -440,9 +451,11 @@ public class MenuItemDAO extends DBContext {
             if (search != null && !search.trim().isEmpty()) {
                 ps.setString(index++, "%" + search.trim() + "%");
             }
+
             if (categoryId > 0) {
                 ps.setInt(index++, categoryId);
             }
+
             if (methodId > 0) {
                 ps.setInt(index++, methodId);
             }
@@ -451,8 +464,10 @@ public class MenuItemDAO extends DBContext {
             ps.setInt(index++, offset);
 
             ResultSet rs = ps.executeQuery();
+
             while (rs.next()) {
                 MenuItem mi = new MenuItem();
+
                 mi.setItemName(rs.getString("itemName"));
                 mi.setCategoryName(rs.getString("categoryName"));
                 mi.setMethodName(rs.getString("methodName"));
@@ -460,9 +475,11 @@ public class MenuItemDAO extends DBContext {
 
                 dishList.add(mi);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return dishList;
     }
 

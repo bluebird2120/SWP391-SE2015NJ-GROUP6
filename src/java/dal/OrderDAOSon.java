@@ -14,7 +14,7 @@ import model.OrderReservationDetail;
 
 public class OrderDAOSon extends DBContext {
 
-    public static final int HOLD_MINUTES = 5;
+    public static final int HOLD_MINUTES = 2;
     // Tiền cọc cố định khi khách chỉ đặt bàn.
     public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
 
@@ -101,23 +101,68 @@ public class OrderDAOSon extends DBContext {
     }
 
     public boolean cancelReservation(int orderID, int customerID) {
-        String sql
+        // [UNPAID RESERVATION CLEANUP]
+        // Chưa cọc: xóa dữ liệu giữ chỗ tạm. Đã cọc: giữ lịch sử và chỉ
+        // chuyển cancelled để phục vụ đối soát/hoàn tiền khi cần.
+        String stateSql
+                = "SELECT o.invoiceID, "
+                + "CASE WHEN LOWER(COALESCE(i.status,''))='paid' "
+                + " OR EXISTS (SELECT 1 FROM Payments p "
+                + "            WHERE p.invoiceID=o.invoiceID "
+                + "              AND p.status='success') "
+                + "THEN 1 ELSE 0 END AS isPaid "
+                + "FROM `Order` o "
+                + "LEFT JOIN Invoices i ON i.invoiceID=o.invoiceID "
+                + "WHERE o.orderID=? AND o.customerID=? "
+                + "AND o.orderType=1 "
+                + "AND o.orderStatus IN ('reserved','pending') "
+                + "FOR UPDATE";
+        String cancelPaidSql
                 = "UPDATE `Order` "
-                + "SET orderStatus = 'cancelled', tableStatus = 'available' "
-                + "WHERE orderID = ? "
-                + "  AND customerID = ? "
-                + "  AND orderType = 1 "
-                + "  AND orderStatus IN ('reserved', 'pending')";
+                + "SET orderStatus='cancelled', tableStatus='available' "
+                + "WHERE orderID=?";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, orderID);
-            ps.setInt(2, customerID);
-            return ps.executeUpdate() > 0;
+        try {
+            connection.setAutoCommit(false);
+            Integer invoiceID;
+            boolean paid;
+            try (PreparedStatement ps = connection.prepareStatement(stateSql)) {
+                ps.setInt(1, orderID);
+                ps.setInt(2, customerID);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        connection.rollback();
+                        return false;
+                    }
+                    invoiceID = (Integer) rs.getObject("invoiceID");
+                    paid = rs.getInt("isPaid") == 1;
+                }
+            }
+
+            boolean changed;
+            if (paid) {
+                try (PreparedStatement ps
+                        = connection.prepareStatement(cancelPaidSql)) {
+                    ps.setInt(1, orderID);
+                    changed = ps.executeUpdate() > 0;
+                }
+            } else {
+                changed = deleteUnpaidReservationData(orderID, invoiceID);
+            }
+
+            if (changed) {
+                connection.commit();
+            } else {
+                connection.rollback();
+            }
+            return changed;
         } catch (Exception e) {
+            rollbackQuietly();
             e.printStackTrace();
+            return false;
+        } finally {
+            restoreAutoCommit();
         }
-
-        return false;
     }
 
     public int createDepositInvoice(int orderID, int depositAmount) {
@@ -210,8 +255,9 @@ public class OrderDAOSon extends DBContext {
     /**
      * Đồng bộ đơn giữ bàn với hóa đơn do module thanh toán quản lý.
      * - paid: xác nhận giữ bàn.
-     * - failed/cancelled/expired: hủy giữ bàn.
-     * - chưa thanh toán và hết 5 phút: hủy giữ bàn.
+     * - paid: xác nhận giữ bàn.
+     * - chưa paid và hết thời gian giữ: xóa dữ liệu giữ chỗ tạm.
+     * - cancelled chưa paid do luồng cũ/TableDAO tạo: cũng được dọn.
      */
     public int synchronizeDepositStatus() {
         String confirmSql
@@ -224,30 +270,122 @@ public class OrderDAOSon extends DBContext {
                 + "  AND o.orderStatus = 'pending' "
                 + "  AND i.status = 'paid'";
 
-        String cancelSql
-                = "UPDATE `Order` o "
+        String cleanupCandidatesSql
+                = "SELECT o.orderID, o.invoiceID "
+                + "FROM `Order` o "
                 + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
-                + "SET o.orderStatus = 'cancelled', "
-                + "    o.tableStatus = 'available' "
                 + "WHERE o.orderType = 1 "
-                + "  AND o.orderStatus = 'pending' "
+                + "  AND o.orderStatus IN ('pending','cancelled') "
+                + "  AND LOWER(COALESCE(i.status,'unpaid')) <> 'paid' "
+                + "  AND NOT EXISTS (SELECT 1 FROM Payments p "
+                + "                  WHERE p.invoiceID=o.invoiceID "
+                + "                    AND p.status='success') "
                 + "  AND ("
-                + "      LOWER(COALESCE(i.status, '')) "
-                + "          IN ('failed', 'cancelled', 'expired') "
-                + "      OR (o.checkoutRequestAt IS NOT NULL "
-                + "          AND o.checkoutRequestAt <= NOW() "
-                + "          AND COALESCE(i.status, 'unpaid') <> 'paid')"
-                + "  )";
+                + "       o.orderStatus='cancelled' "
+                + "       OR LOWER(COALESCE(i.status,'')) "
+                + "          IN ('failed','cancelled','expired') "
+                + "       OR (o.checkoutRequestAt IS NOT NULL "
+                + "           AND o.checkoutRequestAt <= NOW())"
+                + "  ) FOR UPDATE";
 
         int changed = 0;
-        try (PreparedStatement confirmPs = connection.prepareStatement(confirmSql);
-                PreparedStatement cancelPs = connection.prepareStatement(cancelSql)) {
-            changed += confirmPs.executeUpdate();
-            changed += cancelPs.executeUpdate();
+        try {
+            connection.setAutoCommit(false);
+            try (PreparedStatement confirmPs
+                    = connection.prepareStatement(confirmSql)) {
+                changed += confirmPs.executeUpdate();
+            }
+
+            List<Integer> orderIDs = new ArrayList<>();
+            List<Integer> invoiceIDs = new ArrayList<>();
+            try (PreparedStatement ps
+                    = connection.prepareStatement(cleanupCandidatesSql);
+                    ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orderIDs.add(rs.getInt("orderID"));
+                    invoiceIDs.add((Integer) rs.getObject("invoiceID"));
+                }
+            }
+
+            // [UNPAID RESERVATION CLEANUP] Chỉ các bản ghi đã được khóa và
+            // xác nhận không có payment success mới được xóa.
+            for (int i = 0; i < orderIDs.size(); i++) {
+                if (deleteUnpaidReservationData(
+                        orderIDs.get(i), invoiceIDs.get(i))) {
+                    changed++;
+                }
+            }
+            connection.commit();
         } catch (Exception e) {
+            rollbackQuietly();
             e.printStackTrace();
+        } finally {
+            restoreAutoCommit();
         }
         return changed;
+    }
+
+    /**
+     * [UNPAID RESERVATION CLEANUP]
+     * Xóa toàn bộ dữ liệu của một lượt giữ bàn chưa thanh toán.
+     * Phương thức này phải được gọi bên trong transaction sau khi Order đã khóa.
+     */
+    private boolean deleteUnpaidReservationData(
+            int orderID, Integer invoiceID) throws Exception {
+        String[] orderChildSql = {
+            "DELETE FROM TableJoinRequest WHERE orderID=?",
+            "DELETE FROM OrderItem WHERE orderID=?",
+            "DELETE FROM Order_Table WHERE orderID=?",
+            "DELETE FROM order_reservation_detail WHERE orderID=?"
+        };
+        for (String sql : orderChildSql) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, orderID);
+                ps.executeUpdate();
+            }
+        }
+
+        int deletedOrder;
+        try (PreparedStatement ps = connection.prepareStatement(
+                "DELETE FROM `Order` WHERE orderID=?")) {
+            ps.setInt(1, orderID);
+            deletedOrder = ps.executeUpdate();
+        }
+
+        if (deletedOrder > 0 && invoiceID != null) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM Payments "
+                    + "WHERE invoiceID=? AND status<>'success'")) {
+                ps.setInt(1, invoiceID);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM Invoices WHERE invoiceID=? "
+                    + "AND LOWER(COALESCE(status,''))<>'paid' "
+                    + "AND NOT EXISTS (SELECT 1 FROM Payments p "
+                    + "WHERE p.invoiceID=? AND p.status='success')")) {
+                ps.setInt(1, invoiceID);
+                ps.setInt(2, invoiceID);
+                ps.executeUpdate();
+            }
+        }
+        return deletedOrder > 0;
+    }
+
+    private void rollbackQuietly() {
+        try {
+            connection.rollback();
+        } catch (Exception ignored) {
+            // Không che mất lỗi gốc.
+        }
+    }
+
+    private void restoreAutoCommit() {
+        try {
+            connection.setAutoCommit(true);
+        } catch (Exception ignored) {
+            // Connection do DBContext quản lý.
+        }
     }
 
     public Order getOrderByID(int orderID) {

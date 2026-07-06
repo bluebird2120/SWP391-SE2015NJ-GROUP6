@@ -53,7 +53,7 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
                 } else {
-                    // 👉 KHÁCH LẠ LẦN ĐẦU QUÉT MÃ -> MỚI ĐƯỢC LƯU SESSION
+                    // 👉 KHÁCH LẠ LẦN ĐẦU QUÉT MÃ -> MỚI ĐƯỢC LƯU SESSION VỊ TRÍ
                     session.setAttribute("tableID", currentTable.getTableID());
                     session.setAttribute("currentTableID", currentTable.getTableID());
                     session.setAttribute("areaType", currentTable.getAreaType());
@@ -62,52 +62,62 @@ public class ScanQRController extends HttpServlet {
 
                 if (activeOrder != null) {
 
-                    // // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
-                    //
-                    // // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
-                    // if (activeOrder.getIsStaffConfirmed() == 0) {
-                    // session.setAttribute("pendingOrderID", activeOrder.getOrderID());
-                    // request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request,
-                    // response);
-                    // return; // Khóa luồng, không cho load Menu!
-                    // }
-                    // // --- KẾT THÚC BARIE ---
+                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / OCCUPIED)
 
+                    // 1. Kiểm tra xem người quét có phải là Host/Guest đã ở trong bàn này không
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
-                        // Host hoặc Guest đã duyệt -> Cho vào Menu gọi món bình thường
+                        
+                        // --- BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
+                        // Nếu nhân viên chưa xác nhận mở bàn (Status: pending)
+                        if ("pending".equals(activeOrder.getTableStatus())) {
+                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                            request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
+                            return;
+                        }
+
+                        // Nếu đã được duyệt, vào thẳng menu
                         response.sendRedirect(request.getContextPath() + "/menu");
                         return;
-                    } else {
-                        // // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
-                        // // Giả sử orderType == 2 là mã của Đơn đặt trước trong Database của bạn
-                        // if ("reserved".equals(activeOrder.getTableStatus())) {
-                        // session.setAttribute("pendingOrderID", activeOrder.getOrderID());
-                        // // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
-                        // request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request,
-                        // response);
-                        // return;
-                        // }
-                        // // === KẾT THÚC PHẦN VÁ ===
+                    } 
+                    
+                    // 2. NGƯỜI LẠ HOẶC NGƯỜI QUÉT LẦN ĐẦU
+                    // Bàn đang chờ khách đặt trước tới nhận (Reserved)
+                    if ("reserved".equals(activeOrder.getTableStatus())) {
+                        session.setAttribute("errorMsg", "Bàn này đã được đặt trước! Vui lòng gặp nhân viên để nhận bàn.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
 
-                        // Người lạ -> Xin phép Host (Dành cho các bàn khách walk-in bình thường)
+                    // Bàn đang chờ nhân viên mở (Pending) nhưng là người lạ quét
+                    if ("pending".equals(activeOrder.getTableStatus())) {
+                        session.setAttribute("errorMsg", "Bàn này đang chờ nhân viên mở bàn. Vui lòng đợi trong giây lát.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+
+                    // Bàn đang có khách ngồi gọi món (Occupied) -> Người lạ muốn xin ghép bàn
+                    if ("occupied".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
                     }
-                } else {
-                    // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG (Người đầu tiên quét)
-                    Order newOrder = new Order();
-                    newOrder.setTableStatus("occupied");
-                    newOrder.setOrderType(1);
 
-                    // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT
-                    newOrder.setIsStaffConfirmed(1);
+                } else {
+                    // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG TINH (Khách vãng lai đến quán)
+                    Order newOrder = new Order();
+                    
+                    // SỬA: Set trạng thái là 'pending' để chờ nhân viên ra mở bàn
+                    newOrder.setTableStatus("pending"); 
+                    newOrder.setOrderType(1);
+                    
+                    // SỬA SỐ 1 THÀNH SỐ 0: Bắt buộc phải được staff xác nhận
+                    newOrder.setIsStaffConfirmed(0);
 
                     newOrder.setOrderStatus("ordering");
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
 
-
+                    // Gán nhân viên phụ trách theo ca làm việc hiện tại
                     dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
                     Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
                     if (assignedStaffId != null) {
@@ -117,10 +127,12 @@ public class ScanQRController extends HttpServlet {
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
                         orderDAO.linkOrderAndTable(newOrderID, currentTable.getTableID());
+                        
+                        // Cấp phiên làm việc
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
 
-
+                        // Gửi thông báo cho nhân viên
                         if (newOrder.getEmployeeID() != null) {
                             try {
                                 dal.NotificationDAO notifDAO = new dal.NotificationDAO();
@@ -128,8 +140,7 @@ public class ScanQRController extends HttpServlet {
                                 n.setRecipientID(newOrder.getEmployeeID());
                                 n.setRecipientType("staff");
                                 n.setType("new_order");
-                                n.setMessage("Bạn được phân công phục vụ Đơn hàng #" + newOrderID + " (Bàn "
-                                        + currentTable.getTableID() + ") mới tạo.");
+                                n.setMessage("Bàn " + currentTable.getTableID() + " (Đơn #" + newOrderID + ") đang chờ được mở.");
                                 n.setIsRead(0);
                                 notifDAO.insert(n);
                             } catch (Exception e) {
@@ -137,16 +148,9 @@ public class ScanQRController extends HttpServlet {
                             }
                         }
 
-                        // TẠM THỜI COMMENT ĐOẠN ĐẨY RA MÀN HÌNH CHỜ
-                        /*
-                         * session.setAttribute("pendingOrderID", newOrderID);
-                         * request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(
-                         * request, response);
-                         * return;
-                         */
-
-                        // Xử lý xong thì đẩy sang Menu
-                        response.sendRedirect(request.getContextPath() + "/menu");
+                        // MỞ KHÓA MÀN HÌNH CHỜ (Waiting_staff.jsp)
+                        session.setAttribute("pendingOrderID", newOrderID);
+                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
                         return;
                     }
                 }

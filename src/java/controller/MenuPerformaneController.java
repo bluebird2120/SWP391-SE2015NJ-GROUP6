@@ -1,14 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import dal.CookingMethodDAO;
 import dal.MenuCategoryDAO;
 import dal.MenuItemDAO;
 import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -21,79 +16,35 @@ import model.CookingMethod;
 import model.MenuCategory;
 import model.MenuItem;
 
-/**
- *
- * @author Admin
- */
 @WebServlet(name = "MenuPerformaneController", urlPatterns = {"/menu-performance"})
 public class MenuPerformaneController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet MenuPerformaneController</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet MenuPerformaneController at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
     private static final int PAGE_SIZE = 8;
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // 1. Nhận tham số từ Client
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
         String method_raw = request.getParameter("cookingMethod");
         String page_raw = request.getParameter("page");
-        String filterType = request.getParameter("filterType"); // today, week, month
+        String filterType = request.getParameter("filterType");
         String startDate = request.getParameter("startDate");
         String endDate = request.getParameter("endDate");
 
-        //validate
-        if (!checkEmpty(search)) {
-            search = "";
-        }
+        // 2. Validate dữ liệu số an toàn (Dùng hàm gộp tối giản ở dưới)
+        int categoryId = parseIntSafe(category_raw, 0, 0);
+        int methodID = parseIntSafe(method_raw, 0, 0);
+        int page = parseIntSafe(page_raw, 1, 1);
 
-        int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
-        int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
-        int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        search = (search == null || search.trim().length() > 100) ? "" : search.trim();
 
-        String errorSearch = isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự");
-        if (errorSearch != null) {
-            request.setAttribute("errorSearch", errorSearch);
-            search = "";
-        }
-        
-        //Xử lí quy đổi ngày tháng
+        // 3. Xử lý quy đổi khoảng ngày báo cáo
         LocalDate today = LocalDate.now();
 
         if ("today".equals(filterType)) {
@@ -108,18 +59,20 @@ public class MenuPerformaneController extends HttpServlet {
         } else if ("year".equals(filterType)) {
             startDate = today.withDayOfYear(1).toString();
             endDate = today.toString();
-        } 
-        else {
-            if (startDate != null && !startDate.trim().isEmpty()
-                    && endDate != null && !endDate.trim().isEmpty()) {
-                filterType = "custom"; 
-            } else {
+        } else {
+            // Lịch tay hoặc load lần đầu: bẫy định dạng Regex
+            if (startDate == null || !startDate.trim().matches("\\d{4}-\\d{2}-\\d{2}")
+                    || endDate == null || !endDate.trim().matches("\\d{4}-\\d{2}-\\d{2}")) {
                 startDate = today.toString();
                 endDate = today.toString();
-                filterType = "today";
+            } else if (startDate.compareTo(endDate) > 0) { // Ngày ngược -> tự đảo
+                String temp = startDate;
+                startDate = endDate;
+                endDate = temp;
             }
         }
-        //gọi dao và thực hiện thuật toán phân màu cho món ăn
+
+        // 4. Gọi DAO phân trang dữ liệu báo cáo
         int totalItem = menuItemDAO.getTotalPerformanceDishCount(search, categoryId, methodID, startDate, endDate);
         int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
         if (page > totalPage && totalPage > 0) {
@@ -130,79 +83,69 @@ public class MenuPerformaneController extends HttpServlet {
         List<CookingMethod> methodList = cookingMethodDAO.getAllCookingMethod();
         List<MenuCategory> categoryList = menuCategoryDAO.getAllMenuCategory();
         List<MenuItem> menuItemList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, offSet, PAGE_SIZE);
-
+        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, 0, 5);
+        
+        // 5. Thuật toán phân màu thông minh (Sửa lỗi 0 đĩa bán chạy)
         if (menuItemList != null && !menuItemList.isEmpty()) {
             int totalItems = menuItemList.size();
             int totalQtyAllDish = 0;
-            //tổng lượng bán của tất cả các món
             for (MenuItem mi : menuItemList) {
                 totalQtyAllDish += mi.getTotalQuantity();
             }
-            //tính mốc trung bình
+
             double avgQuantity = (double) totalQtyAllDish / totalItems;
-            //tính mốc cảnh báo
             double lowQuantity = avgQuantity * 0.2;
-            // Vòng lặp gán nhãn cho các món ăn
+
             for (MenuItem mi : menuItemList) {
                 int qty = mi.getTotalQuantity();
 
-                if (qty >= avgQuantity * 1.5) {
+                // Nếu tổng sản lượng bằng 0 hoặc chưa từng bán đĩa nào -> Gom vào nhóm Ế Ẩm
+                if (totalQtyAllDish == 0 || qty == 0) {
+                    mi.setMenuTag("Cảnh Báo: Ế Ẩm");
+                    mi.setTagClass("tag-dog");
+                } else if (qty >= avgQuantity * 1.5) {
                     mi.setMenuTag("Bán Chạy Nhất");
-                    mi.setTagClass("tag-star");       // Màu xanh lá
+                    mi.setTagClass("tag-star");
                 } else if (qty >= avgQuantity) {
                     mi.setMenuTag("Tiêu Thụ Ổn Định");
-                    mi.setTagClass("tag-plowhorse"); // Màu xanh dương
+                    mi.setTagClass("tag-plowhorse");
                 } else if (qty > lowQuantity) {
                     mi.setMenuTag("Tiêu Thụ Chậm");
-                    mi.setTagClass("tag-puzzle");    // Màu vàng cam
+                    mi.setTagClass("tag-puzzle");
                 } else {
                     mi.setMenuTag("Cảnh Báo: Ế Ẩm");
-                    mi.setTagClass("tag-dog");       // Màu đỏ
+                    mi.setTagClass("tag-dog");
                 }
             }
         }
 
+        // 6. Đẩy thuộc tính sạch sang JSP
+        request.setAttribute("search", search);
+        request.setAttribute("selectedCategory", categoryId);
+        request.setAttribute("selectedMethod", methodID);
+        request.setAttribute("startDate", startDate);
+        request.setAttribute("endDate", endDate);
+        request.setAttribute("filterType", filterType);
         request.setAttribute("methodList", methodList);
         request.setAttribute("categoryList", categoryList);
         request.setAttribute("menuItemList", menuItemList);
+        request.setAttribute("topChartList", topChartList);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
+
         request.getRequestDispatcher("views/admin/top-selling.jsp").forward(request, response);
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    private String isValidString(String data, int length, String ms) {
-        if (data.length() > length) {
-            return ms;
+    // Hàm tiện ích bẫy lỗi gộp 
+    private int parseIntSafe(String value, int defaultValue, int minValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
         }
-        return null;
+        try {
+            int result = Integer.parseInt(value.trim());
+            return (result < minValue) ? minValue : result;
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
-
-    private boolean checkEmpty(String data) {
-        return (data != null && !data.trim().isEmpty());
-    }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
 }
