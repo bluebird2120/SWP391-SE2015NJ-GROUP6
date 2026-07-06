@@ -318,18 +318,20 @@ public class StaffManagementController extends HttpServlet {
         String address = trim(request.getParameter("address"));
         String password = request.getParameter("password");
 
+        request.setAttribute("dobValue", dobStr);
+
         e.setFullName(fullName);
         e.setEmail(email);
         e.setPhoneNumber(phone);
         e.setAddress(address);
+
+        EmployeeDAO dao = new EmployeeDAO();
 
         if (fullName == null || fullName.isBlank()) {
             errors.put("fullName", "Full name is required.");
         } else if (fullName.length() < 2 || fullName.length() > 50) {
             errors.put("fullName", "Full name must be 2-50 characters.");
         }
-
-        EmployeeDAO dao = new EmployeeDAO();
 
         if (email == null || email.isBlank()) {
             errors.put("email", "Email is required.");
@@ -342,7 +344,7 @@ public class StaffManagementController extends HttpServlet {
         if (phone == null || phone.isBlank()) {
             errors.put("phoneNumber", "Phone number is required.");
         } else if (!PHONE_PATTERN.matcher(phone).matches()) {
-            errors.put("phoneNumber", "Phone number must be 10-11 digits.");
+            errors.put("phoneNumber", "Invalid phone number format. Phone number must be 10-11 digits.");
         } else if (dao.isPhoneExists(phone, excludeId)) {
             errors.put("phoneNumber", "Phone number already exists.");
         }
@@ -355,7 +357,11 @@ public class StaffManagementController extends HttpServlet {
             }
         }
 
-        if (dobStr != null && !dobStr.isBlank()) {
+        if (dobStr == null || dobStr.isBlank()) {
+            if (isCreate) {
+                errors.put("dob", "Date of birth is required.");
+            }
+        } else {
             try {
                 LocalDate dob = LocalDate.parse(dobStr);
 
@@ -371,7 +377,11 @@ public class StaffManagementController extends HttpServlet {
             }
         }
 
-        if (address != null && address.length() > 255) {
+        if (address == null || address.isBlank()) {
+            if (isCreate) {
+                errors.put("address", "Address is required.");
+            }
+        } else if (address.length() > 255) {
             errors.put("address", "Address must not exceed 255 characters.");
         }
 
@@ -483,7 +493,7 @@ public class StaffManagementController extends HttpServlet {
     private void showUploadError(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Map<String, String> errors = new HashMap<>();
-        errors.put("image", "Ảnh nhân viên không được vượt quá 2MB.");
+        errors.put("image", "File upload quá lớn hoặc không hợp lệ. Vui lòng chọn ảnh JPG/PNG tối đa 2MB.");
 
         String action = getQueryParameter(request, "action");
         if ("edit".equals(action)) {
@@ -496,7 +506,8 @@ public class StaffManagementController extends HttpServlet {
             request.setAttribute("staff", staff);
             request.setAttribute("mode", "edit");
         } else {
-            request.setAttribute("staff", new Employee());
+            Employee staff = new Employee();
+            request.setAttribute("staff", staff);
             request.setAttribute("mode", "create");
         }
 

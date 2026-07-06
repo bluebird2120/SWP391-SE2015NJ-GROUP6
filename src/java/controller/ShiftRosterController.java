@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Collections;
 import java.util.List;
 
 import model.Employee;
@@ -80,13 +81,35 @@ public class ShiftRosterController extends HttpServlet {
         ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
         EmployeeShiftDAO shiftDao = new EmployeeShiftDAO();
         MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO();
+        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
+
+        if (!empDao.isConnectionAvailable() || !tplDao.isConnectionAvailable()
+                || !shiftDao.isConnectionAvailable() || !planDao.isConnectionAvailable()
+                || !requestDAO.isConnectionAvailable()) {
+            req.setAttribute("date", date.toString());
+            req.setAttribute("today", LocalDate.now().toString());
+            req.setAttribute("staffList", Collections.emptyList());
+            req.setAttribute("templates", Collections.emptyList());
+            req.setAttribute("roster", Collections.emptyList());
+            req.setAttribute("monthlyPlans", Collections.emptyList());
+            req.setAttribute("planYear", viewYm.getYear());
+            req.setAttribute("planMonth", viewYm.getMonthValue());
+            req.setAttribute("currentYear", LocalDate.now().getYear());
+            req.setAttribute("currentMonth", LocalDate.now().getMonthValue());
+            req.setAttribute("pendingRequests", Collections.emptyList());
+            req.setAttribute("viewEmployeeID", parseInt(req.getParameter("viewEmployeeID"), 0));
+            req.setAttribute("viewYear", parseInt(req.getParameter("viewYear"), LocalDate.now().getYear()));
+            req.setAttribute("viewMonth", parseInt(req.getParameter("viewMonth"), LocalDate.now().getMonthValue()));
+            req.setAttribute("error", "Không thể kết nối database. Vui lòng kiểm tra MySQL, tên database, tài khoản và mật khẩu trong DBContext.");
+            req.getRequestDispatcher(VIEW).forward(req, resp);
+            return;
+        }
 
         List<Employee> staff = empDao.listActiveStaff();
         List<ShiftTemplates> templates = tplDao.findAll();
         List<ShiftRow> roster = shiftDao.listByDate(sqlDate);
         List<MonthlyShiftPlan> monthlyPlans = planDao.listByMonth(viewYm.getYear(), viewYm.getMonthValue());
 
-        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
         List<ShiftSwapRequestDetail> pendingRequests = requestDAO.listPendingRequests();
 
         req.setAttribute("date", date.toString());
