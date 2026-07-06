@@ -395,7 +395,7 @@
             <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
                 <% if (custUnreadCount > 0) { %>
-                    <span class="notif-count"><%= custUnreadCount %></span>
+                <span class="notif-count"><%= custUnreadCount %></span>
                 <% } %>
             </a>
             <div class="user-menu" id="menuCustomer">
@@ -422,7 +422,6 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/reviews"><i class="fa-solid fa-star"></i>Đánh giá của tôi</a>
-                        <a href="${pageContext.request.contextPath}/customer/feedback"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
@@ -470,6 +469,7 @@
                         <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                     </div>
                     <div class="dd-section">
+                        <a href="${pageContext.request.contextPath}/owner/feedback"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
                     </div>
