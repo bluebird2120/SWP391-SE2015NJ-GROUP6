@@ -337,13 +337,12 @@
     </a>
 
     <nav class="navbar">
-        <a href="${pageContext.request.contextPath}/views/template/about.jsp">Giới thiệu</a>
-        <a href="#">Thực đơn</a>
+        <a href="${pageContext.request.contextPath}/page/about">Giới thiệu</a>
+        <a href="${pageContext.request.contextPath}/page/menu">Thực đơn</a>
         <c:if test="${sessionScope.employee == null}">
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
-        <a href="#">Album ảnh</a>
-        <a href="#">Liên hệ</a>
+        <a href="${pageContext.request.contextPath}/page/album">Album ảnh</a>
         <c:if test="${sessionScope.employee != null}">
             <a href="${pageContext.request.contextPath}/staff/dashboard">
                 <i class="fa-solid fa-gauge-high"></i>Quản lý
@@ -390,7 +389,6 @@
                         <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
-                        <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/reviews"><i class="fa-solid fa-star"></i>Đánh giá của tôi</a>

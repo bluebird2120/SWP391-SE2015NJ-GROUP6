@@ -71,22 +71,19 @@ public class AuthenticationFilter implements Filter {
             
             // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
             if (uri.startsWith(ctx + "/staff/") 
-                    && employee.getRoleID() != STAFF_ROLE_ID 
-                    && employee.getRoleID() != OWNER_ROLE_ID) {
+                    && employee.getRoleID() != STAFF_ROLE_ID) {
                 response.sendRedirect(ctx + "/unauthorized");
                 return;
             }
 
             //Bắt buộc đổi mật khẩu lần đầu (áp dụng cho riêng staff)
             if (uri.startsWith(ctx + "/staff/")
-                    && employee.getRoleID() != OWNER_ROLE_ID
                     && employee.getMustChangePassword() == 1
                     && !uri.contains("/staff/change-password")) {
                 response.sendRedirect(ctx + "/staff/change-password?first=true");
                 return;
             }
 
-            if (employee.getRoleID() != OWNER_ROLE_ID) {
                 java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
                 if (lastChanged != null) {
                     long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
@@ -96,7 +93,6 @@ public class AuthenticationFilter implements Filter {
                         return;
                     }
                 }
-            }
             chain.doFilter(req, res);
             return;
         }
