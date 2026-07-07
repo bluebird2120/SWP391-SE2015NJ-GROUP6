@@ -344,24 +344,27 @@ public class EmployeeShiftDAO extends DBContext {
     /**
      * Hủy gán ca làm việc của nhân viên (thu hồi ca đã xếp).
      * Chỉ cho phép hủy gán khi ca làm việc vẫn ở trạng thái 'scheduled' (chưa được điểm danh).
-     * Tự động xóa mọi yêu cầu đổi ca/xin nghỉ (ShiftSwapRequests) liên quan đến ca làm việc bị xóa này.
+     * Tự động xóa mọi yêu cầu làm thay/xin nghỉ liên quan đến ca làm việc bị xóa này.
      * 
      * @param shiftID ID của ca làm việc cần hủy gán
      * @return true nếu hủy gán ca làm việc thành công, ngược lại false
      */
     public boolean unassign(int shiftID) {
-        String deleteRequestsSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ? OR targetShiftID = ?";
+        String deleteRequestsSql = "DELETE FROM ShiftSwapRequests WHERE requesterShiftID = ?";
         String deleteShiftSql = "DELETE FROM EmployeeShifts WHERE shiftID = ? AND status = 'scheduled'";
 
         java.sql.Connection conn = connection;
         boolean originalAuto = true;
         try {
+            if (conn == null) {
+                System.err.println("[EmployeeShiftDAO] unassign lỗi: Không thể kết nối database.");
+                return false;
+            }
             originalAuto = conn.getAutoCommit();
             conn.setAutoCommit(false);
 
             try (PreparedStatement psReq = conn.prepareStatement(deleteRequestsSql)) {
                 psReq.setInt(1, shiftID);
-                psReq.setInt(2, shiftID);
                 psReq.executeUpdate();
             }
 
@@ -376,14 +379,18 @@ public class EmployeeShiftDAO extends DBContext {
         } catch (SQLException ex) {
             ex.printStackTrace();
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException rollbackEx) {
                 rollbackEx.printStackTrace();
             }
             return false;
         } finally {
             try {
-                conn.setAutoCommit(originalAuto);
+                if (conn != null) {
+                    conn.setAutoCommit(originalAuto);
+                }
             } catch (SQLException ignore) {
             }
         }
@@ -391,7 +398,7 @@ public class EmployeeShiftDAO extends DBContext {
 
     /**
      * Kiểm tra xem nhân viên đã có ca làm việc khác trong ngày làm việc chỉ định hay chưa (loại trừ chính ca đang xử lý).
-     * Dùng khi phê duyệt đổi ca để tránh trường hợp một nhân viên có hai ca làm việc trùng lặp trong cùng một ngày.
+     * Dùng khi nhận làm thay để tránh trường hợp một nhân viên có hai ca làm việc trong cùng một ngày.
      * 
      * @param employeeID ID của nhân viên cần kiểm tra
      * @param workDate Ngày làm việc
@@ -600,44 +607,6 @@ public class EmployeeShiftDAO extends DBContext {
             ex.printStackTrace();
             return false;
         }
-    }
-
-    /**
-     * Lấy danh sách các ca làm việc của các đồng nghiệp khác có đủ điều kiện để nhân viên chọn đổi ca.
-     * Điều kiện: Ca của người khác (excludeEmployeeID), diễn ra trong tương lai hoặc hôm nay, và chưa điểm danh ('scheduled').
-     * 
-     * @param excludeEmployeeID ID của nhân viên đang yêu cầu đổi ca (để loại trừ ca của chính họ)
-     * @return Danh sách các ca làm việc khả dụng để yêu cầu đổi ca
-     */
-    public List<ShiftRow> listEligibleSwaps(int excludeEmployeeID) {
-        List<ShiftRow> list = new ArrayList<>();
-        String sql = "SELECT es.shiftID, es.employeeID, e.fullName, es.templateID, st.shiftName, st.startTime, st.endTime, es.workDate, es.status "
-                + "FROM EmployeeShifts es "
-                + "JOIN Employee e ON es.employeeID = e.employeeID "
-                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
-                + "WHERE es.employeeID != ? AND es.workDate >= CURRENT_DATE AND es.status = 'scheduled' "
-                + "ORDER BY es.workDate ASC, st.startTime ASC";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, excludeEmployeeID);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ShiftRow r = new ShiftRow();
-                    r.setShiftID(rs.getInt("shiftID"));
-                    r.setEmployeeID(rs.getInt("employeeID"));
-                    r.setFullName(rs.getString("fullName"));
-                    r.setTemplateID(rs.getInt("templateID"));
-                    r.setShiftName(rs.getString("shiftName"));
-                    r.setStartTime(rs.getTime("startTime"));
-                    r.setEndTime(rs.getTime("endTime"));
-                    r.setWorkDate(rs.getDate("workDate"));
-                    r.setStatus(rs.getString("status"));
-                    list.add(r);
-                }
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        return list;
     }
 
     /**

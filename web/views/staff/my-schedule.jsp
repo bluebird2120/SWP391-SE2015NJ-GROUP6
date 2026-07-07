@@ -158,7 +158,7 @@
             display: none;
         }
         
-        /* Custom Single-select Dropdown for Swap ca */
+        /* Custom Single-select Dropdown for cover staff */
         .single-select-container {
             position: relative;
             user-select: none;
@@ -315,6 +315,12 @@
                 </div>
                 <c:remove var="errorMsg" scope="session"/>
             </c:if>
+            <c:if test="${not empty requestScope.errorMsg}">
+                <div style="background:#f8d7da; border:1px solid #f5c6cb; color:#721c24; padding:12px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:0.9rem;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${requestScope.errorMsg}</span>
+                </div>
+            </c:if>
 
             <div class="card">
                 <div class="toolbar">
@@ -383,9 +389,9 @@
                                                                     <i class="fas fa-hourglass-half"></i> Chờ đồng nghiệp
                                                                 </span>
                                                             </c:when>
-                                                            <c:when test="${req.requestType == 'swap'}">
+                                                            <c:when test="${req.requestType != 'leave'}">
                                                                 <span class="badge" style="background:#cfe2ff; color:#084298; margin-top:4px;">
-                                                                    <i class="fas fa-sync-alt"></i> Chờ đổi ca
+                                                                    <i class="fas fa-user-clock"></i> Chờ làm thay
                                                                 </span>
                                                             </c:when>
                                                             <c:otherwise>
@@ -398,11 +404,14 @@
                                                     <c:otherwise>
                                                         <fmt:formatDate var="shiftDateStr" value="${s.workDate}" pattern="yyyy-MM-dd"/>
                                                         <c:if test="${s.status == 'scheduled' && shiftDateStr >= today}">
-                                                            <a href="javascript:void(0)" class="request-btn" 
-                                                               onclick="openRequestModal(${s.shiftID}, '${s.shiftName}', '${shiftDateStr}')" 
-                                                               style="font-size:0.65rem; color:#a0714f; text-decoration:underline; font-weight:600; margin-top:4px; display:inline-block;">
-                                                                <i class="fas fa-paper-plane"></i> Đổi/Xin nghỉ
-                                                            </a>
+                                                            <button type="button" class="request-btn"
+                                                                    data-shift-id="${s.shiftID}"
+                                                                    data-shift-name="${s.shiftName}"
+                                                                    data-work-date="${shiftDateStr}"
+                                                                    onclick="openRequestModalFromButton(this)"
+                                                                    style="font-size:0.65rem; color:#a0714f; text-decoration:underline; font-weight:600; margin-top:4px; display:inline-block; background:none; border:0; padding:0; cursor:pointer; font-family:inherit; text-align:left;">
+                                                                <i class="fas fa-paper-plane"></i> Đổi lịch/Xin nghỉ
+                                                            </button>
                                                         </c:if>
                                                     </c:otherwise>
                                                 </c:choose>
@@ -423,17 +432,16 @@
                 </c:if>
             </div>
 
-            <!-- Yêu cầu đổi ca từ đồng nghiệp -->
+            <!-- Yêu cầu làm thay từ đồng nghiệp -->
             <div class="card" style="margin-top: 24px; overflow-x: auto;">
                 <div class="section-title" style="font-size: 1.1rem; color: #76493b; margin-bottom: 16px; font-weight: 600;">
-                    Yêu cầu đổi ca từ đồng nghiệp đang chờ bạn xác nhận
+                    Yêu cầu làm thay từ đồng nghiệp đang chờ bạn xác nhận
                 </div>
                 <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid #e2d2c2; text-align: left; color: #8a6e5a;">
                             <th style="padding: 10px;">Đồng nghiệp</th>
-                            <th style="padding: 10px;">Ca của họ</th>
-                            <th style="padding: 10px;">Ca của bạn (muốn đổi)</th>
+                            <th style="padding: 10px;">Ca cần làm thay</th>
                             <th style="padding: 10px;">Lý do</th>
                             <th style="padding: 10px;">Hành động</th>
                         </tr>
@@ -448,25 +456,19 @@
                                         <fmt:formatDate value="${cr.reqWorkDate}" pattern="dd/MM/yyyy" /> (<fmt:formatDate value="${cr.reqStartTime}" pattern="HH:mm" /> - <fmt:formatDate value="${cr.reqEndTime}" pattern="HH:mm" />)
                                     </div>
                                 </td>
-                                <td style="padding: 10px;">
-                                    <div style="font-weight: 600; color: #5d3a2e;">${cr.targetShiftName}</div>
-                                    <div style="font-size: 0.75rem; color: #8a6e5a;">
-                                        <fmt:formatDate value="${cr.targetWorkDate}" pattern="dd/MM/yyyy" /> (<fmt:formatDate value="${cr.targetStartTime}" pattern="HH:mm" /> - <fmt:formatDate value="${cr.targetEndTime}" pattern="HH:mm" />)
-                                    </div>
-                                </td>
                                 <td style="padding: 10px; color: #5d3a2e;"><c:out value="${cr.reason}"/></td>
                                 <td style="padding: 10px;">
                                     <div style="display: flex; gap: 8px;">
-                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Chấp nhận đổi ca này?');">
-                                            <input type="hidden" name="action" value="acceptColleagueSwap">
-                                            <input type="hidden" name="swapID" value="${cr.swapID}">
+                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Chấp nhận làm thay ca này?');">
+                                            <input type="hidden" name="action" value="acceptCoverRequest">
+                                            <input type="hidden" name="requestID" value="${cr.requestID}">
                                             <button type="submit" class="btn btn-sm" style="background:#28a745; color:#fff; border-color:#28a745; font-size:0.75rem; padding:4px 8px; border-radius:4px; cursor:pointer;">
                                                 Đồng ý
                                             </button>
                                         </form>
-                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối đổi ca này?');">
-                                            <input type="hidden" name="action" value="rejectColleagueSwap">
-                                            <input type="hidden" name="swapID" value="${cr.swapID}">
+                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối làm thay ca này?');">
+                                            <input type="hidden" name="action" value="rejectCoverRequest">
+                                            <input type="hidden" name="requestID" value="${cr.requestID}">
                                             <button type="submit" class="btn btn-sm" style="background:#dc3545; color:#fff; border-color:#dc3545; font-size:0.75rem; padding:4px 8px; border-radius:4px; cursor:pointer;">
                                                 Từ chối
                                             </button>
@@ -477,7 +479,7 @@
                         </c:forEach>
                         <c:if test="${empty colleagueRequests}">
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 20px; color: #8a6e5a;">Không có yêu cầu đổi ca nào từ đồng nghiệp cần xác nhận.</td>
+                                <td colspan="4" style="text-align: center; padding: 20px; color:#8a6e5a;">Không có yêu cầu làm thay nào từ đồng nghiệp cần xác nhận.</td>
                             </tr>
                         </c:if>
                     </tbody>
@@ -490,22 +492,22 @@
     <div id="requestModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Gửi Yêu Cầu Ca Làm Việc</h3>
+                <h3 class="modal-title">Gửi Yêu Cầu Lịch Làm Việc</h3>
                 <button type="button" class="close-modal-btn" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-tabs">
-                <div id="tabSwap" class="modal-tab active" onclick="switchTab('swap')">
-                    <i class="fas fa-sync-alt"></i> Đổi Ca
+                <div id="tabCover" class="modal-tab active" onclick="switchTab('cover')">
+                    <i class="fas fa-sync-alt"></i> Đổi Lịch
                 </div>
                 <div id="tabLeave" class="modal-tab" onclick="switchTab('leave')">
                     <i class="fas fa-calendar-minus"></i> Xin Nghỉ Ca
                 </div>
             </div>
             
-            <!-- Tab Swap Pane -->
-            <div id="paneSwap" class="modal-pane active">
-                <form id="swapForm" method="post" action="${pageContext.request.contextPath}/staff/my-schedule" onsubmit="return validateSwapForm()">
-                    <input type="hidden" name="action" value="requestSwap">
+            <!-- Tab Cover Pane -->
+            <div id="paneCover" class="modal-pane active">
+                <form id="coverForm" method="post" action="${pageContext.request.contextPath}/staff/my-schedule" onsubmit="return validateCoverForm()">
+                    <input type="hidden" name="action" value="requestCover">
                     <input type="hidden" id="modalRequesterShiftID" name="requesterShiftID">
                     <div class="modal-body">
                         <div class="form-group">
@@ -513,33 +515,35 @@
                             <div id="selectedShiftInfo" style="font-size:0.85rem; font-weight:600; color:#76493b; padding:8px 0;"></div>
                         </div>
                         <div class="form-group">
-                            <label>Chọn ca muốn đổi cùng (từ các NV khác):</label>
-                            <input type="hidden" id="targetShiftSelect" name="targetShiftID" value="">
+                            <label>Chọn nhân viên làm thay (chưa có ca ngày này):</label>
+                            <input type="hidden" id="targetEmployeeSelect" name="targetEmployeeID" value="">
                             <div class="single-select-container">
-                                <div class="single-select-trigger" id="customSwapTrigger" onclick="toggleCustomSwapSelect(event)">
-                                    <span id="customSwapTriggerLabel">-- Chọn ca làm việc của đồng nghiệp --</span>
+                                <div class="single-select-trigger" id="customCoverTrigger" onclick="toggleCustomCoverSelect(event)">
+                                    <span id="customCoverTriggerLabel">-- Chọn nhân viên làm thay --</span>
                                     <i class="fas fa-chevron-down" style="font-size: 0.75rem; color: #8a6e5a;"></i>
                                 </div>
-                                <div class="single-select-panel" id="customSwapPanel">
-                                    <div class="single-select-list" id="customSwapList">
-                                        <div class="single-select-option" data-value="" onclick="selectCustomSwapOption(this, '', '-- Chọn ca làm việc của đồng nghiệp --')">-- Chọn --</div>
-                                        <c:forEach var="os" items="${otherShifts}">
-                                            <fmt:formatDate var="osDateStr" value="${os.workDate}" pattern="dd/MM/yyyy"/>
-                                            <fmt:formatDate var="osStartStr" value="${os.startTime}" pattern="HH:mm"/>
-                                            <fmt:formatDate var="osEndStr" value="${os.endTime}" pattern="HH:mm"/>
-                                            <div class="single-select-option" data-value="${os.shiftID}" onclick="selectCustomSwapOption(this, '${os.shiftID}', '${os.fullName} - ${osDateStr} (${os.shiftName}: ${osStartStr} - ${osEndStr})')">
-                                                ${os.fullName} - ${osDateStr} (${os.shiftName}: ${osStartStr} - ${osEndStr})
-                                            </div>
+                                <div class="single-select-panel" id="customCoverPanel">
+                                    <div class="single-select-list" id="customCoverList">
+                                        <div class="single-select-option" data-static="true" data-value="" onclick="selectCustomCoverOption(this, '', '-- Chọn nhân viên làm thay --')">-- Chọn --</div>
+                                        <div class="single-select-option" id="noCoverStaffOption" data-empty="true" style="display:none; color:#8a6e5a; cursor:default;">
+                                            Không có nhân viên rảnh trong ngày này
+                                        </div>
+                                        <c:forEach var="entry" items="${availableCoverStaffByDate}">
+                                            <c:forEach var="staff" items="${entry.value}">
+                                                <div class="single-select-option cover-staff-option" data-date="${entry.key}" data-value="${staff.employeeID}" onclick="selectCustomCoverOption(this, '${staff.employeeID}', '${staff.fullName}')">
+                                                    ${staff.fullName}
+                                                </div>
+                                            </c:forEach>
                                         </c:forEach>
                                     </div>
                                 </div>
                             </div>
-                            <span id="targetError" class="error-feedback">Vui lòng chọn ca muốn đổi cùng!</span>
+                            <span id="targetError" class="error-feedback">Vui lòng chọn nhân viên làm thay!</span>
                         </div>
                         <div class="form-group">
-                            <label for="swapReason">Lý do đổi ca:</label>
-                            <textarea id="swapReason" name="reason" placeholder="Nhập lý do đổi ca của bạn..." maxlength="500"></textarea>
-                            <span id="swapReasonError" class="error-feedback">Vui lòng nhập lý do đổi ca!</span>
+                            <label for="coverReason">Lý do nhờ làm thay:</label>
+                            <textarea id="coverReason" name="reason" placeholder="Nhập lý do nhờ làm thay của bạn..." maxlength="500"></textarea>
+                            <span id="coverReasonError" class="error-feedback">Vui lòng nhập lý do nhờ làm thay!</span>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -577,6 +581,10 @@
     <%@ include file="/views/includes/footer.jsp" %>
     
     <script>
+        function openRequestModalFromButton(btn) {
+            openRequestModal(btn.dataset.shiftId, btn.dataset.shiftName, btn.dataset.workDate);
+        }
+
         function openRequestModal(shiftID, shiftName, workDate) {
             document.getElementById('modalRequesterShiftID').value = shiftID;
             document.getElementById('modalRequesterShiftIDLeave').value = shiftID;
@@ -585,17 +593,18 @@
             document.getElementById('requestModal').style.display = 'flex';
             
             // Clear input states
-            document.getElementById('swapReason').value = '';
+            document.getElementById('coverReason').value = '';
             document.getElementById('leaveReason').value = '';
-            document.getElementById('targetShiftSelect').value = '';
-            var customSwapTriggerLabel = document.getElementById('customSwapTriggerLabel');
-            if (customSwapTriggerLabel) {
-                customSwapTriggerLabel.innerText = '-- Chọn ca làm việc của đồng nghiệp --';
+            document.getElementById('targetEmployeeSelect').value = '';
+            var customCoverTriggerLabel = document.getElementById('customCoverTriggerLabel');
+            if (customCoverTriggerLabel) {
+                customCoverTriggerLabel.innerText = '-- Chọn nhân viên làm thay --';
             }
-            document.querySelectorAll('#customSwapList .single-select-option').forEach(function(o) {
+            document.querySelectorAll('#customCoverList .single-select-option').forEach(function(o) {
                 o.classList.remove('selected');
             });
-            var panel = document.getElementById('customSwapPanel');
+            filterCoverStaffOptions(workDate);
+            var panel = document.getElementById('customCoverPanel');
             if (panel) panel.style.display = 'none';
             
             hideErrors();
@@ -612,9 +621,9 @@
             tabs.forEach(t => t.classList.remove('active'));
             panes.forEach(p => p.classList.remove('active'));
             
-            if (type === 'swap') {
-                document.getElementById('tabSwap').classList.add('active');
-                document.getElementById('paneSwap').classList.add('active');
+            if (type === 'cover') {
+                document.getElementById('tabCover').classList.add('active');
+                document.getElementById('paneCover').classList.add('active');
             } else {
                 document.getElementById('tabLeave').classList.add('active');
                 document.getElementById('paneLeave').classList.add('active');
@@ -626,23 +635,23 @@
             document.querySelectorAll('.error-feedback').forEach(el => el.style.display = 'none');
         }
 
-        function validateSwapForm() {
+        function validateCoverForm() {
             hideErrors();
             let isValid = true;
-            const target = document.getElementById('targetShiftSelect').value;
-            const reason = document.getElementById('swapReason').value.trim();
+            const target = document.getElementById('targetEmployeeSelect').value;
+            const reason = document.getElementById('coverReason').value.trim();
             
             if (!target) {
                 document.getElementById('targetError').style.display = 'block';
                 isValid = false;
             }
             if (!reason) {
-                document.getElementById('swapReasonError').innerText = 'Vui lòng nhập lý do đổi ca!';
-                document.getElementById('swapReasonError').style.display = 'block';
+                document.getElementById('coverReasonError').innerText = 'Vui lòng nhập lý do nhờ làm thay!';
+                document.getElementById('coverReasonError').style.display = 'block';
                 isValid = false;
             } else if (reason.length > 500) {
-                document.getElementById('swapReasonError').innerText = 'Lý do không được vượt quá 500 ký tự!';
-                document.getElementById('swapReasonError').style.display = 'block';
+                document.getElementById('coverReasonError').innerText = 'Lý do không được vượt quá 500 ký tự!';
+                document.getElementById('coverReasonError').style.display = 'block';
                 isValid = false;
             }
             return isValid;
@@ -672,9 +681,9 @@
             return dateStr;
         }
 
-        function toggleCustomSwapSelect(event) {
+        function toggleCustomCoverSelect(event) {
             event.stopPropagation();
-            var panel = document.getElementById('customSwapPanel');
+            var panel = document.getElementById('customCoverPanel');
             if (panel) {
                 if (panel.style.display === 'block') {
                     panel.style.display = 'none';
@@ -684,20 +693,36 @@
             }
         }
 
-        function selectCustomSwapOption(el, value, label) {
-            document.getElementById('targetShiftSelect').value = value;
-            document.getElementById('customSwapTriggerLabel').innerText = label;
+        function selectCustomCoverOption(el, value, label) {
+            document.getElementById('targetEmployeeSelect').value = value;
+            document.getElementById('customCoverTriggerLabel').innerText = label;
             
-            document.querySelectorAll('#customSwapList .single-select-option').forEach(function(o) {
+            document.querySelectorAll('#customCoverList .single-select-option').forEach(function(o) {
                 o.classList.remove('selected');
             });
             el.classList.add('selected');
             
-            document.getElementById('customSwapPanel').style.display = 'none';
+            document.getElementById('customCoverPanel').style.display = 'none';
+        }
+
+        function filterCoverStaffOptions(workDate) {
+            var visibleCount = 0;
+            document.querySelectorAll('#customCoverList .cover-staff-option').forEach(function(option) {
+                var visible = option.getAttribute('data-date') === workDate;
+                option.style.display = visible ? '' : 'none';
+                if (visible) {
+                    visibleCount++;
+                }
+            });
+
+            var emptyOption = document.getElementById('noCoverStaffOption');
+            if (emptyOption) {
+                emptyOption.style.display = visibleCount === 0 ? '' : 'none';
+            }
         }
 
         document.addEventListener('click', function(event) {
-            var panel = document.getElementById('customSwapPanel');
+            var panel = document.getElementById('customCoverPanel');
             if (panel && !event.target.closest('.single-select-container')) {
                 panel.style.display = 'none';
             }
