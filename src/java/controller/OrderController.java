@@ -8,6 +8,8 @@ import model.MenuItem;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -23,72 +25,63 @@ public class OrderController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
 
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet OrderController</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet OrderController at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // =========================================================
-    // GET /order?action=cart  →  hiển thị giỏ hàng
-    // =========================================================
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
-
-        // Nếu không truyền action, mặc định xem như là "cart" để tránh trang trắng
-        if (action == null) {
-            action = "cart";
-        }
+        if (action == null) { action = "cart"; }
 
         if ("cart".equals(action)) {
             HttpSession session = request.getSession();
-
-            // LẤY ORDER_ID THẬT TỪ SESSION (Đã sinh ra lúc quét QR)
             Integer orderID = (Integer) session.getAttribute("orderID");
 
             if (orderID == null) {
-                // Nếu không có Order (khách chưa chọn món nào mà bấm vào giỏ)
                 request.setAttribute("orderItems", null);
                 request.setAttribute("menuItems", null);
-                request.setAttribute("assignedTables", null); // Thêm dòng này
+                request.setAttribute("assignedTables", null);
                 request.setAttribute("errorMsg", "Giỏ hàng của bạn đang trống!");
             } else {
-                // Lấy 2 list song song từ Database dựa trên orderID thật
-                List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
-                List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderId(orderID);
+                // 1. KÉO CÁC MÓN ĐÃ GỬI BẾP (DATABASE)
+                List<OrderItem> dbOrderItems = orderDAO.getOrderItemsByOrderId(orderID);
+                List<MenuItem> dbMenuItems = orderDAO.getMenuItemsByOrderId(orderID);
                 
-                // === BẮT ĐẦU THÊM MỚI ===
+                // 2. KÉO CÁC MÓN MỚI CHỌN (SESSION CART)
+                List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
+                List<MenuItem> sessionMenuItems = new ArrayList<>();
+                if(sessionCart != null && !sessionCart.isEmpty()){
+                    // SỬA Ở ĐÂY: Lấy trực tiếp thông tin MenuItem dựa vào ItemID thật của món
+                    for(OrderItem oi : sessionCart) {
+                        sessionMenuItems.add(getMenuItemById(oi.getItemID()));
+                    }
+                }
+
                 TableDAO tableDAO = new TableDAO();
                 List<Table> assignedTables = tableDAO.getTablesByOrderId(orderID);
+                
                 request.setAttribute("assignedTables", assignedTables);
-                // === KẾT THÚC THÊM MỚI ===
-
-                request.setAttribute("orderItems", orderItems);
-                request.setAttribute("menuItems", menuItems);
+                request.setAttribute("dbOrderItems", dbOrderItems); // Món ở bếp
+                request.setAttribute("dbMenuItems", dbMenuItems);
+                request.setAttribute("sessionCart", sessionCart);   // Giỏ hàng tạm
+                request.setAttribute("sessionMenuItems", sessionMenuItems);
                 request.setAttribute("orderID", orderID);
+                
+                // Tính tổng tiền các món đã gửi bếp để show ở nút "Thanh toán tổng"
+                long totalOrderedAmount = 0;
+                if(dbOrderItems != null && dbMenuItems != null && dbOrderItems.size() == dbMenuItems.size()){
+                    for(int i=0; i<dbOrderItems.size(); i++){
+                         MenuItem mi = dbMenuItems.get(i);
+                         int price = mi.getDiscountedPrice() > 0 ? mi.getDiscountedPrice() : mi.getPrice();
+                         totalOrderedAmount += price * dbOrderItems.get(i).getQuantity();
+                    }
+                }
+                request.setAttribute("totalOrderedAmount", totalOrderedAmount);
             }
 
             request.getRequestDispatcher("/views/user/cart.jsp").forward(request, response);
         }
     }
 
-    // =========================================================
-    // POST /order
-    // Xử lý các logic: Thêm món, Cập nhật số lượng, Xóa món, Gộp bàn
-    // =========================================================
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -97,73 +90,49 @@ public class OrderController extends HttpServlet {
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
-        // Lấy orderID hiện tại của khách từ Session
         Integer currentOrderID = (Integer) session.getAttribute("orderID");
 
         // --- GỘP BÀN TỪ QUÉT QR ---
         if ("addTable".equals(action)) {
+            // Giữ nguyên logic cũ... (Dài quá tôi xin phép thu gọn phần không thay đổi)
             String newTableToken = request.getParameter("tableToken");
-
             if (currentOrderID != null && newTableToken != null) {
                 TableDAO tableDAO = new TableDAO();
-
                 Table newTable = tableDAO.getTableByToken(newTableToken);
-
-                if (newTable != null) {
-                    boolean isTableFree = tableDAO.isTableAvailable(newTable.getTableID());
-
-                    if (isTableFree) {
-                        boolean success = orderDAO.addTableToExistingOrder(currentOrderID, newTable.getTableID());
-
-                        if (success) {
-                            session.setAttribute("successMsg", "Đã gộp thành công Bàn " + newTable.getTableName() + " vào đơn hàng của bạn!");
-                        }
-                    } else {
-                        session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
+                if (newTable != null && tableDAO.isTableAvailable(newTable.getTableID())) {
+                    if (orderDAO.addTableToExistingOrder(currentOrderID, newTable.getTableID())) {
+                        session.setAttribute("successMsg", "Đã gộp thành công Bàn " + newTable.getTableName() + " vào đơn hàng của bạn!");
                     }
                 } else {
-                    session.setAttribute("errorMsg", "Mã QR bàn không hợp lệ!");
+                    session.setAttribute("errorMsg", "Bàn đang có khách ngồi hoặc mã QR không hợp lệ!");
                 }
             }
             response.sendRedirect(request.getContextPath() + "/menu");
             return;
         }
 
-        // --- THÊM MÓN VÀO GIỎ ---
+        // =========================================================
+        // THAO TÁC GIỎ HÀNG BỘ NHỚ TẠM (SESSION)
+        // =========================================================
+        List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
+        if (sessionCart == null) { sessionCart = new ArrayList<>(); }
+
+        // --- THÊM MÓN VÀO GIỎ TẠM ---
         if ("add".equals(action)) {
             int itemID = Integer.parseInt(request.getParameter("itemID"));
             int quantity = Integer.parseInt(request.getParameter("quantity"));
             String note = request.getParameter("note");
+            int price = request.getParameter("price") != null ? Integer.parseInt(request.getParameter("price")) : 0;
 
-            // Lấy giá trị tiền của món ăn
-            int price = 0;
-            String priceParam = request.getParameter("price");
-            if (priceParam != null && !priceParam.isEmpty()) {
-                price = Integer.parseInt(priceParam);
-            }
+            Integer tableID = request.getParameter("tableID") != null && !request.getParameter("tableID").isEmpty() ? 
+                              Integer.parseInt(request.getParameter("tableID")) : (Integer) session.getAttribute("tableID");
 
-            Integer orderID = (Integer) session.getAttribute("orderID");
-            
-            // --- SỬA LOGIC LẤY BÀN ĐỂ CHỌN ĐƯỢC BÀN KHI GỘP ---
-            Integer tableID = null;
-            String selectedTableStr = request.getParameter("tableID"); // Lấy từ Dropdown chọn bàn trên giao diện
-            
-            if (selectedTableStr != null && !selectedTableStr.isEmpty()) {
-                tableID = Integer.parseInt(selectedTableStr); // Lấy bàn khách vừa chọn
-            } else {
-                tableID = (Integer) session.getAttribute("tableID"); // Khách chưa chọn hoặc đơn lẻ thì lấy bàn gốc
-            }
-            // -------------------------------------------------
-
-            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
-
-            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
-            if (orderID == null) {
+            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI (Vẫn phải tạo DB Order trước để lấy cái khung)
+            if (currentOrderID == null) {
                 Integer customerID = (Integer) session.getAttribute("customerID");
-
                 Order newOrder = new Order();
                 newOrder.setCustomerID(customerID);
-                newOrder.setOrderType(tableID != null ? 1 : 2); // 1: Dùng tại bàn, 2: Mang về
+                newOrder.setOrderType(tableID != null ? 1 : 2); 
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
@@ -171,63 +140,148 @@ public class OrderController extends HttpServlet {
                 newOrder.setDepositAmount(0);
                 newOrder.setOrderTime(new Timestamp(System.currentTimeMillis()));
 
-                // ĐÃ XÓA SẠCH ĐOẠN SET CAPACITY VÀ AREATYPE THEO CHUẨN MODEL MỚI
-
                 int newOrderID = orderDAO.createOrder(newOrder);
                 if (newOrderID == -1) {
                     response.sendRedirect(request.getContextPath() + "/menu?error=create_order_failed");
                     return;
                 }
-
-                // Lưu liên kết Bàn và Đơn hàng vào bảng Order_Table
-                if (tableID != null && tableID > 0) {
-                    orderDAO.linkOrderAndTable(newOrderID, tableID);
-                }
-
+                if (tableID != null && tableID > 0) orderDAO.linkOrderAndTable(newOrderID, tableID);
                 session.setAttribute("orderID", newOrderID);
-                orderID = newOrderID;
+                currentOrderID = newOrderID;
             }
 
-            // Gọi hàm thêm món vào chi tiết đơn
-            int result = orderDAO.addOrderItem(orderID, itemID, tableID, quantity, price, note);
-            if (result == -1) {
-                response.sendRedirect(request.getContextPath() + "/menu?error=add_item_failed");
-                return;
-            }
-
-            response.sendRedirect(request.getContextPath() + "/menu?success=added");
-
-        // --- CẬP NHẬT SỐ LƯỢNG MÓN ---
-        } else if ("update".equals(action)) {
-            try {
-                int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
-                int quantity = Integer.parseInt(request.getParameter("quantity"));
-
-                // Kiểm tra số lượng hợp lệ (1 - 99)
-                if (quantity < 1 || quantity > 99) {
-                    response.sendRedirect(request.getContextPath() + "/order?action=cart&error=invalid_quantity");
-                    return;
+            // Thêm vào Session thay vì DB
+            boolean found = false;
+            for (OrderItem item : sessionCart) {
+                // Nếu cùng món, cùng bàn, cùng ghi chú -> Gộp số lượng
+                if (item.getItemID() == itemID && 
+                   ((item.getTableID() == null && tableID == null) || (item.getTableID() != null && item.getTableID().equals(tableID))) &&
+                   ((item.getNote() == null && note.isEmpty()) || (item.getNote() != null && item.getNote().equals(note)))) {
+                    item.setQuantity(item.getQuantity() + quantity);
+                    found = true;
+                    break;
                 }
-
-                orderDAO.updateOrderItemQuantity(orderItemID, quantity);
-
-            } catch (NumberFormatException e) {
-                response.sendRedirect(request.getContextPath() + "/order?action=cart&error=invalid_quantity");
-                return;
             }
+            
+            if (!found) {
+                OrderItem newItem = new OrderItem();
+                // Dùng id âm tạm thời để phân biệt trong session
+                newItem.setOrderItemID(-(sessionCart.size() + 1)); 
+                newItem.setOrderID(currentOrderID);
+                newItem.setItemID(itemID);
+                newItem.setTableID(tableID);
+                newItem.setQuantity(quantity);
+                newItem.setPrice(price);
+                newItem.setNote(note);
+                sessionCart.add(newItem);
+            }
+            
+            session.setAttribute("sessionCart", sessionCart);
+            response.sendRedirect(request.getContextPath() + "/menu?success=added");
+            return;
 
+        // --- CẬP NHẬT SỐ LƯỢNG (SESSION) ---
+        } else if ("update".equals(action)) {
+            int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
+            int quantity = Integer.parseInt(request.getParameter("quantity"));
+            
+            if (quantity >= 1 && quantity <= 99) {
+                for (OrderItem item : sessionCart) {
+                    if (item.getOrderItemID() == orderItemID) {
+                        item.setQuantity(quantity);
+                        break;
+                    }
+                }
+                session.setAttribute("sessionCart", sessionCart);
+            }
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
+            return;
 
-        // --- XÓA MÓN KHỎI GIỎ ---
+        // --- XÓA MÓN (SESSION) ---
         } else if ("remove".equals(action)) {
             int orderItemID = Integer.parseInt(request.getParameter("orderItemID"));
-            orderDAO.removeOrderItem(orderItemID);
+            Iterator<OrderItem> iterator = sessionCart.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().getOrderItemID() == orderItemID) {
+                    iterator.remove();
+                    break;
+                }
+            }
+            session.setAttribute("sessionCart", sessionCart);
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
+            return;
+
+        // =========================================================
+        // GỬI BẾP CÁC MÓN ĐƯỢC CHỌN (SESSION -> DATABASE)
+        // =========================================================
+        } else if ("sendToKitchen".equals(action)) {
+            String[] selectedItems = request.getParameterValues("selectedItems");
+            
+            if (currentOrderID != null && !sessionCart.isEmpty() && selectedItems != null) {
+                // Gom các ID món được chọn từ giao diện (là các số âm)
+                List<Integer> idsToSend = new java.util.ArrayList<>();
+                for (String s : selectedItems) {
+                    idsToSend.add(Integer.parseInt(s));
+                }
+                
+                // Duyệt giỏ hàng Session, cái nào có tích thì gửi đi và xóa khỏi giỏ
+                Iterator<OrderItem> iterator = sessionCart.iterator();
+                while (iterator.hasNext()) {
+                    OrderItem oi = iterator.next();
+                    if (idsToSend.contains(oi.getOrderItemID())) {
+                        orderDAO.addOrderItem(currentOrderID, oi.getItemID(), oi.getTableID(), oi.getQuantity(), oi.getPrice(), oi.getNote());
+                        iterator.remove(); // Xóa món này khỏi giỏ tạm sau khi đã đẩy xuống bếp
+                    }
+                }
+                
+                // Cập nhật lại giỏ Session mới (chứa các món chưa gửi)
+                session.setAttribute("sessionCart", sessionCart);
+                session.setAttribute("successMsg", "Đã gửi các món được chọn xuống Bếp thành công!");
+            }
+            response.sendRedirect(request.getContextPath() + "/order?action=cart");
+            return;
+            
+            
+        // =========================================================
+        // THANH TOÁN TỔNG
+        // =========================================================
+        } else if ("checkoutTotal".equals(action)) {
+            // TẠI ĐÂY MỚI LÀ LÚC CHUYỂN HƯỚNG TỚI CHECKOUT.JSP (Và tạo Invoices)
+            // Lưu ý: Việc tạo Invoices có thể đặt ở file CheckoutController giống như bạn đã làm
+            // Bạn chỉ cần chuyển hướng sang đó kèm theo OrderID hiện tại.
+            request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
+            return;
         }
     }
 
     @Override
     public String getServletInfo() {
-        return "Order Controller Handles Add, Update, Remove logic";
+        return "Order Controller Handles Session Cart and DB sync";
+    }
+    
+    
+    // Hàm phụ trợ: Lấy thông tin chi tiết của 1 món ăn dựa vào mã itemID
+    private MenuItem getMenuItemById(int itemID) {
+        String sql = "SELECT * FROM MenuItem WHERE itemID = ?";
+        try (java.sql.Connection conn = new dal.DBContext().getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, itemID);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    MenuItem mi = new MenuItem();
+                    mi.setItemID(rs.getInt("itemID"));
+                    mi.setItemName(rs.getString("itemName"));
+                    mi.setDescription(rs.getString("description"));
+                    mi.setPrice(rs.getInt("price"));
+                    mi.setDiscountPercent(rs.getInt("discountPercent"));
+                    mi.setDiscountedPrice(rs.getInt("discountedPrice"));
+                    mi.setImage(rs.getString("image"));
+                    return mi;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy thông tin món ăn: " + e.getMessage());
+        }
+        return new MenuItem(); // Trả về object rỗng để không bị lỗi màn hình
     }
 }
