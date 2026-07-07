@@ -269,7 +269,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link ${pageContext.request.requestURI.contains('top-dishes-report') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/top-dishes-report">
+                   href="${pageContext.request.contextPath}/menu-performance">
                     <i class="fas fa-award"></i> Món bán chạy
                 </a>
             </li>

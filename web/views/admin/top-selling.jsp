@@ -1,116 +1,252 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
 <!DOCTYPE html>
-<html>
+<html lang="vi">
     <head>
         <meta charset="UTF-8">
         <title>Báo Cáo Hiệu Suất Món Ăn</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
         <style>
+            * {
+                box-sizing: border-box;
+            }
             body {
-                font-family: 'Segoe UI', sans-serif;
-                background-color: #f4f6f9;
                 margin: 0;
-                padding: 20px;
+                font-family: sans-serif;
+                background: #faf6f2;
             }
-            .dashboard-container {
-                max-width: 1200px;
-                margin: 0 auto;
+            .main {
+                flex: 1;
+                padding: 24px 32px;
+                min-width: 0;
+            }
+            .page-container {
+                display: flex;
+            }
+            .page-head {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                margin-bottom: 18px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            .page-title {
+                color: #76493b;
+                font-size: 1.6rem;
+                margin: 0;
+            }
+
+            /* Bộ lọc */
+            .filter-bar {
                 background: #fff;
-                padding: 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            }
-            h2 {
-                color: #2c3e50;
-            }
-            .filter-form {
-                background: #f8f9fa;
-                padding: 20px;
-                border-radius: 8px;
-                border: 1px solid #e9ecef;
-                margin-bottom: 30px;
-            }
-            .quick-filter-group, .advanced-filter-group, .date-picker-group {
+                border: 1px solid #ede0d8;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 20px;
                 display: flex;
                 gap: 12px;
-                align-items: center;
-                margin-bottom: 15px;
+                align-items: flex-end;
                 flex-wrap: wrap;
             }
+            .quick-filter-group {
+                display: flex;
+                gap: 8px;
+                width: 100%;
+                margin-bottom: 8px;
+            }
             .btn-quick {
-                padding: 8px 16px;
-                border: 1px solid #007bff;
+                padding: 6px 14px;
+                border: 1px solid #d7bfa4;
                 background: #fff;
-                color: #007bff;
-                border-radius: 4px;
+                color: #76493b;
+                border-radius: 6px;
                 cursor: pointer;
                 font-weight: 500;
+                font-size: 0.85rem;
+                transition: all 0.2s;
             }
             .btn-quick.active, .btn-quick:hover {
-                background: #007bff;
+                background: #76493b;
+                color: #fff;
+                border-color: #76493b;
+            }
+
+            .filter-bar .field {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .filter-bar label {
+                font-size: 0.78rem;
+                color: #8a6e5a;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .filter-bar input, .filter-bar select {
+                padding: 8px 12px;
+                border: 1px solid #d7bfa4;
+                border-radius: 7px;
+                font-family: inherit;
+                font-size: 0.9rem;
+                min-width: 180px;
+            }
+            .filter-bar input:focus, .filter-bar select:focus {
+                outline: none;
+                border-color: #76493b;
+            }
+
+            /* Nút bấm */
+            .btn {
+                padding: 9px 16px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 0.88rem;
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                transition: all 0.2s;
+            }
+            .btn-primary {
+                background: #76493b;
                 color: #fff;
             }
-            .input-text, .select-box, .input-date {
-                padding: 8px 12px;
-                border: 1px solid #ced4da;
-                border-radius: 4px;
+            .btn-primary:hover {
+                background: #5d3a2e;
             }
-            .input-text {
-                width: 250px;
+            .btn-reset {
+                background: #d7bfa4;
+                color: #76493b;
             }
-            .select-box {
-                width: 200px;
+            .btn-reset:hover {
+                background: #c5a98a;
             }
-            .btn-submit {
-                padding: 8px 20px;
-                background: #28a745;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-weight: bold;
-            }
-            .chart-box {
-                background: #fff;
-                border: 1px solid #e3e6f0;
-                padding: 20px;
-                border-radius: 8px;
-                margin-bottom: 30px;
-            }
-            .report-table {
+
+            /* Khối thông báo lỗi */
+            .error-box {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 16px;
                 width: 100%;
-                border-collapse: collapse;
+            }
+            .error-msg {
+                background: #fef2f2;
+                color: #b91c1c;
+                border: 1px solid #fee2e2;
+                border-radius: 8px;
+                padding: 11px 14px;
+                font-size: 0.88rem;
+                font-weight: 500;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                width: fit-content;
+            }
+            .server-error {
+                display: flex;
+            }
+
+            /* Đồ thị */
+            .chart-card {
+                background: #fff;
+                border: 1px solid #ede0d8;
+                border-radius: 12px;
+                padding: 20px;
                 margin-bottom: 20px;
             }
-            .report-table th, .report-table td {
-                padding: 12px 15px;
+            .chart-card h3 {
+                margin-top: 0;
+                color: #76493b;
+                font-size: 1.15rem;
+            }
+
+            /* Bảng dữ liệu */
+            .table-card {
+                background: #fff;
+                border: 1px solid #ede0d8;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th {
+                background: #faf6f2;
+                padding: 12px 16px;
                 text-align: left;
-                border-bottom: 1px solid #dee2e6;
+                font-size: 0.8rem;
+                color: #76493b;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                border-bottom: 1px solid #ede0d8;
             }
-            .report-table th {
-                background-color: #f1f3f5;
+            td {
+                padding: 12px 16px;
+                border-bottom: 1px solid #f5ece4;
+                font-size: 0.9rem;
+                color: #4a3528;
+                vertical-align: middle;
             }
+            tr:last-child td {
+                border-bottom: none;
+            }
+
+            /* CSS click trọn vẹn dòng TR bằng màng phủ stretched-link */
+            .clickable-row {
+                position: relative;
+            }
+            tbody tr.clickable-row:hover {
+                background: #faf6f2;
+            }
+            .dish-click-link {
+                color: #76493b;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            .stretched-link::after {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 1;
+                content: "";
+            }
+
+            /* Nhãn trạng thái */
             .qty-badge {
-                background: #e2e3e5;
+                background: #f5ece4;
+                color: #4a3528;
                 padding: 4px 8px;
                 border-radius: 12px;
                 font-weight: bold;
+                font-size: 0.85rem;
             }
             .status-tag {
-                padding: 6px 12px;
+                padding: 5px 12px;
                 border-radius: 20px;
-                font-size: 13px;
-                font-weight: bold;
+                font-size: 0.78rem;
+                font-weight: 600;
                 display: inline-block;
+                text-transform: uppercase;
             }
             .tag-star {
                 background-color: #d4edda;
                 color: #155724;
             }
             .tag-plowhorse {
-                background-color: #cce5ff;
-                color: #004085;
+                background-color: #e4edff;
+                color: #2456a6;
             }
             .tag-puzzle {
                 background-color: #fff3cd;
@@ -118,152 +254,356 @@
             }
             .tag-dog {
                 background-color: #f8d7da;
-                color: #721c24;
+                color: #842029;
             }
-            .no-data {
+            .empty {
                 text-align: center;
-                color: #868e96;
-                padding: 30px !important;
+                padding: 40px;
+                color: #a0714f;
+                font-size: 0.95rem;
             }
+
+            /* Định dạng phân trang chuẩn cũ */
             .pagination {
                 display: flex;
+                gap: 6px;
+                padding: 14px 16px;
+                background: #fff;
+                border-top: 1px solid #ede0d8;
+                align-items: center;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .pagination a, .pagination span {
+                padding: 6px 12px;
+                border-radius: 6px;
+                text-decoration: none;
+                color: #76493b;
+                font-size: 0.85rem;
+                font-weight: 500;
+                border: 1px solid #ede0d8;
+            }
+            .pagination a:hover {
+                background: #f5ece4;
+            }
+            .pagination .disabled {
+                background: #f5ece4;
+                color: #a0714f;
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .pagination .page-info {
+                border: none;
+                background: transparent;
+                color: #4a3528;
+            }
+
+            /* Khung ô cửa sổ hiển thị lịch sử (Modal) */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+                display: none;
                 justify-content: center;
                 align-items: center;
-                gap: 15px;
-                margin-top: 25px;
+                z-index: 9999;
             }
-            .pagination a {
-                padding: 8px 16px;
-                border: 1px solid #dee2e6;
-                color: #007bff;
+            .modal-overlay.active {
+                display: flex;
+            }
+            .modal-box {
+                background: #fff;
+                padding: 24px;
+                border-radius: 12px;
+                border: 1px solid #ede0d8;
+                width: 420px;
+                max-height: 75vh;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .modal-title {
+                color: #76493b;
+                font-size: 1.2rem;
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-weight: bold;
+            }
+            .btn-close-modal {
+                float: right;
                 text-decoration: none;
-                border-radius: 4px;
+                color: #a0714f;
+                font-weight: bold;
+                font-size: 1.1rem;
+            }
+            .btn-close-modal:hover {
+                color: #76493b;
+            }
+
+            /* Khối bọc riêng cái bảng để cuộn nội bộ, giữ tiêu đề đứng yên */
+            .modal-table-container {
+                max-height: 380px;
+                overflow-y: auto;
+                border: 1px solid #ede0d8;
+                border-radius: 6px;
+            }
+            .modal-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            /* Cố định thanh tiêu đề bảng khi cuộn */
+            .modal-table th {
+                position: sticky;
+                top: 0;
+                background: #faf6f2;
+                color: #76493b;
+                padding: 10px;
+                font-size: 0.85rem;
+                border-bottom: 1px solid #ede0d8;
+                z-index: 10;
+            }
+            .modal-table td {
+                padding: 10px;
+                border-bottom: 1px solid #f5ece4;
+                color: #4a3528;
             }
         </style>
     </head>
     <body>
-        <div class="dashboard-container">
-            <h2>📊 Báo Cáo Hiệu Suất & Phân Nhóm Menu</h2>
+        <%@ include file="/views/includes/header.jsp" %>
+        <div class="page-container">
+            <%@ include file="/views/includes/dashboard.jsp" %>
+            <main class="main">
 
-            <form action="${pageContext.request.contextPath}/menu-performance" method="get" class="filter-form">
-                <div class="quick-filter-group">
-                    <button type="submit" name="filterType" value="today" class="btn-quick ${filterType == 'today' ? 'active' : ''}">Hôm nay</button>
-                    <button type="submit" name="filterType" value="week" class="btn-quick ${filterType == 'week' ? 'active' : ''}">Tuần này</button>
-                    <button type="submit" name="filterType" value="month" class="btn-quick ${filterType == 'month' ? 'active' : ''}">Tháng này</button>
-                    <button type="submit" name="filterType" value="year" class="btn-quick ${filterType == 'year' ? 'active' : ''}">Năm nay</button>
+                <div class="page-head">
+                    <div>
+                        <h1 class="page-title">Báo Cáo Hiệu Suất Thực Đơn</h1>
+                    </div>
                 </div>
 
-                <div class="advanced-filter-group">
-                    <input type="text" name="search" value="${search}" placeholder="Tìm tên món ăn..." class="input-text" />
-
-                    <select name="category" class="select-box">
-                        <option value="0">--- Chọn danh mục ---</option>
-                        <c:forEach items="${categoryList}" var="cat">
-                            <option value="${cat.categoryID}" ${selectedCategory == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
-                        </c:forEach>
-                    </select>
-
-                    <select name="cookingMethod" class="select-box">
-                        <option value="0">--- Cách chế biến ---</option>
-                        <c:forEach items="${methodList}" var="method">
-                            <option value="${method.methodID}" ${selectedMethod == method.methodID ? 'selected' : ''}>${method.methodName}</option>
-                        </c:forEach>
-                    </select>
+                <div class="error-box" id="errorBox">
+                    <c:if test="${not empty errorSearch}">
+                        <div class="error-msg server-error" id="serverSearchError">
+                            ${errorSearch}
+                        </div>
+                    </c:if>
                 </div>
 
-                <div class="date-picker-group">
-                    <label>Từ ngày:</label>
-                    <input type="date" name="startDate" value="${startDate}" class="input-date" />
-                    <label>Đến ngày:</label>
-                    <input type="date" name="endDate" value="${endDate}" class="input-date" />
-                    <button type="submit" class="btn-submit">Áp Dụng Bộ Lọc</button>
+                <form id="filterForm" action="${pageContext.request.contextPath}/menu-performance" method="get" class="filter-bar">
+                    <div class="quick-filter-group">
+                        <button type="submit" name="filterType" value="today" class="btn-quick ${filterType == 'today' ? 'active' : ''}">Hôm nay</button>
+                        <button type="submit" name="filterType" value="week" class="btn-quick ${filterType == 'week' ? 'active' : ''}">Tuần này</button>
+                        <button type="submit" name="filterType" value="month" class="btn-quick ${filterType == 'month' ? 'active' : ''}">Tháng này</button>
+                        <button type="submit" name="filterType" value="year" class="btn-quick ${filterType == 'year' ? 'active' : ''}">Năm nay</button>
+                    </div>
+
+                    <div class="field">
+                        <label>Tìm tên món ăn</label>
+                        <input type="text" id="searchInput" name="search" value="${search}" placeholder="Gõ tên món cần tìm..." />
+                    </div>
+
+                    <div class="field">
+                        <label>Danh mục</label>
+                        <select name="category">
+                            <option value="0">TẤT CẢ DANH MỤC</option>
+                            <c:forEach items="${categoryList}" var="cat">
+                                <option value="${cat.categoryID}" ${selectedCategory == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
+                            </c:forEach>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Cách chế biến</label>
+                        <select name="cookingMethod">
+                            <option value="0">TẤT CẢ CÁCH CHẾ BIẾN</option>
+                            <c:forEach items="${methodList}" var="method">
+                                <option value="${method.methodID}" ${selectedMethod == method.methodID ? 'selected' : ''}>${method.methodName}</option>
+                            </c:forEach>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Từ ngày</label>
+                        <input type="date" id="startDateInput" name="startDate" value="${startDate}" />
+                    </div>
+
+                    <div class="field">
+                        <label>Đến ngày</label>
+                        <input type="date" id="endDateInput" name="endDate" value="${endDate}" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Lọc dữ liệu</button>
+                </form>
+
+                <div class="chart-card">
+                    <h3>Top 5 Sản Lượng Tiêu Thụ Cao Nhất</h3>
+                    <canvas id="performanceChart" height="90"></canvas>
                 </div>
-            </form>
 
-            <c:if test="${not empty errorSearch}">
-                <p style="color: #dc3545; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">${errorSearch}</p>
-            </c:if>
-
-            <div class="chart-box">
-                <h3>📈 Top Sản Lượng Tiêu Thụ Xuất Sắc</h3>
-                <canvas id="performanceChart" height="100"></canvas>
-            </div>
-
-            <div class="table-box">
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Tên Món Ăn</th>
-                            <th>Danh Mục</th>
-                            <th>Cách Chế Biến</th>
-                            <th>Số Lượng Đã Bán</th>
-                            <th>Trạng Thái Hiệu Suất</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:choose>
-                            <c:when test="${not empty menuItemList}">
-                                <c:forEach items="${menuItemList}" var="item">
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tên Món Ăn</th>
+                                <th>Danh Mục</th>
+                                <th>Cách Chế Biến</th>
+                                <th>Sản Lượng Đã Bán</th>
+                                <th>Nhãn Hiệu Suất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:choose>
+                                <c:when test="${not empty menuItemList}">
+                                    <c:forEach items="${menuItemList}" var="item">
+                                        <tr class="clickable-row">
+                                            <td>
+                                                <a class="dish-click-link stretched-link" href="?page=${currentPage}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}&viewHistoryItemID=${item.itemID}">
+                                                    <strong>${item.itemName}</strong>
+                                                </a>
+                                            </td>
+                                            <td>${item.categoryName}</td>
+                                            <td>${item.methodName}</td>
+                                            <td><span class="qty-badge">${item.totalQuantity} đĩa</span></td>
+                                            <td><span class="status-tag ${item.tagClass}">${item.menuTag}</span></td>
+                                        </tr>
+                                    </c:forEach>
+                                </c:when>
+                                <c:otherwise>
                                     <tr>
-                                        <td><strong>${item.itemName}</strong></td>
-                                        <td>${item.categoryName}</td>
-                                        <td>${item.methodName}</td>
-                                        <td><span class="qty-badge">${item.totalQuantity} đĩa</span></td>
-                                        <td><span class="status-tag ${item.tagClass}">${item.menuTag}</span></td>
+                                        <td colspan="5" class="empty">Không tìm thấy dữ liệu món ăn nào thỏa mãn bộ lọc.</td>
                                     </tr>
-                                </c:forEach>
-                            </c:when>
-                            <c:otherwise>
-                                <tr><td colspan="5" class="no-data">Không tìm thấy dữ liệu món ăn thỏa mãn.</td></tr>
-                            </c:otherwise>
-                        </c:choose>
-                    </tbody>
-                </table>
-            </div>
+                                </c:otherwise>
+                            </c:choose>
+                        </tbody>
+                    </table>
 
-            <c:if test="${totalPage > 1}">
-                <div class="pagination">
-                    <c:if test="${currentPage > 1}">
-                        <a href="?page=${currentPage - 1}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Trước</a>
-                    </c:if>
-                    <span>Trang <b>${currentPage}</b> / ${totalPage}</span>
-                    <c:if test="${currentPage < totalPage}">
-                        <a href="?page=${currentPage + 1}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Sau</a>
+                    <c:if test="${totalPage > 1}">
+                        <div class="pagination">
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="?page=1&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Đầu</a>
+                                    <a href="?page=${currentPage - 1}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Trước</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="disabled">Đầu</span>
+                                    <span class="disabled">Trước</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+
+                            <c:choose>
+                                <c:when test="${currentPage < totalPage}">
+                                    <a href="?page=${currentPage + 1}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Sau</a>
+                                    <a href="?page=${totalPage}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}">Cuối</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="disabled">Sau</span>
+                                    <span class="disabled">Cuối</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
                     </c:if>
                 </div>
-            </c:if>
+
+                <div class="modal-overlay ${not empty historyList ? 'active' : ''}">
+                    <div class="modal-box">
+                        <a href="?page=${currentPage}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}" class="btn-close-modal">&times;</a>
+                        <div class="modal-title">📈 Lịch Sử: ${currentViewDishName}</div>
+
+                        <div class="modal-table-container">
+                            <table class="modal-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày bán</th>
+                                        <th>Sản lượng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:forEach items="${historyList}" var="h">
+                                        <tr>
+                                            <td>${h.workingDate}</td>
+                                            <td><span class="qty-badge">${h.totalQuantity} đĩa</span></td>
+                                        </tr>
+                                    </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
+        <%@ include file="/views/includes/footer.jsp" %>
 
         <script>
             document.addEventListener("DOMContentLoaded", function () {
-                const chartLabels = [];
-                const chartData = [];
+                const form = document.getElementById("filterForm");
+                const searchInput = document.getElementById("searchInput");
+                const startDateInput = document.getElementById("startDateInput");
+                const endDateInput = document.getElementById("endDateInput");
+                const errorBox = document.getElementById("errorBox");
 
-                // 🌟 Sử dụng topChartList cố định từ Servlet sang để bốc Top 5, không bị lệch khi bấm đổi trang của bảng
+                form.addEventListener("submit", function (event) {
+                    const oldJsErrors = errorBox.querySelectorAll(".js-generated-error");
+                    oldJsErrors.forEach(el => el.remove());
+
+                    let hasError = false;
+                    let errorMessages = [];
+
+                    if (searchInput.value.trim().length > 100) {
+                        hasError = true;
+                        errorMessages.push("Tìm kiếm không vượt quá 100 kí tự.");
+                    }
+
+                    if (startDateInput.value && endDateInput.value) {
+                        if (startDateInput.value > endDateInput.value) {
+                            hasError = true;
+                            errorMessages.push("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+                        }
+                    }
+
+                    if (hasError) {
+                        event.preventDefault();
+
+                        const serverErr = document.getElementById("serverSearchError");
+                        if (serverErr)
+                            serverErr.style.display = 'none';
+
+                        errorMessages.forEach(msg => {
+                            const errDiv = document.createElement("div");
+                            errDiv.className = "error-msg js-generated-error";
+                            errDiv.innerHTML = msg;
+                            errorBox.appendChild(errDiv);
+                        });
+                    }
+                });
+
+                const labels = [];
+                const data = [];
+
             <c:forEach items="${topChartList}" var="item">
-                if (${item.totalQuantity > 0}) {
-                    chartLabels.push('${item.itemName}');
-                    chartData.push(${item.totalQuantity});
-                }
+                <c:if test="${item.totalQuantity > 0}">
+                labels.push("${item.itemName}");
+                data.push(${item.totalQuantity});
+                </c:if>
             </c:forEach>
 
-                if (chartData.length > 0) {
-                    const ctx = document.getElementById('performanceChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [{
-                                    label: 'Sản lượng tiêu thụ (đĩa)',
-                                    data: chartData,
-                                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                                    borderColor: 'rgba(54, 162, 235, 1)',
-                                    borderWidth: 1
-                                }]
-                        },
-                        options: {responsive: true, scales: {y: {beginAtZero: true}}}
-                    });
-                }
+                const ctx = document.getElementById("performanceChart");
+
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                                label: "Sản lượng",
+                                data: data,
+                                backgroundColor: 'rgba(118, 73, 59, 0.75)',
+                                borderColor: 'rgba(118, 73, 59, 1)'
+                            }]
+                    }
+                });
             });
         </script>
     </body>

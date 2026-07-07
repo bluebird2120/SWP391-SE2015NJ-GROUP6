@@ -408,7 +408,7 @@ public class MenuItemDAO extends DBContext {
         List<MenuItem> dishList = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder(
-                "SELECT mi.itemName, "
+                "SELECT mi.itemID, mi.itemName, "
                 + "cm.methodName, "
                 + "mc.categoryName, "
                 + "IFNULL(SUM(CASE "
@@ -435,7 +435,7 @@ public class MenuItemDAO extends DBContext {
             sql.append("AND mi.methodID = ? ");
         }
 
-        sql.append("GROUP BY mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
+        sql.append("GROUP BY mi.itemID, mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
         sql.append("ORDER BY totalQuantity DESC, ");
         sql.append("SUM(CASE WHEN o.orderID IS NOT NULL THEN oi.quantity * oi.price ELSE 0 END) DESC ");
         sql.append("LIMIT ? OFFSET ?");
@@ -467,7 +467,8 @@ public class MenuItemDAO extends DBContext {
 
             while (rs.next()) {
                 MenuItem mi = new MenuItem();
-
+                
+                mi.setItemID(rs.getInt("itemID"));
                 mi.setItemName(rs.getString("itemName"));
                 mi.setCategoryName(rs.getString("categoryName"));
                 mi.setMethodName(rs.getString("methodName"));
@@ -497,7 +498,6 @@ public class MenuItemDAO extends DBContext {
                 + "WHERE 1=1 "
         );
         if (search != null && !search.trim().isEmpty()) {
-
             sql.append("AND mi.itemName LIKE ? ");
         }
         if (categoryId > 0) {
@@ -528,5 +528,47 @@ public class MenuItemDAO extends DBContext {
             e.printStackTrace();
         }
         return total;
+    }
+
+    public int totalMenuItem() {
+        int total = 0;
+        String sql = "select count(*) from MenuItem";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt(1);
+            }
+        } catch (Exception e) {
+        }
+        return total;
+    }
+    
+    public List<MenuItem> getSaleHistoryByItem(int itemID, String startDate, String endDate){
+        List<MenuItem> historyList = new ArrayList<>();
+        String sql = "select mi.itemName, date(o.createdAt) as saleDate, sum(oi.quantity) as dailyQuantity from MenuItem mi "
+                + "join OrderItem oi on mi.itemID = oi.itemID "
+                + "join `Order` o on oi.orderID = o.orderID "
+                + "where o.orderStatus = 'completed' and oi.itemID = ? "
+                + "and o.createdAt between ? and ? "
+                + "group by mi.itemName, date(o.createdAt) "
+                + "order by saleDate desc";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, itemID);
+            ps.setString(2, startDate + " 00:00:00");
+            ps.setString(3, endDate + " 23:59:59");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {                
+                MenuItem mi = new MenuItem();
+                mi.setItemName(rs.getString("itemName"));
+                mi.setWorkingDate(rs.getDate("saleDate"));
+                mi.setTotalQuantity(rs.getInt("dailyQuantity"));
+                historyList.add(mi);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return historyList;
     }
 }
