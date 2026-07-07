@@ -23,12 +23,12 @@ public class MenuPerformaneController extends HttpServlet {
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
     private static final int PAGE_SIZE = 8;
+    private static final int CHART_SIZE = 5;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Nhận tham số từ Client
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
         String method_raw = request.getParameter("cookingMethod");
@@ -36,15 +36,26 @@ public class MenuPerformaneController extends HttpServlet {
         String filterType = request.getParameter("filterType");
         String startDate = request.getParameter("startDate");
         String endDate = request.getParameter("endDate");
+        String viewHistoryItemID_raw = request.getParameter("viewHistoryItemID");
 
-        // 2. Validate dữ liệu số an toàn (Dùng hàm gộp tối giản ở dưới)
+        //Validate
         int categoryId = parseIntSafe(category_raw, 0, 0);
         int methodID = parseIntSafe(method_raw, 0, 0);
         int page = parseIntSafe(page_raw, 1, 1);
+        int viewHistoryItemID = parseIntSafe(viewHistoryItemID_raw, 0, 0);
 
-        search = (search == null || search.trim().length() > 100) ? "" : search.trim();
+        if (!checkEmpty(search)) {
+            search = "";
+        }
 
-        // 3. Xử lý quy đổi khoảng ngày báo cáo
+        String errorSearch = isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự");
+
+        if (errorSearch != null) {
+            request.setAttribute("errorSearch", errorSearch);
+            search = "";
+        }
+
+        // Xử lý quy đổi khoảng ngày báo cáo
         LocalDate today = LocalDate.now();
 
         if ("today".equals(filterType)) {
@@ -72,7 +83,7 @@ public class MenuPerformaneController extends HttpServlet {
             }
         }
 
-        // 4. Gọi DAO phân trang dữ liệu báo cáo
+        // Gọi DAO phân trang dữ liệu báo cáo
         int totalItem = menuItemDAO.getTotalPerformanceDishCount(search, categoryId, methodID, startDate, endDate);
         int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
         if (page > totalPage && totalPage > 0) {
@@ -82,26 +93,38 @@ public class MenuPerformaneController extends HttpServlet {
         int offSet = (page - 1) * PAGE_SIZE;
         List<CookingMethod> methodList = cookingMethodDAO.getAllCookingMethod();
         List<MenuCategory> categoryList = menuCategoryDAO.getAllMenuCategory();
+
+        // List A: Chỉ lấy 8 món để hiển thị lên bảng của trang hiện tại
         List<MenuItem> menuItemList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, offSet, PAGE_SIZE);
-        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, 0, 5);
-        
-        // 5. Thuật toán phân màu thông minh (Sửa lỗi 0 đĩa bán chạy)
+
+        // List B: Chỉ lấy đúng 5 item cao nhất để vẽ biểu đồ
+        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, 0, CHART_SIZE);
+
+        // List C: Lấy toàn bộ item để tính toán các món
+        List<MenuItem> allItemsForCalc = menuItemDAO.getPerformanceDish("", 0, 0, startDate, endDate, 0, menuItemDAO.totalMenuItem());
+
+        //Tính tổng số lượng món có doanh thu 
         if (menuItemList != null && !menuItemList.isEmpty()) {
-            int totalItems = menuItemList.size();
+            int activeItemsCount = 0;
             int totalQtyAllDish = 0;
-            for (MenuItem mi : menuItemList) {
-                totalQtyAllDish += mi.getTotalQuantity();
+
+            for (MenuItem mi : allItemsForCalc) {
+                if (mi.getTotalQuantity() > 0) {
+                    totalQtyAllDish += mi.getTotalQuantity();
+                    activeItemsCount++;
+                }
             }
 
-            double avgQuantity = (double) totalQtyAllDish / totalItems;
-            double lowQuantity = avgQuantity * 0.2;
+            // Mốc trung bình cộng của các món có doanh thu
+            double avgQuantity = (activeItemsCount == 0) ? 0 : (double) totalQtyAllDish / activeItemsCount;
+            double lowQuantity = avgQuantity * 0.5;
 
+            // Vòng lặp gán nhãn
             for (MenuItem mi : menuItemList) {
                 int qty = mi.getTotalQuantity();
 
-                // Nếu tổng sản lượng bằng 0 hoặc chưa từng bán đĩa nào -> Gom vào nhóm Ế Ẩm
-                if (totalQtyAllDish == 0 || qty == 0) {
-                    mi.setMenuTag("Cảnh Báo: Ế Ẩm");
+                if (qty == 0) {
+                    mi.setMenuTag("Cảnh Báo: Món Chết");
                     mi.setTagClass("tag-dog");
                 } else if (qty >= avgQuantity * 1.5) {
                     mi.setMenuTag("Bán Chạy Nhất");
@@ -113,10 +136,23 @@ public class MenuPerformaneController extends HttpServlet {
                     mi.setMenuTag("Tiêu Thụ Chậm");
                     mi.setTagClass("tag-puzzle");
                 } else {
-                    mi.setMenuTag("Cảnh Báo: Ế Ẩm");
+                    mi.setMenuTag("Hiệu Suất Kém");
                     mi.setTagClass("tag-dog");
                 }
             }
+        }
+
+        if (viewHistoryItemID > 0) {
+            // Lấy danh sách lịch sử 
+            List<MenuItem> historyList = menuItemDAO.getSaleHistoryByItem(viewHistoryItemID, startDate, endDate);
+            request.setAttribute("historyList", historyList);
+
+            // Lấy luôn tên món ăn 
+            String currentViewDishName = "Món ăn";
+            if (historyList != null && !historyList.isEmpty()) {
+                currentViewDishName = historyList.get(0).getItemName();
+            }
+            request.setAttribute("currentViewDishName", currentViewDishName);
         }
 
         // 6. Đẩy thuộc tính sạch sang JSP
@@ -147,5 +183,18 @@ public class MenuPerformaneController extends HttpServlet {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+
+    //Hàm check rỗng
+    private boolean checkEmpty(String data) {
+        return (data != null && !data.trim().isEmpty());
+    }
+
+    //Hàm kiểm tra độ dài string
+    private String isValidString(String data, int length, String ms) {
+        if (data.length() > length) {
+            return ms;
+        }
+        return null;
     }
 }
