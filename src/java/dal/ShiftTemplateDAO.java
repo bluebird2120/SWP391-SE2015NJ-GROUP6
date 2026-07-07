@@ -51,6 +51,26 @@ public class ShiftTemplateDAO extends DBContext {
         return null;
     }
 
+    public boolean isShiftNameExists(String shiftName, int excludeID) {
+        if (shiftName == null || shiftName.isBlank()) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM ShiftTemplates "
+                + "WHERE LOWER(TRIM(shiftName)) = LOWER(TRIM(?)) "
+                + "AND templateID <> ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, shiftName.trim());
+            ps.setInt(2, excludeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
     /**
      * Thêm mới một mẫu ca làm việc vào cơ sở dữ liệu.
      * 

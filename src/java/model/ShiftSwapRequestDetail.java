@@ -5,14 +5,11 @@ import java.sql.Time;
 import java.sql.Timestamp;
 
 /**
- * Lớp ShiftSwapRequestDetail chứa thông tin chi tiết của một yêu cầu đổi ca hoặc xin nghỉ.
- * Lớp này đóng vai trò là một DTO (Data Transfer Object) chứa thông tin của yêu cầu đổi ca
- * kèm theo thông tin chi tiết của ca yêu cầu (Requester Shift) và ca mục tiêu (Target Shift).
+ * DTO chứa thông tin chi tiết của một yêu cầu làm thay hoặc xin nghỉ.
  */
 public class ShiftSwapRequestDetail {
     private int swapID;
     private int requesterShiftID;
-    private Integer targetShiftID;
     private String status;
     private String reason;
     private Timestamp createdAt;
@@ -26,15 +23,15 @@ public class ShiftSwapRequestDetail {
     private Time reqStartTime;
     private Time reqEndTime;
 
-    // Target Shift Info
+    // Cover employee info
     private Integer targetEmployeeID;
     private String targetEmployeeName;
-    private String targetShiftName;
-    private Date targetWorkDate;
-    private Time targetStartTime;
-    private Time targetEndTime;
 
     public int getSwapID() {
+        return swapID;
+    }
+
+    public int getRequestID() {
         return swapID;
     }
 
@@ -48,14 +45,6 @@ public class ShiftSwapRequestDetail {
 
     public void setRequesterShiftID(int requesterShiftID) {
         this.requesterShiftID = requesterShiftID;
-    }
-
-    public Integer getTargetShiftID() {
-        return targetShiftID;
-    }
-
-    public void setTargetShiftID(Integer targetShiftID) {
-        this.targetShiftID = targetShiftID;
     }
 
     public String getStatus() {
@@ -152,37 +141,5 @@ public class ShiftSwapRequestDetail {
 
     public void setTargetEmployeeName(String targetEmployeeName) {
         this.targetEmployeeName = targetEmployeeName;
-    }
-
-    public String getTargetShiftName() {
-        return targetShiftName;
-    }
-
-    public void setTargetShiftName(String targetShiftName) {
-        this.targetShiftName = targetShiftName;
-    }
-
-    public Date getTargetWorkDate() {
-        return targetWorkDate;
-    }
-
-    public void setTargetWorkDate(Date targetWorkDate) {
-        this.targetWorkDate = targetWorkDate;
-    }
-
-    public Time getTargetStartTime() {
-        return targetStartTime;
-    }
-
-    public void setTargetStartTime(Time targetStartTime) {
-        this.targetStartTime = targetStartTime;
-    }
-
-    public Time getTargetEndTime() {
-        return targetEndTime;
-    }
-
-    public void setTargetEndTime(Time targetEndTime) {
-        this.targetEndTime = targetEndTime;
     }
 }

@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -140,7 +141,6 @@
     </head>
 
     <body>
-        <%@include file="/views/includes/header.jsp" %>
 
         <!-- BODY -->
         <div class="page-body">
@@ -282,7 +282,6 @@
                 </div>
             </div>
         </div>
-        <%@include file="/views/includes/footer.jsp" %>  
     </body>
 </html>
 

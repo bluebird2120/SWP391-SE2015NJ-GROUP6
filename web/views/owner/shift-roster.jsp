@@ -276,45 +276,6 @@
                 font-size: 0.85rem;
             }
 
-            /* Filter bar */
-            .filter-bar {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 10px 18px;
-                background: #fdf8f5;
-                border-bottom: 1px solid #ede0d8;
-                flex-wrap: wrap;
-            }
-
-            .filter-bar label {
-                font-size: 0.72rem;
-                font-weight: 600;
-                color: #76493b;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                white-space: nowrap;
-                margin: 0;
-            }
-
-            .filter-bar select {
-                width: auto;
-                min-width: 160px;
-                padding: 6px 10px;
-                font-size: 0.82rem;
-                border: 1px solid #d7bfa4;
-                border-radius: 7px;
-                background: #fff;
-                color: #4a3528;
-            }
-
-            .filter-count {
-                margin-left: auto;
-                font-size: 0.78rem;
-                color: #8a6e5a;
-                white-space: nowrap;
-            }
-
             /* Custom Multi-select Dropdown */
             .multi-select-container {
                 position: relative;
@@ -623,9 +584,9 @@
                                 </div>
                             </div>
                             <div class="field">
-                                <label>Ca</label>
+                                <label>Giờ</label>
                                 <select name="templateID" required>
-                                    <option value="">-- Chọn ca --</option>
+                                    <option value="">Giờ làm việc</option>
                                     <c:forEach var="t" items="${templates}">
                                         <option value="${t.templateID}">${t.shiftName} (
                                             <fmt:formatDate value="${t.startTime}" pattern="HH:mm" />-
@@ -642,20 +603,6 @@
                         </form>
                     </div>
 
-                    <!-- Filter Bar for Daily Shift -->
-                    <div class="card" style="padding: 12px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 0.88rem; font-weight: 600; color: #76493b; white-space: nowrap;">Lọc theo ca:</span>
-                            <select id="dailyShiftFilter" onchange="filterRosterTable('dailyRosterBody', this.value, 'dailyRosterBadge')" style="padding: 6px 12px; border: 1px solid #d7bfa4; border-radius: 6px; font-size: 0.85rem; color: #4a3528; background: #fff; outline: none; cursor: pointer; font-family: inherit;">
-                                <option value="">Tất cả các ca</option>
-                                <c:forEach var="t" items="${templates}">
-                                    <option value="${t.shiftName}">${t.shiftName}</option>
-                                </c:forEach>
-                            </select>
-                        </div>
-                        <span id="dailyRosterBadge" style="font-size: 0.82rem; color: #8a6e5a; font-weight: 500;"></span>
-                    </div>
-
                     <div class="card" style="padding:0;">
                         <table>
                             <thead>
@@ -669,7 +616,7 @@
                             </thead>
                             <tbody id="dailyRosterBody">
                                 <c:forEach var="r" items="${roster}">
-                                    <tr data-shift="${r.shiftName}">
+                                    <tr>
                                         <td>${r.fullName}</td>
                                         <td>${r.shiftName}</td>
                                         <td>
@@ -738,9 +685,9 @@
                                 </div>
                             </div>
                             <div class="field">
-                                <label>Ca</label>
+                                <label>Giờ</label>
                                 <select name="templateID" required>
-                                    <option value="">-- Chọn ca --</option>
+                                    <option value="">Giờ làm việc</option>
                                     <c:forEach var="t" items="${templates}">
                                         <option value="${t.templateID}">${t.shiftName} (
                                             <fmt:formatDate value="${t.startTime}" pattern="HH:mm" />-
@@ -801,18 +748,6 @@
                                        onchange="this.form.submit()">
                             </form>
                         </div>
-                        <div class="filter-bar">
-                            <label for="filterShiftMonthly">Lọc theo
-                                ca:</label>
-                            <select id="filterShiftMonthly"
-                                    onchange="filterRosterTable('monthlyPlanBody', this.value, 'monthlyCountBadge')">
-                                <option value="">-- Tất cả ca --</option>
-                                <c:forEach var="t" items="${templates}">
-                                    <option value="${t.shiftName}">${t.shiftName}</option>
-                                </c:forEach>
-                            </select>
-                            <span class="filter-count" id="monthlyCountBadge"></span>
-                        </div>
                         <table>
                             <thead>
                                 <tr>
@@ -826,7 +761,7 @@
                             </thead>
                             <tbody id="monthlyPlanBody">
                                 <c:forEach var="p" items="${monthlyPlans}">
-                                    <tr data-shift="${p.templateName}">
+                                    <tr>
                                         <td>${p.employeeName}</td>
                                         <td>${p.templateName}</td>
                                         <td>
@@ -859,10 +794,9 @@
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="badge badge-${p.status}"
-                                                          style="font-size:0.68rem;">Đã ${p.status ==
-                                                                                    'APPLIED' ? 'áp dụng' : 'huỷ'}</span>
-                                                    </c:otherwise>
-                                                </c:choose>
+                                                          style="font-size:0.68rem;">Done</span>
+                                                </c:otherwise>
+                                            </c:choose>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -1090,16 +1024,15 @@
                 updateMultiSelectLabel(container.querySelector('.multi-select-trigger'));
             }
 
-            function updateMultiSelectLabel(trigger) {
-                var container = trigger.closest('.multi-select-container');
+            function updateMultiSelectLabel(source) {
+                var container = source.closest('.multi-select-container');
+                var trigger = container.querySelector('.multi-select-trigger');
                 var checkboxes = container.querySelectorAll('input[name="employeeIDs"]');
                 var checkedCount = 0;
-                var selectedNames = [];
 
                 checkboxes.forEach(function (cb) {
                     if (cb.checked) {
                         checkedCount++;
-                        selectedNames.push(cb.parentNode.textContent.trim());
                     }
                 });
 
@@ -1110,12 +1043,8 @@
 
                 if (checkedCount === 0) {
                     trigger.textContent = "-- Chọn nhân viên (0) --";
-                } else if (checkedCount === 1) {
-                    trigger.textContent = selectedNames[0];
-                } else if (checkedCount === checkboxes.length) {
-                    trigger.textContent = "Tất cả (" + checkedCount + ")";
                 } else {
-                    trigger.textContent = "Đã chọn (" + checkedCount + ")";
+                    trigger.textContent = "Đã chọn " + checkedCount + " nhân viên";
                 }
             }
 
@@ -1267,42 +1196,6 @@
                     var text = opt.textContent.toLowerCase();
                     opt.style.display = (!q || text.includes(q)) ? '' : 'none';
                 });
-            }
-
-
-
-            /**
-             * Lọc các hàng trong bảng theo tên ca.
-             * @param {string} tbodyId   - id của <tbody> cần lọc
-             * @param {string} shiftName - giá trị ca được chọn ('' = tất cả)
-             * @param {string} badgeId   - id của span hiển thị số hàng
-             */
-            function filterRosterTable(tbodyId, shiftName, badgeId) {
-                var tbody = document.getElementById(tbodyId);
-                if (!tbody)
-                    return;
-                var rows = tbody.querySelectorAll('tr[data-shift]');
-                var visibleCount = 0;
-                rows.forEach(function (row) {
-                    var rowShift = row.getAttribute('data-shift') || '';
-                    var match = !shiftName || rowShift === shiftName;
-                    row.style.display = match ? '' : 'none';
-                    if (match)
-                        visibleCount++;
-                });
-                // Cập nhật badge đếm
-                var badge = document.getElementById(badgeId);
-                if (badge) {
-                    if (shiftName) {
-                        badge.textContent = 'Hiển thị ' + visibleCount + ' / ' + rows.length + ' bản ghi';
-                    } else {
-                        badge.textContent = '';
-                    }
-                }
-                // Ẩn/hiện dòng "chưa có dữ liệu" nếu filter lọc hết
-                var emptyRow = tbody.querySelector('tr:not([data-shift])');
-                if (emptyRow)
-                    emptyRow.style.display = '';
             }
 
             function switchTab(name) {

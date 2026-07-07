@@ -13,7 +13,7 @@ import model.Employee;
 @WebServlet(name = "StaffTableController", urlPatterns = {"/staff/tables"})
 public class StaffTableController extends HttpServlet {
 
-    private static final String VIEW = "/views/staff/table-dashboard.jsp";
+    private static final String VIEW = "/views/staff/my-tables.jsp";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -24,11 +24,9 @@ public class StaffTableController extends HttpServlet {
             return;
         }
 
-        StaffTableDAO dao = new StaffTableDAO();
-        request.setAttribute("physicalTables", dao.getPhysicalTables());
-        request.setAttribute("tableSummary", dao.getSummaryByTableType());
-        request.setAttribute("reservationRequirements",
-                dao.getReservationsWaitingForTables());
+        // [PHAN QUYEN PHUC VU] Staff chi nhin thay don va ban cua chinh minh.
+        request.setAttribute("assignedTables",
+                new StaffTableDAO().getTablesForEmployee(employee.getEmployeeID()));
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 
@@ -42,25 +40,17 @@ public class StaffTableController extends HttpServlet {
             return;
         }
 
-        StaffTableDAO dao = new StaffTableDAO();
-        String message;
+        String message = "Thao tac khong hop le.";
         try {
             int orderID = Integer.parseInt(request.getParameter("orderID"));
-            String action = request.getParameter("action");
-            if ("assign".equals(action)) {
-                int tableID = Integer.parseInt(request.getParameter("tableID"));
-                String error = dao.assignTable(orderID, tableID,
-                        employee.getEmployeeID());
-                message = error == null ? "assign_success" : error;
-            } else if ("cleaned".equals(action)) {
-                // [STAFF TABLE] Chi xu ly don da cleaning, khong sua thanh toan.
-                message = dao.markCleaningCompleted(orderID)
-                        ? "clean_success" : "Không thể hoàn tất dọn bàn.";
-            } else {
-                message = "Thao tác không hợp lệ.";
+            if ("cleaned".equals(request.getParameter("action"))) {
+                // [PHAN QUYEN PHUC VU] DAO kiem tra order phai thuoc staff nay.
+                message = new StaffTableDAO().markCleaningCompleted(
+                        orderID, employee.getEmployeeID())
+                        ? "clean_success" : "Khong the hoan tat don ban nay.";
             }
         } catch (NumberFormatException e) {
-            message = "Mã đơn hoặc mã bàn không hợp lệ.";
+            message = "Ma don khong hop le.";
         }
 
         request.getSession().setAttribute("staffTableMessage", message);

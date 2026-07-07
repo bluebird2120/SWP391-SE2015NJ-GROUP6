@@ -100,7 +100,7 @@ public class ShiftTemplateController extends HttpServlet {
     private void handleCreate(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         Map<String, String> errors = new HashMap<>();
-        ShiftTemplates t = bindAndValidate(req, errors, true);
+        ShiftTemplates t = bindAndValidate(req, errors, true, 0);
         if (!errors.isEmpty()) {
             req.setAttribute("errors", errors);
             req.setAttribute("template", t);
@@ -140,7 +140,7 @@ public class ShiftTemplateController extends HttpServlet {
         int used = dao.countShiftsUsing(id);
         Map<String, String> errors = new HashMap<>();
 
-        ShiftTemplates t = bindAndValidate(req, errors, used == 0);
+        ShiftTemplates t = bindAndValidate(req, errors, used == 0, id);
         t.setTemplateID(id);
 
         if (!errors.isEmpty()) {
@@ -190,7 +190,7 @@ public class ShiftTemplateController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/owner/shift-templates?msg=deleted");
     }
 
-    private ShiftTemplates bindAndValidate(HttpServletRequest req, Map<String, String> errors, boolean canEditTimes) {
+    private ShiftTemplates bindAndValidate(HttpServletRequest req, Map<String, String> errors, boolean canEditTimes, int excludeId) {
         String name = trim(req.getParameter("shiftName"));
         String startStr = trim(req.getParameter("startTime"));
         String endStr = trim(req.getParameter("endTime"));
@@ -202,6 +202,8 @@ public class ShiftTemplateController extends HttpServlet {
             errors.put("shiftName", "Tên ca không được để trống.");
         } else if (name.length() > 100) {
             errors.put("shiftName", "Tên ca tối đa 100 ký tự.");
+        } else if (new ShiftTemplateDAO().isShiftNameExists(name, excludeId)) {
+            errors.put("shiftName", "Tên ca đã tồn tại.");
         }
 
         //Code ĐB
