@@ -4,6 +4,7 @@ import dal.OrderDAOSon;
 import dal.OrderDAO;
 import dal.MenuItemDAO;
 import dal.TableDAO;
+import dal.BusinessScheduleDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -34,6 +35,7 @@ public class ReservationController extends HttpServlet {
     private final OrderDAOSon orderDAO = new OrderDAOSon();
     private final OrderDAO preorderDAO = new OrderDAO();
     private final MenuItemDAO menuItemDAO = new MenuItemDAO();
+    private final BusinessScheduleDAO businessScheduleDAO = new BusinessScheduleDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -130,6 +132,13 @@ public class ReservationController extends HttpServlet {
             }
 
             Timestamp orderTime = parseTimestamp(dateTimeStr);
+            // [OPERATING HOURS] Khong cho khach chon ban ngoai gio hoat dong cua nha hang.
+            String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
+            if (businessHourError != null) {
+                showPickTime(request, response, businessHourError);
+                return;
+            }
+
             Map<String, Integer> selectedQuantities
                     = parseSelectedQuantities(request);
             request.setAttribute("orderTime", dateTimeStr);
@@ -211,6 +220,13 @@ public class ReservationController extends HttpServlet {
         }
 
         Timestamp orderTime = parseTimestamp(dateTimeStr);
+        // [OPERATING HOURS] Kiem tra lai truoc khi tao don de tranh khach bypass buoc chon ban.
+        String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
+        if (businessHourError != null) {
+            showPickTime(request, response, businessHourError);
+            return;
+        }
+
         Customer customer = getCustomer(request);
 
         if (customer == null) {
