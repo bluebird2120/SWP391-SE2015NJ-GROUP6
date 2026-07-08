@@ -1,4 +1,3 @@
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
@@ -91,6 +90,11 @@
         object-fit: contain;
         margin-bottom: 16px;
     }
+    /* Thêm style nhẹ cho phần giờ mở cửa trông gọn gàng */
+    .opening-hours p {
+        margin: 0 0 10px 0;
+        line-height: 1.6;
+    }
 </style>
 
 <footer class="footer">
@@ -104,12 +108,6 @@
                 Mang đến trải nghiệm ẩm thực tuyệt vời với những món ăn
                 được chế biến từ nguyên liệu tươi ngon và chất lượng.
             </p>
-            <div class="social-icons">
-                <a href="https://www.facebook.com/#"><i class="fab fa-facebook-f"></i></a>
-                <a href="https://www.instagram.com/"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.tiktok.com/"><i class="fab fa-tiktok"></i></a>
-                <a href="http://youtube.com/"><i class="fab fa-youtube"></i></a>
-            </div>
         </div>
 
         <div class="footer-section">
@@ -123,13 +121,11 @@
             </ul>
         </div>
 
-        <div class="footer-section">
-            <h3 class="footer-title">Hỗ trợ</h3>
-            <ul class="footer-links">
-                <li><a href="#">Chính sách bảo mật</a></li>
-                <li><a href="#">Điều khoản sử dụng</a></li>
-                <li><a href="#">Câu hỏi thường gặp</a></li>
-            </ul>
+        <div class="footer-section opening-hours">
+            <h3 class="footer-title">Giờ mở cửa</h3>
+            <p><strong>Sáng:</strong> 10h - 14h</p>
+            <p><strong>Chiều:</strong> 18h - 22h</p>
+            <p>Tất cả các ngày trong tuần</p>
         </div>
 
         <div class="footer-section">
@@ -137,6 +133,12 @@
             <div class="contact-item"><i class="fas fa-location-dot"></i><span>Đại học FPT, Hòa Lạc, Hà Nội</span></div>
             <div class="contact-item"><i class="fas fa-phone"></i><span>0123 456 789</span></div>
             <div class="contact-item"><i class="fas fa-envelope"></i><span>vianrestaurant@gmail.com</span></div>
+            <div class="social-icons">
+                <a href="https://www.facebook.com/#"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.instagram.com/"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.tiktok.com/"><i class="fab fa-tiktok"></i></a>
+                <a href="http://youtube.com/"><i class="fab fa-youtube"></i></a>
+            </div>
         </div>
 
     </div>

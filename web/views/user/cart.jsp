@@ -2,10 +2,11 @@
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"  %>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Giỏ hàng - Vị An Restaurant</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
         <style>
             * {
                 box-sizing: border-box;
@@ -49,7 +50,6 @@
                 gap: 24px;
                 align-items: flex-start;
             }
-
             .cart-items-column {
                 flex: 1;
                 display: flex;
@@ -57,7 +57,6 @@
                 gap: 20px;
             }
 
-            /* ===== KHUNG NHÓM THEO BÀN ===== */
             .table-group-box {
                 background: #ffffff;
                 border: 1px solid #eae5da;
@@ -65,7 +64,6 @@
                 box-shadow: 0 4px 16px rgba(44, 37, 32, 0.05);
                 overflow: hidden;
             }
-
             .table-group-header {
                 background: #D4A373;
                 color: #ffffff;
@@ -76,6 +74,9 @@
                 justify-content: space-between;
                 align-items: center;
             }
+            .table-group-header.db-header {
+                background: #1c4332;
+            }
             .table-group-header .badge {
                 background: rgba(255,255,255,0.25);
                 padding: 2px 10px;
@@ -85,7 +86,6 @@
                 letter-spacing: 0.5px;
             }
 
-            /* Card món ăn bên trong group */
             .cart-item-card {
                 background: #ffffff;
                 padding: 20px;
@@ -96,6 +96,10 @@
             }
             .cart-item-card:last-child {
                 border-bottom: none;
+            }
+            .cart-item-card.disabled-item {
+                opacity: 0.8;
+                background: #fbf9f6;
             }
 
             input[type=checkbox] {
@@ -118,7 +122,6 @@
                 align-items: center;
                 justify-content: center;
             }
-
             .item-details {
                 flex: 1;
             }
@@ -158,7 +161,6 @@
                 gap: 12px;
                 min-width: 140px;
             }
-
             .qty-control-box {
                 display: flex;
                 align-items: center;
@@ -177,8 +179,9 @@
                 font-weight: bold;
                 cursor: pointer;
             }
-            .qty-btn:hover { color: #bc945c; }
-
+            .qty-btn:hover {
+                color: #bc945c;
+            }
             .qty-control-box input[type=number] {
                 width: 40px;
                 background: transparent;
@@ -188,12 +191,10 @@
                 font-size: 14px;
                 font-weight: bold;
             }
-            .qty-control-box input::-webkit-outer-spin-button,
-            .qty-control-box input::-webkit-inner-spin-button {
+            .qty-control-box input::-webkit-outer-spin-button, .qty-control-box input::-webkit-inner-spin-button {
                 -webkit-appearance: none;
                 margin: 0;
             }
-
             .item-line-total {
                 font-size: 16px;
                 font-weight: 700;
@@ -277,11 +278,6 @@
                 color: #1c4332;
                 font-weight: 800;
             }
-            .selected-count-note {
-                font-size: 12px;
-                color: #8a7e75;
-                font-style: italic;
-            }
 
             .btn-summary-action {
                 width: 100%;
@@ -298,31 +294,36 @@
                 transition: all 0.2s;
                 margin-top: 12px;
             }
+            .btn-sidebar-kitchen {
+                background: #D4A373;
+                border: none;
+                color: #ffffff;
+                box-shadow: 0 4px 10px rgba(212, 163, 115, 0.2);
+            }
+            .btn-sidebar-kitchen:hover:not(:disabled) {
+                background: #bc945c;
+            }
+            .btn-sidebar-kitchen:disabled {
+                background: #eadecf;
+                color: #ffffff;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
             .btn-sidebar-checkout {
                 background: #1c4332;
                 border: none;
                 color: #ffffff;
                 box-shadow: 0 4px 10px rgba(28, 67, 50, 0.2);
             }
-            .btn-sidebar-checkout:hover:not(:disabled) {
+            .btn-sidebar-checkout:hover {
                 background: #275d46;
-                box-shadow: 0 4px 12px rgba(28, 67, 50, 0.3);
             }
             .btn-sidebar-checkout:disabled {
                 background: #dcd9d2;
                 color: #a19c95;
-                box-shadow: none;
                 cursor: not-allowed;
-            }
-            .btn-sidebar-continue {
-                background: #fbf9f6;
-                border: 1px solid #dcd5c5;
-                color: #5e5550;
-            }
-            .btn-sidebar-continue:hover {
-                background: #f5f2eb;
-                color: #1c4332;
-                border-color: #bc945c;
+                box-shadow: none;
             }
 
             .empty-state {
@@ -342,28 +343,35 @@
                 text-decoration: none;
                 font-weight: bold;
             }
-
-            .bottom-count-bar {
-                margin-top: 16px;
-                font-size: 14px;
-                color: #7a6e65;
-                font-weight: 600;
-            }
         </style>
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
         <div class="container">
 
-            <c:if test="${param.error == 'invalid_quantity'}">
+            <c:if test="${not empty sessionScope.successMsg}">
+                <div style="background: #d1fae5; color: #065f46; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; border-left: 4px solid #10b981;">
+                    ✅ ${sessionScope.successMsg}
+                </div>
+                <c:remove var="successMsg" scope="session"/>
+            </c:if>
+            <c:if test="${not empty param.error && param.error == 'invalid_quantity'}">
                 <div style="color:#D9534F;background:#FDE8E8;padding:12px 20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #D9534F;font-weight:bold;">
                     ⚠ Hệ thống cảnh báo: Số lượng món ăn không hợp lệ! Vui lòng chỉ nhập số lượng trong khoảng từ 1 đến 99 phần.
                 </div>
             </c:if>
 
+            <%-- Nút tiếp tục chọn món nằm ở cột bên trái --%>
+            <div style="margin-top: 10px;">
+                <a href="${pageContext.request.contextPath}/menu" 
+                   style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #76493b; font-weight: 600; padding: 10px 16px; border: 1px solid #dcd5c5; border-radius: 8px; background: #ffffff; transition: 0.2s;">
+                    <i class="fas fa-arrow-left"></i> Tiếp tục chọn món
+                </a>
+            </div>
+
             <div class="cart-header">
                 <div class="cart-title">
-                    <h2>Giỏ hàng của bạn</h2>
+                    <h2>Danh sách gọi món</h2>
                     <p style="margin-bottom:5px;">Mã đơn hàng: #${orderID}</p>
                     <p style="color:#bc945c;font-weight:bold;font-size:15px;">
                         📍 Vị trí:
@@ -371,295 +379,199 @@
                             ${t.tableName}${!loop.last ? ' + ' : ''}
                         </c:forEach>
                         <c:if test="${empty assignedTables}">Mang Về</c:if>
-                    </p>
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <%-- ===== GIỎ HÀNG TRỐNG ===== --%>
-            <c:if test="${empty orderItems}">
+            <%-- ===== KHI CHƯA CÓ GÌ CẢ ===== --%>
+            <c:if test="${empty dbOrderItems && empty sessionCart}">
                 <div class="empty-state">
-                    <p>Giỏ hàng của bạn đang trống.</p>
-                    <a href="${pageContext.request.contextPath}/menu">Chọn món ngay →</a>
+                    <p>Bàn của bạn chưa gọi món nào.</p>
+                    <a href="${pageContext.request.contextPath}/menu">Xem thực đơn ngay →</a>
                 </div>
             </c:if>
 
-            <%-- ===== CÓ MÓN TRONG GIỎ ===== --%>
-            <c:if test="${not empty orderItems}">
+            <c:if test="${not empty dbOrderItems || not empty sessionCart}">
                 <div class="cart-main-layout">
+
                     <div class="cart-items-column">
 
-                        <%--
-                            CHIẾN LƯỢC GROUP:
-                            Vòng ngoài: duyệt qua từng bàn (assignedTables + trường hợp mang về)
-                            Vòng trong: với mỗi bàn, lọc ra các orderItems thuộc bàn đó rồi render
-                            => Đảm bảo các món cùng bàn luôn nằm trong 1 group dù data không sort
-                        --%>
-
-                        <%-- Tập hợp tất cả tableID đã xuất hiện để tránh render trùng --%>
-                        <c:set var="renderedTableIDs" value="|" />
-
-                        <%-- ===== NHÓM THEO TỪNG BÀN ===== --%>
-                        <c:forEach var="table" items="${assignedTables}">
-
-                            <%-- Kiểm tra bàn này có món không --%>
-                            <c:set var="tableHasItems" value="false" />
-                            <c:forEach var="oi" items="${orderItems}">
-                                <c:if test="${oi.tableID == table.tableID}">
-                                    <c:set var="tableHasItems" value="true" />
-                                </c:if>
-                            </c:forEach>
-
-                            <c:if test="${tableHasItems == 'true'}">
-                                <%-- Đánh dấu bàn này đã render --%>
-                                <c:set var="renderedTableIDs" value="${renderedTableIDs}${table.tableID}|" />
-
-                                <div class="table-group-box">
-                                    <div class="table-group-header">
-                                        <span>🍽️ ${table.tableName}</span>
-                                        <span class="badge">Phân bổ tự động</span>
-                                    </div>
-
-                                    <%-- Render từng món thuộc bàn này --%>
-                                    <c:forEach var="oi" items="${orderItems}" varStatus="loop">
-                                        <c:if test="${oi.tableID == table.tableID}">
-                                            <c:set var="mi" value="${menuItems[loop.index]}"/>
-                                            <c:choose>
-                                                <c:when test="${mi.discountedPrice > 0}">
-                                                    <c:set var="unitPrice" value="${mi.discountedPrice}"/>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <c:set var="unitPrice" value="${mi.price}"/>
-                                                </c:otherwise>
-                                            </c:choose>
-                                            <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
-
-                                            <div class="cart-item-card">
-                                                <input type="checkbox"
-                                                       class="item-checkbox"
-                                                       value="${oi.orderItemID}"
-                                                       data-price="${lineTotal}"
-                                                       onchange="updateTotal()">
-
-                                                <div class="item-image-placeholder">
-                                                    <c:choose>
-                                                        <c:when test="${not empty mi.image}">
-                                                            <img src="${mi.image}" alt="${mi.itemName}"
-                                                                 style="width:100%;height:100%;object-fit:cover;">
-                                                        </c:when>
-                                                        <c:otherwise>
-                                                            <svg viewBox="0 0 24 24" style="width:42px;height:42px;fill:#bc945c;">
-                                                                <path d="M22,9C22,11 20.4,12.6 18.5,12.9L19.8,20.2C20,21.2 19.2,22 18.2,22H5.8C4.8,22 4,21.2 4.2,20.2L5.5,12.9C3.6,12.6 2,11 2,9H22M12,2A3,3 0 0,1 15,5V7H9V5A3,3 0 0,1 12,2M12,14A2,2 0 0,0 10,16V18A2,2 0 0,0 12,20A2,2 0 0,0 14,18V16A2,2 0 0,0 12,14Z"/>
-                                                            </svg>
-                                                        </c:otherwise>
-                                                    </c:choose>
-                                                </div>
-
-                                                <div class="item-details">
-                                                    <div class="item-name">${mi.itemName}</div>
-                                                    <div class="item-description">${not empty mi.description ? mi.description : 'Món ăn đặc sắc mang đậm phong vị quê hương Vị An.'}</div>
-                                                    <div class="item-unit-price">
-                                                        <c:if test="${mi.discountPercent > 0}">
-                                                            <span class="price-original">
-                                                                <fmt:formatNumber value="${mi.price}" type="number" maxFractionDigits="0"/> VNĐ
-                                                            </span>
-                                                        </c:if>
-                                                        <fmt:formatNumber value="${unitPrice}" type="number" maxFractionDigits="0"/> VNĐ / phần
-                                                    </div>
-                                                    <c:if test="${not empty oi.note}">
-                                                        <div class="item-note">✍️ Ghi chú: ${oi.note}</div>
-                                                    </c:if>
-                                                </div>
-
-                                                <div class="item-actions-wrap">
-                                                    <form method="post" action="${pageContext.request.contextPath}/order">
-                                                        <input type="hidden" name="action" value="update">
-                                                        <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
-                                                        <div class="qty-control-box">
-                                                            <button type="button" class="qty-btn" onclick="changeQty(this,-1)">-</button>
-                                                            <input type="number" name="quantity" value="${oi.quantity}" min="1" max="99"
-                                                                   onkeypress="return event.charCode>=48&&event.charCode<=57"
-                                                                   oninput="checkLiveQty(this)"
-                                                                   onchange="validateQty(this)">
-                                                            <button type="button" class="qty-btn" onclick="changeQty(this,1)">+</button>
-                                                        </div>
-                                                        <span class="qty-error" style="display:none;color:#e74c3c;font-size:11px;margin-top:4px;font-weight:bold;">Yêu cầu: Từ 1-99</span>
-                                                    </form>
-                                                    <div class="item-line-total">
-                                                        <fmt:formatNumber value="${lineTotal}" type="number" maxFractionDigits="0"/> VNĐ
-                                                    </div>
-                                                    <form method="post" action="${pageContext.request.contextPath}/order">
-                                                        <input type="hidden" name="action" value="remove">
-                                                        <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
-                                                        <button class="btn-delete-icon" type="submit" onclick="return confirm('Xóa món này khỏi giỏ?')">
-                                                            <svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </c:if>
-                                    </c:forEach>
-                                </div>
-                                <%-- end table-group-box --%>
-                            </c:if>
-                        </c:forEach>
-
-                        <%-- ===== NHÓM MÓN MANG VỀ (tableID = 0 hoặc null) ===== --%>
-                        <c:set var="takeawayHasItems" value="false" />
-                        <c:forEach var="oi" items="${orderItems}">
-                            <c:if test="${empty oi.tableID || oi.tableID == 0}">
-                                <c:set var="takeawayHasItems" value="true" />
-                            </c:if>
-                        </c:forEach>
-
-                        <c:if test="${takeawayHasItems == 'true'}">
+                        <%-- =============================================== --%>
+                        <%-- KHU VỰC 1: CÁC MÓN ĐÃ GỬI BẾP (DATABASE - READ ONLY) --%>
+                        <%-- =============================================== --%>
+                        <c:if test="${not empty dbOrderItems}">
+                            <h3 style="color: #1c4332; font-size: 18px; margin-bottom: 5px;">🍲 Món đã gọi (Bếp đang làm)</h3>
                             <div class="table-group-box">
-                                <div class="table-group-header">
-                                    <span>🛵 Đơn Mang Về</span>
-                                    <span class="badge">Phân bổ tự động</span>
+                                <div class="table-group-header db-header">
+                                    <span>Danh sách chờ phục vụ</span>
                                 </div>
-                                <c:forEach var="oi" items="${orderItems}" varStatus="loop">
-                                    <c:if test="${empty oi.tableID || oi.tableID == 0}">
-                                        <c:set var="mi" value="${menuItems[loop.index]}"/>
-                                        <c:choose>
-                                            <c:when test="${mi.discountedPrice > 0}">
-                                                <c:set var="unitPrice" value="${mi.discountedPrice}"/>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <c:set var="unitPrice" value="${mi.price}"/>
-                                            </c:otherwise>
-                                        </c:choose>
-                                        <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
+                                <c:forEach var="oi" items="${dbOrderItems}" varStatus="loop">
+                                    <c:set var="mi" value="${dbMenuItems[loop.index]}"/>
+                                    <c:set var="unitPrice" value="${mi.discountedPrice > 0 ? mi.discountedPrice : mi.price}"/>
 
-                                        <div class="cart-item-card">
-                                            <input type="checkbox"
-                                                   class="item-checkbox"
-                                                   value="${oi.orderItemID}"
-                                                   data-price="${lineTotal}"
-                                                   onchange="updateTotal()">
-
-                                            <div class="item-image-placeholder">
-                                                <c:choose>
-                                                    <c:when test="${not empty mi.image}">
-                                                        <img src="${mi.image}" alt="${mi.itemName}"
-                                                             style="width:100%;height:100%;object-fit:cover;">
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <svg viewBox="0 0 24 24" style="width:42px;height:42px;fill:#bc945c;">
-                                                            <path d="M22,9C22,11 20.4,12.6 18.5,12.9L19.8,20.2C20,21.2 19.2,22 18.2,22H5.8C4.8,22 4,21.2 4.2,20.2L5.5,12.9C3.6,12.6 2,11 2,9H22M12,2A3,3 0 0,1 15,5V7H9V5A3,3 0 0,1 12,2M12,14A2,2 0 0,0 10,16V18A2,2 0 0,0 12,20A2,2 0 0,0 14,18V16A2,2 0 0,0 12,14Z"/>
-                                                        </svg>
-                                                    </c:otherwise>
-                                                </c:choose>
+                                    <div class="cart-item-card disabled-item">
+                                        <div class="item-image-placeholder">
+                                            <c:if test="${not empty mi.image}"><img src="${mi.image}" style="width:100%;height:100%;object-fit:cover;"></c:if>
                                             </div>
-
                                             <div class="item-details">
                                                 <div class="item-name">${mi.itemName}</div>
-                                                <div class="item-description">${not empty mi.description ? mi.description : 'Món ăn đặc sắc mang đậm phong vị quê hương Vị An.'}</div>
-                                                <div class="item-unit-price">
-                                                    <c:if test="${mi.discountPercent > 0}">
-                                                        <span class="price-original">
-                                                            <fmt:formatNumber value="${mi.price}" type="number" maxFractionDigits="0"/> VNĐ
-                                                        </span>
-                                                    </c:if>
-                                                    <fmt:formatNumber value="${unitPrice}" type="number" maxFractionDigits="0"/> VNĐ / phần
-                                                </div>
-                                                <c:if test="${not empty oi.note}">
-                                                    <div class="item-note">✍️ Ghi chú: ${oi.note}</div>
-                                                </c:if>
+                                            <div class="item-unit-price">Đã gọi: <b>${oi.quantity}</b> phần x <fmt:formatNumber value="${unitPrice}" type="number"/> VNĐ</div>
+                                            <div style="font-size: 12px; color: #10b981; font-weight: bold; margin-top: 4px;"><i class="fas fa-fire"></i> Đang chuẩn bị</div>
+                                            <c:if test="${not empty oi.note}"><div class="item-note" style="margin-top: 4px;">✍️ Ghi chú: ${oi.note}</div></c:if>
                                             </div>
-
                                             <div class="item-actions-wrap">
-                                                <form method="post" action="${pageContext.request.contextPath}/order">
-                                                    <input type="hidden" name="action" value="update">
-                                                    <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
-                                                    <div class="qty-control-box">
-                                                        <button type="button" class="qty-btn" onclick="changeQty(this,-1)">-</button>
-                                                        <input type="number" name="quantity" value="${oi.quantity}" min="1" max="99"
-                                                               onkeypress="return event.charCode>=48&&event.charCode<=57"
-                                                               oninput="checkLiveQty(this)"
-                                                               onchange="validateQty(this)">
-                                                        <button type="button" class="qty-btn" onclick="changeQty(this,1)">+</button>
-                                                    </div>
-                                                    <span class="qty-error" style="display:none;color:#e74c3c;font-size:11px;margin-top:4px;font-weight:bold;">Yêu cầu: Từ 1-99</span>
-                                                </form>
-                                                <div class="item-line-total">
-                                                    <fmt:formatNumber value="${lineTotal}" type="number" maxFractionDigits="0"/> VNĐ
-                                                </div>
-                                                <form method="post" action="${pageContext.request.contextPath}/order">
-                                                    <input type="hidden" name="action" value="remove">
-                                                    <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
-                                                    <button class="btn-delete-icon" type="submit" onclick="return confirm('Xóa món này khỏi giỏ?')">
-                                                        <svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
-                                                    </button>
-                                                </form>
-                                            </div>
+                                                <div class="item-line-total"><fmt:formatNumber value="${unitPrice * oi.quantity}" type="number"/> VNĐ</div>
                                         </div>
-                                    </c:if>
+                                    </div>
                                 </c:forEach>
                             </div>
                         </c:if>
 
-                        <div class="bottom-count-bar" id="bottomCountDisplay">Đã chọn 0 món</div>
-                    </div>
-                    <%-- end cart-items-column --%>
 
+                        <%-- =============================================== --%>
+                        <%-- KHU VỰC 2: GIỎ HÀNG CHỜ GỬI (SESSION CART) --%>
+                        <%-- =============================================== --%>
+                        <c:if test="${not empty sessionCart}">
+                            <h3 style="color: #D4A373; font-size: 18px; margin-top: 25px; margin-bottom: 5px;">🛒 Món mới (Chưa gửi bếp)</h3>
+                            <div class="table-group-box">
+                                <div class="table-group-header">
+                                    <span>Vui lòng kiểm tra và Gửi Bếp</span>
+                                    <span class="badge">Đợi xác nhận</span>
+                                </div>
+                                <c:forEach var="oi" items="${sessionCart}" varStatus="loop">
+                                    <c:set var="mi" value="${sessionMenuItems[loop.index]}"/>
+                                    <c:set var="unitPrice" value="${mi.discountedPrice > 0 ? mi.discountedPrice : mi.price}"/>
+                                    <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
+
+                                    <div class="cart-item-card">
+                                        <input type="checkbox"
+                                               class="item-checkbox new-item-checkbox"
+                                               value="${oi.orderItemID}"
+                                               data-price="${lineTotal}"
+                                               onchange="updateTotal()" checked>
+
+                                        <div class="item-image-placeholder">
+                                            <c:choose>
+                                                <c:when test="${not empty mi.image}">
+                                                    <img src="${mi.image}" alt="${mi.itemName}" style="width:100%;height:100%;object-fit:cover;">
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <svg viewBox="0 0 24 24" style="width:42px;height:42px;fill:#bc945c;">
+                                                    <path d="M22,9C22,11 20.4,12.6 18.5,12.9L19.8,20.2C20,21.2 19.2,22 18.2,22H5.8C4.8,22 4,21.2 4.2,20.2L5.5,12.9C3.6,12.6 2,11 2,9H22M12,2A3,3 0 0,1 15,5V7H9V5A3,3 0 0,1 12,2M12,14A2,2 0 0,0 10,16V18A2,2 0 0,0 12,20A2,2 0 0,0 14,18V16A2,2 0 0,0 12,14Z"/>
+                                                    </svg>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </div>
+
+                                        <div class="item-details">
+                                            <div class="item-name">${mi.itemName}</div>
+                                            <div class="item-unit-price">
+                                                <c:if test="${mi.discountPercent > 0}">
+                                                    <span class="price-original">
+                                                        <fmt:formatNumber value="${mi.price}" type="number" maxFractionDigits="0"/> VNĐ
+                                                    </span>
+                                                </c:if>
+                                                <fmt:formatNumber value="${unitPrice}" type="number"/> VNĐ / phần
+                                            </div>
+                                            <c:if test="${not empty oi.note}"><div class="item-note" style="margin-top: 4px;">✍️ Ghi chú: ${oi.note}</div></c:if>
+                                            </div>
+
+                                            <div class="item-actions-wrap">
+                                                <form method="post" action="${pageContext.request.contextPath}/order">
+                                                <input type="hidden" name="action" value="update">
+                                                <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
+                                                <div class="qty-control-box">
+                                                    <button type="button" class="qty-btn" onclick="changeQty(this, -1)">-</button>
+                                                    <input type="number" name="quantity" value="${oi.quantity}" min="1" max="99" readonly>
+                                                    <button type="button" class="qty-btn" onclick="changeQty(this, 1)">+</button>
+                                                </div>
+                                            </form>
+                                            <div class="item-line-total"><fmt:formatNumber value="${lineTotal}" type="number"/> VNĐ</div>
+                                            <form method="post" action="${pageContext.request.contextPath}/order">
+                                                <input type="hidden" name="action" value="remove">
+                                                <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
+                                                <button class="btn-delete-icon" type="submit" onclick="return confirm('Xóa món này khỏi giỏ?')">
+                                                    <svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </c:forEach>
+                            </div>
+                        </c:if>
+                    </div>
+
+                    <%-- SIDEBAR TÓM TẮT --%>
                     <div class="cart-summary-sidebar">
-                        <div class="summary-title">Tóm tắt đơn hàng</div>
-                        <div class="summary-divider"><span>Chi tiết</span></div>
+                        <div class="summary-title">Tổng kết bữa ăn</div>
+
                         <div class="summary-row">
-                            <span>Tạm tính:</span>
-                            <span id="totalDisplay">0 VNĐ</span>
+                            <span>Đã gọi (Bếp đang làm):</span>
+                            <span><fmt:formatNumber value="${totalOrderedAmount}" type="number"/> đ</span>
                         </div>
                         <div class="summary-row">
-                            <span>Phí phục vụ:</span>
-                            <span>0 VNĐ</span>
+                            <span style="color:#D4A373; font-weight:bold;">Món mới (Chưa gửi):</span>
+                            <span id="totalNewDisplay" style="color:#D4A373; font-weight:bold;">0 đ</span>
                         </div>
-                        <div class="summary-row">
-                            <span class="selected-count-note" id="selectedNote">Chưa chọn món nào</span>
-                        </div>
+
                         <div class="summary-divider"></div>
                         <div class="summary-row total-row">
-                            <span>Tổng cộng:</span>
-                            <div class="summary-total-amount" id="totalDisplaySummary">0 VNĐ</div>
+                            <span>TỔNG CỘNG:</span>
+                            <div class="summary-total-amount" id="totalAllDisplay">0 đ</div>
                         </div>
 
-                        <button class="btn-summary-action btn-sidebar-checkout" id="btnCheckout"
-                                type="button" disabled onclick="submitCheckout()">
-                            💳 Gửi Đơn Lên Bếp thanh toán ↗
+                        <%-- NÚT: GỬI BẾP (Gọi bằng Javascript) --%>
+                        <button class="btn-summary-action btn-sidebar-kitchen" type="button" id="btnKitchen" 
+                                onclick="submitToKitchen()" ${empty sessionCart ? 'disabled' : ''}>
+                            🔔 Gửi Bếp Thực Đơn Chọn ↗
                         </button>
-                        <a href="${pageContext.request.contextPath}/menu" class="btn-summary-action btn-sidebar-continue">
-                            ← Tiếp tục chọn món
-                        </a>
-                    </div>
 
+                        <%-- NÚT: THANH TOÁN TỔNG --%>
+                        <c:if test="${sessionScope.roleInTable == 'HOST'}">
+                            <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
+                                <input type="hidden" name="action" value="checkoutTotal">
+                                <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
+                                        onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
+                                    🧾 YÊU CẦU TÍNH TIỀN
+                                </button>
+                                <p style="font-size:11px; text-align:center; color:#a8988e; margin-top:8px;">(Lưu ý: Không bao gồm các món chưa Gửi Bếp)</p>
+                            </form>
+                        </c:if>
+                    </div>
                 </div>
             </c:if>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
 
         <script>
-            function toggleAll(source) {
-                document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = source.checked);
-                updateTotal();
-            }
-
+            // Hàm tính toán tổng tiền realtime khi tích/bỏ tích món
             function updateTotal() {
-                var checked = document.querySelectorAll('.item-checkbox:checked');
-                var total = 0;
-                checked.forEach(cb => total += parseFloat(cb.getAttribute('data-price')));
+                // Chỉ lấy những món MỚI được tích chọn
+                var checked = document.querySelectorAll('.new-item-checkbox:checked');
+                var totalNew = 0;
+                checked.forEach(cb => totalNew += parseFloat(cb.getAttribute('data-price')));
 
-                var formattedPrice = total.toLocaleString('vi-VN') + ' VNĐ';
-                document.getElementById('totalDisplay').innerText = formattedPrice;
-                document.getElementById('totalDisplaySummary').innerText = formattedPrice;
+                // Món ĐÃ GỌI là số cố định không đổi (Lấy từ Java truyền sang)
+                var totalOrdered = ${totalOrderedAmount != null ? totalOrderedAmount : 0};
+                var totalAll = totalOrdered + totalNew;
 
-                var count = checked.length;
-                document.getElementById('selectedNote').innerText =
-                    count > 0 ? 'Tính theo ' + count + ' món đã chọn' : 'Chưa chọn món nào';
-                document.getElementById('bottomCountDisplay').innerText = 'Đã chọn ' + count + ' món';
+                // Cập nhật lên màn hình
+                document.getElementById('totalNewDisplay').innerText = totalNew.toLocaleString('vi-VN') + ' đ';
+                document.getElementById('totalAllDisplay').innerText = totalAll.toLocaleString('vi-VN') + ' đ';
 
-                var hasError = document.querySelectorAll('.qty-error[style*="block"]').length > 0;
-                document.getElementById('btnCheckout').disabled = (count === 0 || hasError);
+                // Vô hiệu hóa nút gửi bếp nếu không có món nào được chọn
+                var btnKitchen = document.getElementById('btnKitchen');
+                if (btnKitchen) {
+                    btnKitchen.disabled = (checked.length === 0);
+                }
             }
 
+            // Gọi hàm tính tiền ngay khi load trang
+            window.onload = function () {
+                updateTotal();
+            };
+
+            // Hàm tăng giảm số lượng tự động submit form để update Session
             function changeQty(btn, amount) {
                 var input = btn.parentElement.querySelector('input[type=number]');
                 var currentVal = parseInt(input.value);
@@ -667,49 +579,32 @@
                     var newVal = currentVal + amount;
                     if (newVal >= 1 && newVal <= 99) {
                         input.value = newVal;
-                        validateQty(input);
+                        input.form.submit();
                     }
                 }
             }
 
-            function checkLiveQty(input) {
-                var errorSpan = input.parentElement.nextElementSibling;
-                var val = parseInt(input.value);
-                var btnCheckout = document.getElementById('btnCheckout');
-                if (val > 99) { input.value = 99; val = 99; }
-                if (isNaN(val) || val < 1) {
-                    errorSpan.style.display = 'block';
-                    if (btnCheckout) btnCheckout.disabled = true;
-                } else {
-                    errorSpan.style.display = 'none';
-                    updateTotal();
+            // Hàm gom các ô được tích để submit gửi bếp (Không làm rối nested forms)
+            function submitToKitchen() {
+                var checked = document.querySelectorAll('.new-item-checkbox:checked');
+                if (checked.length === 0) {
+                    alert('Vui lòng chọn ít nhất 1 món mới để gửi bếp!');
+                    return;
                 }
-            }
-
-            function validateQty(input) {
-                var errorSpan = input.parentElement.nextElementSibling;
-                var val = parseInt(input.value);
-                if (isNaN(val) || val < 1) { input.value = 1; val = 1; }
-                if (val > 99) { input.value = 99; val = 99; }
-                errorSpan.style.display = 'none';
-                input.form.submit();
-            }
-
-            function submitCheckout() {
-                var checked = document.querySelectorAll('.item-checkbox:checked');
-                if (checked.length === 0) { alert('Vui lòng chọn ít nhất 1 món!'); return; }
 
                 var form = document.createElement('form');
                 form.method = 'post';
-                form.action = '${pageContext.request.contextPath}/checkout';
+                form.action = '${pageContext.request.contextPath}/order';
 
-                var inputOrderID = document.createElement('input');
-                inputOrderID.type = 'hidden';
-                inputOrderID.name = 'orderID';
-                inputOrderID.value = '${orderID}';
-                form.appendChild(inputOrderID);
+                // Input điều hướng vào hàm sendToKitchen của Servlet
+                var inputAction = document.createElement('input');
+                inputAction.type = 'hidden';
+                inputAction.name = 'action';
+                inputAction.value = 'sendToKitchen';
+                form.appendChild(inputAction);
 
-                checked.forEach(function(cb) {
+                // Gom từng ID món gửi đi
+                checked.forEach(function (cb) {
                     var input = document.createElement('input');
                     input.type = 'hidden';
                     input.name = 'selectedItems';
