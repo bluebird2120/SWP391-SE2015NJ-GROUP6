@@ -126,12 +126,27 @@ public class ShiftRosterController extends HttpServlet {
 
         //Xem lịch của 1 n/v
         int viewEmpID = parseInt(req.getParameter("viewEmployeeID"), 0);
+        String viewYearParam = req.getParameter("viewYear");
+        String viewMonthParam = req.getParameter("viewMonth");
         int viewYear = parseInt(req.getParameter("viewYear"), LocalDate.now().getYear());
         int viewMonth = parseInt(req.getParameter("viewMonth"), LocalDate.now().getMonthValue());
+        String activeTab = req.getParameter("activeTab");
+        String viewError = null;
+        if ("view".equals(activeTab) && viewEmpID <= 0) {
+            viewError = "Vui lòng chọn nhân viên cần xem lịch.";
+        } else if ("view".equals(activeTab)
+                && (viewYearParam == null || viewYearParam.isBlank() || !isInteger(viewYearParam) || viewYear < 2024)) {
+            viewError = "Vui lòng chọn năm xem lịch từ 2024 trở đi.";
+        } else if ("view".equals(activeTab)
+                && (viewMonthParam == null || viewMonthParam.isBlank() || !isInteger(viewMonthParam)
+                || viewMonth < 1 || viewMonth > 12)) {
+            viewError = "Vui lòng chọn tháng xem lịch hợp lệ.";
+        }
         req.setAttribute("viewEmployeeID", viewEmpID);
         req.setAttribute("viewYear", viewYear);
         req.setAttribute("viewMonth", viewMonth);
-        if (viewEmpID > 0) {
+        req.setAttribute("viewError", viewError);
+        if (viewEmpID > 0 && viewError == null) {
             List<ShiftRow> staffSchedule = shiftDao.listByEmployeeAndMonth(viewEmpID, viewYear, viewMonth);
             req.setAttribute("staffSchedule", staffSchedule);
             for (Employee e : staff) {
@@ -156,7 +171,7 @@ public class ShiftRosterController extends HttpServlet {
         String[] empIDsStr = req.getParameterValues("employeeIDs");
         int templateID = parseInt(req.getParameter("templateID"), 0);
         LocalDate date = parseDateOrToday(req.getParameter("date"));
-        Date sqlDate = Date.valueOf(date);
+        LocalDate toDate = parseDateOrDefault(req.getParameter("toDate"), date);
 
         if (empIDsStr == null || empIDsStr.length == 0 || templateID <= 0) {
             showRoster(req, resp, "Vui lòng chọn ít nhất một nhân viên và ca.", null);
@@ -166,51 +181,78 @@ public class ShiftRosterController extends HttpServlet {
             showRoster(req, resp, "Không thể gán ca cho ngày quá khứ.", null);
             return;
         }
+        if (toDate.isBefore(date)) {
+            showRoster(req, resp, "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.", null);
+            return;
+        }
 
-        YearMonth targetYm = YearMonth.from(date);
+        YearMonth startYm = YearMonth.from(date);
+        YearMonth endYm = YearMonth.from(toDate);
+        if (!startYm.equals(endYm)) {
+            showRoster(req, resp, "Khoảng ngày phân ca phải nằm trong cùng một tháng.", null);
+            return;
+        }
         YearMonth nowYm = YearMonth.now();
-        if (!targetYm.equals(nowYm) && !targetYm.equals(nowYm.plusMonths(1))) {
+        if (startYm.isBefore(nowYm) || endYm.isAfter(nowYm.plusMonths(1))) {
             showRoster(req, resp, "Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.", null);
             return;
         }
 
         EmployeeShiftDAO dao = new EmployeeShiftDAO();
+        MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO();
         int successCount = 0;
         int overlapCount = 0;
         int failedCount = 0;
+        int monthlyPlanCount = 0;
 
-        //duyệt qua từng n/v để ktra xem có ca làm việc hay chưa
+        // Duyệt từng nhân viên và từng ngày để tránh trùng ca trong cùng một ngày.
         for (String empIdStr : empIDsStr) {
             int employeeID = parseInt(empIdStr, 0);
             if (employeeID <= 0) {
                 continue;
             }
 
-            if (dao.hasOverlap(employeeID, sqlDate, templateID)) {
-                overlapCount++;
+            MonthlyShiftPlan existingPlan = planDao.findByEmployee(employeeID, startYm.getYear(), startYm.getMonthValue());
+            if (existingPlan != null && !MonthlyShiftPlan.CANCELLED.equals(existingPlan.getStatus())) {
+                monthlyPlanCount++;
                 continue;
             }
-            int shiftID = dao.assign(employeeID, templateID, sqlDate);
-            if (shiftID < 0) {
-                failedCount++;
-            } else {
-                successCount++;
+
+            LocalDate current = date;
+            while (!current.isAfter(toDate)) {
+                Date sqlDate = Date.valueOf(current);
+                if (dao.hasOverlap(employeeID, sqlDate, templateID)) {
+                    overlapCount++;
+                    current = current.plusDays(1);
+                    continue;
+                }
+                int shiftID = dao.assign(employeeID, templateID, sqlDate);
+                if (shiftID < 0) {
+                    failedCount++;
+                } else {
+                    successCount++;
+                }
+                current = current.plusDays(1);
             }
         }
 
         String successMsg = null;
         String errorMsg = null;
         if (successCount > 0) {
-            successMsg = "Đã gán thành công cho " + successCount + " nhân viên.";
+            successMsg = "Đã gán thành công " + successCount + " ca.";
         }
         if (overlapCount > 0 || failedCount > 0) {
             errorMsg = (overlapCount > 0
-                    ? overlapCount + " nhân viên đã có ca trong ngày này (mỗi nhân viên chỉ được làm 1 ca/ngày). "
+                    ? overlapCount + " ca bị bỏ qua vì nhân viên đã có ca trong ngày đó. "
                     : "")
-                    + (failedCount > 0 ? failedCount + " nhân viên gán lỗi." : "");
+                    + (failedCount > 0 ? failedCount + " ca gán lỗi." : "");
+        }
+        if (monthlyPlanCount > 0) {
+            String monthlyMsg = monthlyPlanCount + " nhân viên đã có kế hoạch ca tháng nên không thể gán ca ngày trong tháng này.";
+            errorMsg = errorMsg == null ? monthlyMsg : errorMsg + " " + monthlyMsg;
         }
 
-        if (successCount > 0 && overlapCount == 0 && failedCount == 0) {
+        if (successCount > 0 && overlapCount == 0 && failedCount == 0 && monthlyPlanCount == 0) {
             resp.sendRedirect(req.getContextPath() + "/owner/shift-roster?date=" + date + "&msg=assigned_multi&cnt="
                     + successCount);
         } else {
@@ -245,6 +287,10 @@ public class ShiftRosterController extends HttpServlet {
 
         if (empIDsStr == null || empIDsStr.length == 0 || templateID <= 0 || month < 1 || month > 12 || year < 2024) {
             showRoster(req, resp, "Tham số phân ca tháng không hợp lệ hoặc chưa chọn nhân viên.", null);
+            return;
+        }
+        if (year < LocalDate.now().getYear() || year > LocalDate.now().getYear() + 1) {
+            showRoster(req, resp, "Chỉ được phân ca tháng trong năm hiện tại hoặc năm kế tiếp.", null);
             return;
         }
 
@@ -340,6 +386,7 @@ public class ShiftRosterController extends HttpServlet {
                 + "/owner/shift-roster?planYear=" + year + "&planMonth=" + month + "&msg=" + msg);
     }
 
+    //Lấy employeeID của người đang đăng nhập từ HttpSession.
     private static Integer currentEmployeeID(HttpServletRequest req) {
         HttpSession ss = req.getSession(false);
         if (ss == null) {
@@ -354,30 +401,6 @@ public class ShiftRosterController extends HttpServlet {
             return ((Employee) emp).getEmployeeID();
         }
         return null;
-    }
-
-    private static LocalDate parseDateOrToday(String s) {
-        if (s == null || s.isBlank()) {
-            return LocalDate.now();
-        }
-        try {
-            return LocalDate.parse(s);
-        } catch (Exception e) {
-            return LocalDate.now();
-        }
-    }
-
-    private static YearMonth parseYearMonth(String yStr, String mStr, YearMonth defVal) {
-        try {
-            if (yStr == null || mStr == null) {
-                return defVal;
-            }
-            int y = Integer.parseInt(yStr);
-            int m = Integer.parseInt(mStr);
-            return YearMonth.of(y, m);
-        } catch (Exception e) {
-            return defVal;
-        }
     }
 
     private void handleApproveRequest(HttpServletRequest req, HttpServletResponse resp)
@@ -478,6 +501,50 @@ public class ShiftRosterController extends HttpServlet {
             return Integer.parseInt(s);
         } catch (NumberFormatException e) {
             return def;
+        }
+    }
+
+    private static boolean isInteger(String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static LocalDate parseDateOrToday(String s) {
+        if (s == null || s.isBlank()) {
+            return LocalDate.now();
+        }
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
+    }
+
+    private static LocalDate parseDateOrDefault(String s, LocalDate defVal) {
+        if (s == null || s.isBlank()) {
+            return defVal;
+        }
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            return defVal;
+        }
+    }
+
+    private static YearMonth parseYearMonth(String yStr, String mStr, YearMonth defVal) {
+        try {
+            if (yStr == null || mStr == null) {
+                return defVal;
+            }
+            int y = Integer.parseInt(yStr);
+            int m = Integer.parseInt(mStr);
+            return YearMonth.of(y, m);
+        } catch (Exception e) {
+            return defVal;
         }
     }
 }

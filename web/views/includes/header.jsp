@@ -342,6 +342,7 @@
         <c:if test="${sessionScope.employee == null}">
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
+        <a href="${pageContext.request.contextPath}/reviews">Đánh giá</a>
         <a href="#">Album ảnh</a>
         <a href="#">Liên hệ</a>
         <c:if test="${sessionScope.employee != null}">

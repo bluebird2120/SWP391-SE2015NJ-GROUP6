@@ -41,10 +41,15 @@ public class StaffMyScheduleController extends HttpServlet {
             return;
         }
 
-        YearMonth ym = parseYearMonth(req.getParameter("year"), req.getParameter("month"),
-                                      YearMonth.now());
+        String yearParam = req.getParameter("year");
+        String monthParam = req.getParameter("month");
+        String scheduleFilterError = validateScheduleFilter(yearParam, monthParam);
+        YearMonth ym = scheduleFilterError == null
+                ? parseYearMonth(yearParam, monthParam, YearMonth.now())
+                : YearMonth.now();
         int year  = ym.getYear();
         int month = ym.getMonthValue();
+        req.setAttribute("scheduleFilterError", scheduleFilterError);
 
         EmployeeShiftDAO shiftDAO = new EmployeeShiftDAO();
         ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
@@ -89,6 +94,7 @@ public class StaffMyScheduleController extends HttpServlet {
                 availableCoverStaffByDate.put(key, employeeDAO.listAvailableStaffByDate(row.getWorkDate(), emp.getEmployeeID()));
             }
         }
+        //Controller trả vể jsp
         List<ShiftSwapRequestDetail> colleagueRequests = requestDAO.listPendingColleagueRequests(emp.getEmployeeID());
 
         req.setAttribute("scheduleMap", byDay);
@@ -393,6 +399,37 @@ public class StaffMyScheduleController extends HttpServlet {
             return YearMonth.of(y, m);
         } catch (Exception e) {
             return def;
+        }
+    }
+
+    private static String validateScheduleFilter(String yStr, String mStr) {
+        if (yStr == null && mStr == null) {
+            return null;
+        }
+        if (mStr == null || mStr.isBlank() || !isInteger(mStr)) {
+            return "Vui lòng chọn tháng xem lịch hợp lệ.";
+        }
+        if (yStr == null || yStr.isBlank() || !isInteger(yStr)) {
+            return "Vui lòng nhập năm xem lịch hợp lệ.";
+        }
+
+        int month = Integer.parseInt(mStr);
+        int year = Integer.parseInt(yStr);
+        if (month < 1 || month > 12) {
+            return "Vui lòng chọn tháng xem lịch hợp lệ.";
+        }
+        if (year < 2024) {
+            return "Vui lòng nhập năm xem lịch từ 2024 trở đi.";
+        }
+        return null;
+    }
+
+    private static boolean isInteger(String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

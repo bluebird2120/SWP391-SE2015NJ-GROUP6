@@ -50,7 +50,7 @@
             </c:if>
 
             <div class="form-card">
-                <form method="post" action="${pageContext.request.contextPath}/owner/shift-templates">
+                <form method="post" action="${pageContext.request.contextPath}/owner/shift-templates" novalidate>
                     <input type="hidden" name="action" value="${mode}">
                     <c:if test="${mode == 'edit'}">
                         <input type="hidden" name="id" value="${template.templateID}">
@@ -58,8 +58,8 @@
 
                     <div class="form-group">
                         <label>Tên ca *</label>
-                        <input type="text" name="shiftName" value="${template.shiftName}" maxlength="100" required>
-                        <c:if test="${not empty errors.shiftName}"><div class="err">${errors.shiftName}</div></c:if>
+                        <input type="text" name="shiftName" value="${template.shiftName}" maxlength="100">
+                        <div class="err" id="shiftNameClientError"><c:out value="${errors.shiftName}" /></div>
                     </div>
 
                     <%-- Giờ bắt đầu --%>
@@ -149,6 +149,14 @@
 
         // Kiểm tra ca đêm trước khi submit
         function validateNightShift(e) {
+            clearClientErrors();
+            var nameEl = document.querySelector('input[name="shiftName"]');
+            if (nameEl && !nameEl.value.trim()) {
+                e.preventDefault();
+                showFieldError('shiftNameClientError', 'Tên ca không được để trống.');
+                return;
+            }
+
             var startEl = document.getElementById('startTime');
             var endEl   = document.getElementById('endTime');
             if (!startEl || !endEl) return; // disabled fields – server will validate
@@ -183,6 +191,21 @@
             if (errors.length > 0) {
                 e.preventDefault();
                 showClientError(errors.join('\n'));
+            }
+        }
+
+        function clearClientErrors() {
+            var nameErr = document.getElementById('shiftNameClientError');
+            if (nameErr) nameErr.textContent = '';
+            var existing = document.getElementById('client-night-err');
+            if (existing) existing.remove();
+        }
+
+        function showFieldError(id, msg) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.textContent = msg;
+                el.scrollIntoView({behavior:'smooth', block:'center'});
             }
         }
 

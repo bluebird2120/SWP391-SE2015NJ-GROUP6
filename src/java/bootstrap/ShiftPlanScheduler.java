@@ -11,12 +11,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Daily scheduler chạy 00:05 mỗi ngày để xử lý MonthlyShiftPlan:
- *   - DRAFT  + today >= ngày 1 tháng N+1 - 3 → notify, đổi NOTIFIED.
- *   - NOTIFIED + today >= ngày 1 tháng N+1   → batch insert EmployeeShifts, đổi APPLIED.
+ * Daily scheduler chạy 00:05 mỗi ngày để xử lý MonthlyShiftPlan: - DRAFT +
+ * today >= ngày 1 tháng N+1 - 3 → notify, đổi NOTIFIED. - NOTIFIED + today >=
+ * ngày 1 tháng N+1 → batch insert EmployeeShifts, đổi APPLIED.
  *
- * Thread daemon để không block JVM shutdown. Có 1 lần chạy ngay khi context init
- * để bắt kịp các plan đã quá hạn (server bị tắt qua mốc).
+ * Thread daemon để không block JVM shutdown. Có 1 lần chạy ngay khi context
+ * init để bắt kịp các plan đã quá hạn (server bị tắt qua mốc).
  */
 @WebListener
 public class ShiftPlanScheduler implements ServletContextListener {
@@ -47,7 +47,9 @@ public class ShiftPlanScheduler implements ServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        if (executor == null) return;
+        if (executor == null) {
+            return;
+        }
         executor.shutdown();
         try {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -60,7 +62,9 @@ public class ShiftPlanScheduler implements ServletContextListener {
         System.out.println("[ShiftPlanScheduler] Stopped.");
     }
 
-    /** Số giây từ now đến 00:05 sáng mai (theo timezone JVM). */
+    /**
+     * Số giây từ now đến 00:05 sáng mai (theo timezone JVM).
+     */
     private long computeInitialDelayToNextRun() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime next = now.toLocalDate().plusDays(1).atTime(0, 5, 0);

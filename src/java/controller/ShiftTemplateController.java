@@ -211,7 +211,7 @@ public class ShiftTemplateController extends HttpServlet {
             LocalTime start = parseLocalTime(startStr);
             LocalTime end = parseLocalTime(endStr);
 
-            LocalTime DAY_START = LocalTime.of(6, 0);
+            LocalTime DAY_START = LocalTime.of(13, 0);
             LocalTime NIGHT_START = LocalTime.of(22, 0);
 
             if (start == null) {
@@ -226,7 +226,7 @@ public class ShiftTemplateController extends HttpServlet {
                     errors.put("endTime", "Giờ kết thúc phải sau giờ bắt đầu (ca qua đêm không được hỗ trợ).");
                 } else {
                     if (start.isBefore(DAY_START)) {
-                        errors.put("startTime", "Giờ bắt đầu không được trước 06:00 — ca làm đêm không được hỗ trợ.");
+                        errors.put("startTime", "Giờ bắt đầu không được trước 13:00 — ca làm đêm không được hỗ trợ.");
                     } else if (!start.isBefore(NIGHT_START)) {
                         errors.put("startTime", "Giờ bắt đầu không được từ 22:00 trở đi — ca làm đêm không được hỗ trợ.");
                     } else if (end.isAfter(NIGHT_START)) {

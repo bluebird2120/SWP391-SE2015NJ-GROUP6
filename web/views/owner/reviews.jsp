@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -18,6 +19,19 @@
         .alert { border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.9rem; }
         .alert-danger { background: #fff1f1; border: 1px solid #f3c1c1; color: #9f2727; }
         .alert-success { background: #effaf1; border: 1px solid #bfe7c5; color: #226c34; }
+        .rating-report { background:#fff; border:1px solid #ede0d8; border-radius:12px; padding:16px 18px; margin-bottom:18px; box-shadow:0 4px 16px rgba(118,73,59,0.06); }
+        .rating-report-head { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+        .rating-report-title { color:#5d3a2e; font-weight:700; }
+        .rating-report-clear { color:#76493b; background:#f4ebe4; border:1px solid #e4d3c4; border-radius:999px; padding:6px 11px; text-decoration:none; font-size:0.82rem; font-weight:700; }
+        .rating-report-clear.active { background:#76493b; color:#fff; border-color:#76493b; }
+        .rating-row { display:grid; grid-template-columns:58px 86px minmax(120px, 1fr) 42px; gap:10px; align-items:center; min-height:28px; padding:4px 8px; border-radius:8px; text-decoration:none; color:#4a3528; }
+        .rating-row:hover, .rating-row.active { background:#fff7e6; }
+        .rating-label { font-size:0.9rem; white-space:nowrap; }
+        .rating-stars { color:#d49b2f; font-size:0.82rem; white-space:nowrap; }
+        .rating-bar-track { height:17px; background:#f4ebe4; border-radius:3px; overflow:hidden; }
+        .rating-bar-fill { height:100%; min-width:0; background:#76493b; border-radius:3px; }
+        .rating-row.active .rating-bar-fill { background:#d49b2f; }
+        .rating-count { font-size:0.9rem; font-weight:700; color:#5d3a2e; }
         .review-list { display: flex; flex-direction: column; gap: 14px; }
         .review-card { background: #fff; border: 1px solid #ede0d8; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 16px rgba(118,73,59,0.06); }
         .review-card.hidden { background: #fbf3f3; border-color: #ecc7c7; }
@@ -46,6 +60,16 @@
         .pagination { display: flex; gap: 6px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
         .pagination a, .pagination span { padding: 7px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; border: 1px solid #ede0d8; color: #76493b; background: #fff; }
         .pagination .active { background: #76493b; color: #fff; border-color: #76493b; }
+        .confirm-panel { display:none; position:fixed; inset:0; z-index:3000; background:rgba(74,53,40,.34); align-items:center; justify-content:center; padding:20px; }
+        .confirm-panel.active { display:flex; }
+        .confirm-box { background:#fff; border:1px solid #ede0d8; border-radius:10px; padding:18px; max-width:380px; width:100%; box-shadow:0 16px 40px rgba(74,53,40,.18); }
+        .confirm-message { color:#4a3528; font-weight:600; margin-bottom:14px; }
+        .confirm-actions { display:flex; justify-content:flex-end; gap:8px; }
+        @media (max-width: 700px) {
+            .main { padding: 22px 18px; }
+            .rating-row { grid-template-columns:52px 78px minmax(90px, 1fr) 34px; gap:8px; }
+            .rating-stars { font-size:0.76rem; }
+        }
     </style>
 </head>
 <body>
@@ -71,6 +95,33 @@
                 </div>
             </c:if>
 
+            <section class="rating-report">
+                <div class="rating-report-head">
+                    <div class="rating-report-title">Báo cáo đánh giá</div>
+                    <c:url var="allReviewsUrl" value="/owner/reviews" />
+                    <a class="rating-report-clear ${selectedRating == 0 ? 'active' : ''}" href="${allReviewsUrl}">
+                        Tất cả đánh giá
+                    </a>
+                </div>
+                <c:forEach var="level" items="${ratingLevels}">
+                    <c:url var="ratingUrl" value="/owner/reviews">
+                        <c:param name="rating" value="${level}" />
+                    </c:url>
+                    <a class="rating-row ${selectedRating == level ? 'active' : ''}" href="${ratingUrl}">
+                        <span class="rating-label">${level} sao</span>
+                        <span class="rating-stars">
+                            <c:forEach var="star" begin="1" end="5">
+                                <i class="${star <= level ? 'fa-solid' : 'fa-regular'} fa-star"></i>
+                            </c:forEach>
+                        </span>
+                        <span class="rating-bar-track">
+                            <span class="rating-bar-fill" style="width:${maxRatingCount == 0 ? 0 : ratingCounts[level] * 100 / maxRatingCount}%;"></span>
+                        </span>
+                        <span class="rating-count"><c:out value="${ratingCounts[level]}" /></span>
+                    </a>
+                </c:forEach>
+            </section>
+
             <c:choose>
                 <c:when test="${empty reviews}">
                     <div class="empty">
@@ -80,8 +131,9 @@
                 </c:when>
                 <c:otherwise>
                     <div class="review-list">
-                        <c:forEach var="review" items="${reviews}">
-                            <article class="review-card ${review.isHidden == 1 ? 'hidden' : ''}">
+                        <c:forEach var="review" items="${reviews}" varStatus="status">
+                            <article class="review-card ${review.isHidden == 1 ? 'hidden' : ''} ${status.index >= 3 ? 'previous-review' : ''}"
+                                     style="${status.index >= 3 ? 'display:none;' : ''}">
                                 <div class="review-head">
                                     <div class="left">
                                         <strong>#<c:out value="${review.reviewID}" /></strong>
@@ -126,27 +178,30 @@
                                                 <input type="hidden" name="csrfToken" value="${csrfToken}">
                                                 <input type="hidden" name="reviewID" value="${review.reviewID}">
                                                 <input type="hidden" name="page" value="${currentPage}">
+                                                <input type="hidden" name="rating" value="${selectedRating}">
                                                 <button type="submit" class="btn btn-muted"><i class="fa-solid fa-eye"></i> Hiện lại</button>
                                             </form>
                                         </c:when>
                                         <c:otherwise>
                                             <form class="inline-form" method="post" action="${pageContext.request.contextPath}/owner/reviews"
-                                                  onsubmit="return confirm('Ẩn đánh giá này khỏi trang công khai?')">
+                                                  onsubmit="return showLocalConfirm(this, 'Ẩn đánh giá này khỏi trang công khai?')">
                                                 <input type="hidden" name="action" value="hide">
                                                 <input type="hidden" name="csrfToken" value="${csrfToken}">
                                                 <input type="hidden" name="reviewID" value="${review.reviewID}">
                                                 <input type="hidden" name="page" value="${currentPage}">
+                                                <input type="hidden" name="rating" value="${selectedRating}">
                                                 <button type="submit" class="btn btn-warn"><i class="fa-solid fa-eye-slash"></i> Ẩn</button>
                                             </form>
                                         </c:otherwise>
                                     </c:choose>
                                     <c:if test="${not empty review.ownerReply}">
                                         <form class="inline-form" method="post" action="${pageContext.request.contextPath}/owner/reviews"
-                                              onsubmit="return confirm('Xóa phản hồi này?')">
+                                              onsubmit="return showLocalConfirm(this, 'Xóa phản hồi này?')">
                                             <input type="hidden" name="action" value="delete-reply">
                                             <input type="hidden" name="csrfToken" value="${csrfToken}">
                                             <input type="hidden" name="reviewID" value="${review.reviewID}">
                                             <input type="hidden" name="page" value="${currentPage}">
+                                            <input type="hidden" name="rating" value="${selectedRating}">
                                             <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Xóa phản hồi</button>
                                         </form>
                                     </c:if>
@@ -157,6 +212,7 @@
                                     <input type="hidden" name="csrfToken" value="${csrfToken}">
                                     <input type="hidden" name="reviewID" value="${review.reviewID}">
                                     <input type="hidden" name="page" value="${currentPage}">
+                                    <input type="hidden" name="rating" value="${selectedRating}">
                                     <textarea name="reply" maxlength="1000"
                                               placeholder="Nhập phản hồi công khai..."><c:out value="${review.ownerReply}" /></textarea>
                                     <div>
@@ -173,6 +229,14 @@
                         </c:forEach>
                     </div>
 
+                    <c:if test="${fn:length(reviews) > 3}">
+                        <div id="showMoreReviewsContainer" style="text-align: center; margin-top: 18px;">
+                            <button type="button" id="btnShowMoreReviews" onclick="showAllReviews()" style="background: none; border: none; color: #76493b; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; transition: all 0.2s; text-decoration: underline;">
+                                Xem các đánh giá trước đó <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+                    </c:if>
+
                     <c:if test="${totalPages > 1}">
                         <nav class="pagination">
                             <c:forEach var="i" begin="1" end="${totalPages}">
@@ -181,7 +245,13 @@
                                         <span class="active">${i}</span>
                                     </c:when>
                                     <c:otherwise>
-                                        <a href="${pageContext.request.contextPath}/owner/reviews?page=${i}">${i}</a>
+                                        <c:url var="pageUrl" value="/owner/reviews">
+                                            <c:param name="page" value="${i}" />
+                                            <c:if test="${selectedRating > 0}">
+                                                <c:param name="rating" value="${selectedRating}" />
+                                            </c:if>
+                                        </c:url>
+                                        <a href="${pageUrl}">${i}</a>
                                     </c:otherwise>
                                 </c:choose>
                             </c:forEach>
@@ -192,5 +262,56 @@
         </main>
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
+    <div id="localConfirmPanel" class="confirm-panel">
+        <div class="confirm-box">
+            <div id="localConfirmMessage" class="confirm-message"></div>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-muted" onclick="closeLocalConfirm()">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="submitLocalConfirm()">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        var pendingConfirmForm = null;
+        var confirmSubmitting = false;
+
+        function showLocalConfirm(form, message) {
+            if (confirmSubmitting) {
+                confirmSubmitting = false;
+                return true;
+            }
+            pendingConfirmForm = form;
+            document.getElementById('localConfirmMessage').textContent = message;
+            document.getElementById('localConfirmPanel').classList.add('active');
+            return false;
+        }
+
+        function closeLocalConfirm() {
+            pendingConfirmForm = null;
+            document.getElementById('localConfirmPanel').classList.remove('active');
+        }
+
+        function submitLocalConfirm() {
+            if (!pendingConfirmForm) return;
+            confirmSubmitting = true;
+            pendingConfirmForm.submit();
+        }
+
+        function showAllReviews() {
+            var prevReviews = document.querySelectorAll('.previous-review');
+            prevReviews.forEach(function(el) {
+                el.style.display = 'block';
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s ease';
+                setTimeout(function() {
+                    el.style.opacity = '1';
+                }, 10);
+            });
+            var container = document.getElementById('showMoreReviewsContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

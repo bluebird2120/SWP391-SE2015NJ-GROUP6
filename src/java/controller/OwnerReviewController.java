@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import model.Employee;
@@ -38,19 +39,29 @@ public class OwnerReviewController extends HttpServlet {
             return;
         }
 
+        int selectedRating = parseRatingFilter(request.getParameter("rating"));
         int page = Math.max(1, toInt(request.getParameter("page"), 1));
-        int total = reviewDAO.countAllReviews();
+        int total = reviewDAO.countAllReviews(selectedRating);
         int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
         if (page > totalPages) {
             page = totalPages;
         }
         int offset = (page - 1) * PAGE_SIZE;
+        int[] ratingCounts = reviewDAO.countReviewsByRating();
+        int maxRatingCount = 0;
+        for (int rating = 1; rating <= 5; rating++) {
+            maxRatingCount = Math.max(maxRatingCount, ratingCounts[rating]);
+        }
 
-        List<Reviews> reviews = reviewDAO.getAllReviewsForOwner(offset, PAGE_SIZE);
+        List<Reviews> reviews = reviewDAO.getAllReviewsForOwner(offset, PAGE_SIZE, selectedRating);
         request.setAttribute("reviews", reviews);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalReviews", total);
+        request.setAttribute("selectedRating", selectedRating);
+        request.setAttribute("ratingCounts", ratingCounts);
+        request.setAttribute("ratingLevels", Arrays.asList(5, 4, 3, 2, 1));
+        request.setAttribute("maxRatingCount", maxRatingCount);
         request.setAttribute("csrfToken", getOrCreateCsrfToken(request));
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
@@ -80,14 +91,15 @@ public class OwnerReviewController extends HttpServlet {
         }
 
         String page = request.getParameter("page");
+        String rating = request.getParameter("rating");
         switch (action == null ? "" : action) {
             case "hide":
                 reviewDAO.setHidden(reviewID, true);
-                redirectSuccess(response, request.getContextPath(), page, "hidden");
+                redirectSuccess(response, request.getContextPath(), page, rating, "hidden");
                 return;
             case "unhide":
                 reviewDAO.setHidden(reviewID, false);
-                redirectSuccess(response, request.getContextPath(), page, "unhidden");
+                redirectSuccess(response, request.getContextPath(), page, rating, "unhidden");
                 return;
             case "reply": {
                 String reply = request.getParameter("reply");
@@ -116,12 +128,12 @@ public class OwnerReviewController extends HttpServlet {
                     notifDAO.insert(notif);
                 }
                 
-                redirectSuccess(response, request.getContextPath(), page, "replied");
+                redirectSuccess(response, request.getContextPath(), page, rating, "replied");
                 return;
             }
             case "delete-reply":
                 reviewDAO.setOwnerReply(reviewID, null);
-                redirectSuccess(response, request.getContextPath(), page, "reply_deleted");
+                redirectSuccess(response, request.getContextPath(), page, rating, "reply_deleted");
                 return;
             default:
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Thao tác không hợp lệ.");
@@ -167,9 +179,18 @@ public class OwnerReviewController extends HttpServlet {
         }
     }
 
-    private void redirectSuccess(HttpServletResponse response, String ctx, String page, String success)
+    private int parseRatingFilter(String value) {
+        int rating = toInt(value, 0);
+        return rating >= 1 && rating <= 5 ? rating : 0;
+    }
+
+    private void redirectSuccess(HttpServletResponse response, String ctx, String page, String rating, String success)
             throws IOException {
         StringBuilder sb = new StringBuilder(ctx).append("/owner/reviews?success=").append(success);
+        int parsedRating = parseRatingFilter(rating);
+        if (parsedRating > 0) {
+            sb.append("&rating=").append(parsedRating);
+        }
         if (page != null && !page.isEmpty()) {
             sb.append("&page=").append(page);
         }
