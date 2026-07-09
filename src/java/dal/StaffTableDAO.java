@@ -14,13 +14,13 @@ public class StaffTableDAO extends DBContext {
 
     public List<StaffTableDTO> getPhysicalTables() {
         List<StaffTableDTO> tables = new ArrayList<>();
-        // ĐÃ SỬA: Thêm 'pending' và 'occupied' vào câu lệnh CASE và IN
+        // [TABLE STATUS STANDARD] Dung 'serving' cho ban dang phuc vu.
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
                 + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus = 'pending' THEN 'pending' "
                 + "WHEN o.tableStatus = 'cleaning' THEN 'cleaning' "
-                + "WHEN o.tableStatus = 'serving' OR o.tableStatus = 'occupied' THEN 'serving' "
+                + "WHEN o.tableStatus = 'serving' THEN 'serving' "
                 + "WHEN o.tableStatus = 'reserved' THEN 'reserved' "
                 + "ELSE 'available' END AS physicalStatus "
                 + "FROM `Table` t "
@@ -28,7 +28,7 @@ public class StaffTableDAO extends DBContext {
                 + " AND EXISTS (SELECT 1 FROM `Order` active_o "
                 + " WHERE active_o.orderID = ot.orderID "
                 + " AND active_o.orderStatus <> 'cancelled' "
-                + " AND active_o.tableStatus IN ('reserved','serving','occupied','cleaning','pending')) "
+                + " AND active_o.tableStatus IN ('reserved','serving','cleaning','pending')) "
                 + "LEFT JOIN `Order` o ON o.orderID = ot.orderID "
                 + "WHERE t.isActive = 1 "
                 + "ORDER BY t.areaType, t.capacity, t.tableName";
@@ -54,7 +54,7 @@ public class StaffTableDAO extends DBContext {
                 + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
-                + "WHEN o.tableStatus IN ('serving','occupied') THEN 'serving' "
+                + "WHEN o.tableStatus='serving' THEN 'serving' "
                 + "WHEN o.tableStatus='reserved' THEN 'reserved' "
                 + "WHEN o.tableStatus='pending' THEN 'pending' "
                 + "ELSE 'available' END physicalStatus "
@@ -62,7 +62,7 @@ public class StaffTableDAO extends DBContext {
                 + "JOIN Order_Table ot ON ot.orderID=o.orderID "
                 + "JOIN `Table` t ON t.tableID=ot.tableID "
                 + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' "
-                + "AND o.tableStatus IN ('reserved','serving','occupied','cleaning','pending') "
+                + "AND o.tableStatus IN ('reserved','serving','cleaning','pending') "
                 + "ORDER BY o.orderTime,t.tableName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, employeeID);
@@ -94,8 +94,8 @@ public class StaffTableDAO extends DBContext {
                 // [PHAN QUYEN LE TAN] Hien thi nhan vien phuc vu da duoc he thong gan cho don.
                 + "LEFT JOIN Employee e ON e.employeeID = o.employeeID "
                 + "WHERE o.orderType = 1 "
-                + "AND o.orderStatus IN ('reserved','serving','occupied') "
-                + "AND o.tableStatus IN ('reserved','serving','occupied') "
+                + "AND o.orderStatus IN ('reserved','serving') "
+                + "AND o.tableStatus IN ('reserved','serving') "
                 + "AND DATE(o.orderTime)=CURRENT_DATE "
                 + "GROUP BY o.orderID,o.orderStatus,o.tableStatus,o.orderTime,"
                 + "e.fullName,"
@@ -349,11 +349,11 @@ public class StaffTableDAO extends DBContext {
 
     private boolean isTableBusy(Connection conn, int tableID)
             throws SQLException {
-        // 🌟 ĐÃ SỬA: Bổ sung 'pending' và 'occupied' vào danh sách bận để không bị gán đè
+        // [TABLE STATUS STANDARD] Ban reserved/serving/cleaning/pending deu duoc xem la ban.
         String sql = "SELECT 1 FROM Order_Table ot "
                 + "JOIN `Order` o ON o.orderID=ot.orderID "
                 + "WHERE ot.tableID=? AND o.orderStatus<>'cancelled' "
-                + "AND o.tableStatus IN ('reserved','serving','occupied','cleaning','pending') "
+                + "AND o.tableStatus IN ('reserved','serving','cleaning','pending') "
                 + "LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, tableID);
