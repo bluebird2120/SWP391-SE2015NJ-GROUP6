@@ -133,7 +133,8 @@ public class OrderController extends HttpServlet {
                 Order newOrder = new Order();
                 newOrder.setCustomerID(customerID);
                 newOrder.setOrderType(tableID != null ? 1 : 2); 
-                newOrder.setTableStatus(tableID != null ? "occupied" : "available");
+                // [TABLE STATUS STANDARD] Ban co khach dang phuc vu thong nhat dung 'serving'.
+                newOrder.setTableStatus(tableID != null ? "serving" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
                 newOrder.setTotalAmount(0);
