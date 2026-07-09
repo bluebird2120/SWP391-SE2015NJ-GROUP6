@@ -40,7 +40,7 @@ public class StaffManagementController extends HttpServlet {
     private static final int PAGE_SIZE = 5;
     private static final String UPLOAD_DIR = "uploads/staff";
     private static final long MAX_PROFILE_IMAGE_SIZE = 2L * 1024 * 1024;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,10}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,10}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10,11}$");
 
     @Override

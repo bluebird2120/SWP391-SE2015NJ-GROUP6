@@ -465,4 +465,30 @@
             document.querySelectorAll('.user-menu').forEach(m => m.classList.remove('open'));
         }
     });
+
+    setInterval(function () {
+    fetch('${pageContext.request.contextPath}/api/unread-count')
+        .then(res => res.json())
+        .then(data => {
+            const badge = document.querySelector('.notif-count');
+            if (data.unread > 0) {
+                if (badge) {
+                    badge.textContent = data.unread;
+                    badge.style.display = 'flex';
+                } else {
+                    // Chưa có badge → tạo mới và gắn vào nút bell
+                    const btn = document.querySelector('.notif-btn');
+                    if (btn) {
+                        const span = document.createElement('span');
+                        span.className = 'notif-count';
+                        span.textContent = data.unread;
+                        btn.appendChild(span);
+                    }
+                }
+            } else {
+                if (badge) badge.style.display = 'none';
+            }
+        })
+        .catch(() => {});
+}, 30000);
 </script>

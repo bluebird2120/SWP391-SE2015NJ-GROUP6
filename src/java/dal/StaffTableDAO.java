@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import dal.NotificationDAO;
+import model.Notifications;
 import model.StaffTableDTO;
 
 public class StaffTableDAO extends DBContext {
@@ -210,7 +212,8 @@ public class StaffTableDAO extends DBContext {
                 ps.executeUpdate();
             }
 
-            if (hasAllRequiredTables(conn, orderID)) {
+            boolean allDone = hasAllRequiredTables(conn, orderID);
+            if (allDone) {
                 try (PreparedStatement ps = conn.prepareStatement(
                         "UPDATE `Order` SET orderStatus='serving', "
                         + "tableStatus='serving' WHERE orderID=?")) {
@@ -219,6 +222,38 @@ public class StaffTableDAO extends DBContext {
                 }
             }
             conn.commit();
+
+            //Notification
+            // ── [THÔNG BÁO NHÂN VIÊN PHỤC VỤ] Sau commit, gửi thông báo
+            //    cho nhân viên vừa được gán phục vụ đơn này.
+            //    Chỉ gửi khi tất cả bàn đã đủ (allDone) để tránh spam
+            //    nhiều thông báo khi đơn cần nhiều bàn.
+            if (allDone) {
+                try {
+                    // Lấy tableName vừa gán để hiển thị trong thông báo
+                    String tableNameSql
+                            = "SELECT tableName FROM `Table` WHERE tableID=?";
+                    String tableName = "?";
+                    try (PreparedStatement ps
+                            = conn.prepareStatement(tableNameSql)) {
+                        ps.setInt(1, tableID);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            //Nếu ko thấy tên bàn thì để "Bạn được phân công phục vụ bàn ? (Đơn #99)"
+                            if (rs.next()) tableName = rs.getString("tableName");
+                        }
+                    }
+                    Notifications n = new Notifications();
+                    n.setRecipientID(servingEmployeeID);
+                    n.setRecipientType("staff");
+                    n.setType("table_assigned");
+                    n.setMessage("Bạn được phân công phục vụ bàn "
+                            + tableName + " (Đơn #" + orderID + ").");
+                    n.setIsRead(0);
+                    new NotificationDAO().insert(n);
+                } catch (Exception ignored) {
+                    // Thông báo thất bại không rollback transaction chính
+                }
+            }
             return null;
         } catch (SQLException e) {
             rollbackQuietly(conn);
