@@ -490,20 +490,7 @@
                                     <input type="hidden" name="quantity" value="1">
                                     <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
 
-                                    <c:choose>
-                                        <c:when test="${not empty assignedTables}">
-                                            <select name="tableID" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background-color: #fdf6f0; color: #76493b; font-weight: bold; cursor: pointer;">
-                                                <c:forEach var="t" items="${assignedTables}">
-                                                    <option value="${t.tableID}" ${t.tableID == sessionScope.currentTableID ? 'selected' : ''}>
-                                                        📍 Bưng tới: ${t.tableName}
-                                                    </option>
-                                                </c:forEach>
-                                            </select>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <input type="hidden" name="tableID" value="${sessionScope.currentTableID}">
-                                        </c:otherwise>
-                                    </c:choose>
+                                    
                                     <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white; margin-top: 0;">
                                         Thêm vào giỏ
                                     </button>
