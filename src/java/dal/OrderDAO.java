@@ -130,7 +130,8 @@ public class OrderDAO {
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
-                + "  AND o.tableStatus IN ('occupied', 'reserved') " // 👈 Đã thêm 'reserved' vào đây
+                // [TABLE STATUS STANDARD] DB moi thong nhat trang thai dang phuc vu la 'serving'.
+                + "  AND o.tableStatus IN ('serving', 'reserved', 'pending') "
                 + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
                 + "ORDER BY o.createdAt DESC LIMIT 1";
 

@@ -19,6 +19,7 @@ public class StaffTableDTO {
     private int requiredQuantity;
     private int assignedQuantity;
     private String assignedTableNames;
+    private String servingEmployeeName;
 
     public int getTableID() { return tableID; }
     public void setTableID(int tableID) { this.tableID = tableID; }
@@ -45,6 +46,10 @@ public class StaffTableDTO {
     public String getAssignedTableNames() { return assignedTableNames; }
     public void setAssignedTableNames(String assignedTableNames) {
         this.assignedTableNames = assignedTableNames;
+    }
+    public String getServingEmployeeName() { return servingEmployeeName; }
+    public void setServingEmployeeName(String servingEmployeeName) {
+        this.servingEmployeeName = servingEmployeeName;
     }
     public int getRemainingQuantity() {
         return Math.max(0, requiredQuantity - assignedQuantity);
