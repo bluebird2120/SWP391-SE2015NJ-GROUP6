@@ -29,6 +29,12 @@ public class ReviewDAO extends DBContext {
             "reviewID, customerID, orderID, rating, comment, createdAt, "
           + "isHidden, ownerReply, ownerReplyAt";
 
+    /**
+     * Điều kiện lọc chung cho các review được phép hiển thị công khai.
+     *
+     * Review công khai phải chưa bị ẩn, có nội dung bình luận và không phải review
+     * do tài khoản owner tự đăng bằng email hoặc số điện thoại trùng Employee.
+     */
     private static final String PUBLIC_REVIEW_FILTER =
             "WHERE r.isHidden = 0 "
           + "  AND r.comment IS NOT NULL AND TRIM(r.comment) <> '' "
@@ -82,6 +88,11 @@ public class ReviewDAO extends DBContext {
         return reviews;
     }
 
+    /**
+     * Đếm tổng số review công khai.
+     *
+     * @return tổng số review đi qua bộ lọc công khai, hoặc 0 nếu truy vấn lỗi.
+     */
     public int countPublicReviews() {
         String sql = "SELECT COUNT(*) "
                 + "FROM Reviews r "
@@ -101,6 +112,11 @@ public class ReviewDAO extends DBContext {
         return 0;
     }
 
+    /**
+     * Tính điểm rating trung bình của các review công khai.
+     *
+     * @return điểm trung bình của review công khai, hoặc 0 nếu chưa có dữ liệu.
+     */
     public double getPublicAverageRating() {
         String sql = "SELECT COALESCE(AVG(r.rating), 0) "
                 + "FROM Reviews r "
@@ -426,6 +442,14 @@ public class ReviewDAO extends DBContext {
         return getAllReviewsForOwner(offset, limit, 0);
     }
 
+    /**
+     * Lấy danh sách review cho owner, có hỗ trợ lọc theo số sao.
+     *
+     * @param offset vị trí bắt đầu lấy dữ liệu.
+     * @param limit số lượng review tối đa cần lấy.
+     * @param ratingFilter số sao cần lọc từ 1 đến 5; truyền 0 để lấy tất cả.
+     * @return danh sách review theo bộ lọc của owner.
+     */
     public List<Reviews> getAllReviewsForOwner(int offset, int limit, int ratingFilter) {
         List<Reviews> reviews = new ArrayList<>();
         String sql = "SELECT r.reviewID, r.customerID, r.orderID, r.rating, r.comment, "
@@ -468,6 +492,12 @@ public class ReviewDAO extends DBContext {
         return countAllReviews(0);
     }
 
+    /**
+     * Đếm số review cho owner, có hỗ trợ lọc theo số sao.
+     *
+     * @param ratingFilter số sao cần lọc từ 1 đến 5; truyền 0 để đếm tất cả.
+     * @return tổng số review khớp bộ lọc.
+     */
     public int countAllReviews(int ratingFilter) {
         String sql = "SELECT COUNT(*) FROM Reviews"
                 + (ratingFilter >= 1 && ratingFilter <= 5 ? " WHERE rating = ?" : "");
@@ -486,6 +516,14 @@ public class ReviewDAO extends DBContext {
         return 0;
     }
 
+    /**
+     * Đếm số lượng review theo từng mức sao để hiển thị báo cáo owner.
+     *
+     * Mảng trả về dùng index trùng với số sao: counts[1] là 1 sao, counts[5] là
+     * 5 sao. Index 0 không sử dụng.
+     *
+     * @return mảng số lượng review theo rating từ 1 đến 5.
+     */
     public int[] countReviewsByRating() {
         int[] counts = new int[6];
         String sql = "SELECT rating, COUNT(*) AS total FROM Reviews "

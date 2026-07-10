@@ -223,19 +223,6 @@
                 border: 1px solid #c3e6cb;
             }
 
-            .form-inline-error {
-                flex-basis: 100%;
-                width: 100%;
-                margin-top: 8px;
-                padding: 8px 10px;
-                border-radius: 7px;
-                border: 1px solid #f5c2c7;
-                background: #f8d7da;
-                color: #721c24;
-                font-size: 0.82rem;
-                font-weight: 600;
-            }
-
             /* Tabs */
             .tabs {
                 display: flex;
@@ -518,6 +505,9 @@
                 </c:if>
                 <c:if test="${not empty success}">
                     <div class="alert alert-success">${success}</div>
+                </c:if>
+                <c:if test="${not empty viewError}">
+                    <div class="alert alert-error">${viewError}</div>
                 </c:if>
                 <c:if test="${param.msg == 'assigned'}">
                     <div class="alert alert-success">Đã gán ca thành công.</div>
@@ -883,9 +873,6 @@
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-eye"></i>
                                     Xem</button>
                             </div>
-                            <c:if test="${not empty viewError}">
-                                <div class="form-inline-error">${viewError}</div>
-                            </c:if>
                         </form>
                     </div>
 
@@ -1074,16 +1061,7 @@
                     el.style.display = 'none';
                 });
 
-                if (form) {
-                    clearJsError(form);
-                    var errorEl = document.createElement('div');
-                    errorEl.className = 'form-inline-error';
-                    errorEl.textContent = message;
-                    form.appendChild(errorEl);
-                    errorEl.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-                    return;
-                }
-
+                clearJsError();
                 var container = document.getElementById('js-alert-container');
                 if (container) {
                     container.innerHTML = '<div class="alert alert-error">' + message + '</div>';
@@ -1091,16 +1069,7 @@
                 }
             }
 
-            function clearJsError(form) {
-                if (form) {
-                    form.querySelectorAll('.form-inline-error').forEach(function (el) {
-                        el.remove();
-                    });
-                } else {
-                    document.querySelectorAll('.form-inline-error').forEach(function (el) {
-                        el.remove();
-                    });
-                }
+            function clearJsError() {
                 var container = document.getElementById('js-alert-container');
                 if (container) {
                     container.innerHTML = '';
@@ -1108,7 +1077,7 @@
             }
 
             function validateRosterForm(form) {
-                clearJsError(form);
+                clearJsError();
                 var checked = form.querySelectorAll('input[name="employeeIDs"]:checked');
                 if (checked.length === 0) {
                     showJsError('Vui lòng chọn ít nhất một nhân viên.', form);

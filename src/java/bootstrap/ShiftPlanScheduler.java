@@ -11,9 +11,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Daily scheduler chạy 00:05 mỗi ngày để xử lý MonthlyShiftPlan: - DRAFT +
- * today >= ngày 1 tháng N+1 - 3 → notify, đổi NOTIFIED. - NOTIFIED + today >=
- * ngày 1 tháng N+1 → batch insert EmployeeShifts, đổi APPLIED.
+ * NGHIỆP VỤ: Bộ lập lịch tự động cho MonthlyShiftPlan.
+ *
+ * Daily scheduler chạy 00:05 mỗi ngày để xử lý MonthlyShiftPlan:
+ * - DRAFT + today >= ngày 1 tháng hiệu lực - 3 ngày:
+ *   gửi thông báo lịch tháng cho nhân viên và đổi trạng thái thành NOTIFIED.
+ * - NOTIFIED + today >= ngày 1 tháng hiệu lực:
+ *   tạo EmployeeShifts theo tháng và đổi trạng thái thành APPLIED.
  *
  * Thread daemon để không block JVM shutdown. Có 1 lần chạy ngay khi context
  * init để bắt kịp các plan đã quá hạn (server bị tắt qua mốc).
@@ -25,6 +29,7 @@ public class ShiftPlanScheduler implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        // Tạo một background thread riêng cho việc quét kế hoạch ca tháng.
         executor = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "shift-plan-scheduler");
             t.setDaemon(true);
@@ -47,6 +52,7 @@ public class ShiftPlanScheduler implements ServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
+        // Khi web app stop/redeploy thì shutdown scheduler để tránh thread treo.
         if (executor == null) {
             return;
         }

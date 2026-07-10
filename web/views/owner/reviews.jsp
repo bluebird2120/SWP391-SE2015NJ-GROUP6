@@ -95,6 +95,7 @@
                 </div>
             </c:if>
 
+            <%-- Báo cáo số lượng review theo từng mức sao; bấm vào từng dòng để lọc danh sách bên dưới. --%>
             <section class="rating-report">
                 <div class="rating-report-head">
                     <div class="rating-report-title">Báo cáo đánh giá</div>
@@ -131,6 +132,7 @@
                 </c:when>
                 <c:otherwise>
                     <div class="review-list">
+                        <%-- Chỉ hiện 3 review đầu, các review còn lại được ẩn tạm và mở bằng nút xem thêm. --%>
                         <c:forEach var="review" items="${reviews}" varStatus="status">
                             <article class="review-card ${review.isHidden == 1 ? 'hidden' : ''} ${status.index >= 3 ? 'previous-review' : ''}"
                                      style="${status.index >= 3 ? 'display:none;' : ''}">
@@ -229,6 +231,7 @@
                         </c:forEach>
                     </div>
 
+                    <%-- Nút xem thêm giống phần thông báo, dùng để hiện các review bị ẩn sau mục thứ 3. --%>
                     <c:if test="${fn:length(reviews) > 3}">
                         <div id="showMoreReviewsContainer" style="text-align: center; margin-top: 18px;">
                             <button type="button" id="btnShowMoreReviews" onclick="showAllReviews()" style="background: none; border: none; color: #76493b; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; transition: all 0.2s; text-decoration: underline;">
