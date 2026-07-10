@@ -22,11 +22,15 @@ public class MethodCookingController extends HttpServlet {
             throws ServletException, IOException {
         String search = request.getParameter("search");
         String page_raw = request.getParameter("page");
+        String isAvailable_raw = request.getParameter("isAvailable");
 
         if (!checkEmpty(search)) {
             search = "";
         }
+
         int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+
+        int isAvailable = checkEmpty(isAvailable_raw) ? Integer.parseInt(isAvailable_raw) : -1;
         String errorSearch = search.length() > 100 ? "Tìm kiếm vượt quá 100 kí tự" : "";
 
         if (checkEmpty(errorSearch)) {
@@ -44,15 +48,18 @@ public class MethodCookingController extends HttpServlet {
             session.removeAttribute("updateFail");
         }
 
-        int totalCategory = cookingMethodDAO.countSearchMethod(search);
-        int totalPage = (int) Math.ceil((double) totalCategory / PAGE_SIZE);
+        int totalMethod = cookingMethodDAO.countSearchMethod(search, isAvailable);
+        int totalPage = (int) Math.ceil((double) totalMethod / PAGE_SIZE);
 
         if (page > totalPage && totalPage > 0) {
             page = totalPage;
         }
 
         int offset = (page - 1) * PAGE_SIZE;
-        List<CookingMethod> methodList = cookingMethodDAO.searchMethodPaging(search, offset, PAGE_SIZE);
+        List<CookingMethod> methodList = cookingMethodDAO.searchMethodPaging(search, isAvailable, offset, PAGE_SIZE);
+
+        request.setAttribute("currentAvailable", isAvailable);
+
         request.setAttribute("methodList", methodList);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
@@ -76,18 +83,30 @@ public class MethodCookingController extends HttpServlet {
         String methodName = request.getParameter("methodName");
         String status_raw = request.getParameter("status");
         int id = checkEmpty(methodID) ? Integer.parseInt(methodID) : 0;
-        
-        //lấy các dữ liệu cũ bên jsp để khi vô hiệu hóa trả về đúng trang
+
         String page_raw = request.getParameter("page");
         String search_raw = request.getParameter("search");
+        String isAvailable_raw = request.getParameter("isAvailable"); 
+
         String currentPage = checkEmpty(page_raw) ? page_raw : "1";
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
+        String currentAvailable = checkEmpty(isAvailable_raw) ? isAvailable_raw : "-1";
 
         if (checkEmpty(status_raw) && id > 0) {
-            int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 0;
-            cookingMethodDAO.changeStatusMethod(id, status);
-            
-            response.sendRedirect(request.getContextPath() + "/method-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8"));
+            int status = Integer.parseInt(status_raw);
+
+            // Gọi hàm 1: Đổi trạng thái danh mục chính
+            boolean isMethodChanged = cookingMethodDAO.changeStatusMethod(id, status);
+            // Gọi hàm 2: Đổi trạng thái tất cả món ăn ăn theo phương pháp đó
+            boolean isItemsChanged = cookingMethodDAO.changeStatusItemsByMethod(id, status);
+
+            if (isMethodChanged && isItemsChanged) {
+                session.setAttribute("updateSuccess", (status == 1 ? "Kích hoạt" : "Vô hiệu hóa") + " cách chế biến và các món ăn liên quan thành công!");
+            } else {
+                session.setAttribute("updateFail", "Thay đổi trạng thái thất bại!");
+            }
+
+            response.sendRedirect(request.getContextPath() + "/method-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + currentAvailable);
             return;
         }
 
@@ -107,7 +126,7 @@ public class MethodCookingController extends HttpServlet {
             return;
         }
 
-        // 3. Thực hiện gọi DAO lưu trữ dữ liệu
+        // 3. Thực hiện gọi DAO lưu trữ dữ liệu khi THÊM MỚI hoặc SỬA TÊN
         boolean isSuccess = false;
         if (id > 0) {
             isSuccess = cookingMethodDAO.updateMethod(methodName, id);
