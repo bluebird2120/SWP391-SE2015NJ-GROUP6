@@ -514,11 +514,21 @@
                             <span id="totalNewDisplay" style="color:#D4A373; font-weight:bold;">0 đ</span>
                         </div>
 
+                        <%-- HIỂN THỊ TIỀN CỌC --%>
+                        <c:if test="${currentOrder != null && currentOrder.depositAmount > 0}">
+                            <div class="summary-row" style="color: #10b981;">
+                                <span>Đã đặt cọc:</span>
+                                <span>- <fmt:formatNumber value="${currentOrder.depositAmount}" type="number"/> đ</span>
+                            </div>
+                        </c:if>
+
                         <div class="summary-divider"></div>
                         <div class="summary-row total-row">
-                            <span>TỔNG CỘNG:</span>
+                            <span>CÒN PHẢI THANH TOÁN:</span>
                             <div class="summary-total-amount" id="totalAllDisplay">0 đ</div>
                         </div>
+
+                        <%-- ... (Giữ nguyên các NÚT GỬI BẾP và THANH TOÁN) ... --%>
 
                         <%-- NÚT: GỬI BẾP (Gọi bằng Javascript) --%>
                         <button class="btn-summary-action btn-sidebar-kitchen" type="button" id="btnKitchen" 
@@ -528,8 +538,8 @@
 
                         <%-- NÚT: THANH TOÁN TỔNG --%>
                         <c:if test="${sessionScope.roleInTable == 'HOST'}">
-                            <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
-                                <input type="hidden" name="action" value="checkoutTotal">
+                            <%-- 🌟 ĐÃ SỬA: Đổi action sang /checkout và method thành GET --%>
+                            <form method="get" action="${pageContext.request.contextPath}/checkout" style="margin-top: 20px;">
                                 <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
                                         onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
                                     🧾 YÊU CẦU TÍNH TIỀN
@@ -546,20 +556,20 @@
         <script>
             // Hàm tính toán tổng tiền realtime khi tích/bỏ tích món
             function updateTotal() {
-                // Chỉ lấy những món MỚI được tích chọn
                 var checked = document.querySelectorAll('.new-item-checkbox:checked');
                 var totalNew = 0;
                 checked.forEach(cb => totalNew += parseFloat(cb.getAttribute('data-price')));
 
-                // Món ĐÃ GỌI là số cố định không đổi (Lấy từ Java truyền sang)
                 var totalOrdered = ${totalOrderedAmount != null ? totalOrderedAmount : 0};
-                var totalAll = totalOrdered + totalNew;
+                var deposit = ${currentOrder != null ? currentOrder.depositAmount : 0}; // Lấy tiền cọc
 
-                // Cập nhật lên màn hình
+                var totalAll = totalOrdered + totalNew - deposit;
+                if (totalAll < 0)
+                    totalAll = 0; // Đảm bảo không bị âm tiền
+
                 document.getElementById('totalNewDisplay').innerText = totalNew.toLocaleString('vi-VN') + ' đ';
                 document.getElementById('totalAllDisplay').innerText = totalAll.toLocaleString('vi-VN') + ' đ';
 
-                // Vô hiệu hóa nút gửi bếp nếu không có món nào được chọn
                 var btnKitchen = document.getElementById('btnKitchen');
                 if (btnKitchen) {
                     btnKitchen.disabled = (checked.length === 0);
