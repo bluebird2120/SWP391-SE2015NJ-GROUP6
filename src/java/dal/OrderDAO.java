@@ -448,6 +448,26 @@ public class OrderDAO {
         }
         return false;
     }
+    
+    // =========================================================
+    // LẤY THÔNG TIN ORDER DỰA TRÊN MÃ HÓA ĐƠN (invoiceID)
+    // =========================================================
+    public Order getOrderByInvoiceId(int invoiceID) {
+        String sql = "SELECT * FROM `Order` WHERE invoiceID = ?";
+        try (java.sql.Connection conn = getConnection(); 
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            ps.setInt(1, invoiceID);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapToOrder(rs); // Sử dụng lại hàm mapToOrder có sẵn của bạn
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            System.err.println("[OrderDAO] getOrderByInvoiceId lỗi: " + e.getMessage());
+        }
+        return null;
+    }
 
     // =========================================================
     // HELPER: map ResultSet -> Order
