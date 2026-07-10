@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
+ * NGHIỆP VỤ: Một lần chạy của scheduler xử lý kế hoạch phân ca tháng.
+ *
  * Quét MonthlyShiftPlan và đẩy trạng thái:
  *   DRAFT     → NOTIFIED (today >= notifyDate = ngày 1 tháng - 3 ngày)
  *   NOTIFIED  → APPLIED  (today >= ngày 1 tháng — batch insert EmployeeShifts)
@@ -33,16 +35,20 @@ public class ShiftPlanTask implements Runnable {
 
     private void process() {
         LocalDate today = LocalDate.now();
+        // Mỗi lần chạy tạo DAO mới để connection không bị stale giữa các lần scheduler chạy.
         MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO();
         NotificationDAO notifDao    = new NotificationDAO();
         EmployeeShiftDAO shiftDao   = new EmployeeShiftDAO();
 
         List<MonthlyShiftPlan> pending = planDao.listPending();
         for (MonthlyShiftPlan p : pending) {
+            // firstOfMonth là ngày kế hoạch bắt đầu có hiệu lực.
             LocalDate firstOfMonth = LocalDate.of(p.getEffectiveYear(), p.getEffectiveMonth(), 1);
+            // notifyDate là mốc trước 3 ngày để báo nhân viên biết lịch tháng mới.
             LocalDate notifyDate   = firstOfMonth.minusDays(3);
 
             if (MonthlyShiftPlan.DRAFT.equals(p.getStatus()) && !today.isBefore(notifyDate)) {
+                // Gửi thông báo một lần rồi đổi DRAFT -> NOTIFIED để không gửi lặp lại.
                 if (insertNotification(notifDao, p)) {
                     planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.NOTIFIED);
                     p.setStatus(MonthlyShiftPlan.NOTIFIED); // cho phép apply ngay trong cùng vòng
@@ -50,6 +56,7 @@ public class ShiftPlanTask implements Runnable {
             }
 
             if (MonthlyShiftPlan.NOTIFIED.equals(p.getStatus()) && !today.isBefore(firstOfMonth)) {
+                // Đến tháng hiệu lực thì tạo ca thật trong EmployeeShifts.
                 if (shiftDao.hasAnyShiftInMonth(p.getEmployeeID(), p.getEffectiveYear(), p.getEffectiveMonth())) {
                     // Đã có ca gán sẵn hoặc tự động tạo trước đó -> cập nhật thành APPLIED luôn thay vì CANCELLED
                     System.out.println("[ShiftPlanTask] Already has shifts — mark as APPLIED for planID=" + p.getPlanID());
@@ -66,6 +73,7 @@ public class ShiftPlanTask implements Runnable {
     }
 
     private boolean insertNotification(NotificationDAO dao, MonthlyShiftPlan p) {
+        // Notification gửi cho đúng nhân viên trong kế hoạch tháng.
         Notifications n = new Notifications();
         n.setRecipientID(p.getEmployeeID());
         n.setRecipientType("staff");
@@ -76,6 +84,7 @@ public class ShiftPlanTask implements Runnable {
     }
 
     private String buildMessage(MonthlyShiftPlan p) {
+        // Chuẩn hóa message để nhân viên nhìn thấy tháng, tên ca và giờ làm.
         Time st = p.getStartTime();
         Time et = p.getEndTime();
         String shiftName = p.getTemplateName() == null ? "?" : p.getTemplateName();

@@ -30,6 +30,22 @@ public class ReviewDAO extends DBContext {
           + "isHidden, ownerReply, ownerReplyAt";
 
     /**
+     * Điều kiện lọc chung cho các review được phép hiển thị công khai.
+     *
+     * Review công khai phải chưa bị ẩn, có nội dung bình luận và không phải review
+     * do tài khoản owner tự đăng bằng email hoặc số điện thoại trùng Employee.
+     */
+    private static final String PUBLIC_REVIEW_FILTER =
+            "WHERE r.isHidden = 0 "
+          + "  AND r.comment IS NOT NULL AND TRIM(r.comment) <> '' "
+          + "  AND NOT EXISTS ( "
+          + "        SELECT 1 FROM Employee e "
+          + "        WHERE e.roleID = ? "
+          + "          AND ( (c.email IS NOT NULL AND e.email = c.email) "
+          + "                OR (c.phoneNumber IS NOT NULL AND e.phoneNumber = c.phoneNumber) ) "
+          + "  ) ";
+
+    /**
      * Lấy danh sách review công khai để hiển thị trên trang /reviews.
      * Lọc bỏ review của customer có email hoặc phoneNumber trùng với Employee
      * thuộc role Owner (roleID = 1) — tức là ẩn comment do owner tự đăng.
@@ -45,14 +61,7 @@ public class ReviewDAO extends DBContext {
                 + "       r.ownerReply, r.ownerReplyAt "
                 + "FROM Reviews r "
                 + "JOIN Customer c ON c.customerID = r.customerID "
-                + "WHERE r.isHidden = 0 "
-                + "  AND r.comment IS NOT NULL AND TRIM(r.comment) <> '' "
-                + "  AND NOT EXISTS ( "
-                + "        SELECT 1 FROM Employee e "
-                + "        WHERE e.roleID = ? "
-                + "          AND ( (c.email IS NOT NULL AND e.email = c.email) "
-                + "                OR (c.phoneNumber IS NOT NULL AND e.phoneNumber = c.phoneNumber) ) "
-                + "  ) "
+                + PUBLIC_REVIEW_FILTER
                 + "ORDER BY r.createdAt DESC "
                 + "LIMIT ?";
 
@@ -77,6 +86,54 @@ public class ReviewDAO extends DBContext {
             ex.printStackTrace();
         }
         return reviews;
+    }
+
+    /**
+     * Đếm tổng số review công khai.
+     *
+     * @return tổng số review đi qua bộ lọc công khai, hoặc 0 nếu truy vấn lỗi.
+     */
+    public int countPublicReviews() {
+        String sql = "SELECT COUNT(*) "
+                + "FROM Reviews r "
+                + "JOIN Customer c ON c.customerID = r.customerID "
+                + PUBLIC_REVIEW_FILTER;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_OWNER.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Tính điểm rating trung bình của các review công khai.
+     *
+     * @return điểm trung bình của review công khai, hoặc 0 nếu chưa có dữ liệu.
+     */
+    public double getPublicAverageRating() {
+        String sql = "SELECT COALESCE(AVG(r.rating), 0) "
+                + "FROM Reviews r "
+                + "JOIN Customer c ON c.customerID = r.customerID "
+                + PUBLIC_REVIEW_FILTER;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RESTAURANT_OWNER.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble(1);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
     }
 
     /**
@@ -382,18 +439,35 @@ public class ReviewDAO extends DBContext {
      * @return danh sách review cho owner, kèm tên customer và sắp xếp mới nhất trước.
      */
     public List<Reviews> getAllReviewsForOwner(int offset, int limit) {
+        return getAllReviewsForOwner(offset, limit, 0);
+    }
+
+    /**
+     * Lấy danh sách review cho owner, có hỗ trợ lọc theo số sao.
+     *
+     * @param offset vị trí bắt đầu lấy dữ liệu.
+     * @param limit số lượng review tối đa cần lấy.
+     * @param ratingFilter số sao cần lọc từ 1 đến 5; truyền 0 để lấy tất cả.
+     * @return danh sách review theo bộ lọc của owner.
+     */
+    public List<Reviews> getAllReviewsForOwner(int offset, int limit, int ratingFilter) {
         List<Reviews> reviews = new ArrayList<>();
         String sql = "SELECT r.reviewID, r.customerID, r.orderID, r.rating, r.comment, "
                 + "       r.createdAt, r.isHidden, r.ownerReply, r.ownerReplyAt, "
                 + "       c.userName AS customerUserName "
                 + "FROM Reviews r "
                 + "JOIN Customer c ON c.customerID = r.customerID "
+                + (ratingFilter >= 1 && ratingFilter <= 5 ? "WHERE r.rating = ? " : "")
                 + "ORDER BY r.createdAt DESC "
                 + "LIMIT ? OFFSET ?";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, Math.max(1, limit));
-            ps.setInt(2, Math.max(0, offset));
+            int paramIndex = 1;
+            if (ratingFilter >= 1 && ratingFilter <= 5) {
+                ps.setInt(paramIndex++, ratingFilter);
+            }
+            ps.setInt(paramIndex++, Math.max(1, limit));
+            ps.setInt(paramIndex, Math.max(0, offset));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Reviews review = mapRow(rs);
@@ -415,16 +489,59 @@ public class ReviewDAO extends DBContext {
      * @return tổng số review, hoặc 0 nếu có lỗi truy vấn.
      */
     public int countAllReviews() {
-        String sql = "SELECT COUNT(*) FROM Reviews";
-        try (PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
+        return countAllReviews(0);
+    }
+
+    /**
+     * Đếm số review cho owner, có hỗ trợ lọc theo số sao.
+     *
+     * @param ratingFilter số sao cần lọc từ 1 đến 5; truyền 0 để đếm tất cả.
+     * @return tổng số review khớp bộ lọc.
+     */
+    public int countAllReviews(int ratingFilter) {
+        String sql = "SELECT COUNT(*) FROM Reviews"
+                + (ratingFilter >= 1 && ratingFilter <= 5 ? " WHERE rating = ?" : "");
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (ratingFilter >= 1 && ratingFilter <= 5) {
+                ps.setInt(1, ratingFilter);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
         return 0;
+    }
+
+    /**
+     * Đếm số lượng review theo từng mức sao để hiển thị báo cáo owner.
+     *
+     * Mảng trả về dùng index trùng với số sao: counts[1] là 1 sao, counts[5] là
+     * 5 sao. Index 0 không sử dụng.
+     *
+     * @return mảng số lượng review theo rating từ 1 đến 5.
+     */
+    public int[] countReviewsByRating() {
+        int[] counts = new int[6];
+        String sql = "SELECT rating, COUNT(*) AS total FROM Reviews "
+                + "WHERE rating BETWEEN 1 AND 5 "
+                + "GROUP BY rating";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int rating = rs.getInt("rating");
+                if (rating >= 1 && rating <= 5) {
+                    counts[rating] = rs.getInt("total");
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return counts;
     }
 
     /**

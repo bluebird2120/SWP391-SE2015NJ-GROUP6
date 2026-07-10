@@ -105,12 +105,19 @@
                 </a>
             </form>
 
-            <div class="table-card">
+            <!--bảng hiện thông tin nhân viên-->
+            <div class="table-card"> 
                 <table>
                     <thead>
                         <tr>
-                            <th>#</th><th>Photo</th><th>Full Name</th><th>Role</th>
-                            <th>Email</th><th>Phone</th><th>Status</th><th>Actions</th>
+                            <th>#</th>
+                            <th>Photo</th>
+                            <th>Full Name</th>
+                            <th>Role</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,7 +128,7 @@
                             <c:otherwise>
                                 <c:forEach var="s" items="${staffList}" varStatus="loop">
                                     <tr>
-                                        <td>${(currentPage - 1) * 5 + loop.index + 1}</td>
+                                        <td>${(currentPage - 1) * pageSize + loop.index + 1}</td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${not empty s.image}">
