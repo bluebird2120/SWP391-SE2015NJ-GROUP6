@@ -3,7 +3,7 @@ package dal;
 import model.Order;
 import model.OrderItem;
 import model.MenuItem;
-import model.OrderReservationDetail; // ĐÃ THÊM IMPORT MODEL MỚI
+import model.OrderReservationDetail;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1. TẠO ORDER MỚI (Đã gỡ bỏ hoàn toàn capacity và areaType)
+    // 1. TẠO ORDER MỚI
     // =========================================================
     public int createOrder(Order order) {
         String sql = "INSERT INTO `Order` "
@@ -71,7 +71,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1.5 BỔ SUNG: THÊM CHI TIẾT ĐẶT BÀN (Dành cho Đặt trước)
+    // 1.5 THÊM CHI TIẾT ĐẶT BÀN
     // =========================================================
     public boolean addOrderReservationDetail(OrderReservationDetail detail) {
         String sql = "INSERT INTO OrderReservationDetail (orderID, capacity, areaType, quantity) VALUES (?, ?, ?, ?)";
@@ -109,7 +109,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1.6 BỔ SUNG: LIÊN KẾT ORDER VÀ TABLE (BẢNG TRUNG GIAN)
+    // 1.6 LIÊN KẾT ORDER VÀ TABLE
     // =========================================================
     public boolean linkOrderAndTable(int orderID, int tableID) {
         String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
@@ -124,14 +124,16 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (Đã fix lỗi nhận diện bàn Đặt trước)
+    // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (Đã fix lỗi nhận diện bàn)
     // =========================================================
     public Order getActiveOrderByTableId(int tableID) {
+        // 🌟 SỬA CÂU LỆNH SQL ĐỂ BẮT ĐƯỢC ĐƠN ĐẶT TRƯỚC
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
-                + "  AND o.tableStatus IN ('occupied', 'reserved') " // 👈 Đã thêm 'reserved' vào đây
                 + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
+                + "  AND o.tableStatus IN ('reserved', 'arrived', 'occupied', 'serving', 'pending') "
+                + "  AND DATE(o.orderTime) = CURRENT_DATE "
                 + "ORDER BY o.createdAt DESC LIMIT 1";
 
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -148,8 +150,21 @@ public class OrderDAO {
         return null;
     }
 
+    // BỔ SUNG: Cập nhật trạng thái bàn cho Order (Dùng cho ScanQRController)
+    public boolean updateTableStatus(int orderID, String newStatus) {
+        String sql = "UPDATE `Order` SET tableStatus = ? WHERE orderID = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] updateTableStatus lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+
     // =========================================================
-    // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER (orderID)
+    // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER
     // =========================================================
     public Order getOrderById(int orderID) {
         String sql = "SELECT * FROM `Order` WHERE orderID = ?";
@@ -264,7 +279,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 7. LẤY DANH SÁCH MENU ITEM TƯƠNG ỨNG VỚI ORDER
+    // 7. LẤY DANH SÁCH MENU ITEM
     // =========================================================
     public List<MenuItem> getMenuItemsByOrderId(int orderID) {
         List<MenuItem> list = new ArrayList<>();
@@ -288,7 +303,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 8. LẤY DANH SÁCH OrderItem THEO DANH SÁCH orderItemID
+    // 8. LẤY DANH SÁCH OrderItem THEO IDs
     // =========================================================
     public List<OrderItem> getOrderItemsByIds(List<Integer> orderItemIDs) {
         List<OrderItem> list = new ArrayList<>();
@@ -316,7 +331,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 9. LẤY DANH SÁCH MenuItem THEO DANH SÁCH orderItemID
+    // 9. LẤY DANH SÁCH MenuItem THEO IDs
     // =========================================================
     public List<MenuItem> getMenuItemsByOrderItemIds(List<Integer> orderItemIDs) {
         List<MenuItem> list = new ArrayList<>();
@@ -347,7 +362,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: kiểm tra món đã có trong đơn (Xét cả Bàn)
+    // HELPER: kiểm tra món đã có trong đơn
     // =========================================================
     private OrderItem getOrderItemByOrderAndItemAndTable(int orderID, int itemID, Integer tableID) {
         String sql = "SELECT * FROM OrderItem WHERE orderID = ? AND itemID = ? AND (tableID = ? OR (tableID IS NULL AND ? IS NULL))";
@@ -377,7 +392,7 @@ public class OrderDAO {
     }
     
     // =========================================================
-    // 10. BỔ SUNG: CHỨC NĂNG THÊM MÓN/CỘNG DỒN CHO GIỎ HÀNG
+    // 10. CHỨC NĂNG THÊM MÓN/CỘNG DỒN CHO GIỎ HÀNG
     // =========================================================
     public boolean checkItemExistInOrder(int orderID, int itemID) {
         String sql = "SELECT * FROM OrderItem WHERE orderID = ? AND itemID = ?";
@@ -385,7 +400,7 @@ public class OrderDAO {
             ps.setInt(1, orderID);
             ps.setInt(2, itemID);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next(); // Trả về true nếu món này đã có trong giỏ
+                return rs.next();
             }
         } catch (SQLException e) {
             System.err.println("[OrderDAO] checkItemExistInOrder lỗi: " + e.getMessage());
@@ -395,7 +410,6 @@ public class OrderDAO {
 
     public void addOrUpdateOrderItem(int orderID, int itemID, int quantity, double price, String notes) {
         if (checkItemExistInOrder(orderID, itemID)) {
-            // Đã có món này -> Cộng dồn số lượng và nối ghi chú (nếu có)
             String sql = "UPDATE OrderItem SET quantity = quantity + ?, note = CONCAT(IFNULL(note,''), CASE WHEN ? != '' THEN CONCAT(' | ', ?) ELSE '' END) WHERE orderID = ? AND itemID = ?";
             try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, quantity);
@@ -408,7 +422,6 @@ public class OrderDAO {
                 System.err.println("[OrderDAO] addOrUpdateOrderItem (Update) lỗi: " + e.getMessage());
             }
         } else {
-            // Chưa có món này -> Thêm mới tinh
             String sql = "INSERT INTO OrderItem (orderID, itemID, quantity, price, note) VALUES (?, ?, ?, ?, ?)";
             try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, orderID);
@@ -423,15 +436,13 @@ public class OrderDAO {
     }
     
     // =========================================================
-    // 11. BỔ SUNG: NHÂN VIÊN XÁC NHẬN MỞ BÀN (Đổi isStaffConfirmed = 1)
+    // 11. NHÂN VIÊN XÁC NHẬN MỞ BÀN
     // =========================================================
     public boolean confirmTableOrder(int orderID) {
         String sql = "UPDATE `Order` SET isStaffConfirmed = 1 WHERE orderID = ?";
         try (Connection conn = getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-            
             ps.setInt(1, orderID);
             return ps.executeUpdate() > 0;
-            
         } catch (java.sql.SQLException e) {
             System.err.println("[OrderDAO] confirmTableOrder lỗi: " + e.getMessage());
         }
@@ -439,7 +450,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // HELPER: map ResultSet -> Order (Đã gỡ capacity và areaType)
+    // HELPER: map ResultSet -> Order
     // =========================================================
     private Order mapToOrder(ResultSet rs) throws SQLException {
         return new Order(
@@ -515,5 +526,4 @@ public class OrderDAO {
         }
         return false;
     }
-
 }

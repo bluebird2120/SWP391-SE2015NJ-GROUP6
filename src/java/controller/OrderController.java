@@ -46,6 +46,10 @@ public class OrderController extends HttpServlet {
                 List<OrderItem> dbOrderItems = orderDAO.getOrderItemsByOrderId(orderID);
                 List<MenuItem> dbMenuItems = orderDAO.getMenuItemsByOrderId(orderID);
                 
+                // Lấy thông tin đơn hàng gốc để biết tiền cọc
+                Order currentOrder = orderDAO.getOrderById(orderID); // Hãy đảm bảo bạn có hàm này trong OrderDAO
+                request.setAttribute("currentOrder", currentOrder);
+                
                 // 2. KÉO CÁC MÓN MỚI CHỌN (SESSION CART)
                 List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
                 List<MenuItem> sessionMenuItems = new ArrayList<>();
@@ -137,7 +141,8 @@ public class OrderController extends HttpServlet {
                 Order newOrder = new Order();
                 newOrder.setCustomerID(customerID);
                 newOrder.setOrderType(tableID != null ? 1 : 2); 
-                newOrder.setTableStatus(tableID != null ? "occupied" : "available");
+                // [TABLE STATUS STANDARD] Ban co khach dang phuc vu thong nhat dung 'serving'.
+                newOrder.setTableStatus(tableID != null ? "serving" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
                 newOrder.setTotalAmount(0);
@@ -253,8 +258,8 @@ public class OrderController extends HttpServlet {
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            // Forward tới checkout.jsp thay vì dùng sendRedirect
-            request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
+            // 🌟 ĐÃ SỬA: Chuyển hướng sang CheckoutController để nó tính toán tiền bạc
+            response.sendRedirect(request.getContextPath() + "/checkout");
             return;
         }
     }
