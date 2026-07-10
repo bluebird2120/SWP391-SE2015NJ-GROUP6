@@ -23,6 +23,18 @@
         .btn-primary:hover { background:#5d3a2e; }
         .form-inline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:14px; }
         select, input[type="number"] { padding:7px 10px; border:1px solid #d7bfa4; border-radius:7px; font-family:inherit; font-size:0.85rem; min-width:90px; }
+        .form-inline-error {
+            flex-basis: 100%;
+            width: 100%;
+            margin-top: 4px;
+            padding: 8px 10px;
+            border-radius: 7px;
+            border: 1px solid #f5c2c7;
+            background: #f8d7da;
+            color: #721c24;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
         .stats { color:#8a6e5a; font-size:0.85rem; }
         .calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
         .dow-head { text-align:center; font-size:0.75rem; font-weight:700; color:#a0714f; text-transform:uppercase; letter-spacing:0.05em; padding:8px 0; }
@@ -332,18 +344,21 @@
                         Tháng sau <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
-                <form method="get" action="${pageContext.request.contextPath}/staff/my-schedule" class="form-inline">
+                <form method="get" action="${pageContext.request.contextPath}/staff/my-schedule" class="form-inline" novalidate>
                     <label style="font-size:0.78rem; color:#8a6e5a; font-weight:600;">Đi tới:</label>
                     <select name="month">
                         <c:forEach var="m" begin="1" end="12">
                             <option value="${m}" ${m == month ? 'selected' : ''}>Tháng ${m}</option>
                         </c:forEach>
                     </select>
-                    <input type="number" name="year" value="${year}" min="2024" max="2100">
+                    <input type="number" name="year" value="${year}" min="2024">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Xem</button>
                     <span class="stats" style="margin-left:auto;">
                         <i class="fas fa-calendar-check"></i> ${totalShifts} ca trong tháng
                     </span>
+                    <c:if test="${not empty scheduleFilterError}">
+                        <div class="form-inline-error">${scheduleFilterError}</div>
+                    </c:if>
                 </form>
             </div>
 

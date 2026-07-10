@@ -8,18 +8,14 @@
         <title>Vận hành bàn</title>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
         <style>
-            * {
-                box-sizing: border-box;
-            }
+            * { box-sizing: border-box; }
             body {
                 margin: 0;
                 font-family: Arial, sans-serif;
                 background: #faf6f2;
                 color: #3f3028;
             }
-            .layout {
-                display: flex;
-            }
+            .layout { display: flex; }
             .content {
                 flex: 1;
                 min-width: 0;
@@ -122,9 +118,7 @@
                 color: white;
                 cursor: pointer;
             }
-            button.clean {
-                background: #176b55;
-            }
+            button.clean { background: #176b55; }
             .empty {
                 color: #927b6d;
                 padding: 18px 4px;
@@ -174,7 +168,15 @@
                 <div class="panel">
                     <table>
                         <thead>
-                            <tr><th>Đơn</th><th>Giờ đến</th><th>Loại bàn</th><th>Đã gán</th><th>Thao tác</th></tr>
+                            <%-- [PHAN QUYEN LE TAN] Hiển thị nhân viên phục vụ để lễ tân biết bàn/đơn đã được hệ thống giao cho ai. --%>
+                            <tr>
+                                <th>Đơn</th>
+                                <th>Giờ đến</th>
+                                <th>Loại bàn</th>
+                                <th>Đã gán</th>
+                                <th>Nhân viên phục vụ</th>
+                                <th>Thao tác</th>
+                            </tr>
                         </thead>
                         <tbody>
                             <c:forEach var="r" items="${reservationRequirements}">
@@ -194,8 +196,18 @@
                                     </td>
                                     <td>
                                         <c:choose>
+                                            <c:when test="${not empty r.servingEmployeeName}">
+                                                ${r.servingEmployeeName}
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="empty">Chưa có</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>
+                                        <c:choose>
                                             <c:when test="${r.remainingQuantity > 0}">
-                                                <%-- [PHAN QUYEN LE TAN] Chi le tan co form gan ban. --%>
+                                                <%-- [PHAN QUYEN LE TAN] Chỉ lễ tân/owner có form gán bàn ở màn này. --%>
                                                 <form method="post" action="${pageContext.request.contextPath}/reception/tables" class="inline">
                                                     <input type="hidden" name="action" value="assign">
                                                     <input type="hidden" name="orderID" value="${r.orderID}">
@@ -216,7 +228,7 @@
                                 </tr>
                             </c:forEach>
                             <c:if test="${empty reservationRequirements}">
-                                <tr><td colspan="5" class="empty">Không có đơn đặt trước đang chờ gán bàn.</td></tr>
+                                <tr><td colspan="6" class="empty">Không có đơn đặt trước đang chờ gán bàn.</td></tr>
                             </c:if>
                         </tbody>
                     </table>
@@ -236,9 +248,8 @@
                                     <td>${t.areaType}</td>
                                     <td><span class="badge ${t.physicalStatus}">${t.physicalStatus}</span></td>
                                     <td><c:if test="${not empty t.orderID}">#${t.orderID}</c:if></td>
-                                        <td>
-                                        <%-- Nút Dọn bàn (Giữ nguyên) --%>
-                                        <%-- [PHAN QUYEN LE TAN] Le tan khong duoc xac nhan don dep. --%>
+                                    <td>
+                                        <%-- [PHAN QUYEN LE TAN] Lễ tân không xác nhận dọn bàn ở màn này. --%>
                                         <c:if test="${false}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="cleaned">
@@ -249,8 +260,7 @@
                                                 </button>
                                             </form>
                                         </c:if>
-                                        
-                                        <%-- Nút Khách Đặt Trước đã đến (Giữ nguyên) --%>
+
                                         <c:if test="${t.physicalStatus == 'reserved'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="checkin">
@@ -262,7 +272,6 @@
                                             </form>
                                         </c:if>
 
-                                        <%-- 🌟 THÊM MỚI: NÚT XÁC NHẬN MỞ BÀN CHO KHÁCH QUÉT QR LẦN ĐẦU --%>
                                         <c:if test="${t.physicalStatus == 'pending'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="action" value="open_table">

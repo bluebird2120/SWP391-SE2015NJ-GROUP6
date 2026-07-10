@@ -62,7 +62,7 @@ public class ScanQRController extends HttpServlet {
 
                 if (activeOrder != null) {
 
-                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / OCCUPIED)
+                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / SERVING)
 
                     // 1. Kiểm tra xem người quét có phải là Host/Guest đã ở trong bàn này không
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
@@ -95,8 +95,8 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
 
-                    // Bàn đang có khách ngồi gọi món (Occupied) -> Người lạ muốn xin ghép bàn
-                    if ("occupied".equals(activeOrder.getTableStatus())) {
+                    // [TABLE STATUS STANDARD] Ban dang phuc vu dung 'serving'.
+                    if ("serving".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
