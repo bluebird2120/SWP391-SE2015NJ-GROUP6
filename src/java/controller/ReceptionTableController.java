@@ -72,7 +72,8 @@ public class ReceptionTableController extends HttpServlet {
     }
 
     private boolean openTable(int orderID) {
-        String sql = "UPDATE `Order` SET tableStatus='occupied' WHERE orderID=?";
+        // [TABLE STATUS STANDARD] Mo ban nghia la chuyen sang trang thai dang phuc vu.
+        String sql = "UPDATE `Order` SET tableStatus='serving' WHERE orderID=?";
         try (Connection conn = new DBContext().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, orderID);

@@ -134,7 +134,8 @@ public class MenuItemController extends HttpServlet {
                 } else {
                     // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG (Người đầu tiên quét)
                     Order newOrder = new Order();
-                    newOrder.setTableStatus("occupied");
+                    // [TABLE STATUS STANDARD] Ban co khach dang phuc vu thong nhat dung 'serving'.
+                    newOrder.setTableStatus("serving");
                     newOrder.setOrderType(1);
 
                     // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT

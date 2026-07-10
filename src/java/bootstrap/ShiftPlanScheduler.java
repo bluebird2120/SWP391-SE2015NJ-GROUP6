@@ -39,7 +39,7 @@ public class ShiftPlanScheduler implements ServletContextListener {
         // Chạy ngay 1 lần khi server vừa khởi động (catch-up).
         executor.execute(new ShiftPlanTask());
 
-        // Sau đó chạy daily lúc 00:05.
+        // Sau đó chạy daily lúc 00:05 (ShiftPlanTask).
         long initialDelaySec = computeInitialDelayToNextRun();
         executor.scheduleAtFixedRate(
                 new ShiftPlanTask(),
@@ -48,6 +48,18 @@ public class ShiftPlanScheduler implements ServletContextListener {
                 TimeUnit.SECONDS
         );
         System.out.println("[ShiftPlanScheduler] Started. Next run in " + initialDelaySec + "s");
+
+        // [THÔNG BÁO ĐẶT BÀN] Chạy DailyReservationNotifyTask lúc 06:00 mỗi ngày.
+        // Gom tất cả đơn đặt bàn online (orderTime = hôm nay) chưa được thông báo
+        // và gửi một thông báo tổng hợp cho toàn bộ lễ tân đang hoạt động.
+        long notifyDelaySec = computeDelayTo(6, 0);
+        executor.scheduleAtFixedRate(
+                new DailyReservationNotifyTask(),
+                notifyDelaySec,
+                TimeUnit.DAYS.toSeconds(1),    //Đổi 1 ngày ra giây
+                TimeUnit.SECONDS                        //đơn vị tính bằng giây
+        );
+        System.out.println("[ShiftPlanScheduler] DailyReservationNotifyTask scheduled. Next run in " + notifyDelaySec + "s");
     }
 
     @Override
@@ -72,9 +84,20 @@ public class ShiftPlanScheduler implements ServletContextListener {
      * Số giây từ now đến 00:05 sáng mai (theo timezone JVM).
      */
     private long computeInitialDelayToNextRun() {
+        return computeDelayTo(0, 5);
+    }
+
+    /**
+     * Số giây từ now đến giờ:phút tiếp theo (hôm nay nếu chưa qua, ngày mai nếu đã qua).
+     * Tối thiểu 60s để tránh edge case.
+     */
+    private long computeDelayTo(int hour, int minute) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next = now.toLocalDate().plusDays(1).atTime(0, 5, 0);
-        long delay = Duration.between(now, next).getSeconds();
-        return Math.max(60L, delay); // tối thiểu 60s tránh edge case ngay sát mốc
+        LocalDateTime target = now.toLocalDate().atTime(hour, minute, 0);
+        if (!now.isBefore(target)) {
+            target = target.plusDays(1); // đã qua mốc hôm nay → hẹn ngày mai
+        }
+        long delay = Duration.between(now, target).getSeconds();
+        return Math.max(60L, delay);
     }
 }

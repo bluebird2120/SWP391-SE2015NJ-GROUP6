@@ -16,92 +16,95 @@ import java.util.List;
 @WebServlet(name = "CustomerNotificationsController", urlPatterns = {"/customer/notifications"})
 public class CustomerNotificationsController extends HttpServlet {
 
-    private static final String VIEW = "/views/notifications.jsp";
     private static final int LIST_LIMIT = 50;
     private final NotificationDAO notificationDAO = new NotificationDAO();
 
+    // doGet: CHỈ hiển thị danh sách thông báo, không xử lý logic
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
+        HttpSession session = request.getSession(false);
         Customer customer = (session != null) ? (Customer) session.getAttribute("customer") : null;
         if (customer == null) {
-            resp.sendRedirect(req.getContextPath() + "/login?msg=required");
-            return;
-        }
-
-        String action = req.getParameter("action");
-        if ("readAndRedirect".equals(action)) {
-            int notifID = parseInt(req.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                // Đánh dấu đã đọc
-                notificationDAO.markRead(notifID, customer.getCustomerID(), "customer");
-                
-                // Lấy thông tin loại thông báo để chuyển hướng cho phù hợp
-                List<Notifications> list = notificationDAO.listByRecipient(customer.getCustomerID(), "customer", LIST_LIMIT);
-                Notifications found = null;
-                for (Notifications n : list) {
-                    if (n.getNotificationID() == notifID) {
-                        found = n;
-                        break;
-                    }
-                }
-                
-                if (found != null) {
-                    if ("reservation_confirmed".equals(found.getType())) {
-                        resp.sendRedirect(req.getContextPath() + "/reservation?action=history");
-                        return;
-                    } else if ("feedback_response".equals(found.getType())) {
-                        resp.sendRedirect(req.getContextPath() + "/customer/reviews");
-                        return;
-                    }
-                }
-            }
-            resp.sendRedirect(req.getContextPath() + "/customer/notifications");
+            response.sendRedirect(request.getContextPath() + "/login?msg=required");
             return;
         }
 
         List<Notifications> list = notificationDAO.listByRecipient(customer.getCustomerID(), "customer", LIST_LIMIT);
         int unread = notificationDAO.countUnread(customer.getCustomerID(), "customer");
-        
-        session.setAttribute("unreadCount", unread);
 
-        req.setAttribute("notifications", list);
-        req.setAttribute("unreadCount", unread);
-        req.getRequestDispatcher(VIEW).forward(req, resp);
+        //Nuôi header
+        session.setAttribute("unreadCount", unread);
+        request.setAttribute("notifications", list);
+        //Nuôi trang notification
+        request.setAttribute("unreadCount", unread);
+        request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
+    // doPost: xử lý TẤT CẢ action JSP gửi lên (markRead, markAllRead, readAndRedirect)
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
+        HttpSession session = request.getSession(false);
         Customer customer = (session != null) ? (Customer) session.getAttribute("customer") : null;
         if (customer == null) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+            response.sendRedirect(request.getContextPath() + "/login?msg=required");
             return;
         }
 
-        String action = req.getParameter("action");
+        String action = request.getParameter("action");
+
         if ("markRead".equals(action)) {
-            int notifID = parseInt(req.getParameter("notificationID"), 0);
+            int notifID = parseInt(request.getParameter("notificationID"), 0);
             if (notifID > 0) {
                 notificationDAO.markRead(notifID, customer.getCustomerID(), "customer");
             }
+
         } else if ("markAllRead".equals(action)) {
             notificationDAO.markAllRead(customer.getCustomerID(), "customer");
-        }
-        
-        // Cập nhật lại số lượng chưa đọc vào session
-        int unread = notificationDAO.countUnread(customer.getCustomerID(), "customer");
-        session.setAttribute("unreadCount", unread);
+        } else if ("readAndRedirect".equals(action)) {
+            // Đánh dấu đã đọc rồi chuyển đến trang liên quan
+            int notifID = parseInt(request.getParameter("notificationID"), 0);
+            if (notifID > 0) {
+                notificationDAO.markRead(notifID, customer.getCustomerID(), "customer");
 
-        resp.sendRedirect(req.getContextPath() + "/customer/notifications");
+                // Lấy thông báo để biết type mà redirect đúng trang
+                List<Notifications> list = notificationDAO.listByRecipient(customer.getCustomerID(), "customer", LIST_LIMIT);
+                for (Notifications noti : list) {
+                    if (noti.getNotificationID() == notifID) {
+                        if ("reservation_confirmed".equals(noti.getType())) {
+                            //Cập nhật số lượng tin nhắn chưa đọc trong session 
+                            updateUnread(session, customer, notificationDAO);
+                            response.sendRedirect(request.getContextPath() + "/reservation?action=history");
+                            return;
+                        } else if ("feedback_response".equals(noti.getType())) {
+                            //Cập nhật số lượng tin nhắn chưa đọc trong session 
+                            updateUnread(session, customer, notificationDAO);
+                            response.sendRedirect(request.getContextPath() + "/customer/reviews");
+                            return;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        updateUnread(session, customer, notificationDAO);
+        response.sendRedirect(request.getContextPath() + "/customer/notifications");
     }
 
-    private static int parseInt(String s, int def) {
-        if (s == null || s.isBlank()) return def;
+    // Cập nhật unreadCount vào session sau mỗi action
+    private void updateUnread(HttpSession session, Customer customer, NotificationDAO dao) {
+        int unread = dao.countUnread(customer.getCustomerID(), "customer");
+        session.setAttribute("unreadCount", unread);
+    }
+
+    private static int parseInt(String str, int def) {
+        if (str == null || str.isBlank()) {
+            return def;
+        }
         try {
-            return Integer.parseInt(s);
+            return Integer.parseInt(str);
         } catch (NumberFormatException e) {
             return def;
         }

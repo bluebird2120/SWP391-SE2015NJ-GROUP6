@@ -10,12 +10,12 @@ import java.io.IOException;
 @WebServlet(name = "UnauthorizedController", urlPatterns = {"/unauthorized"})
 public class UnauthorizedController extends HttpServlet {
 
-@Override
-protected void doGet(HttpServletRequest request,
-        HttpServletResponse response)
-        throws ServletException, IOException {
+    @Override
+    protected void doGet(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
 
-    request.getRequestDispatcher("/views/error/403.jsp")
-            .forward(request, response);
-}
+        request.getRequestDispatcher("/views/error/403.jsp")
+                .forward(request, response);
+    }
 }

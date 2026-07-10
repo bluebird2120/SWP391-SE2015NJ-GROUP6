@@ -337,14 +337,13 @@
     </a>
 
     <nav class="navbar">
-        <a href="${pageContext.request.contextPath}/views/template/about.jsp">Giới thiệu</a>
-        <a href="#">Thực đơn</a>
+        <a href="${pageContext.request.contextPath}/page/about">Giới thiệu</a>
+        <a href="${pageContext.request.contextPath}/page/menu">Thực đơn</a>
         <c:if test="${sessionScope.employee == null}">
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
         <a href="${pageContext.request.contextPath}/reviews">Đánh giá</a>
-        <a href="#">Album ảnh</a>
-        <a href="#">Liên hệ</a>
+        <a href="${pageContext.request.contextPath}/page/album">Album ảnh</a>
         <c:if test="${sessionScope.employee != null}">
             <%-- [PHAN QUYEN LE TAN] Dieu huong dung man hinh theo role. --%>
             <a href="${pageContext.request.contextPath}${sessionScope.employee.roleID == 1 ? '/owner/dashboard' : '/staff/dashboard'}">
@@ -392,7 +391,6 @@
                         <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                         <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
-                        <a href="${pageContext.request.contextPath}/customer/orders"><i class="fa-solid fa-receipt"></i>Lịch sử đặt món</a>
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/customer/reviews"><i class="fa-solid fa-star"></i>Đánh giá của tôi</a>
@@ -468,4 +466,30 @@
             document.querySelectorAll('.user-menu').forEach(m => m.classList.remove('open'));
         }
     });
+
+    setInterval(function () {
+    fetch('${pageContext.request.contextPath}/api/unread-count')
+        .then(res => res.json())
+        .then(data => {
+            const badge = document.querySelector('.notif-count');
+            if (data.unread > 0) {
+                if (badge) {
+                    badge.textContent = data.unread;
+                    badge.style.display = 'flex';
+                } else {
+                    // Chưa có badge → tạo mới và gắn vào nút bell
+                    const btn = document.querySelector('.notif-btn');
+                    if (btn) {
+                        const span = document.createElement('span');
+                        span.className = 'notif-count';
+                        span.textContent = data.unread;
+                        btn.appendChild(span);
+                    }
+                }
+            } else {
+                if (badge) badge.style.display = 'none';
+            }
+        })
+        .catch(() => {});
+}, 30000);
 </script>
