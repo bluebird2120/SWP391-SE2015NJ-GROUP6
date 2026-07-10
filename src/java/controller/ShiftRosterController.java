@@ -106,9 +106,9 @@ public class ShiftRosterController extends HttpServlet {
         ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
 
         // Nếu DB lỗi, vẫn set đủ attribute rỗng để JSP render được và hiện lỗi rõ ràng.
-        if (!empDao.isConnectionAvailable() || !tplDao.isConnectionAvailable()
-                || !shiftDao.isConnectionAvailable() || !planDao.isConnectionAvailable()
-                || !requestDAO.isConnectionAvailable()) {
+        if (empDao.getConnection() == null || tplDao.getConnection() == null
+                || shiftDao.getConnection() == null || planDao.getConnection() == null
+                || requestDAO.getConnection() == null) {
             req.setAttribute("date", date.toString());
             req.setAttribute("today", LocalDate.now().toString());
             req.setAttribute("staffList", Collections.emptyList());
