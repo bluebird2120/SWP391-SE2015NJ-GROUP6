@@ -173,20 +173,20 @@
             var errors = [];
 
             // Kiểm tra qua đêm (endTime <= startTime)
-            if (endMin <= startMin) {
-                errors.push('Ca làm đêm (qua nửa đêm) không được hỗ trợ — giờ kết thúc phải sau giờ bắt đầu.');
-            } else {
-                // Kiểm tra khung giờ ban đêm
-                if (startMin < dayStartMin) {
-                    errors.push('Giờ bắt đầu không được trước 06:00 (ca đêm không hỗ trợ).');
-                }
-                if (startMin >= nightStartMin) {
-                    errors.push('Giờ bắt đầu không được từ 22:00 trở đi (ca đêm không hỗ trợ).');
-                }
-                if (endMin > nightStartMin) {
-                    errors.push('Giờ kết thúc không được sau 22:00 (ca đêm không hỗ trợ).');
-                }
-            }
+//            if (endMin <= startMin) {
+//                errors.push('Ca làm đêm (qua nửa đêm) không được hỗ trợ — giờ kết thúc phải sau giờ bắt đầu.');
+//            } else {
+//                // Kiểm tra khung giờ ban đêm
+//                if (startMin < dayStartMin) {
+//                    errors.push('Giờ bắt đầu không được trước 06:00 (ca đêm không hỗ trợ).');
+//                }
+//                if (startMin >= nightStartMin) {
+//                    errors.push('Giờ bắt đầu không được từ 22:00 trở đi (ca đêm không hỗ trợ).');
+//                }
+//                if (endMin > nightStartMin) {
+//                    errors.push('Giờ kết thúc không được sau 22:00 (ca đêm không hỗ trợ).');
+//                }
+//            }
 
             if (errors.length > 0) {
                 e.preventDefault();
