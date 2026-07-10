@@ -9,15 +9,17 @@ import java.util.List;
 import model.CookingMethod;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+
 /**
  *
  * @author Admin
  */
-public class CookingMethodDAO extends DBContext{
-    
-    public List<CookingMethod> getAllCookingMethod(){
+public class CookingMethodDAO extends DBContext {
+
+    public List<CookingMethod> getAllCookingMethod() {
         List<CookingMethod> list = new ArrayList<>();
-        String sql = "select * from CookingMethod";
+        String sql = "select * from CookingMethod "
+                + "where isAvailable = 1";
 
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
@@ -26,6 +28,7 @@ public class CookingMethodDAO extends DBContext{
             while (rs.next()) {
                 CookingMethod cm = new CookingMethod(
                         rs.getInt("methodID"),
+                        rs.getInt("isAvailable"),
                         rs.getString("methodName"));
                 list.add(cm);
             }
@@ -35,44 +38,61 @@ public class CookingMethodDAO extends DBContext{
         }
         return list;
     }
-    
-    public int countSearchMethod(String search){
+
+    public int countSearchMethod(String search, int isAvailable) {
         int total = 0;
-        String sql = "select count(*) from CookingMethod "
-                + "where methodName like ?";
+        String sql = "select count(*) from CookingMethod where methodName like ?";
+        if(isAvailable >= 0){
+            sql += " and isAvailable = ?";
+        }
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, "%" + search + "%");
+            if (isAvailable >= 0) {
+                ps.setInt(2, isAvailable);
+            }
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return total = rs.getInt(1);
+                total = rs.getInt(1);
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return total;
     }
-    
-    public List<CookingMethod> searchMethodPaging(String search, int offset, int pageSize) {
+
+    public List<CookingMethod> searchMethodPaging(String search, int isAvailable, int offset, int pageSize) {
         List<CookingMethod> list = new ArrayList<>();
-        String sql = "select * from CookingMethod "
-                + "where methodName like ? "
-                + "LIMIT ?, ?";
+        String sql = "select * from CookingMethod where methodName like ?";
+        if (isAvailable >= 0) {
+            sql += " and isAvailable = ?";
+        }
+        sql += " LIMIT ?, ?";
+        
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, "%" + search + "%");
-            ps.setInt(2, offset);
-            ps.setInt(3, pageSize);
+            int index = 1;
+            ps.setString(index++, "%" + search + "%");
+            if (isAvailable >= 0) {
+                ps.setInt(index++, isAvailable);
+            }
+            ps.setInt(index++, offset);
+            ps.setInt(index++, pageSize);
+            
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                CookingMethod cookingMethod = new CookingMethod(rs.getInt("methodID"), rs.getString("methodName"));
+                CookingMethod cookingMethod = new CookingMethod();
+                cookingMethod.setMethodID(rs.getInt("methodID"));
+                cookingMethod.setMethodName(rs.getString("methodName"));
+                cookingMethod.setIsAvailable(rs.getInt("isAvailable"));
                 list.add(cookingMethod);
             }
-
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return list;
     }
-    
+
     public int countMethodByStatus(int methodID, int isAvailable) {
         String sql = "select count(*) from MenuItem "
                 + "where methodID = ? and isAvailable = ?";
@@ -88,7 +108,7 @@ public class CookingMethodDAO extends DBContext{
         }
         return 0;
     }
-    
+
     public int countDishByMethod(int methodID) {
         String sql = "select count(*) from MenuItem "
                 + "where methodID = ?";
@@ -103,22 +123,34 @@ public class CookingMethodDAO extends DBContext{
         }
         return 0;
     }
-    
-    public boolean changeStatusMethod(int methodID, int isAvailable){
-        String sql = "update MenuItem "
-                + "set isAvailable = ? "
-                + "where methodID = ?";
+
+    public boolean changeStatusMethod(int methodID, int isAvailable) {
+        String sql = "UPDATE CookingMethod SET isAvailable = ? WHERE methodID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, isAvailable);
             ps.setInt(2, methodID);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
-    
-    public boolean updateMethod(String methodName, int methodID){
+
+    public boolean changeStatusItemsByMethod(int methodID, int isAvailable) {
+        String sql = "UPDATE MenuItem SET isAvailable = ? WHERE methodID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, isAvailable);
+            ps.setInt(2, methodID);
+            return ps.executeUpdate() >= 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateMethod(String methodName, int methodID) {
         String sql = "update CookingMethod "
                 + "set methodName = ? "
                 + "where methodID = ?";
@@ -131,7 +163,7 @@ public class CookingMethodDAO extends DBContext{
         }
         return false;
     }
-    
+
     public boolean insertMethod(String methodName) {
         String sql = "insert into CookingMethod (methodName) "
                 + "values(?)";
@@ -143,8 +175,8 @@ public class CookingMethodDAO extends DBContext{
         }
         return false;
     }
-    
-    public boolean checkDuplicateMethod(String methodName, int methodID){
+
+    public boolean checkDuplicateMethod(String methodName, int methodID) {
         String sql = "select count(*) from CookingMethod "
                 + "where methodName = ? and methodID != ?";
         try {

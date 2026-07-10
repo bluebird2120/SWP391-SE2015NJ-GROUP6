@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import model.Notifications;
 import model.Order;
 import model.OrderReservationDetail;
 
@@ -19,9 +20,8 @@ public class OrderDAOSon extends DBContext {
     public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
 
     /**
-     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. 
-       
-     * tại OrderReservationDetail.
+     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. * tại
+     * OrderReservationDetail.
      */
     public int createReservation(int customerID, Timestamp orderTime,
             List<OrderReservationDetail> details, Integer depositAmount) {
@@ -253,11 +253,10 @@ public class OrderDAOSon extends DBContext {
     }
 
     /**
-     * Đồng bộ đơn giữ bàn với hóa đơn do module thanh toán quản lý.
-     * - paid: xác nhận giữ bàn.
-     * - paid: xác nhận giữ bàn.
-     * - chưa paid và hết thời gian giữ: xóa dữ liệu giữ chỗ tạm.
-     * - cancelled chưa paid do luồng cũ/TableDAO tạo: cũng được dọn.
+     * Đồng bộ đơn giữ bàn với hóa đơn do module thanh toán quản lý. - paid: xác
+     * nhận giữ bàn. - paid: xác nhận giữ bàn. - chưa paid và hết thời gian giữ:
+     * xóa dữ liệu giữ chỗ tạm. - cancelled chưa paid do luồng cũ/TableDAO tạo:
+     * cũng được dọn.
      */
     public int synchronizeDepositStatus() {
         String confirmSql
@@ -289,18 +288,91 @@ public class OrderDAOSon extends DBContext {
                 + "  ) FOR UPDATE";
 
         int changed = 0;
+        //Notification
         try {
             connection.setAutoCommit(false);
+
+            // ── [BƯỚC 1] Lấy trước danh sách orderID SẮP được confirm trong lần này.
+            //    Phải query TRƯỚC khi UPDATE để chỉ lấy đúng đơn mới, không lặp đơn cũ.
+            //    - Chỉ lấy đơn HÔM NAY để thông báo ngay.
+            //    - Đơn TƯƠNG LAI: DailyReservationNotifyTask xử lý vào đúng ngày lúc 06:00.
+            String pendingTodaySql
+                    = "SELECT o.orderID, o.customerID "
+                    + "FROM `Order` o "
+                    + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                    + "WHERE o.orderType = 1 "
+                    + "  AND o.orderStatus = 'pending' " // chưa confirm → sẽ được UPDATE
+                    + "  AND i.status = 'paid' "
+                    + "  AND DATE(o.orderTime) = CURDATE()"; // chỉ đơn HÔM NAY
+            List<Integer> newlyConfirmedTodayIDs = new ArrayList<>();
+            // Map orderID → customerID để thông báo cho đúng customer
+            java.util.Map<Integer, Integer> orderCustomerMap = new java.util.LinkedHashMap<>();
+            try (PreparedStatement ps0
+                    = connection.prepareStatement(pendingTodaySql); ResultSet rs0 = ps0.executeQuery()) {
+                while (rs0.next()) {
+                    int oID = rs0.getInt("orderID");
+                    int cID = rs0.getInt("customerID");
+                    newlyConfirmedTodayIDs.add(oID);
+                    orderCustomerMap.put(oID, cID);
+                }
+            }
+
+            // ── [BƯỚC 2] Thực hiện UPDATE xác nhận cọc ──────────────────────
+            int confirmed = 0;
             try (PreparedStatement confirmPs
                     = connection.prepareStatement(confirmSql)) {
-                changed += confirmPs.executeUpdate();
+                confirmed = confirmPs.executeUpdate();
+                changed += confirmed;
+            }
+
+            // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
+            //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
+            //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
+            if (confirmed > 0 && !newlyConfirmedTodayIDs.isEmpty()) {
+                String receptionistSql
+                        = "SELECT employeeID FROM Employee "
+                        + "WHERE roleID = 3 AND isActive = 1";
+                List<Integer> receptionistIDs = new ArrayList<>();
+                try (PreparedStatement rps
+                        = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
+                    while (rrs.next()) {
+                        receptionistIDs.add(rrs.getInt("employeeID"));
+                    }
+                }
+
+                NotificationDAO notifDAO = new NotificationDAO();
+                for (int oID : newlyConfirmedTodayIDs) {
+                    // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
+                    for (int recID : receptionistIDs) {
+                        Notifications n = new Notifications();
+                        n.setRecipientID(recID);
+                        n.setRecipientType("staff");
+                        n.setType("reservation_needs_table");
+                        n.setMessage("Đơn đặt bàn online #" + oID
+                                + " vừa thanh toán cọc thành công, cần gán bàn hôm nay.");
+                        n.setIsRead(0);
+                        notifDAO.insert(n);
+                    }
+
+                    // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
+                    Integer customerID = orderCustomerMap.get(oID);
+                    if (customerID != null) {
+                        Notifications nc = new Notifications();
+                        nc.setRecipientID(customerID);
+                        nc.setRecipientType("customer");
+                        nc.setType("reservation_confirmed");
+                        nc.setMessage("Đặt bàn thành công! Đơn #" + oID
+                                + " đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
+                        nc.setIsRead(0);
+                        notifDAO.insert(nc);
+                    }
+                }
             }
 
             List<Integer> orderIDs = new ArrayList<>();
             List<Integer> invoiceIDs = new ArrayList<>();
             try (PreparedStatement ps
-                    = connection.prepareStatement(cleanupCandidatesSql);
-                    ResultSet rs = ps.executeQuery()) {
+                    = connection.prepareStatement(cleanupCandidatesSql); ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     orderIDs.add(rs.getInt("orderID"));
                     invoiceIDs.add((Integer) rs.getObject("invoiceID"));
@@ -326,9 +398,9 @@ public class OrderDAOSon extends DBContext {
     }
 
     /**
-     * [UNPAID RESERVATION CLEANUP]
-     * Xóa toàn bộ dữ liệu của một lượt giữ bàn chưa thanh toán.
-     * Phương thức này phải được gọi bên trong transaction sau khi Order đã khóa.
+     * [UNPAID RESERVATION CLEANUP] Xóa toàn bộ dữ liệu của một lượt giữ bàn
+     * chưa thanh toán. Phương thức này phải được gọi bên trong transaction sau
+     * khi Order đã khóa.
      */
     private boolean deleteUnpaidReservationData(
             int orderID, Integer invoiceID) throws Exception {

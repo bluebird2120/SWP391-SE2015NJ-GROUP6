@@ -3,7 +3,9 @@ package model;
 public class MenuCategory {
 
     private int categoryID;
+    private int isAvailable;
     private String categoryName;
+    
     private int activeMenuItem;
     private int inactiveMenuItem;
     private int totalDish;
@@ -26,8 +28,9 @@ public class MenuCategory {
         this.inactiveMenuItem = inactiveMenuItem;
     }
 
-    public MenuCategory(int categoryID, String categoryName) {
+    public MenuCategory(int categoryID, int isAvailable, String categoryName) {
         this.categoryID = categoryID;
+        this.isAvailable = isAvailable;
         this.categoryName = categoryName;
     }
 
@@ -70,6 +73,13 @@ public class MenuCategory {
     public void setTotalDish(int totalDish) {
         this.totalDish = totalDish;
     }
-    
+
+    public int getIsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable(int isAvailable) {
+        this.isAvailable = isAvailable;
+    }
     
 }

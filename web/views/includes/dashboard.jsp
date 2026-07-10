@@ -257,7 +257,7 @@
             <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Tài chính</div></li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/invoice?action=list">
+                   href="${pageContext.request.contextPath}/owner/invoices">
                     <i class="fas fa-file-invoice"></i> Hóa đơn
                 </a>
             </li>
