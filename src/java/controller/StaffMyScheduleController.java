@@ -77,7 +77,7 @@ public class StaffMyScheduleController extends HttpServlet {
         EmployeeDAO employeeDAO = new EmployeeDAO();
 
         // Nếu database không kết nối được thì vẫn forward JSP với dữ liệu rỗng và lỗi rõ ràng.
-        if (!shiftDAO.isConnectionAvailable() || !requestDAO.isConnectionAvailable() || !employeeDAO.isConnectionAvailable()) {
+        if (shiftDAO.getConnection() == null || requestDAO.getConnection() == null || employeeDAO.getConnection() == null) {
             setEmptyScheduleAttributes(req, year, month, ym, "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
             req.getRequestDispatcher(VIEW).forward(req, resp);
             return;
@@ -188,7 +188,7 @@ public class StaffMyScheduleController extends HttpServlet {
         }
 
         ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
-        if (!requestDAO.isConnectionAvailable()) {
+        if (requestDAO.getConnection() == null) {
             session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
             resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
             return;
@@ -212,7 +212,7 @@ public class StaffMyScheduleController extends HttpServlet {
                 if ("acceptCoverRequest".equals(action)) {
                     // Nhận làm thay: kiểm tra nhân viên nhận không có ca khác cùng ngày.
                     EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-                    if (!esDAO.isConnectionAvailable()) {
+                    if (esDAO.getConnection() == null) {
                         session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                         resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                         return;
@@ -301,7 +301,7 @@ public class StaffMyScheduleController extends HttpServlet {
         try {
             int requesterShiftID = Integer.parseInt(requesterShiftStr);
             EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-            if (!esDAO.isConnectionAvailable()) {
+            if (esDAO.getConnection() == null) {
                 session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                 resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                 return;
@@ -347,7 +347,7 @@ public class StaffMyScheduleController extends HttpServlet {
                 }
                 int targetEmployeeID = Integer.parseInt(targetEmployeeStr);
                 EmployeeDAO employeeDAO = new EmployeeDAO();
-                if (!employeeDAO.isConnectionAvailable()) {
+                if (employeeDAO.getConnection() == null) {
                     session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;

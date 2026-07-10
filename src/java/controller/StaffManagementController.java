@@ -54,7 +54,7 @@ public class StaffManagementController extends HttpServlet {
      */
     private static final String LIST_VIEW = "/views/owner/staff-list.jsp";
     private static final String FORM_VIEW = "/views/owner/staff-form.jsp";
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 5;
     private static final String UPLOAD_DIR = "uploads/staff";
     private static final long MAX_PROFILE_IMAGE_SIZE = 2L * 1024 * 1024;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,10}$");

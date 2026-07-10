@@ -112,10 +112,6 @@
     </div>
     <%@ include file="/views/includes/footer.jsp" %>
     <script>
-        // === Cấu hình giờ hợp lệ (ca ban ngày) ===
-        var NIGHT_START_H = 22; // từ 22:00 trở đi là đêm
-        var DAY_START_H   = 6;  // trước 06:00 là đêm
-
         // Sync hidden input từ 2 select (giờ + phút)
         function syncTime(prefix) {
             var h = document.getElementById(prefix + 'Hour').value;
@@ -141,14 +137,7 @@
             if (mSel) mSel.value = mRound;
         }
 
-        // Chuyển "HH:mm" thành số phút từ 00:00
-        function toMinutes(hhmm) {
-            var p = hhmm.split(':');
-            return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-        }
-
-        // Kiểm tra ca đêm trước khi submit
-        function validateNightShift(e) {
+        function validateShiftForm(e) {
             clearClientErrors();
             var nameEl = document.querySelector('input[name="shiftName"]');
             if (nameEl && !nameEl.value.trim()) {
@@ -156,49 +145,11 @@
                 showFieldError('shiftNameClientError', 'Tên ca không được để trống.');
                 return;
             }
-
-            var startEl = document.getElementById('startTime');
-            var endEl   = document.getElementById('endTime');
-            if (!startEl || !endEl) return; // disabled fields – server will validate
-
-            var startVal = startEl.value;
-            var endVal   = endEl.value;
-            if (!startVal || !endVal) return;
-
-            var startMin = toMinutes(startVal);
-            var endMin   = toMinutes(endVal);
-            var nightStartMin = NIGHT_START_H * 60; // 1320
-            var dayStartMin   = DAY_START_H   * 60; // 360
-
-            var errors = [];
-
-            // Kiểm tra qua đêm (endTime <= startTime)
-//            if (endMin <= startMin) {
-//                errors.push('Ca làm đêm (qua nửa đêm) không được hỗ trợ — giờ kết thúc phải sau giờ bắt đầu.');
-//            } else {
-//                // Kiểm tra khung giờ ban đêm
-//                if (startMin < dayStartMin) {
-//                    errors.push('Giờ bắt đầu không được trước 06:00 (ca đêm không hỗ trợ).');
-//                }
-//                if (startMin >= nightStartMin) {
-//                    errors.push('Giờ bắt đầu không được từ 22:00 trở đi (ca đêm không hỗ trợ).');
-//                }
-//                if (endMin > nightStartMin) {
-//                    errors.push('Giờ kết thúc không được sau 22:00 (ca đêm không hỗ trợ).');
-//                }
-//            }
-
-            if (errors.length > 0) {
-                e.preventDefault();
-                showClientError(errors.join('\n'));
-            }
         }
 
         function clearClientErrors() {
             var nameErr = document.getElementById('shiftNameClientError');
             if (nameErr) nameErr.textContent = '';
-            var existing = document.getElementById('client-night-err');
-            if (existing) existing.remove();
         }
 
         function showFieldError(id, msg) {
@@ -209,24 +160,11 @@
             }
         }
 
-        function showClientError(msg) {
-            var existing = document.getElementById('client-night-err');
-            if (existing) existing.remove();
-            var div = document.createElement('div');
-            div.id = 'client-night-err';
-            div.className = 'alert alert-error';
-            div.style.whiteSpace = 'pre-line';
-            div.textContent = msg;
-            var card = document.querySelector('.form-card');
-            card.insertBefore(div, card.firstChild);
-            div.scrollIntoView({behavior:'smooth', block:'start'});
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
             initPicker('start');
             initPicker('end');
             var form = document.querySelector('form');
-            if (form) form.addEventListener('submit', validateNightShift);
+            if (form) form.addEventListener('submit', validateShiftForm);
         });
     </script>
 </body>
