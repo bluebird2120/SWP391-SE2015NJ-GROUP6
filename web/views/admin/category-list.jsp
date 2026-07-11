@@ -247,7 +247,7 @@
             .modal-box input[type="text"] {
                 width: 100%;
                 padding: 10px;
-                margin: 12px 0 5px 0; /* Thu hẹp margin-bottom để chỗ cho thẻ báo lỗi nhỏ */
+                margin: 12px 0 5px 0;
                 border: 1px solid #d1d5db;
                 border-radius: 6px;
                 font-size: 14px;
@@ -280,6 +280,14 @@
                 margin-bottom: 10px;
                 display: block;
             }
+            .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                font-size: 14px;
+                outline: none;
+                background-color: white;
+            }
         </style>
     </head>
     <body>
@@ -297,6 +305,12 @@
 
                     <form id="searchForm" action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
                         <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
+
+                        <select name="isAvailable" class="filter-select" onchange="document.getElementById('searchForm').submit();">
+                            <option value="-1" ${currentAvailable == -1 ? 'selected' : ''}>TẤT CẢ</option>
+                            <option value="1" ${currentAvailable == 1 ? 'selected' : ''}>HOẠT ĐỘNG</option>
+                            <option value="0" ${currentAvailable == 0 ? 'selected' : ''}>TẠM NGƯNG</option>
+                        </select>
                         <button type="submit" class="btn-search">Tìm kiếm</button>
                     </form>
 
@@ -336,8 +350,10 @@
                                             <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${param.search}" name="search"/>
+                                            <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
+
                                             <c:choose>
-                                                <c:when test="${cat.activeMenuItem > 0}">
+                                                <c:when test="${cat.activeMenuItem > 0 || cat.isAvailable == 1}">
                                                     <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
                                                 </c:when>
                                                 <c:otherwise>
@@ -355,8 +371,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${param.search}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${param.search}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${param.search}&isAvailable=${currentAvailable}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${param.search}&isAvailable=${currentAvailable}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -368,8 +384,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${param.search}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${param.search}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${param.search}&isAvailable=${currentAvailable}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${param.search}&isAvailable=${currentAvailable}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -416,13 +432,13 @@
             function openEditModal(id, name) {
                 document.getElementById('modalCategoryID').value = id;
                 document.getElementById('modalCategoryName').value = name;
-                document.getElementById('editErrorName').innerHTML = ""; // Reset lỗi cũ
+                document.getElementById('editErrorName').innerHTML = "";
                 document.getElementById('editModal').style.display = "block";
             }
 
             function openCreateModal() {
                 document.getElementById('createCategoryName').value = "";
-                document.getElementById('createErrorName').innerHTML = ""; // Reset lỗi cũ
+                document.getElementById('createErrorName').innerHTML = "";
                 document.getElementById('createModal').style.display = "block";
             }
 
@@ -448,25 +464,22 @@
                 return true;
             }
 
-            // Gắn sự kiện submit cho form tạo mới
             document.getElementById("createForm").onsubmit = function (event) {
                 const input = document.getElementById("createCategoryName");
                 const error = document.getElementById("createErrorName");
                 if (!validateFormInput(input, error)) {
-                    event.preventDefault(); // Chặn submit lên servlet
+                    event.preventDefault();
                 }
             };
 
-            // Gắn sự kiện submit cho form chỉnh sửa
             document.getElementById("editForm").onsubmit = function (event) {
                 const input = document.getElementById("modalCategoryName");
                 const error = document.getElementById("editErrorName");
                 if (!validateFormInput(input, error)) {
-                    event.preventDefault(); // Chặn submit lên servlet
+                    event.preventDefault();
                 }
             };
 
-            // Kiểm tra thêm form thanh tìm kiếm
             document.getElementById("searchForm").onsubmit = function (event) {
                 const searchVal = this.elements["search"].value;
                 if (searchVal.length > 100) {

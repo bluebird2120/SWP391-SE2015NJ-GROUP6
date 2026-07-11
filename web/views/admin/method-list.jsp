@@ -280,6 +280,14 @@
                 margin-bottom: 10px;
                 display: block;
             }
+            .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                font-size: 14px;
+                outline: none;
+                background-color: white;
+            }
         </style>
     </head>
     <body>
@@ -297,10 +305,15 @@
 
                     <form id="searchForm" action="${pageContext.request.contextPath}/method-management" method="get" class="search-container">
                         <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm cách chế biến..." class="search-input"/>
+
+                        <select name="isAvailable" class="filter-select">
+                            <option value="-1" ${currentAvailable == -1 ? 'selected' : ''}>TẤT CẢ</option>
+                            <option value="1" ${currentAvailable == 1 ? 'selected' : ''}>HOẠT ĐỘNG</option>
+                            <option value="0" ${currentAvailable == 0 ? 'selected' : ''}>TẠM NGƯNG</option>
+                        </select>
                         <button type="submit" class="btn-search">Tìm kiếm</button>
                     </form>
 
-                    <%-- 🌟 ĐÃ THÊM: Khu vực hứng thông báo Flash Attribute từ Servlet điều hướng sang --%>
                     <c:if test="${not empty updateSuccess}">
                         <div class="success-message">✅ <b>Thành công:</b> ${updateSuccess}</div>
                     </c:if>
@@ -337,8 +350,11 @@
                                             <input type="hidden" value="${method.methodID}" name="methodID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${param.search}" name="search"/>
+
+                                            <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
+
                                             <c:choose>
-                                                <c:when test="${method.activeMenuItem > 0}">
+                                                <c:when test="${method.activeMenuItem > 0 || method.isAvailable == 1}">
                                                     <button class="btn-table btn-disable" type="submit" name="status" value="0">VÔ HIỆU HÓA</button>
                                                 </c:when>
                                                 <c:otherwise>
@@ -356,8 +372,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/method-management?page=1&search=${param.search}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage - 1}&search=${param.search}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=1&search=${param.search}&isAvailable=${currentAvailable}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage - 1}&search=${param.search}&isAvailable=${currentAvailable}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -369,8 +385,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage + 1}&search=${param.search}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${totalPage}&search=${param.search}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage + 1}&search=${param.search}&isAvailable=${currentAvailable}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/method-management?page=${totalPage}&search=${param.search}&isAvailable=${currentAvailable}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -417,13 +433,13 @@
             function openEditModal(id, name) {
                 document.getElementById('modalMethodID').value = id;
                 document.getElementById('modalMethodName').value = name;
-                document.getElementById('editErrorName').innerHTML = ""; // Reset thông tin báo lỗi cũ
+                document.getElementById('editErrorName').innerHTML = "";
                 document.getElementById('editModal').style.display = "block";
             }
 
             function openCreateModal() {
                 document.getElementById('createMethodName').value = "";
-                document.getElementById('createErrorName').innerHTML = ""; // Reset thông tin báo lỗi cũ
+                document.getElementById('createErrorName').innerHTML = "";
                 document.getElementById('createModal').style.display = "block";
             }
 
@@ -435,7 +451,6 @@
                 document.getElementById('createModal').style.display = "none";
             }
 
-            //ĐỒNG BỘ HOÀN TOÀN BIỆN PHÁP CHẶN LỖI CHUỖI KÝ TỰ Ở FRONTEND
             function validateMethodInput(inputElement, errorElement) {
                 const value = inputElement.value.trim();
                 if (value === "") {
@@ -450,7 +465,6 @@
                 return true;
             }
 
-            // Chặn form Thêm mới khi gõ sai quy định
             document.getElementById("createForm").onsubmit = function (event) {
                 const input = document.getElementById("createMethodName");
                 const error = document.getElementById("createErrorName");
@@ -459,7 +473,6 @@
                 }
             };
 
-            // Chặn form Cập nhật khi gõ sai quy định
             document.getElementById("editForm").onsubmit = function (event) {
                 const input = document.getElementById("modalMethodName");
                 const error = document.getElementById("editErrorName");
@@ -468,7 +481,6 @@
                 }
             };
 
-            // Kiểm tra bộ lọc thanh tìm kiếm
             document.getElementById("searchForm").onsubmit = function (event) {
                 const searchVal = this.elements["search"].value;
                 if (searchVal.length > 100) {

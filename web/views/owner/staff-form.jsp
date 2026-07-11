@@ -80,12 +80,12 @@
                     <div class="row">
                         <div class="form-group ${not empty errors['fullName'] ? 'has-error' : ''}">
                             <label>Full Name <span class="required">*</span></label>
-                            <input type="text" name="fullName" value="${staff.fullName}" maxlength="150" autocomplete="off" required>
+                            <input type="text" name="fullName" value="${staff.fullName}" maxlength="150" autocomplete="off">
                             <div class="err-msg" id="fullNameError">${errors['fullName']}</div>
                         </div>
                         <div class="form-group ${not empty errors['email'] ? 'has-error' : ''}">
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="off" required>
+                            <input type="email" name="email" value="${staff.email}" placeholder="abc1122@gmail.com" maxlength="150" autocomplete="off">
                             <div class="err-msg" id="emailError">${errors['email']}</div>
                         </div>
                     </div>
@@ -93,7 +93,7 @@
                     <%-- [PHAN QUYEN NHAN SU] Owner chi chon Phuc vu hoac Le tan. --%>
                     <div class="form-group ${not empty errors['roleID'] ? 'has-error' : ''}">
                         <label>Role <span class="required">*</span></label>
-                        <select name="roleID" required>
+                        <select name="roleID">
                             <option value="2" ${empty staff.roleID || staff.roleID == 2 ? 'selected' : ''}>
                                 Nhân viên phục vụ
                             </option>
@@ -109,12 +109,12 @@
                     <div class="row">
                         <div class="form-group ${not empty errors['phoneNumber'] ? 'has-error' : ''}">
                             <label>Phone Number <span class="required">*</span></label>
-                            <input type="text" name="phoneNumber" value="${staff.phoneNumber}" maxlength="20" placeholder="0901234567" autocomplete="off" required>
+                            <input type="text" name="phoneNumber" value="${staff.phoneNumber}" maxlength="20" placeholder="0901234567" autocomplete="off">
                             <div class="err-msg" id="phoneNumberError">${errors['phoneNumber']}</div>
                         </div>
                         <div class="form-group ${not empty errors['dob'] ? 'has-error' : ''}">
                             <label>Date of Birth <c:if test="${mode != 'edit'}"><span class="required">*</span></c:if></label>
-                            <input type="date" name="dob" value="${dobValue != null ? dobValue : staff.dob}" ${mode != 'edit' ? 'required' : ''}>
+                            <input type="date" name="dob" value="${dobValue != null ? dobValue : staff.dob}">
                             <div class="err-msg" id="dobError">${errors['dob']}</div>
                         </div>
                     </div>
@@ -122,7 +122,7 @@
                     <c:if test="${mode != 'edit'}">
                         <div class="form-group ${not empty errors['password'] ? 'has-error' : ''}">
                             <label>Password <span class="required">*</span></label>
-                            <input type="password" name="password" minlength="6" autocomplete="new-password" required>
+                            <input type="password" name="password" minlength="6" autocomplete="new-password">
                             <div class="help-text">Minimum 6 characters. Staff will be required to change it on first login.</div>
                             <div class="err-msg" id="passwordError">${errors['password']}</div>
                         </div>
@@ -140,7 +140,7 @@
 
                     <div class="form-group ${not empty errors['address'] ? 'has-error' : ''}">
                         <label>Address <c:if test="${mode != 'edit'}"><span class="required">*</span></c:if></label>
-                        <textarea name="address" rows="2" maxlength="255" ${mode != 'edit' ? 'required' : ''}>${staff.address}</textarea>
+                        <textarea name="address" rows="2" maxlength="255">${staff.address}</textarea>
                         <div class="err-msg" id="addressError">${errors['address']}</div>
                     </div>
 

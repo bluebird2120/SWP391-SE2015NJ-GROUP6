@@ -132,7 +132,7 @@ public class MenuPerformaneController extends HttpServlet {
                 } else if (qty >= avgQuantity) {
                     mi.setMenuTag("Tiêu Thụ Ổn Định");
                     mi.setTagClass("tag-plowhorse");
-                } else if (qty > lowQuantity) {
+                } else if (qty >= lowQuantity) {
                     mi.setMenuTag("Tiêu Thụ Chậm");
                     mi.setTagClass("tag-puzzle");
                 } else {

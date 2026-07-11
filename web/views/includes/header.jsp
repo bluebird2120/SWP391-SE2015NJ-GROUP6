@@ -342,6 +342,7 @@
         <c:if test="${sessionScope.employee == null}">
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
+        <a href="${pageContext.request.contextPath}/reviews">Đánh giá</a>
         <a href="${pageContext.request.contextPath}/page/album">Album ảnh</a>
         <c:if test="${sessionScope.employee != null}">
             <%-- [PHAN QUYEN LE TAN] Dieu huong dung man hinh theo role. --%>

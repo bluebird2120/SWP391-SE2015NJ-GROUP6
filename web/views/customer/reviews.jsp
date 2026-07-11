@@ -50,6 +50,38 @@
                 border: 1px solid #bfe7c5;
                 color: #226c34;
             }
+            .confirm-panel {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 3000;
+                background: rgba(74, 53, 40, 0.34);
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .confirm-panel.active {
+                display: flex;
+            }
+            .confirm-box {
+                background: #fff;
+                border: 1px solid #ede0d8;
+                border-radius: 10px;
+                padding: 18px;
+                max-width: 360px;
+                width: 100%;
+                box-shadow: 0 16px 40px rgba(74, 53, 40, 0.18);
+            }
+            .confirm-message {
+                color: #4a3528;
+                font-weight: 600;
+                margin-bottom: 14px;
+            }
+            .confirm-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
             .card {
                 background: #fff;
                 border: 1px solid #ede0d8;
@@ -357,7 +389,7 @@
                                         <a class="btn btn-muted" href="${pageContext.request.contextPath}/customer/reviews?action=edit&reviewID=${review.reviewID}">
                                             <i class="fa-solid fa-pen"></i> Sửa
                                         </a>
-                                        <form class="inline-form" method="post" action="${pageContext.request.contextPath}/customer/reviews" onsubmit="return confirm('Bạn chắc chắn muốn xóa đánh giá này?')">
+                                        <form class="inline-form" method="post" action="${pageContext.request.contextPath}/customer/reviews" onsubmit="return showLocalConfirm(this, 'Bạn chắc chắn muốn xóa đánh giá này?')">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="csrfToken" value="${csrfToken}">
                                             <input type="hidden" name="reviewID" value="${review.reviewID}">
@@ -369,6 +401,41 @@
                         </div>
                     </c:otherwise>
                 </c:choose>
+                <div id="localConfirmPanel" class="confirm-panel">
+                    <div class="confirm-box">
+                        <div id="localConfirmMessage" class="confirm-message"></div>
+                        <div class="confirm-actions">
+                            <button type="button" class="btn btn-muted" onclick="closeLocalConfirm()">Hủy</button>
+                            <button type="button" class="btn btn-danger" onclick="submitLocalConfirm()">Đồng ý</button>
+                        </div>
+                    </div>
+                </div>
                 <%@ include file="/views/includes/footer.jsp" %>
+                <script>
+                    var pendingConfirmForm = null;
+                    var confirmSubmitting = false;
+
+                    function showLocalConfirm(form, message) {
+                        if (confirmSubmitting) {
+                            confirmSubmitting = false;
+                            return true;
+                        }
+                        pendingConfirmForm = form;
+                        document.getElementById('localConfirmMessage').textContent = message;
+                        document.getElementById('localConfirmPanel').classList.add('active');
+                        return false;
+                    }
+
+                    function closeLocalConfirm() {
+                        pendingConfirmForm = null;
+                        document.getElementById('localConfirmPanel').classList.remove('active');
+                    }
+
+                    function submitLocalConfirm() {
+                        if (!pendingConfirmForm) return;
+                        confirmSubmitting = true;
+                        pendingConfirmForm.submit();
+                    }
+                </script>
                 </body>
                 </html>
