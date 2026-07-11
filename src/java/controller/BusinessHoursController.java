@@ -80,8 +80,8 @@ public class BusinessHoursController extends HttpServlet {
         }
 
         int isClosed = "1".equals(request.getParameter("isClosed")) ? 1 : 0;
-        Time openTime = isClosed == 1 ? null : parseTime(request.getParameter("openTime"));
-        Time closeTime = isClosed == 1 ? null : parseTime(request.getParameter("closeTime"));
+        Time openTime = parseTime(request.getParameter("openTime"));
+        Time closeTime = parseTime(request.getParameter("closeTime"));
         if (isClosed == 0 && !isValidTimeRange(openTime, closeTime)) {
             return false;
         }
@@ -97,8 +97,8 @@ public class BusinessHoursController extends HttpServlet {
         }
 
         int isClosed = "1".equals(request.getParameter("isClosed")) ? 1 : 0;
-        Time openTime = isClosed == 1 ? null : parseTime(request.getParameter("openTime"));
-        Time closeTime = isClosed == 1 ? null : parseTime(request.getParameter("closeTime"));
+        Time openTime = parseTime(request.getParameter("openTime"));
+        Time closeTime = parseTime(request.getParameter("closeTime"));
         if (isClosed == 0 && !isValidTimeRange(openTime, closeTime)) {
             return false;
         }
