@@ -506,11 +506,14 @@
                 <c:if test="${not empty success}">
                     <div class="alert alert-success">${success}</div>
                 </c:if>
+                <c:if test="${not empty viewError}">
+                    <div class="alert alert-error">${viewError}</div>
+                </c:if>
                 <c:if test="${param.msg == 'assigned'}">
                     <div class="alert alert-success">Đã gán ca thành công.</div>
                 </c:if>
                 <c:if test="${param.msg == 'assigned_multi'}">
-                    <div class="alert alert-success">Đã gán ca thành công cho ${param.cnt} nhân viên.</div>
+                    <div class="alert alert-success">Đã gán thành công ${param.cnt} ca.</div>
                 </c:if>
                 <c:if test="${param.msg == 'unassigned'}">
                     <div class="alert alert-success">Đã huỷ ca.</div>
@@ -563,13 +566,17 @@
                         </div>
                         <form method="post"
                               action="${pageContext.request.contextPath}/owner/shift-roster" class="row"
-                              onsubmit="return validateRosterForm(this);">
+                              novalidate onsubmit="return validateRosterForm(this);">
                             <input type="hidden" name="action" value="assign">
                             <input type="hidden" name="date" value="${date}">
                             <div class="field field-sm" style="min-width:150px;">
-                                <label>Ngày</label>
+                                <label>Từ ngày</label>
                                 <input type="date" name="dateDisplay" value="${date}"
                                        onchange="document.querySelector('[name=date]').value = this.value; this.form.action = '${pageContext.request.contextPath}/owner/shift-roster'; this.form.method = 'get'; this.form.submit();">
+                            </div>
+                            <div class="field field-sm" style="min-width:150px;">
+                                <label>Đến ngày</label>
+                                <input type="date" name="toDate" value="${date}">
                             </div>
                             <div class="field">
                                 <label>Nhân viên</label>
@@ -585,7 +592,7 @@
                             </div>
                             <div class="field">
                                 <label>Giờ</label>
-                                <select name="templateID" required>
+                                <select name="templateID">
                                     <option value="">Giờ làm việc</option>
                                     <c:forEach var="t" items="${templates}">
                                         <option value="${t.templateID}">${t.shiftName} (
@@ -670,7 +677,7 @@
                         </div>
                         <form method="post"
                               action="${pageContext.request.contextPath}/owner/shift-roster" class="row"
-                              onsubmit="return validateRosterForm(this);">
+                              novalidate onsubmit="return validateRosterForm(this);">
                             <input type="hidden" name="action" value="assignMonth">
                             <div class="field">
                                 <label>Nhân viên</label>
@@ -686,7 +693,7 @@
                             </div>
                             <div class="field">
                                 <label>Giờ</label>
-                                <select name="templateID" required>
+                                <select name="templateID">
                                     <option value="">Giờ làm việc</option>
                                     <c:forEach var="t" items="${templates}">
                                         <option value="${t.templateID}">${t.shiftName} (
@@ -698,7 +705,7 @@
                             </div>
                             <div class="field field-sm">
                                 <label>Tháng</label>
-                                <select name="month" required>
+                                <select name="month">
                                     <c:forEach var="m" begin="1" end="12">
                                         <option value="${m}" ${m==planMonth ? 'selected' : '' }>${m}
                                         </option>
@@ -707,7 +714,7 @@
                             </div>
                             <div class="field field-sm">
                                 <label>Năm</label>
-                                <input type="number" name="year" min="2024" value="${planYear}" required
+                                <input type="number" name="year" min="2024" value="${planYear}"
                                        style="width:80px;">
                             </div>
                             <div class="field field-sm" style="min-width:170px;">
@@ -733,7 +740,7 @@
                                 hoạch tháng</span>
                             <form method="get"
                                   action="${pageContext.request.contextPath}/owner/shift-roster"
-                                  style="display:flex; gap:8px; align-items:center; margin-left:auto;">
+                                  style="display:flex; gap:8px; align-items:center; margin-left:auto;" novalidate>
                                 <input type="hidden" name="date" value="${date}">
                                 <select name="planMonth"
                                         style="width:auto; padding:5px 8px; font-size:0.8rem;"
@@ -818,7 +825,7 @@
                         <div class="section-title"><i class="fas fa-user-clock"></i> Xem lịch ca nhân
                             viên</div>
                         <form method="get"
-                              action="${pageContext.request.contextPath}/owner/shift-roster" class="row">
+                              action="${pageContext.request.contextPath}/owner/shift-roster" class="row" novalidate>
                             <input type="hidden" name="date" value="${date}">
                             <input type="hidden" name="planYear" value="${planYear}">
                             <input type="hidden" name="planMonth" value="${planMonth}">
@@ -1048,11 +1055,13 @@
                 }
             }
 
-            function showJsError(message) {
+            function showJsError(message, form) {
                 // Hide existing server-side alerts
                 document.querySelectorAll('.alert').forEach(function (el) {
                     el.style.display = 'none';
                 });
+
+                clearJsError();
                 var container = document.getElementById('js-alert-container');
                 if (container) {
                     container.innerHTML = '<div class="alert alert-error">' + message + '</div>';
@@ -1071,23 +1080,46 @@
                 clearJsError();
                 var checked = form.querySelectorAll('input[name="employeeIDs"]:checked');
                 if (checked.length === 0) {
-                    showJsError('Vui lòng chọn ít nhất một nhân viên.');
+                    showJsError('Vui lòng chọn ít nhất một nhân viên.', form);
                     return false;
                 }
 
                 var actionEl = form.querySelector('input[name="action"]');
                 if (actionEl) {
                     var action = actionEl.value;
+                    var templateEl = form.querySelector('select[name="templateID"]');
+                    if ((action === 'assign' || action === 'assignMonth')
+                            && (!templateEl || !templateEl.value)) {
+                        showJsError('Vui lòng chọn giờ làm việc.', form);
+                        return false;
+                    }
                     if (action === 'assign') {
                         var dateVal = form.querySelector('input[name="date"]').value;
+                        var toDateInput = form.querySelector('input[name="toDate"]');
+                        var toDateVal = toDateInput ? toDateInput.value : dateVal;
                         if (!dateVal) {
-                            showJsError('Vui lòng chọn ngày.');
+                            showJsError('Vui lòng chọn ngày.', form);
                             return false;
                         }
-                        var parts = dateVal.split('-');
-                        if (parts.length === 3) {
-                            var targetYear = parseInt(parts[0], 10);
-                            var targetMonth = parseInt(parts[1], 10) - 1; // 0-based
+                        if (!toDateVal) {
+                            showJsError('Vui lòng chọn ngày kết thúc.', form);
+                            return false;
+                        }
+                        if (toDateVal < dateVal) {
+                            showJsError('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.', form);
+                            return false;
+                        }
+                        var startParts = dateVal.split('-');
+                        var endParts = toDateVal.split('-');
+                        if (startParts.length === 3 && endParts.length === 3) {
+                            var startYear = parseInt(startParts[0], 10);
+                            var startMonth = parseInt(startParts[1], 10) - 1; // 0-based
+                            var endYear = parseInt(endParts[0], 10);
+                            var endMonth = parseInt(endParts[1], 10) - 1; // 0-based
+                            if (startYear !== endYear || startMonth !== endMonth) {
+                                showJsError('Khoảng ngày phân ca phải nằm trong cùng một tháng.', form);
+                                return false;
+                            }
 
                             var now = new Date();
                             var currentYear = now.getFullYear();
@@ -1100,20 +1132,37 @@
                                 nextYear++;
                             }
 
-                            var isValid = (targetYear === currentYear && targetMonth === currentMonth) ||
-                                    (targetYear === nextYear && targetMonth === nextMonth);
+                            var startValid = (startYear === currentYear && startMonth === currentMonth) ||
+                                    (startYear === nextYear && startMonth === nextMonth);
+                            var endValid = (endYear === currentYear && endMonth === currentMonth) ||
+                                    (endYear === nextYear && endMonth === nextMonth);
+                            var isValid = startValid && endValid;
                             if (!isValid) {
-                                showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.');
+                                showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.', form);
                                 return false;
                             }
                         }
                     } else if (action === 'assignMonth') {
-                        var monthVal = parseInt(form.querySelector('select[name="month"]').value, 10);
-                        var yearVal = parseInt(form.querySelector('input[name="year"]').value, 10);
+                        var monthEl = form.querySelector('select[name="month"]');
+                        var yearEl = form.querySelector('input[name="year"]');
+                        var monthVal = parseInt(monthEl.value, 10);
+                        var yearVal = parseInt(yearEl.value, 10);
+                        if (!monthEl.value || isNaN(monthVal) || monthVal < 1 || monthVal > 12) {
+                            showJsError('Vui lòng chọn tháng phân ca.', form);
+                            return false;
+                        }
+                        if (!yearEl.value || isNaN(yearVal) || yearVal < 2024) {
+                            showJsError('Vui lòng nhập năm phân ca hợp lệ.', form);
+                            return false;
+                        }
 
                         var now = new Date();
                         var currentYear = now.getFullYear();
                         var currentMonth = now.getMonth() + 1; // 1-based
+                        if (yearVal < currentYear || yearVal > currentYear + 1) {
+                            showJsError('Chỉ được phân ca tháng trong năm hiện tại hoặc năm kế tiếp.', form);
+                            return false;
+                        }
 
                         var nextYear = currentYear;
                         var nextMonth = currentMonth + 1;
@@ -1125,7 +1174,7 @@
                         var isValid = (yearVal === currentYear && monthVal === currentMonth) ||
                                 (yearVal === nextYear && monthVal === nextMonth);
                         if (!isValid) {
-                            showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.');
+                            showJsError('Chỉ được phân ca cho tháng hiện tại hoặc tháng kế tiếp.', form);
                             return false;
                         }
                     }

@@ -46,11 +46,14 @@ public class OrderController extends HttpServlet {
                 List<OrderItem> dbOrderItems = orderDAO.getOrderItemsByOrderId(orderID);
                 List<MenuItem> dbMenuItems = orderDAO.getMenuItemsByOrderId(orderID);
                 
+                // Lấy thông tin đơn hàng gốc để biết tiền cọc
+                Order currentOrder = orderDAO.getOrderById(orderID); // Hãy đảm bảo bạn có hàm này trong OrderDAO
+                request.setAttribute("currentOrder", currentOrder);
+                
                 // 2. KÉO CÁC MÓN MỚI CHỌN (SESSION CART)
                 List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
                 List<MenuItem> sessionMenuItems = new ArrayList<>();
                 if(sessionCart != null && !sessionCart.isEmpty()){
-                    // SỬA Ở ĐÂY: Lấy trực tiếp thông tin MenuItem dựa vào ItemID thật của món
                     for(OrderItem oi : sessionCart) {
                         sessionMenuItems.add(getMenuItemById(oi.getItemID()));
                     }
@@ -94,7 +97,6 @@ public class OrderController extends HttpServlet {
 
         // --- GỘP BÀN TỪ QUÉT QR ---
         if ("addTable".equals(action)) {
-            // Giữ nguyên logic cũ... (Dài quá tôi xin phép thu gọn phần không thay đổi)
             String newTableToken = request.getParameter("tableToken");
             if (currentOrderID != null && newTableToken != null) {
                 TableDAO tableDAO = new TableDAO();
@@ -121,7 +123,13 @@ public class OrderController extends HttpServlet {
         if ("add".equals(action)) {
             int itemID = Integer.parseInt(request.getParameter("itemID"));
             int quantity = Integer.parseInt(request.getParameter("quantity"));
+            
+            // 🌟 ĐÃ SỬA LỖI 500: Chống lỗi NullPointerException cho note
             String note = request.getParameter("note");
+            if (note == null) {
+                note = "";
+            }
+            
             int price = request.getParameter("price") != null ? Integer.parseInt(request.getParameter("price")) : 0;
 
             Integer tableID = request.getParameter("tableID") != null && !request.getParameter("tableID").isEmpty() ? 
@@ -154,10 +162,13 @@ public class OrderController extends HttpServlet {
             // Thêm vào Session thay vì DB
             boolean found = false;
             for (OrderItem item : sessionCart) {
+                // 🌟 ĐÃ SỬA LỖI 500: An toàn khi so sánh chuỗi note
+                String itemNote = (item.getNote() == null) ? "" : item.getNote();
+                
                 // Nếu cùng món, cùng bàn, cùng ghi chú -> Gộp số lượng
                 if (item.getItemID() == itemID && 
                    ((item.getTableID() == null && tableID == null) || (item.getTableID() != null && item.getTableID().equals(tableID))) &&
-                   ((item.getNote() == null && note.isEmpty()) || (item.getNote() != null && item.getNote().equals(note)))) {
+                   itemNote.equals(note)) {
                     item.setQuantity(item.getQuantity() + quantity);
                     found = true;
                     break;
@@ -247,10 +258,8 @@ public class OrderController extends HttpServlet {
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            // TẠI ĐÂY MỚI LÀ LÚC CHUYỂN HƯỚNG TỚI CHECKOUT.JSP (Và tạo Invoices)
-            // Lưu ý: Việc tạo Invoices có thể đặt ở file CheckoutController giống như bạn đã làm
-            // Bạn chỉ cần chuyển hướng sang đó kèm theo OrderID hiện tại.
-            request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
+            // 🌟 ĐÃ SỬA: Chuyển hướng sang CheckoutController để nó tính toán tiền bạc
+            response.sendRedirect(request.getContextPath() + "/checkout");
             return;
         }
     }
@@ -259,7 +268,6 @@ public class OrderController extends HttpServlet {
     public String getServletInfo() {
         return "Order Controller Handles Session Cart and DB sync";
     }
-    
     
     // Hàm phụ trợ: Lấy thông tin chi tiết của 1 món ăn dựa vào mã itemID
     private MenuItem getMenuItemById(int itemID) {

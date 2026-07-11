@@ -11,6 +11,7 @@ package model;
 public class CookingMethod {
     
     private int methodID;
+    private int isAvailable;
     private String methodName;
     
     private int activeMenuItem;
@@ -27,9 +28,10 @@ public class CookingMethod {
         this.inactiveMenuItem = inactiveMenuItem;
         this.totalDish = totalDish;
     }
-    
-    public CookingMethod(int methodID, String methodName) {
+
+    public CookingMethod(int methodID, int isAvailable, String methodName) {
         this.methodID = methodID;
+        this.isAvailable = isAvailable;
         this.methodName = methodName;
     }
 
@@ -71,6 +73,14 @@ public class CookingMethod {
 
     public void setTotalDish(int totalDish) {
         this.totalDish = totalDish;
+    }
+
+    public int getIsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable(int isAvailable) {
+        this.isAvailable = isAvailable;
     }
     
 }

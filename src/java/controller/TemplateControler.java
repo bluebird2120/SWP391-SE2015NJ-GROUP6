@@ -15,8 +15,7 @@ public class TemplateControler extends HttpServlet {
     private static final Set<String> ALLOWED_PAGES = Set.of(
             "about",   
             "menu", 
-            "album",
-            "contact"
+            "album"
     );
 
     @Override

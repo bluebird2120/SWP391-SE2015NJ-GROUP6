@@ -20,6 +20,7 @@ public class NotificationDAO extends DBContext {
     public int insert(Notifications n) {
         String sql = "INSERT INTO Notifications (recipientID, recipientType, type, message, isRead) "
                    + "VALUES (?, ?, ?, ?, ?)";
+        //Statement.RETURN_GENERATED_KEYS trả về id vừa tự tăng để lát nữa lấy ra
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, n.getRecipientID());
             ps.setString(2, n.getRecipientType());
@@ -28,8 +29,9 @@ public class NotificationDAO extends DBContext {
             ps.setInt(5, n.getIsRead());
             int aff = ps.executeUpdate();
             if (aff == 0) return -1;
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) return keys.getInt(1);
+            //Lấy id đó ra
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
             }
             return -1;
         } catch (SQLException ex) {

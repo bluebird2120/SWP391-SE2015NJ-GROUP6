@@ -21,6 +21,19 @@ import model.Reviews;
 @WebServlet(name = "CustomerReviewController", urlPatterns = {"/customer/reviews"})
 public class CustomerReviewController extends HttpServlet {
 
+    /*
+     * NGHIỆP VỤ: Customer quản lý đánh giá của chính mình.
+     *
+     * Customer chỉ được đánh giá đơn hàng thuộc về họ và đã completed.
+     * Mỗi order chỉ được tạo một review. Sau khi tạo, customer có thể sửa/xóa
+     * review của chính họ, nhưng không thể thao tác review của customer khác.
+     *
+     * Luồng chính:
+     * - GET /customer/reviews: xem danh sách review của customer đang đăng nhập.
+     * - GET ?action=create&orderID=...: mở form đánh giá đơn đã hoàn tất.
+     * - GET ?action=edit&reviewID=...: mở form sửa review của chính customer.
+     * - POST create/update/delete: xử lý dữ liệu form, kiểm tra CSRF rồi gọi ReviewDAO.
+     */
     private static final int MAX_COMMENT_LENGTH = 1000;
     private static final String VIEW = "/views/customer/reviews.jsp";
     private static final String CSRF_TOKEN_SESSION_KEY = "reviewCsrfToken";
@@ -32,6 +45,7 @@ public class CustomerReviewController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Customer phải đăng nhập mới được xem/tạo/sửa/xóa review cá nhân.
         Customer customer = getCustomer(request);
         if (customer == null) {
             response.sendRedirect(request.getContextPath() + "/login?msg=required");
@@ -56,6 +70,7 @@ public class CustomerReviewController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+        // POST là thao tác thay đổi dữ liệu nên luôn kiểm tra đăng nhập và CSRF.
         Customer customer = getCustomer(request);
         if (customer == null) {
             response.sendRedirect(request.getContextPath() + "/login?msg=required");
@@ -88,6 +103,7 @@ public class CustomerReviewController extends HttpServlet {
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, Customer customer)
             throws ServletException, IOException {
+        // orderID lấy từ URL; chỉ đơn completed của customer này mới được đánh giá.
         int orderID = toInt(request.getParameter("orderID"), -1);
         if (orderID <= 0) {
             redirectError(request, response, "Đơn đặt bàn không hợp lệ.");
@@ -111,6 +127,7 @@ public class CustomerReviewController extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, Customer customer)
             throws ServletException, IOException {
+        // Lọc theo cả reviewID và customerID để customer không sửa review của người khác.
         int reviewID = toInt(request.getParameter("reviewID"), -1);
         Reviews review = reviewDAO.getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
         if (review == null) {
@@ -126,6 +143,7 @@ public class CustomerReviewController extends HttpServlet {
     private void createReview(HttpServletRequest request, HttpServletResponse response, Customer customer)
             throws ServletException, IOException {
         int orderID = toInt(request.getParameter("orderID"), -1);
+        // Validate đủ điều kiện: rating hợp lệ, order completed, chưa review order này.
         String error = validateReviewInput(request, orderID, customer.getCustomerID(), true);
         if (error != null) {
             request.setAttribute("formMode", "create");
@@ -148,12 +166,14 @@ public class CustomerReviewController extends HttpServlet {
             return;
         }
 
+        // Tạo review xong sẽ gửi notification cho owner biết có đánh giá mới.
         notifyOwnersAboutNewReview(customer, orderID, rating, comment);
         response.sendRedirect(request.getContextPath() + "/customer/reviews?success=created");
     }
 
     private void updateReview(HttpServletRequest request, HttpServletResponse response, Customer customer)
             throws ServletException, IOException {
+        // Update chỉ kiểm tra rating/comment, không kiểm tra duplicate vì review đã tồn tại.
         int reviewID = toInt(request.getParameter("reviewID"), -1);
         Reviews existing = reviewDAO.getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
         if (existing == null) {
@@ -186,6 +206,7 @@ public class CustomerReviewController extends HttpServlet {
 
     private void deleteReview(HttpServletRequest request, HttpServletResponse response, Customer customer)
             throws IOException {
+        // DAO xóa kèm customerID để đảm bảo chỉ xóa review thuộc customer đang đăng nhập.
         int reviewID = toInt(request.getParameter("reviewID"), -1);
         boolean deleted = reviewDAO.deleteReview(reviewID, customer.getCustomerID());
         String result = deleted ? "deleted" : "delete_failed";
@@ -194,6 +215,7 @@ public class CustomerReviewController extends HttpServlet {
 
     private void showList(HttpServletRequest request, HttpServletResponse response, Customer customer, String error)
             throws ServletException, IOException {
+        // Màn hình luôn tải lại danh sách review mới nhất của customer hiện tại.
         List<Reviews> reviews = reviewDAO.getReviewsByCustomer(customer.getCustomerID());
         request.setAttribute("reviews", reviews);
         request.setAttribute("error", error);
@@ -238,6 +260,7 @@ public class CustomerReviewController extends HttpServlet {
 
     private void notifyOwnersAboutNewReview(Customer customer, int orderID, int rating, String comment) {
         try {
+            // Gửi thông báo cho toàn bộ owner đang active để owner vào phản hồi review.
             List<Integer> ownerIDs = employeeDAO.getActiveOwnerIDs();
             if (ownerIDs.isEmpty()) {
                 return;

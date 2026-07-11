@@ -19,7 +19,7 @@ public class AuthenticationFilter implements Filter {
 
     private static final int OWNER_ROLE_ID = 1;
     private static final int STAFF_ROLE_ID = 2;
-    // [PHAN QUYEN LE TAN] Role 3 chi quan ly va gan ban.
+    //Role 3 chi quan ly va gan ban.
     private static final int RECEPTIONIST_ROLE_ID = 3;
 
     @Override
@@ -75,14 +75,20 @@ public class AuthenticationFilter implements Filter {
             }
 
             // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
-            if (uri.startsWith(ctx + "/staff/")
-                    && employee.getRoleID() != STAFF_ROLE_ID) {
-                // [PHAN QUYEN LE TAN] Le tan duoc dung dashboard, lich va thong bao.
-                boolean receptionistSharedPage = employee.getRoleID() == RECEPTIONIST_ROLE_ID
-                        && (uri.equals(ctx + "/staff/dashboard")
-                        || uri.startsWith(ctx + "/staff/my-schedule")
-                        || uri.startsWith(ctx + "/staff/notifications")
-                        || uri.startsWith(ctx + "/staff/change-password"));
+            if (uri.startsWith(ctx + "/staff/") && employee.getRoleID() != STAFF_ROLE_ID) {
+                // 1. Mặc định coi như không được phép vào trang dùng chung
+                boolean receptionistSharedPage = false;
+
+                // 2. Nếu đúng là Lễ tân thì mới xét tiếp xem họ đang vào trang nào
+                if (employee.getRoleID() == RECEPTIONIST_ROLE_ID) {
+                    if (uri.equals(ctx + "/staff/dashboard")
+                            || uri.startsWith(ctx + "/staff/my-schedule")
+                            || uri.startsWith(ctx + "/staff/notifications")
+                            || uri.startsWith(ctx + "/staff/change-password")) {
+
+                        receptionistSharedPage = true;
+                    }
+                }
 
                 if (uri.startsWith(ctx + "/staff/")
                         && employee.getRoleID() != STAFF_ROLE_ID
@@ -92,7 +98,7 @@ public class AuthenticationFilter implements Filter {
                     return;
                 }
 
-                // [PHAN QUYEN LE TAN] Chi Le tan va Owner duoc vao khu tiep nhan.
+                //Chỉ lễ tận và Owner mới được vào khu vực gán bàn
                 if (uri.startsWith(ctx + "/reception/")
                         && employee.getRoleID() != RECEPTIONIST_ROLE_ID
                         && employee.getRoleID() != OWNER_ROLE_ID) {

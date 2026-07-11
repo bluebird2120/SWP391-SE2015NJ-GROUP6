@@ -17,21 +17,18 @@ import model.MenuCategory;
 public class MenuCategoryDAO extends DBContext {
 
     public List<MenuCategory> getAllMenuCategory() {
-
         List<MenuCategory> list = new ArrayList<>();
-        String sql = "select * from MenuCategory";
-
+        String sql = "select * from MenuCategory where isAvailable = 1";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 MenuCategory mc = new MenuCategory(
                         rs.getInt("categoryID"),
+                        rs.getInt("isAvailable"),
                         rs.getString("categoryName"));
                 list.add(mc);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -95,56 +92,84 @@ public class MenuCategoryDAO extends DBContext {
     }
 
     public boolean changeStatusCategory(int categoryID, int status) {
-        String sql = "update MenuItem set isAvailable = ? "
-                + "where categoryID = ?";
+        String sql = "update MenuCategory set isAvailable = ? where categoryID = ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, status);
             ps.setInt(2, categoryID);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
 
-    public int countSearchCategory(String search) {
+    public boolean changeStatusItemsByCategory(int categoryID, int status) {
+        String sql = "update MenuItem set isAvailable = ? where categoryID = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, status);
+            ps.setInt(2, categoryID);
+            return ps.executeUpdate() >= 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public int countSearchCategory(String search, int isAvailable) {
         int total = 0;
-        String sql = "select count(*) from MenuCategory "
-                + "where categoryName like ?";
+        String sql = "select count(*) from MenuCategory where categoryName like ?";
+        if (isAvailable >= 0) {
+            sql += " and isAvailable = ?";
+        }
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, "%" + search + "%");
+            if (isAvailable >= 0) {
+                ps.setInt(2, isAvailable);
+            }
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return total = rs.getInt(1);
+                total = rs.getInt(1);
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return total;
     }
 
-    public List<MenuCategory> searchCategoryPaging(String search, int offset, int pageSize) {
+    public List<MenuCategory> searchCategoryPaging(String search, int isAvailable, int offset, int pageSize) {
         List<MenuCategory> list = new ArrayList<>();
-        String sql = "select * from MenuCategory "
-                + "where categoryName like ? "
-                + "LIMIT ?, ?";
+        String sql = "select * from MenuCategory where categoryName like ?";
+        if (isAvailable >= 0) {
+            sql += " and isAvailable = ?";
+        }
+        sql += " LIMIT ?, ?";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, "%" + search + "%");
-            ps.setInt(2, offset);
-            ps.setInt(3, pageSize);
+            int index = 1;
+            ps.setString(index++, "%" + search + "%");
+            if (isAvailable >= 0) {
+                ps.setInt(index++, isAvailable);
+            }
+            ps.setInt(index++, offset);
+            ps.setInt(index++, pageSize);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                MenuCategory mc = new MenuCategory(rs.getInt("categoryID"), rs.getString("categoryName"));
+                MenuCategory mc = new MenuCategory();
+                mc.setCategoryID(rs.getInt("categoryID"));
+                mc.setCategoryName(rs.getString("categoryName"));
+                mc.setIsAvailable(rs.getInt("isAvailable")); // Cần setter này trong Model
                 list.add(mc);
             }
-
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return list;
     }
-    
-    public boolean checkDuplicateCategory(String categoryName, int categoryID){
+
+    public boolean checkDuplicateCategory(String categoryName, int categoryID) {
         String sql = "select count(*) from MenuCategory "
                 + "where categoryName = ? and categoryID != ?";
         try {
