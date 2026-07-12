@@ -87,8 +87,7 @@ public class MenuItemController extends HttpServlet {
                             response.sendRedirect(request.getContextPath() + "/menu");
                             return;
                         }
-                    } 
-                    // Nếu khách quét QR của bàn ĐANG CÓ NGƯỜI LẠ NGỒI
+                    } // Nếu khách quét QR của bàn ĐANG CÓ NGƯỜI LẠ NGỒI
                     else if (activeOrder.getOrderID() != sessionOrderID) {
                         session.setAttribute("errorMsg", "Bàn này đang có khách ngồi, không thể gộp!");
                         response.sendRedirect(request.getContextPath() + "/menu");
@@ -100,36 +99,35 @@ public class MenuItemController extends HttpServlet {
                 // =========================================================
 
                 if (activeOrder != null) {
-                    
-//                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
-//
-//                    // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
-//                    if (activeOrder.getIsStaffConfirmed() == 0) {
-//                        session.setAttribute("pendingOrderID", activeOrder.getOrderID());
-//                        request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
-//                        return; // Khóa luồng, không cho load Menu!
-//                    }
-//                    // --- KẾT THÚC BARIE ---                                       
 
+//                     // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ORDER
+//
+//                     // --- BẮT ĐẦU: BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
+//                     if (activeOrder.getIsStaffConfirmed() == 0) {
+//                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+//                         request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
+//                         return; // Khóa luồng, không cho load Menu!
+//                     }
+//                     // --- KẾT THÚC BARIE ---                                        
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
                         // Host hoặc Guest đã duyệt -> Cho vào Menu gọi món bình thường
                     } else {
-//                        // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
-//                        // Giả sử orderType == 2 là mã của Đơn đặt trước trong Database của bạn
-//                        if (activeOrder.getOrderType() == 2) {
-//                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
-//                            // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
-//                            request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
-//                            return; 
-//                        }
-//                        // === KẾT THÚC PHẦN VÁ ===
+//                         // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
+//                         // Giả sử orderType == 2 là mã của Đơn đặt trước trong Database của bạn
+//                         if (activeOrder.getOrderType() == 2) {
+//                             session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+//                             // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
+//                             request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
+//                             return; 
+//                         }
+//                         // === KẾT THÚC PHẦN VÁ ===
                         // === BẮT ĐẦU VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (RESERVATION) ===
                         // Nhận diện đơn đặt trước qua trạng thái 'reserved'
                         if ("reserved".equals(activeOrder.getTableStatus())) {
                             session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                             // Chuyển sang trang yêu cầu nhập Số điện thoại để lấy lại quyền Host
                             request.getRequestDispatcher("/views/user/claim_host.jsp").forward(request, response);
-                            return; 
+                            return;
                         }
                         // === KẾT THÚC PHẦN VÁ ===
 
@@ -141,8 +139,11 @@ public class MenuItemController extends HttpServlet {
                 } else {
                     // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG (Người đầu tiên quét)
                     Order newOrder = new Order();
+
                     // [TABLE STATUS FLOW] Khach vang lai da vao menu thi ban da co HOST => occupied.
                     newOrder.setTableStatus("occupied");
+
+
                     newOrder.setOrderType(1);
 
                     // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT
@@ -172,50 +173,37 @@ public class MenuItemController extends HttpServlet {
         }
         // === KẾT THÚC PHẦN THÊM MỚI ===
 
-        // --- LOGIC GỐC CỦA BẠN CỦA BẠN (GIỮ NGUYÊN 100%) ---
         String search = request.getParameter("search");
         String category_raw = request.getParameter("category");
         String method_raw = request.getParameter("cookingMethod");
         String status_raw = request.getParameter("status");
         String minPrice_raw = request.getParameter("minPrice");
         String maxPrice_raw = request.getParameter("maxPrice");
-        String priceType = request.getParameter("price");
-        String sort = request.getParameter("sort");
+        String price_raw = request.getParameter("price");
+        String sort_raw = request.getParameter("sort");
         String page_raw = request.getParameter("page");
         String tableID_raw = request.getParameter("tableID");
-
+        //Validate
         if (!checkEmpty(search)) {
             search = "";
         }
-        if (!checkEmpty(priceType)) {
-            priceType = "discountedPrice";
-        }
-        if (!checkEmpty(sort)) {
-            sort = "asc";
-        }
+        String sort = validateStringWhitelist(sort_raw, "asc", "asc", "desc");
+        String priceType = validateStringWhitelist(price_raw, "discountedPrice", "price", "discountedPrice");
 
-        int status = checkEmpty(status_raw) ? Integer.parseInt(status_raw) : 1;
-        int categoryId = checkEmpty(category_raw) ? Integer.parseInt(category_raw) : 0;
-        int methodID = checkEmpty(method_raw) ? Integer.parseInt(method_raw) : 0;
-        int minPrice = 0;
-        int maxPrice = 0;
-        try {
-            minPrice = checkEmpty(minPrice_raw) ? Integer.parseInt(minPrice_raw) : 0;
-        } catch (NumberFormatException e) {
-            minPrice = 0;
-            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
-        }
+        int status = parseIntSafe(status_raw, -1, -1);
+        int categoryId = parseIntSafe(category_raw, 0, 0);
+        int methodID = parseIntSafe(method_raw, 0, 0);
 
-        try {
-            maxPrice = checkEmpty(maxPrice_raw) ? Integer.parseInt(maxPrice_raw) : Integer.MAX_VALUE;
-        } catch (NumberFormatException e) {
-            maxPrice = Integer.MAX_VALUE;
-            request.setAttribute("errorPrice", "Giá tiền nhập vào vượt quá giới hạn cho phép!");
-        }
-        int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        int minPrice = parseIntSafe(minPrice_raw, 0, 0);
+        int maxPrice = parseIntSafe(maxPrice_raw, Integer.MAX_VALUE, 0);
+
+        int page = parseIntSafe(page_raw, 1, 1);
+        int tableID = parseIntSafe(tableID_raw, 0, 0);
 
         // Cập nhật lại tableID để tương thích với Token (nếu quét Token thì ưu tiên lấy ID từ Token)
-        int tableID = (tableIdFromToken > 0) ? tableIdFromToken : (checkEmpty(tableID_raw) ? Integer.parseInt(tableID_raw) : 0);
+        if (tableIdFromToken > 0) {
+            tableID = tableIdFromToken;
+        }
 
         String errorPrice = checkPriceInput(minPrice, maxPrice);
         String errorSearch = isValidString(search, 100, "Tìm kiếm không vượt quá 100 kí tự");
@@ -241,12 +229,21 @@ public class MenuItemController extends HttpServlet {
         List<CookingMethod> listMethod = cm.getAllCookingMethod();
         List<MenuCategory> list = md.getAllMenuCategory();
         List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, methodID, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
-        
+
         request.setAttribute("listMethod", listMethod);
         request.setAttribute("list", list);
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
+
+        request.setAttribute("currentSearch", search);
+        request.setAttribute("currentCategory", categoryId);
+        request.setAttribute("currentMethod", methodID);
+        request.setAttribute("currentStatus", status);
+        request.setAttribute("currentMinPrice", (!checkEmpty(minPrice_raw) || errorPrice != null) ? "" : minPrice);
+        request.setAttribute("currentMaxPrice", (!checkEmpty(maxPrice_raw) || errorPrice != null) ? "" : maxPrice);
+        request.setAttribute("currentPriceType", priceType);
+        request.setAttribute("currentSort", sort);
 
         // Xóa dòng gán currentTableID gốc vì phần token đã gán chuẩn hơn
         if (tableID > 0) {
@@ -274,6 +271,18 @@ public class MenuItemController extends HttpServlet {
             request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
         }
         // === KẾT THÚC PHẦN CHỈNH SỬA ===
+    }
+
+    private int parseIntSafe(String value, int defaultValue, int minValue) {
+        if (!checkEmpty(value)) {
+            return defaultValue;
+        }
+        try {
+            int result = Integer.parseInt(value.trim());
+            return (result < minValue) ? minValue : result;
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     private MenuCategoryDAO md = new MenuCategoryDAO();
@@ -306,6 +315,19 @@ public class MenuItemController extends HttpServlet {
 
     private boolean checkEmpty(String data) {
         return (data != null && !data.trim().isEmpty());
+    }
+
+    private String validateStringWhitelist(String value, String defaultValue, String... allowedValues) {
+        if (!checkEmpty(value)) {
+            return defaultValue;
+        }
+        String trimmedValue = value.trim().toLowerCase();
+        for (String allowed : allowedValues) {
+            if (trimmedValue.equals(allowed.toLowerCase())) {
+                return trimmedValue; 
+            }
+        }
+        return defaultValue; 
     }
 
     @Override

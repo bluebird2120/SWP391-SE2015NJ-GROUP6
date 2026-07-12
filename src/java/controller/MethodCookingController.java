@@ -24,15 +24,16 @@ public class MethodCookingController extends HttpServlet {
         String page_raw = request.getParameter("page");
         String isAvailable_raw = request.getParameter("isAvailable");
 
+        //Validate
         if (!checkEmpty(search)) {
             search = "";
         }
 
-        int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        int page = parseIntSafe(page_raw, 1, 1);
+        int isAvailable = parseIntSafe(isAvailable_raw, -1, -1);
 
-        int isAvailable = checkEmpty(isAvailable_raw) ? Integer.parseInt(isAvailable_raw) : -1;
         String errorSearch = search.length() > 100 ? "Tìm kiếm vượt quá 100 kí tự" : "";
-
+        String currentSearch = search;
         if (checkEmpty(errorSearch)) {
             request.setAttribute("errorSearch", errorSearch);
             search = "";
@@ -58,8 +59,9 @@ public class MethodCookingController extends HttpServlet {
         int offset = (page - 1) * PAGE_SIZE;
         List<CookingMethod> methodList = cookingMethodDAO.searchMethodPaging(search, isAvailable, offset, PAGE_SIZE);
 
+        //Trả các biến dữ liệu số và chuỗi sạch sang cho JSP hiển thị lại bộ lọc
+        request.setAttribute("currentSearch", currentSearch);
         request.setAttribute("currentAvailable", isAvailable);
-
         request.setAttribute("methodList", methodList);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
@@ -72,7 +74,7 @@ public class MethodCookingController extends HttpServlet {
             cookingMethod.setInactiveMenuItem(inactiveDish);
             cookingMethod.setTotalDish(totalDish);
         }
-        request.getRequestDispatcher("views/admin/method-list.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/admin/method-list.jsp").forward(request, response);
     }
 
     @Override
@@ -82,22 +84,21 @@ public class MethodCookingController extends HttpServlet {
         String methodID = request.getParameter("methodID");
         String methodName = request.getParameter("methodName");
         String status_raw = request.getParameter("status");
-        int id = checkEmpty(methodID) ? Integer.parseInt(methodID) : 0;
-
         String page_raw = request.getParameter("page");
         String search_raw = request.getParameter("search");
-        String isAvailable_raw = request.getParameter("isAvailable"); 
+        String isAvailable_raw = request.getParameter("isAvailable");
 
-        String currentPage = checkEmpty(page_raw) ? page_raw : "1";
+        //Validate
+        int id = parseIntSafe(methodID, 0, 0);
+        int status = parseIntSafe(status_raw, -1, -1);
+        String currentPage = String.valueOf(parseIntSafe(page_raw, 1, 1));
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
-        String currentAvailable = checkEmpty(isAvailable_raw) ? isAvailable_raw : "-1";
-
-        if (checkEmpty(status_raw) && id > 0) {
-            int status = Integer.parseInt(status_raw);
-
-            // Gọi hàm 1: Đổi trạng thái danh mục chính
+        String currentAvailable = String.valueOf(parseIntSafe(isAvailable_raw, -1, -1));
+        String errorName = isValidString(methodName, 100, "Tên cách chế biến không được để trống", "Tên cách chế biến phải ít hơn 100 kí tự");
+        
+        // Logic đổi trạng thái danh mục chính và món ăn ăn theo
+        if (status != -1 && id > 0) {
             boolean isMethodChanged = cookingMethodDAO.changeStatusMethod(id, status);
-            // Gọi hàm 2: Đổi trạng thái tất cả món ăn ăn theo phương pháp đó
             boolean isItemsChanged = cookingMethodDAO.changeStatusItemsByMethod(id, status);
 
             if (isMethodChanged && isItemsChanged) {
@@ -110,23 +111,21 @@ public class MethodCookingController extends HttpServlet {
             return;
         }
 
-        // 1. Validate định dạng chuỗi chữ
-        String errorName = isValidString(methodName, 100, "Tên cách chế biến không được để trống", "Tên cách chế biến phải ít hơn 100 kí tự");
-
-        // 2. Kiểm tra trùng lặp tên phương thức chế biến dưới DB
+        // Validate tên trước khi update và create
         if (!checkEmpty(errorName)) {
             if (cookingMethodDAO.checkDuplicateMethod(methodName, id)) {
                 errorName = "Tên cách chế biến này đã tồn tại trên thực đơn!";
             }
         }
 
-        if (!errorName.isEmpty()) {
+        // Nếu có lỗi thì gửi sang jsp
+        if (checkEmpty(errorName)) {
             request.setAttribute("errorName", errorName);
             doGet(request, response);
             return;
         }
 
-        // 3. Thực hiện gọi DAO lưu trữ dữ liệu khi THÊM MỚI hoặc SỬA TÊN
+        // Thực hiện lưu dữ liệu khi thêm mới hoặc sửa tên
         boolean isSuccess = false;
         if (id > 0) {
             isSuccess = cookingMethodDAO.updateMethod(methodName, id);
@@ -145,6 +144,18 @@ public class MethodCookingController extends HttpServlet {
         }
 
         response.sendRedirect(request.getContextPath() + "/method-management");
+    }
+
+    private int parseIntSafe(String value, int defaultValue, int minValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            int result = Integer.parseInt(value.trim());
+            return (result < minValue) ? minValue : result;
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {
