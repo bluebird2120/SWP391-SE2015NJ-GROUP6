@@ -30,7 +30,7 @@ public class ScanQRController extends HttpServlet {
             if (currentTable != null && currentTable.getIsActive() == 1) {
 
                 OrderDAO orderDAO = new OrderDAO();
-                // 🌟 Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
+                //  Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
                 String role = (String) session.getAttribute("roleInTable");
@@ -112,8 +112,16 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
                     
-                    // Bàn đang có khách ngồi ăn (Serving / Occupied) -> Bắt buộc xin gộp bàn
-                    if ("serving".equals(activeOrder.getTableStatus()) || "occupied".equals(activeOrder.getTableStatus())) {
+                    // [TABLE STATUS FLOW] Ban da thanh toan nhung chua don xong thi chua cho khach moi vao.
+                    if ("cleaning".equals(activeOrder.getTableStatus())) {
+                        session.setAttribute("errorMsg", "Bàn này đang chờ dọn dẹp. Vui lòng chọn bàn khác hoặc liên hệ nhân viên.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+
+                    // Ban da co HOST/khach dang ngoi an thi phai xin gop ban.
+                    // [TABLE STATUS FLOW] occupied = da co HOST/khach dang dung ban.
+                    if ("occupied".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;

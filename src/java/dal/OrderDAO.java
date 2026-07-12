@@ -127,12 +127,13 @@ public class OrderDAO {
     // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (Đã fix lỗi nhận diện bàn)
     // =========================================================
     public Order getActiveOrderByTableId(int tableID) {
-        // 🌟 SỬA CÂU LỆNH SQL ĐỂ BẮT ĐƯỢC ĐƠN ĐẶT TRƯỚC
+        //  SỬA CÂU LỆNH SQL ĐỂ BẮT ĐƯỢC ĐƠN ĐẶT TRƯỚC
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
                 + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
-                + "  AND o.tableStatus IN ('reserved', 'arrived', 'occupied', 'serving', 'pending') "
+                // [TABLE STATUS FLOW] serving la orderStatus, khong dung lam tableStatus.
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND DATE(o.orderTime) = CURRENT_DATE "
                 + "ORDER BY o.createdAt DESC LIMIT 1";
 

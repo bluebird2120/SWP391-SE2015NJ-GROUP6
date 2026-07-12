@@ -78,7 +78,8 @@ public class TableDAO extends DBContext {
                 + "WHERE o.orderType = 1 "
                 + "  AND ord.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
-                + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
+                // [TABLE AVAILABILITY] serving la orderStatus; tableStatus ban ban gom pending/reserved/arrived/occupied/cleaning.
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "  AND NOT EXISTS ( "
                 + "      SELECT 1 "
@@ -101,7 +102,8 @@ public class TableDAO extends DBContext {
                 + "WHERE t.isActive = 1 "
                 + "  AND t.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
-                + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
+                // [TABLE AVAILABILITY] Don da gan ban that cung phai tru ban arrived/occupied.
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "GROUP BY t.capacity";
 
