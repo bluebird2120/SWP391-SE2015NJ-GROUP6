@@ -11,9 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Date;
-import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "CheckoutController", urlPatterns = {"/checkout"})
@@ -25,101 +23,50 @@ public class CheckoutController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        HttpSession session = request.getSession();
-        Integer invoiceID = (Integer) session.getAttribute("invoiceID");
-        Integer orderID = (Integer) session.getAttribute("orderID");
-
-        if (invoiceID == null || orderID == null) {
-            response.sendRedirect(request.getContextPath() + "/order?action=cart");
-            return;
-        }
-
-        Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
-        request.setAttribute("invoice", invoice);
-        request.setAttribute("orderID", orderID);
-
-        request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
+        // Mọi yêu cầu GET (như truy cập qua URL hoặc thẻ <a>) đều chuyển vào hàm xử lý hiển thị
+        processCheckoutDisplay(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        HttpSession session = request.getSession();
+        
         String action = request.getParameter("action");
-
-        System.out.println("DEBUG action = " + action);
-        System.out.println("DEBUG orderID = " + session.getAttribute("orderID"));
-        System.out.println("DEBUG tableID = " + session.getAttribute("tableID"));
-
-        // =================================================================
-        // NHÁNH 1: XỬ LÝ KHI KHÁCH HÀNG NHẤN NÚT "XÁC NHẬN & HOÀN TẤT ĐƠN" TRÊN CHECKOUT.JSP
-        // =================================================================
+        
+        // NHÁNH 1: KHÁCH HÀNG NHẤN NÚT "XÁC NHẬN & HOÀN TẤT ĐƠN" CHỌN CỔNG THANH TOÁN
         if ("confirm".equals(action)) {
-            String paymentGateway = request.getParameter("paymentGateway");
-            String orderIDParam = request.getParameter("orderID");
-            Integer invoiceID = (Integer) session.getAttribute("invoiceID");
-
-            if (orderIDParam != null && invoiceID != null) {
-                int orderID = Integer.parseInt(orderIDParam);
-
-                if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                    // ... (Giữ nguyên đoạn code xử lý DB cọc và hóa đơn ăn của bạn) ...
-
-                    // Dọn dẹp session để khách có thể quét mã gọi món lượt mới
-                    session.removeAttribute("orderID");
-                    session.removeAttribute("invoiceID");
-                    session.removeAttribute("tableID");
-                    session.removeAttribute("reservationOrderID");
-                    session.removeAttribute("reservationFlow");
-                    session.removeAttribute("depositAmount");
-                    session.removeAttribute("reservationHoldExpiresAt");
-
-                    // 🌟 SỬA ĐOẠN NÀY: Thay vì out.println thô sơ, hãy redirect về trang hóa đơn chuẩn
-                    if (invoiceID != null) {
-                        response.sendRedirect(request.getContextPath() + "/payment-info?invoiceID=" + invoiceID);
-                        return;
-                    } else {
-                        response.sendRedirect(request.getContextPath() + "/home?status=order_success");
-                        return;
-                    }
-                } else if ("vnpay".equals(paymentGateway)) {
-                    // Thanh toán VNPay: Chuyển hướng sang servlet xử lý cổng thanh toán
-                    response.sendRedirect(request.getContextPath() + "/payment?orderID=" + orderID);
-                    return;
-                }
-            }
-
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
+            processPaymentConfirm(request, response);
+        } 
+        // NHÁNH 2: TỪ TRANG CART ĐI SANG (Form POST)
+        else {
+            processCheckoutDisplay(request, response);
         }
+    }
 
-        // =================================================================
-        // NHÁNH 2: LOGIC GỐC - XỬ LÝ KHI ĐI TỪ TRANG CART.JSP SANG CHECKOUT.JSP
-        // =================================================================
-        String[] selectedArr = request.getParameterValues("selectedItems");
+    // =================================================================
+    // HÀM XỬ LÝ GIAO DIỆN THANH TOÁN (TẠO HÓA ĐƠN & TÍNH TIỀN)
+    // =================================================================
+    private void processCheckoutDisplay(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        HttpSession session = request.getSession();
         Integer orderID = (Integer) session.getAttribute("orderID");
 
-        if (orderID == null || selectedArr == null || selectedArr.length == 0) {
+        if (orderID == null) {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
         }
 
-        List<Integer> selectedIDs = new ArrayList<>();
-        for (String id : selectedArr) {
-            selectedIDs.add(Integer.parseInt(id));
+        // 🌟 ĐÃ SỬA: Lấy TOÀN BỘ món ăn của đơn hàng trực tiếp từ DB (Không phụ thuộc checkbox)
+        List<OrderItem> orderItems = orderDAO.getOrderItemsByOrderId(orderID);
+        List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderId(orderID);
+
+        if (orderItems == null || orderItems.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/order?action=cart&error=empty_cart");
+            return;
         }
 
-        List<OrderItem> orderItems = orderDAO.getOrderItemsByIds(selectedIDs);
-        List<MenuItem> menuItems = orderDAO.getMenuItemsByOrderItemIds(selectedIDs);
-
-        Integer tableID = (Integer) session.getAttribute("tableID");
-        Order order = null;
-        if (tableID != null) {
-            order = orderDAO.getActiveOrderByTableId(tableID);
-        }
-
+        Order order = orderDAO.getOrderById(orderID);
         long depositDeducted = (order != null) ? order.getDepositAmount() : 0;
 
         long subTotal = 0;
@@ -132,32 +79,84 @@ public class CheckoutController extends HttpServlet {
 
         long taxAmount = subTotal * 10 / 100;
         long finalAmount = subTotal + taxAmount - depositDeducted;
+        if (finalAmount < 0) finalAmount = 0;
 
-        Invoices invoice = new Invoices();
-        invoice.setInvoiceNumber("INV-" + System.currentTimeMillis());
-        invoice.setSubTotal(subTotal);
-        invoice.setTaxAmount(taxAmount);
-        invoice.setDepositDeducted(depositDeducted);
-        invoice.setFinalAmount(finalAmount);
-        invoice.setIssuedDate(new Date(System.currentTimeMillis()));
-        invoice.setStatus("unpaid");
+        // Tạo mới hoặc lấy Hóa đơn cũ (tránh spam rác Database khi khách F5 nhiều lần)
+        Integer invoiceID = (Integer) session.getAttribute("invoiceID");
+        Invoices invoice = null;
 
-        int newInvoiceID = invoicesDAO.createInvoice(invoice);
-        if (newInvoiceID == -1) {
-            response.sendRedirect(request.getContextPath() + "/order?action=cart&error=invoice_failed");
-            return;
+        if (invoiceID != null) {
+            invoice = invoicesDAO.getInvoiceById(invoiceID);
         }
 
-        invoicesDAO.linkInvoiceToOrder(newInvoiceID, orderID);
-        session.setAttribute("invoiceID", newInvoiceID);
+        if (invoice == null) {
+            invoice = new Invoices();
+            invoice.setInvoiceNumber("INV-" + System.currentTimeMillis());
+            invoice.setSubTotal(subTotal);
+            invoice.setTaxAmount(taxAmount);
+            invoice.setDepositDeducted(depositDeducted);
+            invoice.setFinalAmount(finalAmount);
+            invoice.setIssuedDate(new Date(System.currentTimeMillis()));
+            invoice.setStatus("unpaid");
 
-        invoice.setInvoiceID(newInvoiceID);
+            int newInvoiceID = invoicesDAO.createInvoice(invoice);
+            if (newInvoiceID != -1) {
+                invoicesDAO.linkInvoiceToOrder(newInvoiceID, orderID);
+                session.setAttribute("invoiceID", newInvoiceID);
+                invoice.setInvoiceID(newInvoiceID);
+            }
+        }
+
+        // Đẩy dữ liệu sang trang JSP
         request.setAttribute("invoice", invoice);
         request.setAttribute("orderItems", orderItems);
         request.setAttribute("menuItems", menuItems);
         request.setAttribute("orderID", orderID);
-
+        
         request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
+    }
+
+    // =================================================================
+    // HÀM XỬ LÝ CỔNG THANH TOÁN (VNPAY, TIỀN MẶT...)
+    // =================================================================
+    private void processPaymentConfirm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        HttpSession session = request.getSession();
+        String paymentGateway = request.getParameter("paymentGateway");
+        String orderIDParam = request.getParameter("orderID");
+        Integer invoiceID = (Integer) session.getAttribute("invoiceID");
+
+        if (orderIDParam != null && invoiceID != null) {
+            int orderID = Integer.parseInt(orderIDParam);
+
+            if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
+                // ... (Giữ nguyên đoạn code xử lý DB cọc và hóa đơn ăn của bạn ở đây) ...
+
+                // Dọn dẹp session để khách có thể quét mã gọi món lượt mới
+                session.removeAttribute("orderID");
+                session.removeAttribute("invoiceID");
+                session.removeAttribute("tableID");
+                session.removeAttribute("reservationOrderID");
+                session.removeAttribute("reservationFlow");
+                session.removeAttribute("depositAmount");
+                session.removeAttribute("reservationHoldExpiresAt");
+
+                if (invoiceID != null) {
+                    response.sendRedirect(request.getContextPath() + "/payment-info?invoiceID=" + invoiceID);
+                    return;
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/home?status=order_success");
+                    return;
+                }
+            } else if ("vnpay".equals(paymentGateway)) {
+                // Thanh toán VNPay: Chuyển hướng sang servlet xử lý cổng thanh toán
+                response.sendRedirect(request.getContextPath() + "/payment?orderID=" + orderID);
+                return;
+            }
+        }
+
+        response.sendRedirect(request.getContextPath() + "/home");
     }
 
     @Override

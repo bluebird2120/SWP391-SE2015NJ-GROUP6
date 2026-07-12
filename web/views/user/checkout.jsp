@@ -291,11 +291,9 @@
                             <div class="form-group">
                                 <label>Vị trí phục vụ</label>
                                 <div class="form-control-static">
-                                    <%-- ĐÃ CHỈNH SỬA: Kiểm tra dựa trên dữ liệu test của session (tableID = 2) --%>
                                     <c:choose>
                                         <c:when test="${not empty sessionScope.tableID && sessionScope.tableID > 0}">
                                             Bàn số ${sessionScope.tableID} (Phục vụ tại chỗ) 
-                                            <%-- Hiển thị thêm thông tin thuộc tính mới nếu có dữ liệu thực tế --%>
                                             <c:if test="${not empty sessionScope.areaType}">
                                                 - Khu vực: ${sessionScope.areaType}
                                             </c:if>
@@ -346,7 +344,6 @@
                         <div class="summary-divider"></div>
 
                         <div class="checkout-items-list">
-                            <c:set var="checkoutTotal" value="0"/>
                             <c:forEach var="oi" items="${orderItems}" varStatus="loop">
                                 <c:set var="mi" value="${menuItems[loop.index]}"/>
 
@@ -359,7 +356,6 @@
                                     </c:otherwise>
                                 </c:choose>
                                 <c:set var="lineTotal" value="${unitPrice * oi.quantity}"/>
-                                <c:set var="checkoutTotal" value="${checkoutTotal + lineTotal}"/>
 
                                 <div class="checkout-item-row">
                                     <div>
@@ -373,21 +369,31 @@
                             </c:forEach>
                         </div>
 
+                        <%-- 🌟 ĐÃ SỬA: Hiển thị tiền theo dữ liệu từ Controller (đối tượng invoice) --%>
                         <div class="summary-row">
                             <span>Tạm tính đơn chọn:</span>
-                            <span><fmt:formatNumber value="${checkoutTotal}" type="number"/> VNĐ</span>
+                            <span><fmt:formatNumber value="${invoice.subTotal}" type="number"/> VNĐ</span>
                         </div>
+                        
                         <div class="summary-row">
                             <span>Phí dịch vụ nhà hàng:</span>
-                            <span>0 VNĐ</span>
+                            <span><fmt:formatNumber value="${invoice.taxAmount}" type="number"/> VNĐ</span>
                         </div>
+
+                        <%-- Kiểm tra và hiển thị tiền đặt cọc (Nếu có) --%>
+                        <c:if test="${not empty invoice && invoice.depositDeducted > 0}">
+                            <div class="summary-row" style="color: #10b981; font-weight: 500;">
+                                <span>Đã đặt cọc trước:</span>
+                                <span>- <fmt:formatNumber value="${invoice.depositDeducted}" type="number"/> VNĐ</span>
+                            </div>
+                        </c:if>
 
                         <div class="summary-divider"></div>
 
                         <div class="summary-row total-row">
                             <span>Tổng thanh toán:</span>
                             <div class="summary-total-amount">
-                                <fmt:formatNumber value="${checkoutTotal}" type="number" maxFractionDigits="0"/> VNĐ
+                                <fmt:formatNumber value="${invoice.finalAmount}" type="number" maxFractionDigits="0"/> VNĐ
                             </div>
                         </div>
 
@@ -428,7 +434,6 @@
                 form.action = '${pageContext.request.contextPath}/checkout';
 
                 if (paymentMethod === 'cash') {
-                    // Chỉ hiện thông báo, không được tự ý đổi form.action ở đây nữa
                     alert("🎉 Hoàn tất đơn hàng! Vui lòng thanh toán tại quầy sau khi dùng bữa.");
                 }
 
