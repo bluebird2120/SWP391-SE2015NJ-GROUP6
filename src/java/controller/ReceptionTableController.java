@@ -56,7 +56,7 @@ public class ReceptionTableController extends HttpServlet {
                 String error = new StaffTableDAO().assignTable(orderID, tableID);
                 message = error == null ? "assign_success" : error;
             } else if ("checkin".equals(action) || "open_table".equals(action)) {
-                message = openTable(orderID)
+                message = openTable(orderID, action)
                         ? ("checkin".equals(action)
                                 ? "checkin_success" : "open_table_success")
                         : "Khong the mo ban cho don nay.";
@@ -71,12 +71,16 @@ public class ReceptionTableController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/reception/tables");
     }
 
-    private boolean openTable(int orderID) {
-        // [TABLE STATUS STANDARD] Mo ban nghia la chuyen sang trang thai dang phuc vu.
-        String sql = "UPDATE `Order` SET tableStatus='serving' WHERE orderID=?";
+    private boolean openTable(int orderID, String action) {
+        // [TABLE STATUS FLOW] serving chi dung cho orderStatus.
+        // checkin: khach dat online da den, cho quet QR lan dau => arrived.
+        // open_table: khach vang lai da duoc nhan vien xac nhan => occupied.
+        String newStatus = "checkin".equals(action) ? "arrived" : "occupied";
+        String sql = "UPDATE `Order` SET tableStatus=? WHERE orderID=?";
         try (Connection conn = new DBContext().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, orderID);
+            ps.setString(1, newStatus);
+            ps.setInt(2, orderID);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
