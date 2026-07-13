@@ -11,7 +11,7 @@
         <title>Quản lý Thực đơn - Lách Tách</title>
         <style>
             body {
-                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt hệ thống */
+                background-color: #fdfbf7;
                 color: #333;
                 margin: 0;
             }
@@ -28,11 +28,11 @@
                 margin: 0;
                 font-size: 24px;
                 font-weight: 600;
-                color: #78493b; /* 🌟 ĐÃ SỬA: Tiêu đề màu nâu trầm */
+                color: #78493b;
             }
 
             .btn-add-new {
-                background-color: #4b6b40; /* 🌟 ĐÃ SỬA: Nút thêm mới đổi sang màu xanh rêu sẫm lịch sự */
+                background-color: #4b6b40;
                 color: white;
                 text-decoration: none;
                 padding: 10px 18px;
@@ -71,13 +71,12 @@
                 box-sizing: border-box;
             }
 
-            /* Thanh lọc kết quả */
             .filter-form {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 15px;
-                background: #fdfaf7; /* Nền form lọc hơi ấm vàng */
-                border: 1px solid #ebdcd0; /* 🌟 ĐÃ SỬA: Viền form tiệp màu nâu vàng */
+                background: #fdfaf7;
+                border: 1px solid #ebdcd0;
                 padding: 16px;
                 border-radius: 12px;
                 margin-bottom: 20px;
@@ -115,7 +114,7 @@
             }
 
             .btn-submit {
-                background-color: #78493b; /* 🌟 ĐÃ SỬA: Nút Lọc đổi sang màu nâu trầm của Vị An */
+                background-color: #78493b;
                 color: white;
                 border: none;
                 padding: 9px 24px;
@@ -212,7 +211,7 @@
             .discount-price {
                 font-size: 18px;
                 font-weight: bold;
-                color: #de6b48; /* 🌟 ĐÃ SỬA: Giá thực tế chuyển sang cam đất cho bắt mắt */
+                color: #de6b48;
             }
 
             .button-group {
@@ -235,7 +234,7 @@
                 justify-content: center;
                 gap: 6px;
                 text-decoration: none;
-                color: #78493b; /* 🌟 ĐÃ SỬA: Chữ nút bấm mặc định mang màu nâu trầm thương hiệu */
+                color: #78493b;
                 transition: all 0.2s;
             }
 
@@ -316,38 +315,33 @@
                 <div class="page-header">
                     <h2>Danh sách món ăn</h2>
                     <c:if test="${sessionScope.employee.roleID == 1}">
-                        <a href="${pageContext.request.contextPath}/update-menu"
-                           class="btn-add-new">
+                        <a href="${pageContext.request.contextPath}/update-menu" class="btn-add-new">
                             Thêm Món Ăn Mới
                         </a>
                     </c:if>
                     <c:if test="${sessionScope.customer != null}">
-                        <%-- [FIX PREORDER CART] Giỏ riêng của khách đặt bàn online. --%>
-                        <a href="${pageContext.request.contextPath}/reservation?action=preorderCart"
-                           class="btn-add-new">
+                        <a href="${pageContext.request.contextPath}/reservation?action=preorderCart" class="btn-add-new">
                             🛒 Xem Giỏ Hàng
                         </a>
                     </c:if>
-
                 </div>
-                <!--Filter to search dish-->
+
                 <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
-                    <input type="text" name="search" value="${param.search}"
-                           placeholder="Tìm kiếm món ăn..." class="filter-input"/>
+                    <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm món ăn..." class="filter-input"/>
 
                     <select name="category" class="filter-select">
-                        <option value="">Tất cả danh mục</option>
+                        <option value="0">Tất cả danh mục</option>
                         <c:forEach var="cat" items="${list}">
-                            <option value="${cat.categoryID}" ${param.category==cat.categoryID ? "selected" : "" }>
+                            <option value="${cat.categoryID}" ${currentCategory == cat.categoryID ? "selected" : "" }>
                                 ${cat.categoryName}
                             </option>
                         </c:forEach>
                     </select>
 
                     <select name="cookingMethod" class="filter-select">
-                        <option value="">Tất cả phương thức</option>
+                        <option value="0">Tất cả phương thức</option>
                         <c:forEach var="method" items="${listMethod}">
-                            <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                            <option value="${method.methodID}" ${currentMethod == method.methodID ? "selected" : "" }>
                                 ${method.methodName}
                             </option>
                         </c:forEach>
@@ -355,28 +349,29 @@
 
                     <c:if test="${sessionScope.employee.roleID == 1}">
                         <select name="status" class="filter-select">
-                            <option value="1" ${param.status==1 ? 'selected' : '' }>Đang Bán</option>
-                            <option value="0" ${param.status==0 ? 'selected' : '' }>Tạm Ngưng</option>
+                            <option value="-1" ${currentStatus == -1 ? 'selected' : '' }>Tất Cả Trạng Thái</option>
+                            <option value="1" ${currentStatus == 1 ? 'selected' : '' }>Đang Bán</option>
+                            <option value="0" ${currentStatus == 0 ? 'selected' : '' }>Tạm Ngưng</option>
                         </select>
                     </c:if>
 
                     <div class="filter-price">
                         <span>Giá từ:</span>
-                        <input type="number" name="minPrice" value="${param.minPrice}" class="filter-input" />
+                        <input type="number" name="minPrice" value="${currentMinPrice}" class="filter-input" />
                         <span>đến:</span>
-                        <input type="number" name="maxPrice" value="${param.maxPrice}" class="filter-input" />
+                        <input type="number" name="maxPrice" value="${currentMaxPrice}" class="filter-input" />
                     </div>
 
                     <div class="line2">
                         <span>Sắp xếp:</span>
                         <select name="price" class="filter-select">
-                            <option value="price" ${param.price=='price' ? 'selected' : '' }>Giá Gốc</option>
-                            <option value="discountedPrice" ${param.price=='discountedPrice' ? 'selected' : '' }>Giá Thực Tế</option>
+                            <option value="price" ${currentPriceType == 'price' ? 'selected' : '' }>Giá Gốc</option>
+                            <option value="discountedPrice" ${currentPriceType == 'discountedPrice' ? 'selected' : '' }>Giá Thực Tế</option>
                         </select>
 
                         <select name="sort" class="filter-select">
-                            <option value="asc" ${param.sort=='asc' ? 'selected' : '' }>Tăng Dần ↑</option>
-                            <option value="desc" ${param.sort=='desc' ? 'selected' : '' }>Giảm Dần ↓</option>
+                            <option value="asc" ${currentSort == 'asc' ? 'selected' : '' }>Tăng Dần ↑</option>
+                            <option value="desc" ${currentSort == 'desc' ? 'selected' : '' }>Giảm Dần ↓</option>
                         </select>
 
                         <input type="submit" value="LỌC" class="btn-submit" />
@@ -396,80 +391,53 @@
                 <c:if test="${empty errorSearch}">
                     <div id="jsErrorSearch" class="error-msg" style="display: none;"></div>
                 </c:if>
-                <!--Display dish-->
-                <div class="menu-container">
 
+                <div class="menu-container">
                     <c:forEach var="item" items="${listItem}">
                         <div class="card">
-
                             <img src="${item.image}" alt="${item.itemName}">
-
-                            <span
-                                class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
+                            <span class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
                                 ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
                             </span>
-
                             <h3 class="item-name">${item.itemName}</h3>
-
                             <p class="category">🏷️ ${item.categoryName}</p>
-
                             <div class="price-container">
                                 <div class="discount-price">
-                                    <fmt:formatNumber value="${item.discountedPrice}"
-                                                      type="number" groupingUsed="true" />đ
+                                    <fmt:formatNumber value="${item.discountedPrice}" type="number" groupingUsed="true" />đ
                                 </div>
-
                                 <div class="price">
-                                    <fmt:formatNumber value="${item.price}" type="number"
-                                                      groupingUsed="true" />đ
+                                    <fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" />đ
                                 </div>
-
                                 <div class="discount-percent">
-                                    <fmt:formatNumber value="${item.discountPercent}"
-                                                      type="number" groupingUsed="true" />%
+                                    <fmt:formatNumber value="${item.discountPercent}" type="number" groupingUsed="true" />%
                                 </div>
                             </div>
 
                             <div class="button-group">
                                 <c:choose>
                                     <c:when test="${sessionScope.customer != null}">
-                                        <%-- [FIX PREORDER CART] Thêm món vào đúng đơn
-                                             đặt trước, không dùng URL /add-to-cart cũ. --%>
-                                        <form action="${pageContext.request.contextPath}/reservation"
-                                              method="post"
-                                              style="flex:1; margin:0; display:flex;">
-                                            <input type="hidden" name="action"
-                                                   value="addPreorderItem">
-                                            <input type="hidden" name="itemID"
-                                                   value="${item.itemID}">
-                                            <input type="hidden" name="quantity"
-                                                   value="1">
-                                            <button type="submit" class="btn"
-                                                    style="width:100%; background-color:#76493b; color:white;">
+                                        <form action="${pageContext.request.contextPath}/reservation" method="post" style="flex:1; margin:0; display:flex;">
+                                            <input type="hidden" name="action" value="addPreorderItem">
+                                            <input type="hidden" name="itemID" value="${item.itemID}">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit" class="btn" style="width:100%; background-color:#76493b; color:white;">
                                                 Thêm vào giỏ
                                             </button>
                                         </form>
-                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
-                                            Xem chi tiết
-                                        </a>
+                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>
                                     </c:when>
-
                                     <c:when test="${sessionScope.employee.roleID == 1}">
-                                        <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">
-                                            Chỉnh sửa
-                                        </a>
+                                        <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">Chỉnh sửa</a>
                                     </c:when>
-
                                     <c:otherwise>
-                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">
-                                            Xem chi tiết
-                                        </a>
+                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>
                                     </c:otherwise>
                                 </c:choose>
                             </div>
                         </div>
                     </c:forEach>
                 </div> 
+
                 <c:if test="${empty listItem}">
                     <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
                         <span style="font-size: 50px; display: block; margin-bottom: 10px;">🔍</span>
@@ -479,92 +447,86 @@
                 </c:if>
             </div>
         </div>
-    </div>
-    <c:if test="${totalPage > 1}">
-        <div class="pagination">
 
-            <c:choose>
-                <c:when test="${currentPage > 1}">
-                    <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                       title="Về trang đầu">Đầu</a>
-                    <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                       title="Trang trước">Trước</a>
-                </c:when>
-                <c:otherwise>
-                    <span class="disabled">Đầu</span>
-                    <span class="disabled">Trước</span>
-                </c:otherwise>
-            </c:choose>
+        <c:if test="${totalPage > 1}">
+            <div class="pagination">
+                <c:choose>
+                    <c:when test="${currentPage > 1}">
+                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${currentSearch}&category=${currentCategory}&cookingMethod=${currentMethod}&status=${currentStatus}&minPrice=${currentMinPrice}&maxPrice=${currentMaxPrice}&price=${currentPriceType}&sort=${currentSort}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${currentSearch}&category=${currentCategory}&cookingMethod=${currentMethod}&status=${currentStatus}&minPrice=${currentMinPrice}&maxPrice=${currentMaxPrice}&price=${currentPriceType}&sort=${currentSort}" title="Trang trước">Trước</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Đầu</span>
+                        <span class="disabled">Trước</span>
+                    </c:otherwise>
+                </c:choose>
 
-            <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
+                <span class="page-info">Trang <b>${currentPage}</b> / ${totalPage}</span>
 
-            <c:choose>
-                <c:when test="${currentPage < totalPage}">
-                    <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                       title="Trang sau">Sau</a>
-                    <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}"
-                       title="Đến trang cuối">Cuối</a>
-                </c:when>
-                <c:otherwise>
-                    <span class="disabled">Sau</span>
-                    <span class="disabled">Cuối</span>
-                </c:otherwise>
-            </c:choose>
+                <c:choose>
+                    <c:when test="${currentPage < totalPage}">
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${currentSearch}&category=${currentCategory}&cookingMethod=${currentMethod}&status=${currentStatus}&minPrice=${currentMinPrice}&maxPrice=${currentMaxPrice}&price=${currentPriceType}&sort=${currentSort}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${currentSearch}&category=${currentCategory}&cookingMethod=${currentMethod}&status=${currentStatus}&minPrice=${currentMinPrice}&maxPrice=${currentMaxPrice}&price=${currentPriceType}&sort=${currentSort}" title="Đến trang cuối">Cuối</a>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="disabled">Sau</span>
+                        <span class="disabled">Cuối</span>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </c:if>
 
-        </div>
-    </c:if>
-    <script>
-        const filterForm = document.getElementById('filterForm');
-        const jsErrorSearch = document.getElementById("jsErrorSearch");
-        const jsErrorPrice = document.getElementById("jsErrorPrice");
+        <script>
+            const filterForm = document.getElementById('filterForm');
+            const jsErrorSearch = document.getElementById("jsErrorSearch");
+            const jsErrorPrice = document.getElementById("jsErrorPrice");
 
-        filterForm.onsubmit = function (event) {
-            let isValid = true;
+            filterForm.onsubmit = function (event) {
+                let isValid = true;
 
-            const searchInput = filterForm.elements["search"].value.trim();
-            const minPriceInput = filterForm.elements["minPrice"].value.trim();
-            const maxPriceInput = filterForm.elements["maxPrice"].value.trim();
+                const searchInput = filterForm.elements["search"].value.trim();
+                const minPriceInput = filterForm.elements["minPrice"].value.trim();
+                const maxPriceInput = filterForm.elements["maxPrice"].value.trim();
 
-            if (jsErrorSearch) {
-                if (searchInput.length > 100) {
-                    jsErrorSearch.innerHTML = "Tìm kiếm không vượt quá 100 kí tự";
-                    jsErrorSearch.style.display = "flex";
-                    isValid = false;
-                } else {
-                    jsErrorSearch.innerHTML = "";
-                    jsErrorSearch.style.display = "none";
+                if (jsErrorSearch) {
+                    if (searchInput.length > 100) {
+                        jsErrorSearch.innerHTML = "Tìm kiếm không vượt quá 100 kí tự";
+                        jsErrorSearch.style.display = "flex";
+                        isValid = false;
+                    } else {
+                        jsErrorSearch.innerHTML = "";
+                        jsErrorSearch.style.display = "none";
+                    }
                 }
-            }
 
-            if (jsErrorPrice) {
-                let minPrice = minPriceInput !== "" ? parseFloat(minPriceInput) : 0;
-                let maxPrice = maxPriceInput !== "" ? parseFloat(maxPriceInput) : Infinity;
-                const INT_MAX = 2147483647;
+                if (jsErrorPrice) {
+                    let minPrice = minPriceInput !== "" ? parseFloat(minPriceInput) : 0;
+                    let maxPrice = maxPriceInput !== "" ? parseFloat(maxPriceInput) : Infinity;
+                    const INT_MAX = 2147483647;
 
-                if (minPrice < 0 || maxPrice < 0) {
-                    jsErrorPrice.innerHTML = "Giá món ăn không được là số âm!";
-                    jsErrorPrice.style.display = "flex";
-                    isValid = false;
-                } else if (minPrice > INT_MAX || (maxPriceInput !== "" && maxPrice > INT_MAX)) {
-                    jsErrorPrice.innerHTML = "Giá tiền nhập vào vượt quá giới hạn cho phép (Tối đa 2 tỷ)!";
-                    jsErrorPrice.style.display = "flex";
-                    isValid = false;
-                } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
-                    jsErrorPrice.innerHTML = "Giá max phải lớn hơn giá Min";
-                    jsErrorPrice.style.display = "flex";
-                    isValid = false;
-                } else {
-                    jsErrorPrice.innerHTML = "";
-                    jsErrorPrice.style.display = "none";
+                    if (minPrice < 0 || maxPrice < 0) {
+                        jsErrorPrice.innerHTML = "Giá món ăn không được là số âm!";
+                        jsErrorPrice.style.display = "flex";
+                        isValid = false;
+                    } else if (minPrice > INT_MAX || (maxPriceInput !== "" && maxPrice > INT_MAX)) {
+                        jsErrorPrice.innerHTML = "Giá tiền nhập vào vượt quá giới hạn cho phép (Tối đa 2 tỷ)!";
+                        jsErrorPrice.style.display = "flex";
+                        isValid = false;
+                    } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
+                        jsErrorPrice.innerHTML = "Giá max phải lớn hơn giá Min";
+                        jsErrorPrice.style.display = "flex";
+                        isValid = false;
+                    } else {
+                        jsErrorPrice.innerHTML = "";
+                        jsErrorPrice.style.display = "none";
+                    }
                 }
-            }
 
-            if (!isValid) {
-                event.preventDefault(); // Chặn đứng form không cho submit lên server
-            }
-        };
-    </script>
-    <%@ include file="/views/includes/footer.jsp" %>
-</body>
-
+                if (!isValid) {
+                    event.preventDefault();
+                }
+            };
+        </script>
+        <%@ include file="/views/includes/footer.jsp" %>
+    </body>
 </html>

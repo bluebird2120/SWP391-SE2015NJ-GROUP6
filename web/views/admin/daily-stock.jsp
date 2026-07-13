@@ -14,7 +14,7 @@
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt chuẩn Vị An */
+                background-color: #fdfbf7; 
                 color: #333;
                 margin: 0;
             }
@@ -33,10 +33,9 @@
             }
             .page-header h2 {
                 margin: 0 0 5px 0;
-                color: #78493b; /* 🌟 ĐÃ SỬA: Màu nâu trầm chủ đạo */
+                color: #78493b; 
             }
 
-            /* Hộp thông báo và cảnh báo hệ thống */
             .alert-box {
                 background-color: #fffaf0;
                 border-left: 4px solid #dd6b20;
@@ -81,7 +80,6 @@
                 color: #c62828;
             }
 
-            /* Thanh bộ lọc tìm kiếm */
             .filter-form {
                 display: flex;
                 gap: 12px;
@@ -105,7 +103,7 @@
                 outline: none;
             }
             .btn-search {
-                background-color: #78493b; /* 🌟 ĐÃ SỬA: Đổi sang màu nâu trầm */
+                background-color: #78493b; 
                 color: white;
                 border: none;
                 padding: 8px 16px;
@@ -118,7 +116,6 @@
                 background-color: #5c352d;
             }
 
-            /* Khối nhập nhanh số lượng mặc định */
             .fast-input-box {
                 background-color: #fdfaf7;
                 border: 1px solid #ebdcd0;
@@ -142,7 +139,7 @@
                 outline: none;
             }
             .btn-apply-all {
-                background-color: #4b6b40; /* 🌟 ĐÃ SỬA: Đổi sang xanh rêu nền nã */
+                background-color: #4b6b40; 
                 color: white;
                 border: none;
                 padding: 6px 14px;
@@ -155,7 +152,6 @@
                 background-color: #395231;
             }
 
-            /* Bảng dữ liệu */
             table {
                 width: 100%;
                 border-collapse: collapse;
@@ -197,7 +193,7 @@
             }
 
             .btn-submit {
-                background-color: #de6b48; /* 🌟 ĐÃ SỬA: Nút submit chuyển thành màu cam đất thương hiệu */
+                background-color: #de6b48; 
                 color: white;
                 border: none;
                 padding: 12px 40px;
@@ -212,7 +208,6 @@
                 background-color: #c44d2d;
             }
 
-            /* Phân trang */
             .pagination {
                 display: flex;
                 justify-content: center;
@@ -274,27 +269,19 @@
                     </div>
 
                     <c:if test="${not empty errorMessage}">
-                        <div class="danger-warning-box">
-                            ${errorMessage}
-                        </div>
+                        <div class="danger-warning-box">${errorMessage}</div>
                     </c:if>
-
                     <c:if test="${not empty errorSearch}">
-                        <div class="danger-warning-box">
-                            ${errorSearch}
-                        </div>
+                        <div class="danger-warning-box">${errorSearch}</div>
                     </c:if>
-
+                    <c:if test="${not empty errorDate}">
+                        <div class="danger-warning-box">${errorDate}</div>
+                    </c:if>
                     <c:if test="${not empty updateFail}">
-                        <div class="danger-warning-box">
-                            ${updateFail}
-                        </div>
+                        <div class="danger-warning-box">${updateFail}</div>
                     </c:if>
-
                     <c:if test="${not empty updateSuccess}">
-                        <div class="success-annouce-box">
-                            ${updateSuccess}
-                        </div>
+                        <div class="success-annouce-box">${updateSuccess}</div>
                     </c:if>
 
                     <c:if test="${hasLowStock == true}">
@@ -314,20 +301,21 @@
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
                     </div>
 
+                    <!-- Form lọc kết quả (🌟 ĐÃ SỬA: Thay toàn bộ sang biến current sạch từ Servlet) -->
                     <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form" id="filterFormID">
-                        <input type="text" name="search" value="${param.search}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
+                        <input type="text" name="search" value="${currentSearch}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
 
                         <select name="categoryID" class="filter-select" id="jsSelectCategory">
-                            <option value="">Tất cả loại món</option>
+                            <option value="0">Tất cả loại món</option>
                             <c:forEach var="cat" items="${categoryList}">
-                                <option value="${cat.categoryID}" ${param.categoryID == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
+                                <option value="${cat.categoryID}" ${currentCategory == cat.categoryID ? 'selected' : ''}>${cat.categoryName}</option>
                             </c:forEach>
                         </select>
 
                         <select name="cookingMethod" class="filter-select" id="jsSelectMethod">
-                            <option value="">Tất cả phương thức</option>
+                            <option value="0">Tất cả phương thức</option>
                             <c:forEach var="method" items="${listMethod}">
-                                <option value="${method.methodID}" ${param.cookingMethod == method.methodID ? "selected" : "" }>
+                                <option value="${method.methodID}" ${currentMethod == method.methodID ? "selected" : "" }>
                                     ${method.methodName}
                                 </option>
                             </c:forEach>
@@ -343,12 +331,11 @@
 
                     <div class="fast-input-box">
                         <span>⚡ <b>Nhập nhanh:</b> Điền số lượng cho <b>tất cả ô nhập</b> bên dưới thành:</span>
-                        <input type="number" id="inputDefaultAll" min="1" value="50" class="input-all-number">
+                        <input type="number" id="inputDefaultAll" min="0" value="50" class="input-all-number">
                         <button type="button" class="btn-apply-all" onclick="applyQuantityToAllFields()">Áp dụng</button>
                     </div>
 
                     <form id="stockMainForm" action="${pageContext.request.contextPath}/daily-stock" method="post" style="display: block; width: 100%;">
-
                         <table>
                             <thead>
                                 <tr>
@@ -371,10 +358,10 @@
                                         </td>
                                         <td style="text-align: center;">
                                             <input type="hidden" name="itemID" value="${item.itemID}"/>
-                                            <input  type="number" name="initialQuantity" 
-                                                    value="${not empty saveInputData ? saveInputData[item.itemID] : ""}" 
-                                                    class="input-item-qty field-stock-input"/>
-                                            <c:if test="${item.quantityInStock < item.initialQuantity * 20/100}">
+                                            <input type="number" name="initialQuantity" 
+                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : (item.initialQuantity > 0 ? item.initialQuantity : '')}" 
+                                                   class="input-item-qty field-stock-input"/>
+                                            <c:if test="${item.initialQuantity > 0 && item.quantityInStock < item.initialQuantity * 20/100}">
                                                 <br/><small style="color: #dc3545; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
                                             </c:if>
                                         </td>
@@ -397,8 +384,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -410,8 +397,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${param.search}&categoryID=${param.categoryID}&date=${date}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -431,8 +418,8 @@
             function applyQuantityToAllFields() {
                 const defaultValue = document.getElementById('inputDefaultAll').value;
 
-                if (defaultValue === "" || parseInt(defaultValue) <= 0 || isNaN(defaultValue)) {
-                    alert("Số lượng nhập nhanh phải là một số nguyên dương hợp lệ!");
+                if (defaultValue === "" || parseInt(defaultValue) < 0 || isNaN(defaultValue)) {
+                    alert("Số lượng nhập nhanh phải là một số nguyên không âm hợp lệ!");
                     return;
                 }
 
@@ -454,7 +441,7 @@
                 const selectCat = document.getElementById('jsSelectCategory').value;
                 const selectMethod = document.getElementById('jsSelectMethod').value;
 
-                if (selectCat !== "" || selectMethod !== "") {
+                if ((selectCat !== "" && selectCat !== "0") || (selectMethod !== "" && selectMethod !== "0")) {
                     isFormValid = false;
                     const li = document.createElement('li');
                     li.innerText = "Hệ thống phát hiện bạn đang bật bộ lọc ẩn danh mục món ăn! Vui lòng trả bộ lọc về trạng thái 'Tất cả loại món' và 'Tất cả phương thức' để tiến hành chốt toàn bộ kho.";
@@ -477,11 +464,11 @@
                     } 
                     else {
                         const parsedValue = parseInt(valueTrim);
-                        if (isNaN(parsedValue) || parsedValue <= 0 || parseFloat(valueTrim) !== parsedValue) {
+                        if (isNaN(parsedValue) || parsedValue < 0 || parseFloat(valueTrim) !== parsedValue) {
                             isFormValid = false;
                             inputField.style.borderColor = "#dc3545";
                             const li = document.createElement('li');
-                            li.innerText = "Món '" + nameText + "' có giá trị nhập vào không hợp lệ (Phải là số nguyên lớn hơn 0)!";
+                            li.innerText = "Món '" + nameText + "' có giá trị nhập vào không hợp lệ (Phải là số nguyên lớn hơn hoặc bằng 0)!";
                             missingItemsList.appendChild(li);
                         } else {
                             inputField.style.borderColor = "#cbd5e1";

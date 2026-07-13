@@ -104,6 +104,10 @@
                 background: #f5e2ff;
                 color: #71368a;
             }
+            .pending {
+                background: #ffe7c2;
+                color: #9a5200;
+            }
             select {
                 padding: 8px;
                 border: 1px solid #d8c6ba;
@@ -157,7 +161,7 @@
                             <div class="counts">
                                 <div class="count">Tổng bàn: <strong>${entry.value[0]}</strong></div>
                                 <div class="count">Đang dùng: <strong>${entry.value[1]}</strong></div>
-                                <div class="count">Đã gán trước: <strong>${entry.value[2]}</strong></div>
+                                <div class="count">Còn trống: <strong>${entry.value[2]}</strong></div>
                                 <div class="count">Chờ dọn: <strong>${entry.value[3]}</strong></div>
                             </div>
                         </div>
@@ -246,7 +250,18 @@
                                     <td>${t.tableName}</td>
                                     <td>${t.capacity} chỗ</td>
                                     <td>${t.areaType}</td>
-                                    <td><span class="badge ${t.physicalStatus}">${t.physicalStatus}</span></td>
+                                    <td>
+                                        <span class="badge ${t.physicalStatus}">
+                                            <c:choose>
+                                                <c:when test="${t.physicalStatus == 'available'}">Trống</c:when>
+                                                <c:when test="${t.physicalStatus == 'reserved'}">Đã đặt trước</c:when>
+                                                <c:when test="${t.physicalStatus == 'serving'}">Đang phục vụ</c:when>
+                                                <c:when test="${t.physicalStatus == 'cleaning'}">Chờ dọn</c:when>
+                                                <c:when test="${t.physicalStatus == 'pending'}">Chờ xác nhận</c:when>
+                                                <c:otherwise>${t.physicalStatus}</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </td>
                                     <td><c:if test="${not empty t.orderID}">#${t.orderID}</c:if></td>
                                     <td>
                                         <%-- [PHAN QUYEN LE TAN] Lễ tân không xác nhận dọn bàn ở màn này. --%>

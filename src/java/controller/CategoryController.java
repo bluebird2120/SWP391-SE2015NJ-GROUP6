@@ -24,13 +24,13 @@ public class CategoryController extends HttpServlet {
         String page_raw = request.getParameter("page");
         String isAvailable_raw = request.getParameter("isAvailable");
 
+        //Validate
         if (!checkEmpty(search)) {
             search = "";
         }
-        int page = checkEmpty(page_raw) ? Integer.parseInt(page_raw) : 1;
+        int page = parseIntSafe(page_raw, 1, 1);
+        int isAvailable = parseIntSafe(isAvailable_raw, -1, -1);
 
-        // Mặc định gán là -1 (TẤT CẢ)
-        int isAvailable = checkEmpty(isAvailable_raw) ? Integer.parseInt(isAvailable_raw) : -1;
         String errorSearch = search.length() > 100 ? "Tìm kiếm vượt quá 100 kí tự" : "";
 
         if (checkEmpty(errorSearch)) {
@@ -58,6 +58,7 @@ public class CategoryController extends HttpServlet {
         int offset = (page - 1) * PAGE_SIZE;
         List<MenuCategory> categoryList = menuCategoryDAO.searchCategoryPaging(search, isAvailable, offset, PAGE_SIZE);
 
+        request.setAttribute("currentSearch", search);
         request.setAttribute("currentAvailable", isAvailable);
         request.setAttribute("categoryList", categoryList);
         request.setAttribute("totalPage", totalPage);
@@ -71,7 +72,8 @@ public class CategoryController extends HttpServlet {
             mc.setInactiveMenuItem(inactiveDish);
             mc.setTotalDish(totalDish);
         }
-        request.getRequestDispatcher("views/admin/category-list.jsp").forward(request, response);
+
+        request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
     }
 
     @Override
@@ -81,20 +83,18 @@ public class CategoryController extends HttpServlet {
         String categoryID = request.getParameter("categoryID");
         String categoryName = request.getParameter("categoryName");
         String status_raw = request.getParameter("status");
-        int id = checkEmpty(categoryID) ? Integer.parseInt(categoryID) : 0;
-
         String page_raw = request.getParameter("page");
         String search_raw = request.getParameter("search");
         String isAvailable_raw = request.getParameter("isAvailable");
 
-        String currentPage = checkEmpty(page_raw) ? page_raw : "1";
+        //Validate 
+        int id = parseIntSafe(categoryID, 0, 0);
+        int status = parseIntSafe(status_raw, -1, -1);
+        String currentPage = String.valueOf(parseIntSafe(page_raw, 1, 1));
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
-        String currentAvailable = checkEmpty(isAvailable_raw) ? isAvailable_raw : "-1";
+        String currentAvailable = String.valueOf(parseIntSafe(isAvailable_raw, -1, -1));
 
-        // Logic đổi trạng thái danh mục và món ăn đi kèm
-        if (checkEmpty(status_raw) && id > 0) {
-            int status = Integer.parseInt(status_raw);
-
+        if (status != -1 && id > 0) {
             boolean isCategoryChanged = menuCategoryDAO.changeStatusCategory(id, status);
             boolean isItemsChanged = menuCategoryDAO.changeStatusItemsByCategory(id, status);
 
@@ -113,7 +113,7 @@ public class CategoryController extends HttpServlet {
                 errorName = "Tên loại món ăn đã tồn tại";
             }
         }
-        if (!errorName.isEmpty()) {
+        if (checkEmpty(errorName)) {
             request.setAttribute("errorName", errorName);
             doGet(request, response);
             return;
@@ -137,6 +137,18 @@ public class CategoryController extends HttpServlet {
         }
 
         response.sendRedirect(request.getContextPath() + "/category-management");
+    }
+
+    private int parseIntSafe(String value, int defaultValue, int minValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            int result = Integer.parseInt(value.trim());
+            return (result < minValue) ? minValue : result;
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {

@@ -8,7 +8,7 @@
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #fdfbf7; /* Nền kem nhạt hệ thống Vị An */
+                background-color: #fdfbf7;
                 color: #333;
                 margin: 0;
             }
@@ -31,7 +31,7 @@
                 max-width: 100%;
             }
             h2 {
-                color: #78493b; /* Nâu trầm Vị An */
+                color: #78493b;
                 margin: 0;
                 font-size: 24px;
                 font-weight: 600;
@@ -73,7 +73,7 @@
                 background-color: #5c352d;
             }
             .btn-create {
-                background-color: #4b6b40; /* Màu xanh rêu tinh tế cho nút Thêm mới */
+                background-color: #4b6b40;
                 color: white;
                 border: none;
                 padding: 10px 20px;
@@ -183,7 +183,6 @@
                 pointer-events: none;
             }
 
-            /* Hộp thông báo và lỗi */
             .error-message {
                 background-color: #fdeaea;
                 border-left: 4px solid #dc3545;
@@ -259,7 +258,7 @@
             }
             .btn-submit {
                 width: 100%;
-                background-color: #de6b48; /* Màu cam đất nổi bật của Vị An */
+                background-color: #de6b48;
                 color: white;
                 border: none;
                 padding: 12px;
@@ -304,7 +303,7 @@
                     </div>
 
                     <form id="searchForm" action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
-                        <input type="text" name="search" value="${param.search}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
+                        <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
 
                         <select name="isAvailable" class="filter-select" onchange="document.getElementById('searchForm').submit();">
                             <option value="-1" ${currentAvailable == -1 ? 'selected' : ''}>TẤT CẢ</option>
@@ -313,6 +312,8 @@
                         </select>
                         <button type="submit" class="btn-search">Tìm kiếm</button>
                     </form>
+
+                    <div id="jsErrorSearch" class="error-message" style="display: none;"></div>
 
                     <c:if test="${not empty updateSuccess}">
                         <div class="success-message">✅ <b>Thành công:</b> ${updateSuccess}</div>
@@ -349,7 +350,7 @@
                                         <form action="${pageContext.request.contextPath}/category-management" method="post">
                                             <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
-                                            <input type="hidden" value="${param.search}" name="search"/>
+                                            <input type="hidden" value="${currentSearch}" name="search"/>
                                             <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
 
                                             <c:choose>
@@ -371,8 +372,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${param.search}&isAvailable=${currentAvailable}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${param.search}&isAvailable=${currentAvailable}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=1&search=${currentSearch}&isAvailable=${currentAvailable}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage - 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -384,8 +385,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${param.search}&isAvailable=${currentAvailable}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${param.search}&isAvailable=${currentAvailable}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${currentPage + 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/category-management?page=${totalPage}&search=${currentSearch}&isAvailable=${currentAvailable}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
@@ -421,6 +422,7 @@
                 <form id="createForm" action="category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
                     <label class="form-label">Nhập loại mới:</label>
+                    <!-- 🌟 ĐÃ SỬA CHUẨN: name="createCategoryName" đổi thành name="categoryName" để khớp với Servlet -->
                     <input type="text" id="createCategoryName" name="categoryName"/>
                     <span class="modal-error-text" id="createErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
@@ -481,10 +483,16 @@
             };
 
             document.getElementById("searchForm").onsubmit = function (event) {
-                const searchVal = this.elements["search"].value;
-                if (searchVal.length > 100) {
-                    alert("Tìm kiếm không vượt quá 100 kí tự");
+                const searchInput = this.elements["search"].value.trim();
+                const errorBox = document.getElementById("jsErrorSearch");
+
+                if (searchInput.length > 100) {
+                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
+                    errorBox.style.display = "block";
                     event.preventDefault();
+                } else {
+                    errorBox.innerHTML = "";
+                    errorBox.style.display = "none";
                 }
             };
         </script>

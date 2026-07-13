@@ -61,6 +61,15 @@
             .cleaning {
                 background: #fff0c7;
             }
+            .serving {
+                background: #e4f4ff;
+            }
+            .reserved {
+                background: #e8edff;
+            }
+            .pending {
+                background: #ffe7c2;
+            }
             button {
                 border: 0;
                 border-radius: 7px;
@@ -113,7 +122,18 @@
                                     <td>${t.tableName} (${t.capacity} chỗ)</td>
                                     <td>${t.areaType}</td>
                                     <td><fmt:formatDate value="${t.orderTime}" pattern="HH:mm - dd/MM/yyyy"/></td>
-                                    <td><span class="badge ${t.physicalStatus}">${t.physicalStatus}</span></td>
+                                    <td>
+                                        <span class="badge ${t.physicalStatus}">
+                                            <c:choose>
+                                                <c:when test="${t.physicalStatus == 'available'}">Trống</c:when>
+                                                <c:when test="${t.physicalStatus == 'reserved'}">Đã đặt trước</c:when>
+                                                <c:when test="${t.physicalStatus == 'serving'}">Đang phục vụ</c:when>
+                                                <c:when test="${t.physicalStatus == 'cleaning'}">Chờ dọn</c:when>
+                                                <c:when test="${t.physicalStatus == 'pending'}">Chờ xác nhận</c:when>
+                                                <c:otherwise>${t.physicalStatus}</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </td>
                                     <td>
                                         <c:if test="${t.physicalStatus == 'cleaning'}">
                                             <form method="post" action="${pageContext.request.contextPath}/staff/tables">
