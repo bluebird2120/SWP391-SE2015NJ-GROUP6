@@ -30,6 +30,7 @@ public class ScanQRController extends HttpServlet {
             if (currentTable != null && currentTable.getIsActive() == 1) {
 
                 OrderDAO orderDAO = new OrderDAO();
+                //  Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
                 String role = (String) session.getAttribute("roleInTable");
@@ -62,7 +63,7 @@ public class ScanQRController extends HttpServlet {
 
                 if (activeOrder != null) {
 
-                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / SERVING)
+                    // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / ARRIVED / SERVING / OCCUPIED)
 
                     // 1. Kiểm tra xem người quét có phải là Host/Guest đã ở trong bàn này không
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
@@ -81,9 +82,25 @@ public class ScanQRController extends HttpServlet {
                     } 
                     
                     // 2. NGƯỜI LẠ HOẶC NGƯỜI QUÉT LẦN ĐẦU
-                    // Bàn đang chờ khách đặt trước tới nhận (Reserved)
+                    
+                    // Bàn đang chờ khách đặt trước tới nhận (Reserved) - Chưa check-in
                     if ("reserved".equals(activeOrder.getTableStatus())) {
-                        session.setAttribute("errorMsg", "Bàn này đã được đặt trước! Vui lòng gặp nhân viên để nhận bàn.");
+                        session.setAttribute("errorMsg", "Bàn này đã được đặt trước! Vui lòng gặp nhân viên để check-in và nhận bàn.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+                    
+                    // === 🌟 VÁ LỖ HỔNG DEADLOCK KHÁCH ĐẶT TRƯỚC ===
+                    // Bàn Đặt Trước vừa được nhân viên Check-in (Trạng thái: arrived)
+                    if ("arrived".equals(activeOrder.getTableStatus())) {
+                        // Cấp ngay quyền HOST cho người quét đầu tiên của nhóm khách đặt trước
+                        session.setAttribute("orderID", activeOrder.getOrderID());
+                        session.setAttribute("roleInTable", "HOST");
+
+                        // Đóng cửa lại thành 'occupied' để người thứ 2 quét mã phải xin gộp bàn
+                        orderDAO.updateTableStatus(activeOrder.getOrderID(), "occupied");
+
+                        // Đưa khách vào Menu để tiến hành gọi thêm món hoặc thanh toán
                         response.sendRedirect(request.getContextPath() + "/menu");
                         return;
                     }
@@ -94,9 +111,17 @@ public class ScanQRController extends HttpServlet {
                         response.sendRedirect(request.getContextPath() + "/menu");
                         return;
                     }
+                    
+                    // [TABLE STATUS FLOW] Ban da thanh toan nhung chua don xong thi chua cho khach moi vao.
+                    if ("cleaning".equals(activeOrder.getTableStatus())) {
+                        session.setAttribute("errorMsg", "Bàn này đang chờ dọn dẹp. Vui lòng chọn bàn khác hoặc liên hệ nhân viên.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
 
-                    // [TABLE STATUS STANDARD] Ban dang phuc vu dung 'serving'.
-                    if ("serving".equals(activeOrder.getTableStatus())) {
+                    // Ban da co HOST/khach dang ngoi an thi phai xin gop ban.
+                    // [TABLE STATUS FLOW] occupied = da co HOST/khach dang dung ban.
+                    if ("occupied".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
@@ -106,17 +131,21 @@ public class ScanQRController extends HttpServlet {
                     // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG TINH (Khách vãng lai đến quán)
                     Order newOrder = new Order();
                     
-                    // SỬA: Set trạng thái là 'pending' để chờ nhân viên ra mở bàn
+                    // Set trạng thái là 'pending' để chờ nhân viên ra mở bàn
                     newOrder.setTableStatus("pending"); 
                     newOrder.setOrderType(1);
                     
-                    // SỬA SỐ 1 THÀNH SỐ 0: Bắt buộc phải được staff xác nhận
+                    // Bắt buộc phải được staff xác nhận
                     newOrder.setIsStaffConfirmed(0);
 
                     newOrder.setOrderStatus("ordering");
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
 
+                    // 🌟 ĐÃ VÁ LỖI TẠI ĐÂY: Gán thời gian tạo đơn để SQL bắt được đơn hàng
+                    newOrder.setOrderTime(new java.sql.Timestamp(System.currentTimeMillis()));
+                    newOrder.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+                    
                     // Gán nhân viên phụ trách theo ca làm việc hiện tại
                     dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
                     Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();

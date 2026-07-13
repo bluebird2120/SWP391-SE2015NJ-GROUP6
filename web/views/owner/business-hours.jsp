@@ -70,6 +70,10 @@
                 cursor: pointer;
                 font-weight: 600;
             }
+            button:disabled {
+                opacity: .6;
+                cursor: not-allowed;
+            }
             button.danger { background: #dc3545; }
             .inline {
                 display: flex;
@@ -86,6 +90,27 @@
             }
             .open { background: #dff5e5; color: #176b36; }
             .closed { background: #ffe0e0; color: #9b1c1c; }
+            .status-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .status-btn {
+                padding: 6px 11px;
+                border-radius: 999px;
+                background: #eaded6;
+                color: #76493b;
+                font-size: .82rem;
+            }
+            .status-btn.open-active {
+                background: #dff5e5;
+                color: #176b36;
+            }
+            .status-btn.closed-active {
+                background: #ffe0e0;
+                color: #9b1c1c;
+            }
             .message {
                 padding: 12px 14px;
                 border-radius: 8px;
@@ -103,7 +128,6 @@
         <div class="layout">
             <%@ include file="/views/includes/dashboard.jsp" %>
             <main class="content">
-
                 <h1>Giờ hoạt động</h1>
                 <p class="sub">
                     Thiết lập giờ mở cửa, đóng cửa và ngày nghỉ để hệ thống kiểm tra khi khách đặt bàn.
@@ -134,60 +158,67 @@
                             </tr>
                         </thead>
                         <tbody>
-
                             <c:forEach var="entry" items="${weeklySchedules}">
                                 <c:set var="s" value="${entry.value}" />
+                                <c:set var="weeklyFormId" value="weeklyForm_${entry.key}" />
                                 <fmt:formatDate var="openValue" value="${s.openTime}" pattern="HH:mm"/>
                                 <fmt:formatDate var="closeValue" value="${s.closeTime}" pattern="HH:mm"/>
                                 <tr>
-
-                                    <form method="post" action="${pageContext.request.contextPath}/business-hours">
-
-                                        <input type="hidden" name="action" value="saveWeekly">
-
-                                        <input type="hidden" name="dayOfWeek" value="${entry.key}">
-                                        <td>${entry.key}</td>
                                         <td>
-
+                                            <form id="${weeklyFormId}" method="post" action="${pageContext.request.contextPath}/business-hours">
+                                                <input type="hidden" name="action" value="saveWeekly">
+                                                <input type="hidden" name="dayOfWeek" value="${entry.key}">
+                                                <input type="hidden" name="isClosed" value="${s.isClosed}" class="weekly-status-value">
+                                            </form>
+                                            ${entry.key}
+                                        </td>
+                                        <td>
                                             <input type="time" name="openTime"
+                                                   form="${weeklyFormId}"
                                                    value="${openValue}"
                                                    ${!isOwner ? 'disabled' : ''}>
                                         </td>
                                         <td>
-
                                             <input type="time" name="closeTime"
+                                                   form="${weeklyFormId}"
                                                    value="${closeValue}"
                                                    ${!isOwner ? 'disabled' : ''}>
                                         </td>
                                         <td>
-                                            <label class="inline">
-
-                                                <input type="checkbox" name="isClosed" value="1"
-                                                       ${s.isClosed == 1 ? 'checked' : ''}
-                                                       ${!isOwner ? 'disabled' : ''}>
-                                                <span class="badge ${s.isClosed == 1 ? 'closed' : 'open'}">
-                                                    ${s.isClosed == 1 ? 'Nghỉ' : 'Mở'}
-                                                </span>
-                                            </label>
+                                            <%-- [OPERATING HOURS] Bỏ checkbox, đổi trạng thái bằng nút Mở/Nghỉ. --%>
+                                            <div class="status-actions">
+                                                <button type="button"
+                                                        form="${weeklyFormId}"
+                                                        class="status-btn ${s.isClosed == 0 ? 'open-active' : ''}"
+                                                        ${!isOwner ? 'disabled' : ''}
+                                                        onclick="setWeeklyStatusAndSubmit(this, 0)">
+                                                    Mở
+                                                </button>
+                                                <button type="button"
+                                                        form="${weeklyFormId}"
+                                                        class="status-btn ${s.isClosed == 1 ? 'closed-active' : ''}"
+                                                        ${!isOwner ? 'disabled' : ''}
+                                                        onclick="setWeeklyStatusAndSubmit(this, 1)">
+                                                    Nghỉ
+                                                </button>
+                                            </div>
                                         </td>
                                         <td>
-
-                                            <input type="text" name="reason" value="${s.reason}"
+                                            <input type="text" name="reason" form="${weeklyFormId}" value="${s.reason}"
                                                    placeholder="Lý do / ghi chú"
                                                    ${!isOwner ? 'disabled' : ''}>
                                         </td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${isOwner}">
-
-                                                    <button type="submit">Lưu</button>
+                                                    <%-- [OPERATING HOURS] Owner cập nhật giờ hoạt động theo tuần. --%>
+                                                    <button type="submit" form="${weeklyFormId}">Lưu</button>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="readonly">Chỉ xem</span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
-                                    </form>
                                 </tr>
                             </c:forEach>
                         </tbody>
@@ -197,14 +228,10 @@
                 <h2>Ngày đặc biệt</h2>
                 <div class="panel">
                     <c:if test="${isOwner}">
-
-
+                        <%-- [OPERATING HOURS] Ngày đặc biệt được ưu tiên hơn lịch theo tuần. --%>
                         <form method="post" action="${pageContext.request.contextPath}/business-hours" class="inline" style="margin-bottom:14px;">
-
                             <input type="hidden" name="action" value="saveSpecial">
-
                             <input type="date" name="specificDate" required>
-
                             <input type="time" name="openTime">
                             <input type="time" name="closeTime">
                             <label class="inline">
@@ -228,7 +255,6 @@
                             </tr>
                         </thead>
                         <tbody>
-
                             <c:forEach var="s" items="${specialSchedules}">
                                 <tr>
                                     <td><fmt:formatDate value="${s.specificDate}" pattern="dd/MM/yyyy"/></td>
@@ -243,12 +269,9 @@
                                     <td>
                                         <c:choose>
                                             <c:when test="${isOwner}">
-
                                                 <form method="post" action="${pageContext.request.contextPath}/business-hours"
                                                       onsubmit="return confirm('Xóa ngày đặc biệt này?')">
-
                                                     <input type="hidden" name="action" value="deleteSpecial">
-
                                                     <input type="hidden" name="scheduleID" value="${s.scheduleID}">
                                                     <button class="danger" type="submit">Xóa</button>
                                                 </form>
@@ -269,5 +292,22 @@
             </main>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
+        <script>
+            function setWeeklyStatusAndSubmit(button, value) {
+                var form = button.form;
+                if (!form) {
+                    return;
+                }
+                var statusInput = form.querySelector('.weekly-status-value');
+                if (statusInput) {
+                    statusInput.value = value;
+                }
+                if (form.requestSubmit) {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }
+        </script>
     </body>
 </html>

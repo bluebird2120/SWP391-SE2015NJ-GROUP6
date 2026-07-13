@@ -2,6 +2,8 @@ package dal;
 
 import model.Invoices;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InvoicesDAO {
 
@@ -167,5 +169,133 @@ public class InvoicesDAO {
             System.err.println("[InvoicesDAO] updatePaymentSuccessAndCleaningTable lỗi Connection: " + e.getMessage());
         }
         return false;
+    }
+    
+    // =========================================================
+    // LẤY TOÀN BỘ HÓA ĐƠN CHO ADMIN (Sắp xếp mới nhất lên đầu)
+    // =========================================================
+    public List<Invoices> getAllInvoices() {
+        List<Invoices> list = new ArrayList<>();
+        String sql = "SELECT * FROM Invoices ORDER BY issuedDate DESC";
+        
+        try (java.sql.Connection conn = new dal.DBContext().getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                Invoices inv = new Invoices();
+                inv.setInvoiceID(rs.getInt("invoiceID"));
+                inv.setInvoiceNumber(rs.getString("invoiceNumber"));
+                inv.setSubTotal(rs.getLong("subTotal"));
+                inv.setTaxAmount(rs.getLong("taxAmount"));
+                inv.setDepositDeducted(rs.getLong("depositDeducted"));
+                inv.setFinalAmount(rs.getLong("finalAmount"));
+                inv.setIssuedDate(rs.getDate("issuedDate"));
+                inv.setStatus(rs.getString("status"));
+                list.add(inv);
+            }
+        } catch (Exception e) {
+            System.err.println("[InvoicesDAO] getAllInvoices lỗi: " + e.getMessage());
+        }
+        return list;
+    }
+    
+    // =========================================================
+    // 1. ĐẾM TỔNG SỐ HÓA ĐƠN THEO BỘ LỌC (DÙNG ĐỂ TÍNH SỐ TRANG)
+    // =========================================================
+    public int getTotalFilteredInvoices(String startDate, String endDate, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Invoices WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) >= ? ");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) <= ? ");
+            params.add(endDate);
+        }
+        if (status != null && !status.trim().isEmpty() && !status.equals("all")) {
+            sql.append(" AND status = ? ");
+            params.add(status);
+        }
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+             
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getTotalFilteredInvoices lỗi: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // =========================================================
+    // 2. LẤY DANH SÁCH HÓA ĐƠN THEO BỘ LỌC VÀ TRANG (PHÂN TRANG)
+    // =========================================================
+    public List<Invoices> getFilteredInvoices(String startDate, String endDate, String status, int offset, int limit) {
+        List<Invoices> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM Invoices WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) >= ? ");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) <= ? ");
+            params.add(endDate);
+        }
+        if (status != null && !status.trim().isEmpty() && !status.equals("all")) {
+            sql.append(" AND status = ? ");
+            params.add(status);
+        }
+
+        // Sắp xếp hóa đơn mới nhất lên đầu, giới hạn số lượng record của trang hiện tại
+        sql.append(" ORDER BY issuedDate DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Invoices inv = new Invoices();
+                    inv.setInvoiceID(rs.getInt("invoiceID"));
+                    inv.setInvoiceNumber(rs.getString("invoiceNumber"));
+                    inv.setPaymentMethod(rs.getString("paymentMethod"));
+                    inv.setSubTotal(rs.getLong("subTotal"));
+                    inv.setTaxAmount(rs.getLong("taxAmount"));
+                    inv.setDepositDeducted(rs.getLong("depositDeducted"));
+                    inv.setFinalAmount(rs.getLong("finalAmount"));
+                    
+                    // 🌟 MẸO QUAN TRỌNG: Lấy dữ liệu dạng Timestamp từ DB nhưng lưu vào vỏ bọc java.sql.Date của Model 
+                    // để không làm thay đổi cấu trúc file Invoices.java của bạn mà trang JSP vẫn hiển thị được Giờ:Phút.
+                    java.sql.Timestamp ts = rs.getTimestamp("issuedDate");
+                    if (ts != null) {
+                        inv.setIssuedDate(new java.sql.Date(ts.getTime()));
+                    }
+                    
+                    inv.setStatus(rs.getString("status"));
+                    list.add(inv);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getFilteredInvoices lỗi: " + e.getMessage());
+        }
+        return list;
     }
 }
