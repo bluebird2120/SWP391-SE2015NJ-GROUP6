@@ -259,20 +259,14 @@
                                                 <span style="color: #dc3545; font-weight: 700;">• Mới</span>
                                             </c:if>
                                         </div>
-                                        <c:choose>
-                                            <c:when test="${isCustomer}">
-                                                <form method="post" action="${pageContext.request.contextPath}/customer/notifications" style="margin: 0;">
-                                                    <input type="hidden" name="action" value="readAndRedirect">
-                                                    <input type="hidden" name="notificationID" value="${n.notificationID}">
-                                                    <button type="submit" class="item-msg-link" style="background:none;border:none;padding:0;cursor:pointer;text-align:left;">
-                                                        <p class="item-msg"><c:out value="${n.message}" /></p>
-                                                    </button>
-                                                </form>
-                                            </c:when>
-                                            <c:otherwise>
+                                        <%-- Tất cả role đều bấm vào message để readAndRedirect đúng trang --%>
+                                        <form method="post" action="${postAction}" style="margin: 0;">
+                                            <input type="hidden" name="action" value="readAndRedirect">
+                                            <input type="hidden" name="notificationID" value="${n.notificationID}">
+                                            <button type="submit" class="item-msg-link" style="background:none;border:none;padding:0;cursor:pointer;text-align:left;width:100%;">
                                                 <p class="item-msg"><c:out value="${n.message}" /></p>
-                                            </c:otherwise>
-                                        </c:choose>
+                                            </button>
+                                        </form>
                                         <div class="item-time">
                                             <i class="far fa-clock"></i>
                                             <fmt:formatDate value="${n.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
