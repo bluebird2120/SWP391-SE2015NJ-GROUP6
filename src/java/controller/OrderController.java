@@ -258,8 +258,14 @@ public class OrderController extends HttpServlet {
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            // 🌟 ĐÃ SỬA: Chuyển hướng sang CheckoutController để nó tính toán tiền bạc
-            response.sendRedirect(request.getContextPath() + "/checkout");
+            // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
+            // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
+            if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
+                session.setAttribute("successMsg", "Da gui yeu cau tinh tien. Vui long cho nhan vien kiem tra va chot hoa don.");
+            } else {
+                session.setAttribute("errorMsg", "Khong the gui yeu cau tinh tien. Vui long kiem tra lai mon da goi.");
+            }
+            response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
         }
     }
