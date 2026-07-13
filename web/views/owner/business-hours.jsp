@@ -103,6 +103,7 @@
         <div class="layout">
             <%@ include file="/views/includes/dashboard.jsp" %>
             <main class="content">
+
                 <h1>Giờ hoạt động</h1>
                 <p class="sub">
                     Thiết lập giờ mở cửa, đóng cửa và ngày nghỉ để hệ thống kiểm tra khi khách đặt bàn.
@@ -133,27 +134,34 @@
                             </tr>
                         </thead>
                         <tbody>
+
                             <c:forEach var="entry" items="${weeklySchedules}">
                                 <c:set var="s" value="${entry.value}" />
                                 <fmt:formatDate var="openValue" value="${s.openTime}" pattern="HH:mm"/>
                                 <fmt:formatDate var="closeValue" value="${s.closeTime}" pattern="HH:mm"/>
                                 <tr>
+
                                     <form method="post" action="${pageContext.request.contextPath}/business-hours">
+
                                         <input type="hidden" name="action" value="saveWeekly">
+
                                         <input type="hidden" name="dayOfWeek" value="${entry.key}">
                                         <td>${entry.key}</td>
                                         <td>
+
                                             <input type="time" name="openTime"
                                                    value="${openValue}"
                                                    ${!isOwner ? 'disabled' : ''}>
                                         </td>
                                         <td>
+
                                             <input type="time" name="closeTime"
                                                    value="${closeValue}"
                                                    ${!isOwner ? 'disabled' : ''}>
                                         </td>
                                         <td>
                                             <label class="inline">
+
                                                 <input type="checkbox" name="isClosed" value="1"
                                                        ${s.isClosed == 1 ? 'checked' : ''}
                                                        ${!isOwner ? 'disabled' : ''}>
@@ -163,6 +171,7 @@
                                             </label>
                                         </td>
                                         <td>
+
                                             <input type="text" name="reason" value="${s.reason}"
                                                    placeholder="Lý do / ghi chú"
                                                    ${!isOwner ? 'disabled' : ''}>
@@ -170,7 +179,7 @@
                                         <td>
                                             <c:choose>
                                                 <c:when test="${isOwner}">
-                                                    <%-- [OPERATING HOURS] Owner cap nhat gio hoat dong theo tuan. --%>
+
                                                     <button type="submit">Lưu</button>
                                                 </c:when>
                                                 <c:otherwise>
@@ -188,10 +197,14 @@
                 <h2>Ngày đặc biệt</h2>
                 <div class="panel">
                     <c:if test="${isOwner}">
-                        <%-- [OPERATING HOURS] Ngay dac biet duoc uu tien hon lich theo tuan. --%>
+
+
                         <form method="post" action="${pageContext.request.contextPath}/business-hours" class="inline" style="margin-bottom:14px;">
+
                             <input type="hidden" name="action" value="saveSpecial">
+
                             <input type="date" name="specificDate" required>
+
                             <input type="time" name="openTime">
                             <input type="time" name="closeTime">
                             <label class="inline">
@@ -215,6 +228,7 @@
                             </tr>
                         </thead>
                         <tbody>
+
                             <c:forEach var="s" items="${specialSchedules}">
                                 <tr>
                                     <td><fmt:formatDate value="${s.specificDate}" pattern="dd/MM/yyyy"/></td>
@@ -229,9 +243,12 @@
                                     <td>
                                         <c:choose>
                                             <c:when test="${isOwner}">
+
                                                 <form method="post" action="${pageContext.request.contextPath}/business-hours"
                                                       onsubmit="return confirm('Xóa ngày đặc biệt này?')">
+
                                                     <input type="hidden" name="action" value="deleteSpecial">
+
                                                     <input type="hidden" name="scheduleID" value="${s.scheduleID}">
                                                     <button class="danger" type="submit">Xóa</button>
                                                 </form>
