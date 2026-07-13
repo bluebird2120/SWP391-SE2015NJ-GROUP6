@@ -389,7 +389,6 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
-                        <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/reservation?action=history"><i class="fa-solid fa-calendar-check"></i>Đơn đặt bàn</a>
                     </div>
                     <div class="dd-section">
@@ -446,7 +445,6 @@
                     </div>
                     <div class="dd-section">
                         <a href="${pageContext.request.contextPath}/owner/reviews"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
-                        <a href="${pageContext.request.contextPath}/change-password"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a>
                         <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
                     </div>
                 </div>
