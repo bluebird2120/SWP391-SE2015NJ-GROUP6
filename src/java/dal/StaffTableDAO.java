@@ -296,7 +296,7 @@ public class StaffTableDAO extends DBContext {
      * [TU DONG GAN PHUC VU] Chi chon role 2 dang hoat dong, dang trong ca,
      * uu tien nguoi co it don chua hoan tat nhat.
      */
-    private Integer findLeastLoadedServingEmployee(Connection conn)
+    public Integer findLeastLoadedServingEmployee(Connection conn)
             throws SQLException {
         String sql = "SELECT es.employeeID,COUNT(o.orderID) active_orders "
                 + "FROM EmployeeShifts es "
@@ -346,7 +346,7 @@ public class StaffTableDAO extends DBContext {
      * [DU PHONG GAN PHUC VU] Dung khi ngoai khung gio ca nhung van can chon
      * nhan vien co lich lam viec trong ngay. Khong chon nguoi khong co lich.
      */
-    private Integer findLeastLoadedActiveServingEmployee(Connection conn)
+    public Integer findLeastLoadedActiveServingEmployee(Connection conn)
             throws SQLException {
         // 🌟 ĐÃ SỬA: Thêm chữ 'e' vào "FROM Employee e"
         String sql = "SELECT e.employeeID,COUNT(o.orderID) active_orders "
