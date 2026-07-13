@@ -7,13 +7,29 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import java.io.IOException;
 import java.util.List;
-
 import model.Employee;
 import model.Notifications;
 
+/**
+ * Xử lý thông báo cho Staff (roleID=2) VÀ Lễ tân (roleID=3). Cả 2 role đều dùng
+ * recipientType = "staff" trong DB.
+ *
+ * Mapping type → URL redirect:
+ *
+ * STAFF nhận: table_assigned → /staff/tables (bàn được giao) new_order →
+ * /staff/tables (đơn mới cần phục vụ) shift_plan → /staff/my-schedule (lịch ca
+ * tháng mới) shift_request → /staff/my-schedule (yêu cầu đổi ca từ đồng nghiệp)
+ * shift_request_approved → /staff/my-schedule (đổi ca được duyệt)
+ * shift_request_rejected → /staff/my-schedule (đổi ca bị từ chối)
+ * shift_request_colleague_pending → /staff/my-schedule (đồng nghiệp chờ xác
+ * nhận) shift_request_colleague_rejected→ /staff/my-schedule (đồng nghiệp từ
+ * chối)
+ *
+ * LỄ TÂN nhận: reservation_needs_table → /reception/tables (đơn online cần gán
+ * bàn)
+ */
 @WebServlet(name = "StaffNotificationsController", urlPatterns = {"/staff/notifications"})
 public class StaffNotificationsController extends HttpServlet {
 
@@ -23,6 +39,7 @@ public class StaffNotificationsController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         HttpSession session = request.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
         if (emp == null) {
@@ -30,7 +47,8 @@ public class StaffNotificationsController extends HttpServlet {
             return;
         }
 
-        List<Notifications> list = notificationDAO.listByRecipient(emp.getEmployeeID(), "staff", LIST_LIMIT);
+        List<Notifications> list = notificationDAO.listByRecipient(
+                emp.getEmployeeID(), "staff", LIST_LIMIT);
         int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
 
         //Nuôi header
@@ -41,7 +59,6 @@ public class StaffNotificationsController extends HttpServlet {
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
-    // doPost: xử lý TẤT CẢ action JSP gửi lên (markRead)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -59,11 +76,72 @@ public class StaffNotificationsController extends HttpServlet {
             if (notifID > 0) {
                 notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
             }
+
+        } else if ("readAndRedirect".equals(action)) {
+            int notifID = parseInt(request.getParameter("notificationID"), 0);
+            if (notifID > 0) {
+                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+
+                // Lấy notification để biết type → redirect đúng trang
+                List<Notifications> list = notificationDAO.listByRecipient(
+                        emp.getEmployeeID(), "staff", LIST_LIMIT);
+
+                for (Notifications noti : list) {
+                    if (noti.getNotificationID() == notifID) {
+                        String url = resolveRedirectUrl(noti.getType(),
+                                request.getContextPath());
+                        updateUnread(session, emp);
+                        response.sendRedirect(url);
+                        return;
+                    }
+                }
+            }
         }
 
-        // Cập nhật lại unreadCount vào session
-        session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+        updateUnread(session, emp);
         response.sendRedirect(request.getContextPath() + "/staff/notifications");
+    }
+
+    /**
+     * Map notification type → URL trang đích. Thêm type mới vào đây khi cần.
+     */
+    private String resolveRedirectUrl(String type, String ctx) {
+        if (type == null) {
+            return ctx + "/staff/notifications";
+        }
+
+        switch (type) {
+            // ── Bàn & đơn hàng (Staff phục vụ) ──
+            case "table_assigned":
+            case "new_order":
+                return ctx + "/staff/tables";
+
+            // ── Thanh toán thành công (cần dọn bàn) ──
+            case "payment_success":
+                return ctx + "/staff/tables";
+
+            // ── Ca làm việc (tất cả loại shift) ──
+            case "shift_plan":
+            case "shift_request":
+            case "shift_request_approved":
+            case "shift_request_rejected":
+            case "shift_request_colleague_pending":
+            case "shift_request_colleague_rejected":
+                return ctx + "/staff/my-schedule";
+
+            // ── Lễ tân: đơn online cần gán bàn ──
+            case "reservation_needs_table":
+                return ctx + "/reception/tables";
+
+            // ── Mặc định: ở lại trang thông báo ──
+            default:
+                return ctx + "/staff/notifications";
+        }
+    }
+
+    private void updateUnread(HttpSession session, Employee emp) {
+        int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+        session.setAttribute("unreadCount", unread);
     }
 
     private static int parseInt(String str, int def) {

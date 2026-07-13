@@ -77,6 +77,20 @@ public class ForgotPasswordController extends HttpServlet {
             String newPassword = EmailService.generateRandomPassword(6);
             String hashedPassword = PasswordUtil.hash(newPassword);
 
+            // ── GỬI EMAIL TRƯỚC ── nếu fail thì không đổi mật khẩu trong DB
+            // tránh tình trạng mật khẩu bị đổi nhưng user không nhận được email mới
+            try {
+                EmailService.sendNewPasswordEmail(email, newPassword);
+            } catch (MessagingException e) {
+                e.printStackTrace();
+                request.setAttribute("generalError",
+                        "Không gửi được email. Vui lòng kiểm tra lại địa chỉ email hoặc thử lại sau.");
+                request.setAttribute("email", email);
+                request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
+                return;
+            }
+
+            // ── CHỈ ĐỔI MẬT KHẨU TRONG DB SAU KHI EMAIL ĐÃ GỬI THÀNH CÔNG ──
             boolean updated;
             if (customer != null) {
                 updated = customerDAO.updatePassword(customer.getCustomerID(), hashedPassword);
@@ -90,8 +104,6 @@ public class ForgotPasswordController extends HttpServlet {
                 return;
             }
 
-            EmailService.sendNewPasswordEmail(email, newPassword);
-
             request.setAttribute("successMessage",
                     "Mật khẩu mới đã được gửi đến email " + email + ". Vui lòng kiểm tra hộp thư để đăng nhập.");
             request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
@@ -99,12 +111,6 @@ public class ForgotPasswordController extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
             request.setAttribute("generalError", "Lỗi hệ thống. Vui lòng thử lại sau.");
-            request.setAttribute("email", email);
-            request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            request.setAttribute("generalError",
-                    "Không gửi được email. Vui lòng kiểm tra lại email hoặc thử lại sau.");
             request.setAttribute("email", email);
             request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
         }
