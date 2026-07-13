@@ -261,6 +261,29 @@ public class OrderDAO {
         return false;
     }
 
+    /**
+     * [YEU CAU THANH TOAN] Khach bam nut tinh tien thi chi danh dau thoi diem
+     * yeu cau, khong tao hoa don va khong cho khach tu chot tien.
+     */
+    public boolean requestCheckout(int orderID) {
+        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), o.invoiceID = NULL "
+                + "WHERE o.orderID = ? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "AND EXISTS (SELECT 1 FROM OrderItem oi WHERE oi.orderID = o.orderID) "
+                // [CHOT HOA DON] Neu invoice dang gan la hoa don coc DEP-* hoac
+                // invoice cu chua paid, bo link de nhan vien chot hoa don bua an moi.
+                + "AND (o.invoiceID IS NULL OR EXISTS ("
+                + "SELECT 1 FROM Invoices i WHERE i.invoiceID=o.invoiceID "
+                + "AND (i.status <> 'paid' OR i.invoiceNumber LIKE 'DEP-%')))";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] requestCheckout loi: " + e.getMessage());
+        }
+        return false;
+    }
+
     // =========================================================
     // 5. XÓA MÓN KHỎI GIỎ
     // =========================================================
