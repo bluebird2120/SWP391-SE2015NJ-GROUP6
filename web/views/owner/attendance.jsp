@@ -165,7 +165,6 @@
                 font-style:italic;
                 font-size:0.82rem;
             }
-            /* === Bulk action bar === */
             .bulk-bar {
                 display:none;
                 align-items:center;
@@ -194,11 +193,9 @@
             .btn-bulk-ci  { background:#d4edda; color:#155724; }
             .btn-bulk-ab  { background:#f8d7da; color:#721c24; }
             .btn-bulk-cancel { background:rgba(255,255,255,0.2); color:#fff; }
-            /* checkbox col */
             th.col-cb, td.col-cb { width:36px; text-align:center; padding:8px 4px; }
             input[type=checkbox] { width:16px; height:16px; accent-color:#76493b; cursor:pointer; }
 
-            /* Custom confirmation modal style */
             .custom-confirm-modal {
                 display: none;
                 position: fixed;
@@ -277,7 +274,7 @@
                 <h1 class="page-title">Attendance</h1>
                 <p class="page-sub">Điểm danh nhân viên theo ca</p>
 
-                <!-- Local Custom confirmation modal -->
+
                 <div id="localConfirmModal" class="custom-confirm-modal">
                     <div class="custom-confirm-content">
                         <div id="localConfirmMessage" class="custom-confirm-message"></div>
@@ -304,9 +301,11 @@
                 </c:if>
 
                 <div class="card">
+
                     <form method="get" action="${pageContext.request.contextPath}/owner/attendance" style="display:flex; gap:12px; align-items:end;">
                         <div class="field">
                             <label>Ngày</label>
+
                             <input type="date" name="date" value="${date}" onchange="this.form.submit()">
                         </div>
                     </form>
@@ -325,6 +324,7 @@
                             </tr>
                         </thead>
                         <tbody id="attendanceBody">
+
                             <c:forEach var="r" items="${rows}">
                                 <tr>
                                     <td>${r.fullName}</td>
@@ -359,40 +359,60 @@
                                             <c:otherwise>
                                                 <c:choose>
                                                     <c:when test="${r.status == 'scheduled'}">
+
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance">
+
                                                             <input type="hidden" name="action" value="checkin">
+
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
+
                                                             <input type="hidden" name="date" value="${date}">
                                                             <button type="submit" class="btn btn-checkin">Check-in</button>
                                                         </form>
+
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
                                                               onsubmit="return showCustomConfirm(this, event, 'Đánh dấu vắng mặt?');">
+
                                                             <input type="hidden" name="action" value="absent">
+
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
+
                                                             <input type="hidden" name="date" value="${date}">
                                                             <button type="submit" class="btn btn-absent">Vắng</button>
                                                         </form>
                                                     </c:when>
                                                     <c:when test="${(r.status == 'present' || r.status == 'late') && empty r.checkOutTime}">
+
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance">
+
                                                             <input type="hidden" name="action" value="checkout">
+
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
+
                                                             <input type="hidden" name="date" value="${date}">
                                                             <button type="submit" class="btn btn-checkout">Check-out</button>
                                                         </form>
+
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
                                                               onsubmit="return showCustomConfirm(this, event, 'Reset về scheduled?');">
+
                                                             <input type="hidden" name="action" value="reset">
+
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
+
                                                             <input type="hidden" name="date" value="${date}">
                                                             <button type="submit" class="btn btn-reset">Reset</button>
                                                         </form>
                                                     </c:when>
                                                     <c:when test="${r.status == 'absent'}">
+
                                                         <form method="post" action="${pageContext.request.contextPath}/owner/attendance"
                                                               onsubmit="return showCustomConfirm(this, event, 'Reset về scheduled?');">
+
                                                             <input type="hidden" name="action" value="reset">
+
                                                             <input type="hidden" name="shiftID" value="${r.shiftID}">
+
                                                             <input type="hidden" name="date" value="${date}">
                                                             <button type="submit" class="btn btn-reset">Reset</button>
                                                         </form>
@@ -425,7 +445,7 @@
                     event.preventDefault();
                 }
                 activeConfirmForm = form;
-                
+
                 var modal = document.getElementById('localConfirmModal');
                 var msgEl = document.getElementById('localConfirmMessage');
                 if (modal && msgEl) {
