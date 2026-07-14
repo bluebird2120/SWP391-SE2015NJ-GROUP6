@@ -77,6 +77,7 @@
     <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
+
             <h1 class="page-title">Owner Dashboard</h1>
             <p class="page-sub">Restaurant operations overview</p>
 
@@ -86,26 +87,31 @@
             </div>
 
             <div class="grid">
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/staff?action=list">
                     <div class="card-icon"><i class="fas fa-user-tie"></i></div>
                     <div class="card-title">Manage Staff</div>
                     <div class="card-desc">Add, edit, deactivate staff</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/shift-templates">
                     <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
                     <div class="card-title">Shift Templates</div>
                     <div class="card-desc">Quản lý ca làm việc cố định</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/shift-roster">
                     <div class="card-icon"><i class="fas fa-user-clock"></i></div>
                     <div class="card-title">Shift Roster</div>
                     <div class="card-desc">Phân ca theo ngày cho nhân viên</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/attendance">
                     <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
                     <div class="card-title">Attendance</div>
                     <div class="card-desc">Điểm danh ca làm trong ngày</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/order-history">
                     <div class="card-icon"><i class="fas fa-history"></i></div>
                     <div class="card-title">Order History</div>
@@ -121,6 +127,7 @@
                     <div class="card-title">Revenue Reports</div>
                     <div class="card-desc">Business analytics</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/reviews">
                     <div class="card-icon"><i class="fas fa-comment-dots"></i></div>
                     <div class="card-title">Quản lý đánh giá</div>

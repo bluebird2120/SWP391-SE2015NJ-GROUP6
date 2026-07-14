@@ -28,6 +28,7 @@
     <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
+
             <h1 class="page-title">${sessionScope.employee.roleID == 3 ? 'Receptionist Dashboard' : 'Staff Dashboard'}</h1>
             <p class="page-sub">Khu vực làm việc của bạn</p>
             <p class="greeting">Xin chào, <b>${sessionScope.employee.fullName}</b>!</p>
@@ -35,7 +36,8 @@
             <div class="grid">
                 <c:choose>
                     <c:when test="${sessionScope.employee.roleID == 3}">
-                        <%-- [PHAN QUYEN LE TAN] Chi co nghiep vu tiep nhan va gan ban. --%>
+
+
                         <a class="card-link" href="${pageContext.request.contextPath}/reception/tables">
                             <div class="card-icon"><i class="fas fa-chair"></i></div>
                             <div class="card-title">Tiếp nhận và gán bàn</div>
@@ -43,7 +45,8 @@
                         </a>
                     </c:when>
                     <c:otherwise>
-                        <%-- [PHAN QUYEN PHUC VU] Staff chi xem ban minh phuc vu. --%>
+
+
                         <a class="card-link" href="${pageContext.request.contextPath}/staff/tables">
                             <div class="card-icon"><i class="fas fa-chair"></i></div>
                             <div class="card-title">Bàn phục vụ</div>
@@ -52,11 +55,13 @@
                     </c:otherwise>
                 </c:choose>
 
+
                 <a class="card-link" href="${pageContext.request.contextPath}/staff/my-schedule">
                     <div class="card-icon"><i class="fas fa-calendar-week"></i></div>
                     <div class="card-title">Lịch làm việc</div>
                     <div class="card-desc">Xem lịch ca làm việc theo tháng và trạng thái điểm danh.</div>
                 </a>
+
                 <a class="card-link" href="${pageContext.request.contextPath}/staff/notifications">
                     <div class="card-icon"><i class="fas fa-bell"></i></div>
                     <div class="card-title">Thông báo
