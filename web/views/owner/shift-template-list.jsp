@@ -34,7 +34,6 @@
         .actions { display: flex; gap: 6px; }
         form.inline { display: inline; }
 
-        /* Custom confirmation modal style */
         .custom-confirm-modal {
             display: none;
             position: fixed;
@@ -110,28 +109,19 @@
     <div style="display:flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
+
             <div class="page-head">
                 <div>
                     <h1 class="page-title">Shift Templates</h1>
                     <p class="page-sub">Quản lý các ca làm việc cố định</p>
                 </div>
+
                 <a class="btn btn-primary" href="${pageContext.request.contextPath}/owner/shift-templates?action=create">
                     <i class="fas fa-plus"></i> Add Template
                 </a>
             </div>
 
-            <!-- Local Custom confirmation modal -->
-            <div id="localConfirmModal" class="custom-confirm-modal">
-                <div class="custom-confirm-content">
-                    <div id="localConfirmMessage" class="custom-confirm-message"></div>
-                    <div class="custom-confirm-buttons">
-                        <button id="localConfirmCancelBtn" class="custom-confirm-btn custom-confirm-btn-cancel">Huỷ</button>
-                        <button id="localConfirmOkBtn" class="custom-confirm-btn custom-confirm-btn-ok">Đồng ý</button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Local Custom confirmation modal -->
             <div id="localConfirmModal" class="custom-confirm-modal">
                 <div class="custom-confirm-content">
                     <div id="localConfirmMessage" class="custom-confirm-message"></div>
@@ -153,6 +143,7 @@
                         <tr><th>#</th><th>Tên ca</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thao tác</th></tr>
                     </thead>
                     <tbody>
+
                         <c:forEach var="t" items="${templates}" varStatus="st">
                             <tr>
                                 <td>${st.count}</td>
@@ -160,12 +151,16 @@
                                 <td><fmt:formatDate value="${t.startTime}" pattern="HH:mm"/></td>
                                 <td><fmt:formatDate value="${t.endTime}" pattern="HH:mm"/></td>
                                 <td class="actions">
+
                                     <a class="btn btn-sm btn-edit" href="${pageContext.request.contextPath}/owner/shift-templates?action=edit&id=${t.templateID}">
                                         Sửa
                                     </a>
+
                                     <form class="inline" method="post" action="${pageContext.request.contextPath}/owner/shift-templates"
                                           onsubmit="return showCustomConfirm(this, event, 'Xoá template này?');">
+
                                         <input type="hidden" name="action" value="delete">
+
                                         <input type="hidden" name="id" value="${t.templateID}">
                                         <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
                                     </form>
@@ -184,54 +179,12 @@
     <script>
         var activeConfirmForm = null;
 
-        function showInlineConfirm(form, event, message) {
-            if (event) {
-                event.preventDefault();
-            }
-            activeConfirmForm = form;
-            
-            var modal = document.getElementById('localConfirmModal');
-            var msgEl = document.getElementById('localConfirmMessage');
-            if (modal && msgEl) {
-                msgEl.textContent = message;
-                modal.classList.add('show');
-            }
-            return false;
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var cancelBtn = document.getElementById('localConfirmCancelBtn');
-            var okBtn = document.getElementById('localConfirmOkBtn');
-            var modal = document.getElementById('localConfirmModal');
-
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', function() {
-                    if (modal) modal.classList.remove('show');
-                    activeConfirmForm = null;
-                });
-            }
-
-            if (okBtn) {
-                okBtn.addEventListener('click', function() {
-                    if (modal) modal.classList.remove('show');
-                    if (activeConfirmForm) {
-                        var form = activeConfirmForm;
-                        form.submit();
-                    }
-                    activeConfirmForm = null;
-                });
-            }
-        });
-    </script>
-    <script>
-        var activeConfirmForm = null;
-
         function showCustomConfirm(form, event, message) {
             if (event) {
                 event.preventDefault();
             }
             activeConfirmForm = form;
-            
+
             var modal = document.getElementById('localConfirmModal');
             var msgEl = document.getElementById('localConfirmMessage');
             if (modal && msgEl) {

@@ -29,7 +29,7 @@
         .rating-label { font-size:0.9rem; white-space:nowrap; }
         .rating-stars { color:#d49b2f; font-size:0.82rem; white-space:nowrap; }
         .rating-bar-track { height:17px; background:#f4ebe4; border-radius:3px; overflow:hidden; }
-        .rating-bar-fill { height:100%; min-width:0; background:#76493b; border-radius:3px; }
+        .rating-bar-fill { display:block; height:100%; min-width:0; background:#76493b; border-radius:3px; }
         .rating-row.active .rating-bar-fill { background:#d49b2f; }
         .rating-count { font-size:0.9rem; font-weight:700; color:#5d3a2e; }
         .review-list { display: flex; flex-direction: column; gap: 14px; }
@@ -63,8 +63,8 @@
         .confirm-panel { display:none; position:fixed; inset:0; z-index:3000; background:rgba(74,53,40,.34); align-items:center; justify-content:center; padding:20px; }
         .confirm-panel.active { display:flex; }
         .confirm-box { background:#fff; border:1px solid #ede0d8; border-radius:10px; padding:18px; max-width:380px; width:100%; box-shadow:0 16px 40px rgba(74,53,40,.18); }
-        .confirm-message { color:#4a3528; font-weight:600; margin-bottom:14px; }
-        .confirm-actions { display:flex; justify-content:flex-end; gap:8px; }
+        .confirm-message { color:#4a3528; font-weight:600; margin-bottom:14px; text-align:center; }
+        .confirm-actions { display:flex; justify-content:center; gap:8px; }
         @media (max-width: 700px) {
             .main { padding: 22px 18px; }
             .rating-row { grid-template-columns:52px 78px minmax(90px, 1fr) 34px; gap:8px; }
@@ -132,10 +132,8 @@
                 </c:when>
                 <c:otherwise>
                     <div class="review-list">
-                        <%-- Chỉ hiện 3 review đầu, các review còn lại được ẩn tạm và mở bằng nút xem thêm. --%>
-                        <c:forEach var="review" items="${reviews}" varStatus="status">
-                            <article class="review-card ${review.isHidden == 1 ? 'hidden' : ''} ${status.index >= 3 ? 'previous-review' : ''}"
-                                     style="${status.index >= 3 ? 'display:none;' : ''}">
+                        <c:forEach var="review" items="${reviews}">
+                            <article class="review-card ${review.isHidden == 1 ? 'hidden' : ''}">
                                 <div class="review-head">
                                     <div class="left">
                                         <strong>#<c:out value="${review.reviewID}" /></strong>
@@ -231,14 +229,6 @@
                         </c:forEach>
                     </div>
 
-                    <%-- Nút xem thêm giống phần thông báo, dùng để hiện các review bị ẩn sau mục thứ 3. --%>
-                    <c:if test="${fn:length(reviews) > 3}">
-                        <div id="showMoreReviewsContainer" style="text-align: center; margin-top: 18px;">
-                            <button type="button" id="btnShowMoreReviews" onclick="showAllReviews()" style="background: none; border: none; color: #76493b; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; transition: all 0.2s; text-decoration: underline;">
-                                Xem các đánh giá trước đó <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
-                            </button>
-                        </div>
-                    </c:if>
 
                     <c:if test="${totalPages > 1}">
                         <nav class="pagination">
@@ -298,22 +288,6 @@
             if (!pendingConfirmForm) return;
             confirmSubmitting = true;
             pendingConfirmForm.submit();
-        }
-
-        function showAllReviews() {
-            var prevReviews = document.querySelectorAll('.previous-review');
-            prevReviews.forEach(function(el) {
-                el.style.display = 'block';
-                el.style.opacity = '0';
-                el.style.transition = 'opacity 0.3s ease';
-                setTimeout(function() {
-                    el.style.opacity = '1';
-                }, 10);
-            });
-            var container = document.getElementById('showMoreReviewsContainer');
-            if (container) {
-                container.style.display = 'none';
-            }
         }
     </script>
 </body>
