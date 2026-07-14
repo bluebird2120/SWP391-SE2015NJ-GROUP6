@@ -392,11 +392,24 @@
                                 </c:if>
                                 <c:forEach var="i" begin="1" end="${totalPages}">
                                     <c:choose>
-                                        <c:when test="${i == currentPage}"><span class="active">${i}</span></c:when>
-                                    <c:otherwise><a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=${i}">${i}</a></c:otherwise>
+                                        <c:when test="${i == 1}">
+                                        <a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=1">1</a>
+                                        <span>...</span>
+                                    </c:when>
+                                    <c:when test="${i == currentPage && i != 1 && i != totalPages}">
+                                        <span class="active">${i}</span>
+                                    </c:when>
+                                    <c:when test="${i == currentPage - 1 && currentPage > 3}">
+                                    </c:when>
+                                    <c:when test="${i == currentPage + 1 && currentPage < totalPages - 2}">
+
+                                    </c:when>
+                                    <c:when test="${i == totalPages}">
+                                        <a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=${totalPages}">${totalPages}</a>
+                                    </c:when>
                                 </c:choose>
                             </c:forEach>
-                              <!--Chi hien mui ten khi chua phai trang cuoi-->
+                            <!--Chi hien mui ten khi chua phai trang cuoi-->
                             <c:if test="${currentPage < totalPages}">
                                 <a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
                                 </c:if>

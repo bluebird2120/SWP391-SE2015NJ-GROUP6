@@ -26,11 +26,11 @@ public class ShiftPlanTask implements Runnable {
 
     private void process() {
         LocalDate today = LocalDate.now();
-        MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO();
-        NotificationDAO notifDao    = new NotificationDAO();
-        EmployeeShiftDAO shiftDao   = new EmployeeShiftDAO();
+        MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO(); //lấy kế hoạch ca tháng.
+        NotificationDAO notifDao    = new NotificationDAO(); //Tạo thông báo
+        EmployeeShiftDAO shiftDao   = new EmployeeShiftDAO(); //kiểm tra và tạo ca làm thật.
 
-        List<MonthlyShiftPlan> pending = planDao.listPending();
+        List<MonthlyShiftPlan> pending = planDao.listPending(); //lấy danh sách kế hoạch ca tháng đang chờ xử lý.
         for (MonthlyShiftPlan p : pending) {
             LocalDate firstOfMonth = LocalDate.of(p.getEffectiveYear(), p.getEffectiveMonth(), 1);
             LocalDate notifyDate   = firstOfMonth.minusDays(3);
@@ -43,6 +43,7 @@ public class ShiftPlanTask implements Runnable {
             }
 
             if (MonthlyShiftPlan.NOTIFIED.equals(p.getStatus()) && !today.isBefore(firstOfMonth)) {
+                //nhân viên đã có bất kỳ ca nào trong cả tháng chưa.
                 if (shiftDao.hasAnyShiftInMonth(p.getEmployeeID(), p.getEffectiveYear(), p.getEffectiveMonth())) {
                     System.out.println("[ShiftPlanTask] Already has shifts — mark as APPLIED for planID=" + p.getPlanID());
                     planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
