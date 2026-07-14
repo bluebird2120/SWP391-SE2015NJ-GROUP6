@@ -1,6 +1,5 @@
 package controller;
 
-import dal.DBContext;
 import dal.EmployeeShiftDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
@@ -10,8 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import model.Employee;
 
 @WebServlet(name = "ReceptionTableController", urlPatterns = {"/reception/tables"})
@@ -65,9 +62,13 @@ public class ReceptionTableController extends HttpServlet {
                 String error = new StaffTableDAO().assignTable(orderID, tableID);
                 message = error == null ? "assign_success" : error;
             } else if ("checkin".equals(action) || "open_table".equals(action)) {
-                message = openTable(orderID, action)
+                StaffTableDAO dao = new StaffTableDAO();
+                boolean ok = "checkin".equals(action)
+                        ? dao.checkinArrivedReservation(orderID)
+                        : dao.openTableForWalkIn(orderID);
+                message = ok
                         ? ("checkin".equals(action)
-                                ? "checkin_success" : "open_table_success")
+                        ? "checkin_success" : "open_table_success")
                         : "Khong the mo ban cho don nay.";
             } else {
                 message = "Thao tac khong hop le.";
@@ -78,23 +79,6 @@ public class ReceptionTableController extends HttpServlet {
 
         request.getSession().setAttribute("staffTableMessage", message);
         response.sendRedirect(request.getContextPath() + "/reception/tables");
-    }
-
-    private boolean openTable(int orderID, String action) {
-        // [TABLE STATUS FLOW] serving chi dung cho orderStatus.
-        // checkin: khach dat online da den, cho quet QR lan dau => arrived.
-        // open_table: khach vang lai da duoc nhan vien xac nhan => occupied.
-        String newStatus = "checkin".equals(action) ? "arrived" : "occupied";
-        String sql = "UPDATE `Order` SET tableStatus=? WHERE orderID=?";
-        try (Connection conn = new DBContext().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setInt(2, orderID);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 
     private Employee getLoggedInEmployee(HttpServletRequest request) {
