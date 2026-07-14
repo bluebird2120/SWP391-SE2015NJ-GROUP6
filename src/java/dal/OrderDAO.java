@@ -547,4 +547,44 @@ public class OrderDAO {
         }
         return false;
     }
+
+    // =========================================================
+    // THỐNG KÊ: ĐẾM TẤT CẢ ĐƠN THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countOrdersByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM `Order` "
+                + "WHERE DATE(createdAt) BETWEEN ? AND ? "
+                + "AND orderStatus <> 'cancelled'";
+        return countByDateRange(sql, startDate, endDate, "countOrdersByDateRange");
+    }
+
+    // =========================================================
+    // THỐNG KÊ: ĐẾM ĐƠN HOÀN TẤT THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countCompletedOrdersByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM `Order` "
+                + "WHERE DATE(createdAt) BETWEEN ? AND ? "
+                + "AND orderStatus = 'completed'";
+        return countByDateRange(sql, startDate, endDate, "countCompletedOrdersByDateRange");
+    }
+
+    private int countByDateRange(String sql, String startDate, String endDate, String methodName) {
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] " + methodName + " lỗi: " + e.getMessage());
+        }
+        return 0;
+    }
 }

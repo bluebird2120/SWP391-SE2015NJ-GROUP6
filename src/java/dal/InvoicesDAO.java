@@ -298,4 +298,56 @@ public class InvoicesDAO {
         }
         return list;
     }
+
+    // =========================================================
+    // THỐNG KÊ: TỔNG DOANH THU HÓA ĐƠN ĐÃ THANH TOÁN THEO KHOẢNG NGÀY
+    // =========================================================
+    public long getPaidRevenueByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COALESCE(SUM(finalAmount), 0) FROM Invoices "
+                + "WHERE status = 'paid' AND DATE(issuedDate) BETWEEN ? AND ?";
+
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getPaidRevenueByDateRange lỗi: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // =========================================================
+    // THỐNG KÊ: SỐ HÓA ĐƠN ĐÃ THANH TOÁN THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countPaidInvoicesByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM Invoices "
+                + "WHERE status = 'paid' AND DATE(issuedDate) BETWEEN ? AND ?";
+
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] countPaidInvoicesByDateRange lỗi: " + e.getMessage());
+        }
+        return 0;
+    }
 }
