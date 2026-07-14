@@ -251,7 +251,6 @@ public class EmployeeShiftDAO extends DBContext {
                 ps.setInt(1, employeeID);
 
                 ps.setInt(2, year);
-
                 ps.setInt(3, month);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -260,13 +259,8 @@ public class EmployeeShiftDAO extends DBContext {
                     }
                 }
             }
-
-
             originalAuto = conn.getAutoCommit();
-
             conn.setAutoCommit(false);
-
-
             try (PreparedStatement ps = conn.prepareStatement(deleteSql)) {
 
                 ps.setInt(1, employeeID);
@@ -277,8 +271,6 @@ public class EmployeeShiftDAO extends DBContext {
 
                 ps.executeUpdate();
             }
-
-
             int count = 0;
 
             try (PreparedStatement ps = conn.prepareStatement(insertSql)) {

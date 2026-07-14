@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class ShiftPlanScheduler implements ServletContextListener {
 
     private ScheduledExecutorService executor;
-
+    //Mỗi khi app khởi động là hàm này sẽ chạy cùng
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         executor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -22,9 +22,9 @@ public class ShiftPlanScheduler implements ServletContextListener {
             t.setDaemon(true);
             return t;
         });
-
+        //Vừa khởi động web sẽ kiểm tra kế hoạch của tháng
         executor.execute(new ShiftPlanTask());
-
+        //Hẹn lịch chạy mỗi ngày (lịch làm việc)
         long initialDelaySec = computeInitialDelayToNextRun();
         executor.scheduleAtFixedRate(
                 new ShiftPlanTask(),
@@ -34,6 +34,7 @@ public class ShiftPlanScheduler implements ServletContextListener {
         );
         System.out.println("[ShiftPlanScheduler] Started. Next run in " + initialDelaySec + "s");
 
+        //Chạy lịch order
         long notifyDelaySec = computeDelayTo(6, 0);
         executor.scheduleAtFixedRate(
                 new DailyReservationNotifyTask(),
@@ -65,6 +66,7 @@ public class ShiftPlanScheduler implements ServletContextListener {
         return computeDelayTo(0, 5);
     }
 
+    //Tính số giầy còn lại từ thời điểm hiện tại tới thời điểm task tự động chạy
     private long computeDelayTo(int hour, int minute) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime target = now.toLocalDate().atTime(hour, minute, 0);
