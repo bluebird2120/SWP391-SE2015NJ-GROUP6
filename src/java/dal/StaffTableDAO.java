@@ -18,7 +18,7 @@ public class StaffTableDAO extends DBContext {
         List<StaffTableDTO> tables = new ArrayList<>();
         // [TABLE STATUS FLOW] serving chi la orderStatus/nhan hien thi; tableStatus dung arrived/occupied.
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
-                + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus = 'pending' THEN 'pending' "
                 + "WHEN o.tableStatus = 'cleaning' THEN 'cleaning' "
@@ -55,7 +55,7 @@ public class StaffTableDAO extends DBContext {
     public List<StaffTableDTO> getTablesForEmployee(int employeeID) {
         List<StaffTableDTO> tables = new ArrayList<>();
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
-                + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
                 //  ĐÃ SỬA
@@ -81,6 +81,66 @@ public class StaffTableDAO extends DBContext {
             e.printStackTrace();
         }
         return tables;
+    }
+
+    /**
+     * [PHAN QUYEN PHUC VU] Kiem tra don co dung la don dang giao cho nhan vien
+     * dang dang nhap hay khong. Dung de chan viec sua orderID tren request.
+     */
+    public boolean isOrderAssignedToEmployee(int orderID, int employeeID) {
+        String sql = "SELECT 1 FROM `Order` o "
+                + "WHERE o.orderID=? AND o.employeeID=? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * [KIEM TRA DON] Nhan vien co the giam so luong thuc tinh tien neu khach
+     * hoan tra bot mon. So luong ve 0 thi xoa mon khoi hoa don.
+     */
+    public boolean updateOrderItemQuantityForEmployee(int orderItemID, int orderID,
+            int employeeID, int quantity) {
+        if (quantity <= 0) {
+            String sql = "DELETE oi FROM OrderItem oi "
+                    + "JOIN `Order` o ON o.orderID=oi.orderID "
+                    + "WHERE oi.orderItemID=? AND oi.orderID=? AND o.employeeID=? "
+                    + "AND o.orderStatus NOT IN ('completed','cancelled')";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, orderItemID);
+                ps.setInt(2, orderID);
+                ps.setInt(3, employeeID);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        String sql = "UPDATE OrderItem oi "
+                + "JOIN `Order` o ON o.orderID=oi.orderID "
+                + "SET oi.quantity=? "
+                + "WHERE oi.orderItemID=? AND oi.orderID=? AND o.employeeID=? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled')";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, quantity);
+            ps.setInt(2, orderItemID);
+            ps.setInt(3, orderID);
+            ps.setInt(4, employeeID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public List<StaffTableDTO> getReservationsWaitingForTables() {
@@ -226,7 +286,7 @@ public class StaffTableDAO extends DBContext {
             boolean allDone = hasAllRequiredTables(conn, orderID);
             if (allDone) {
                 try (PreparedStatement ps = conn.prepareStatement(
-                        // 🌟 CHỈ SỬA Ở ĐÂY: Đổi tableStatus thành 'arrived'
+                        //   Đổi tableStatus thành 'arrived'
                         "UPDATE `Order` SET orderStatus='serving', tableStatus='arrived' WHERE orderID=?")) {
                     ps.setInt(1, orderID);
                     ps.executeUpdate();
@@ -296,7 +356,7 @@ public class StaffTableDAO extends DBContext {
      * [TU DONG GAN PHUC VU] Chi chon role 2 dang hoat dong, dang trong ca,
      * uu tien nguoi co it don chua hoan tat nhat.
      */
-    private Integer findLeastLoadedServingEmployee(Connection conn)
+    public Integer findLeastLoadedServingEmployee(Connection conn)
             throws SQLException {
         String sql = "SELECT es.employeeID,COUNT(o.orderID) active_orders "
                 + "FROM EmployeeShifts es "
@@ -346,7 +406,7 @@ public class StaffTableDAO extends DBContext {
      * [DU PHONG GAN PHUC VU] Dung khi ngoai khung gio ca nhung van can chon
      * nhan vien co lich lam viec trong ngay. Khong chon nguoi khong co lich.
      */
-    private Integer findLeastLoadedActiveServingEmployee(Connection conn)
+    public Integer findLeastLoadedActiveServingEmployee(Connection conn)
             throws SQLException {
         // 🌟 ĐÃ SỬA: Thêm chữ 'e' vào "FROM Employee e"
         String sql = "SELECT e.employeeID,COUNT(o.orderID) active_orders "
@@ -439,6 +499,7 @@ public class StaffTableDAO extends DBContext {
         row.setOrderID((Integer) rs.getObject("orderID"));
         row.setOrderStatus(rs.getString("orderStatus"));
         row.setTableStatus(rs.getString("tableStatus"));
+        row.setCheckoutRequestAt(rs.getTimestamp("checkoutRequestAt"));
         row.setOrderTime(rs.getTimestamp("orderTime"));
         return row;
     }
