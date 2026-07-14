@@ -1,6 +1,7 @@
 package controller;
 
 import dal.DBContext;
+import dal.EmployeeShiftDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,6 +18,8 @@ import model.Employee;
 public class ReceptionTableController extends HttpServlet {
 
     private static final String VIEW = "/views/reception/table-dashboard.jsp";
+    private static final int OWNER_ROLE_ID = 1;
+    private static final int RECEPTIONIST_ROLE_ID = 3;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -50,6 +53,12 @@ public class ReceptionTableController extends HttpServlet {
         try {
             int orderID = Integer.parseInt(request.getParameter("orderID"));
             String action = request.getParameter("action");
+            if (!canOperateReceptionTable(employee)) {
+                request.getSession().setAttribute("staffTableMessage",
+                        "Ban chua co lich lam hom nay nen khong the thao tac van hanh ban.");
+                response.sendRedirect(request.getContextPath() + "/reception/tables");
+                return;
+            }
             if ("assign".equals(action)) {
                 int tableID = Integer.parseInt(request.getParameter("tableID"));
                 // [PHAN QUYEN LE TAN] Khong truyen ID le tan vao Order.
@@ -92,5 +101,16 @@ public class ReceptionTableController extends HttpServlet {
         HttpSession session = request.getSession(false);
         return session == null ? null
                 : (Employee) session.getAttribute("employee");
+    }
+
+    private boolean canOperateReceptionTable(Employee employee) {
+        if (employee.getRoleID() == OWNER_ROLE_ID) {
+            return true;
+        }
+        if (employee.getRoleID() == RECEPTIONIST_ROLE_ID) {
+            // [LICH LAM LE TAN] Le tan chi duoc tiep nhan/gan ban khi co ca lam hom nay.
+            return new EmployeeShiftDAO().isEmployeeOnShift(employee.getEmployeeID());
+        }
+        return false;
     }
 }
