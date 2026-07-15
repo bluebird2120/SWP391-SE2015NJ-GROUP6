@@ -51,6 +51,24 @@
                 color: #c62828;
                 font-weight: 600;
             }
+            .btn-back {
+                display: inline-flex;
+                align-items: center;
+                padding: 8px 16px;
+                background-color: #f1ece6; /* Màu nền kem nhạt */
+                color: #78493b;            /* Màu chữ nâu chủ đạo */
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 600;
+                transition: all 0.2s;
+                border: 1px solid #ebdcd0;
+                margin-right: 15px;
+            }
+            .btn-back:hover {
+                background-color: #ebdcd0; /* Hover nhẹ nhàng */
+                color: #5c352d;
+            }
 
             .form-layout{
                 display: flex;
@@ -163,8 +181,8 @@
             <%@ include file="/views/includes/dashboard.jsp" %>
             <div style="flex:1; padding:32px; background:#f3f4f6; min-width:0;">
                 <div class="form-container">
+                    <a href="${backUrl}" class="btn-back">← Quay lại</a>
                     <h2>${dish.itemID == 0 ? "THÊM MỚI MÓN ĂN" : "CẬP NHẬT MÓN ĂN"}</h2>
-
                     <c:if test="${not empty updateSuccess}">
                         <div class="alert-success-box">
                             ✅ <b>Thành công:</b> ${updateSuccess}
