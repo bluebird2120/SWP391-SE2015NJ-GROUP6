@@ -11,7 +11,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.time.LocalDate;
 import java.util.List;
 import model.Employee;
 import model.Invoices;
@@ -23,6 +25,7 @@ import model.OrderItem;
 public class StaffTableController extends HttpServlet {
 
     private static final String VIEW = "/views/staff/my-tables.jsp";
+    private static final String HISTORY_VIEW = "/views/staff/service-history.jsp";
     private static final String DETAIL_VIEW = "/views/staff/order-detail.jsp";
 
     @Override
@@ -40,10 +43,23 @@ public class StaffTableController extends HttpServlet {
             return;
         }
 
-        // [PHAN QUYEN PHUC VU] Staff chi nhin thay don va ban cua chinh minh.
+        boolean historyMode = "history".equals(action);
+
+        String filterDateText = request.getParameter("date");
+        String filterOrderText = request.getParameter("orderID");
+        Integer filterOrderID = parseNullableInt(filterOrderText);
+        Date filterDate = parseFilterDate(filterDateText, filterOrderID);
+
+        // [LICH SU BAN PHUC VU] Du lieu ban/nhan vien da duoc luu bang Order.employeeID + Order_Table.
+        // Mac dinh xem cac ban cua hom nay; co the loc theo ngay hoac ma don.
         request.setAttribute("assignedTables",
-                new StaffTableDAO().getTablesForEmployee(employee.getEmployeeID()));
-        request.getRequestDispatcher(VIEW).forward(request, response);
+                new StaffTableDAO().getTablesForEmployee(
+                        employee.getEmployeeID(), filterDate, filterOrderID, historyMode));
+        request.setAttribute("filterDate", filterDate == null ? "" : filterDate.toString());
+        request.setAttribute("filterOrderID", filterOrderID == null ? "" : filterOrderID);
+        request.setAttribute("historyMode", historyMode);
+        request.getRequestDispatcher(historyMode ? HISTORY_VIEW : VIEW)
+                .forward(request, response);
     }
 
     @Override
@@ -193,5 +209,30 @@ public class StaffTableController extends HttpServlet {
         HttpSession session = request.getSession(false);
         return session == null ? null
                 : (Employee) session.getAttribute("employee");
+    }
+
+    private Integer parseNullableInt(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            int number = Integer.parseInt(value.trim());
+            return number > 0 ? number : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Date parseFilterDate(String value, Integer filterOrderID) {
+        if (value != null && !value.trim().isEmpty()) {
+            try {
+                return Date.valueOf(value.trim());
+            } catch (IllegalArgumentException e) {
+                return Date.valueOf(LocalDate.now());
+            }
+        }
+        // [LICH SU BAN PHUC VU] Neu tim rieng theo ma don thi khong ep ngay,
+        // tranh truong hop don cu bi an vi mac dinh hom nay.
+        return filterOrderID == null ? Date.valueOf(LocalDate.now()) : null;
     }
 }
