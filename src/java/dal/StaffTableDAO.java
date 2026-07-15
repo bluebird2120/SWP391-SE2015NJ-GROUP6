@@ -237,6 +237,94 @@ public class StaffTableDAO extends DBContext {
         return summary;
     }
     
+    /**
+     * [CHECKIN] Khách đặt trước đã đến quán. Đơn này đã có nhân viên phụ
+     * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
+     */
+    public boolean checkinArrivedReservation(int orderID) {
+        String sql = "UPDATE `Order` SET tableStatus='arrived' WHERE orderID=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * [MỞ BÀN CHO KHÁCH VÃNG LAI] Lễ tân xác nhận mở bàn -> đây mới là lúc
+     * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
+     * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
+     */
+    public boolean openTableForWalkIn(int orderID) {
+        try {
+            connection.setAutoCommit(false);
+            Integer staffID;
+            String tableName = "?";
+            try {
+                EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+                staffID = esDAO.getActiveEmployeeForCurrentShift();
+                if (staffID == null) {
+                    connection.rollback();
+                    return false;
+                }
+
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied' WHERE orderID=?")) {
+                    ps.setInt(1, staffID);
+                    ps.setInt(2, orderID);
+                    if (ps.executeUpdate() == 0) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                // Lấy tên bàn để nội dung thông báo rõ ràng
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "SELECT t.tableName FROM `Table` t "
+                        + "JOIN Order_Table ot ON ot.tableID=t.tableID "
+                        + "WHERE ot.orderID=? LIMIT 1")) {
+                    ps.setInt(1, orderID);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            tableName = rs.getString("tableName");
+                        }
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                // BẮT BUỘC: trả connection về pool ở chế độ autoCommit=true, nếu
+                // không lượt mượn connection tiếp theo (của DAO khác) sẽ vô tình
+                // bị kẹt trong transaction thủ công của mình.
+                connection.setAutoCommit(true);
+            }
+
+            // Báo cho nhân viên vừa được gán, sau khi commit thành công.
+            try {
+                Notifications n = new Notifications();
+                n.setRecipientID(staffID);
+                n.setRecipientType("staff");
+                n.setType("table_assigned");
+                n.setMessage("Bạn được phân công phục vụ bàn " + tableName
+                        + " (Đơn #" + orderID + ").");
+                n.setIsRead(0);
+                new NotificationDAO().insert(n);
+            } catch (Exception e) {
+                System.err.println("[StaffTableDAO] Gửi thông báo cho nhân viên thất bại: " + e.getMessage());
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {

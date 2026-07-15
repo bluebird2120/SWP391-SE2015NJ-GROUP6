@@ -105,7 +105,7 @@ public class OrderDAOSon extends DBContext {
         // Chưa cọc: xóa dữ liệu giữ chỗ tạm. Đã cọc: giữ lịch sử và chỉ
         // chuyển cancelled để phục vụ đối soát/hoàn tiền khi cần.
         String stateSql
-                = "SELECT o.invoiceID, "
+                = "SELECT o.invoiceID, o.employeeID, "
                 + "CASE WHEN LOWER(COALESCE(i.status,''))='paid' "
                 + " OR EXISTS (SELECT 1 FROM Payments p "
                 + "            WHERE p.invoiceID=o.invoiceID "
@@ -125,6 +125,7 @@ public class OrderDAOSon extends DBContext {
         try {
             connection.setAutoCommit(false);
             Integer invoiceID;
+            Integer assignedEmployeeID;
             boolean paid;
             try (PreparedStatement ps = connection.prepareStatement(stateSql)) {
                 ps.setInt(1, orderID);
@@ -135,8 +136,18 @@ public class OrderDAOSon extends DBContext {
                         return false;
                     }
                     invoiceID = (Integer) rs.getObject("invoiceID");
+                    assignedEmployeeID = (Integer) rs.getObject("employeeID");
                     paid = rs.getInt("isPaid") == 1;
                 }
+            }
+
+            // [NGHIỆP VỤ] Bàn chỉ được gán khi khách thật sự đến quán (lễ tân gán
+            // lúc đó), không gán trước ngay khi cọc. Một khi đã gán bàn + gán nhân
+            // viên phụ trách rồi thì coi như khách đã có mặt/đang xử lý tại quán —
+            // không cho hủy online nữa (muốn hủy phải báo trực tiếp lễ tân/nhân viên).
+            if (assignedEmployeeID != null) {
+                connection.rollback();
+                return false;
             }
 
             boolean changed;
@@ -155,6 +166,7 @@ public class OrderDAOSon extends DBContext {
             } else {
                 connection.rollback();
             }
+
             return changed;
         } catch (Exception e) {
             rollbackQuietly();

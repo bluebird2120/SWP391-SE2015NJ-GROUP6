@@ -436,6 +436,25 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
 
+    /**
+     * Lấy danh sách ID của các Lễ tân (RECEPTIONIST) active để gửi notification.
+     */
+    public List<Integer> getActiveReceptionistIDs() {
+        List<Integer> list = new ArrayList<>();
+        String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RECEPTIONIST.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(rs.getInt("employeeID"));
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
     public List<Employee> listActiveStaff() {
 
         List<Employee> list = new ArrayList<>();
