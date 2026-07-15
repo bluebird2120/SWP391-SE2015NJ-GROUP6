@@ -1,6 +1,7 @@
 package dal;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,7 +19,7 @@ public class StaffTableDAO extends DBContext {
         List<StaffTableDTO> tables = new ArrayList<>();
         // [TABLE STATUS FLOW] serving chi la orderStatus/nhan hien thi; tableStatus dung arrived/occupied.
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
-                + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus = 'pending' THEN 'pending' "
                 + "WHEN o.tableStatus = 'cleaning' THEN 'cleaning' "
@@ -55,7 +56,7 @@ public class StaffTableDAO extends DBContext {
     public List<StaffTableDTO> getTablesForEmployee(int employeeID) {
         List<StaffTableDTO> tables = new ArrayList<>();
         String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
-                + "o.orderID, o.orderStatus, o.tableStatus, o.orderTime, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
                 //  ĐÃ SỬA
@@ -81,6 +82,127 @@ public class StaffTableDAO extends DBContext {
             e.printStackTrace();
         }
         return tables;
+    }
+
+    /**
+     * [LICH SU BAN PHUC VU] Lay ban/don cua nhan vien theo ngay hoac ma don.
+     * Du lieu lich su da duoc luu bang Order.employeeID va Order_Table.
+     */
+    public List<StaffTableDTO> getTablesForEmployee(int employeeID,
+            Date filterDate, Integer filterOrderID) {
+        return getTablesForEmployee(employeeID, filterDate, filterOrderID, true);
+    }
+
+    public List<StaffTableDTO> getTablesForEmployee(int employeeID,
+            Date filterDate, Integer filterOrderID, boolean includeHistory) {
+        List<StaffTableDTO> tables = new ArrayList<>();
+        String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
+                + "CASE "
+                // [DON DEP BAN] Sau thanh toan orderStatus='completed' nhung tableStatus='cleaning',
+                // nen phai uu tien cleaning de hien nut "Da don dep xong".
+                + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
+                + "WHEN o.orderStatus='completed' THEN 'completed' "
+                + "WHEN o.tableStatus='occupied' OR o.tableStatus='arrived' THEN 'serving' "
+                + "WHEN o.tableStatus='reserved' THEN 'reserved' "
+                + "WHEN o.tableStatus='pending' THEN 'pending' "
+                + "ELSE 'available' END physicalStatus "
+                + "FROM `Order` o "
+                + "JOIN Order_Table ot ON ot.orderID=o.orderID "
+                + "JOIN `Table` t ON t.tableID=ot.tableID "
+                + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' ";
+        if (!includeHistory) {
+            // [BAN DANG PHUC VU] Man hinh chinh chi hien don con can thao tac,
+            // don da hoan tat/da don xong se xem o lich su phuc vu.
+            sql += "AND (o.orderStatus<>'completed' OR o.tableStatus='cleaning') ";
+        }
+        if (filterDate != null) {
+            sql += "AND DATE(o.orderTime)=? ";
+        }
+        if (filterOrderID != null) {
+            sql += "AND o.orderID=? ";
+        }
+        // [LICH SU BAN PHUC VU] Khong loc tableStatus de don da hoan tat/da don van hien trong lich su.
+        sql += "ORDER BY o.orderTime DESC,t.tableName";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int index = 1;
+            ps.setInt(index++, employeeID);
+            if (filterDate != null) {
+                ps.setDate(index++, filterDate);
+            }
+            if (filterOrderID != null) {
+                ps.setInt(index++, filterOrderID);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tables.add(mapTable(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return tables;
+    }
+
+    /**
+     * [PHAN QUYEN PHUC VU] Kiem tra don co dung la don dang giao cho nhan vien
+     * dang dang nhap hay khong. Dung de chan viec sua orderID tren request.
+     */
+    public boolean isOrderAssignedToEmployee(int orderID, int employeeID) {
+        String sql = "SELECT 1 FROM `Order` o "
+                + "WHERE o.orderID=? AND o.employeeID=? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * [KIEM TRA DON] Nhan vien co the giam so luong thuc tinh tien neu khach
+     * hoan tra bot mon. So luong ve 0 thi xoa mon khoi hoa don.
+     */
+    public boolean updateOrderItemQuantityForEmployee(int orderItemID, int orderID,
+            int employeeID, int quantity) {
+        if (quantity <= 0) {
+            String sql = "DELETE oi FROM OrderItem oi "
+                    + "JOIN `Order` o ON o.orderID=oi.orderID "
+                    + "WHERE oi.orderItemID=? AND oi.orderID=? AND o.employeeID=? "
+                    + "AND o.orderStatus NOT IN ('completed','cancelled')";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, orderItemID);
+                ps.setInt(2, orderID);
+                ps.setInt(3, employeeID);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        String sql = "UPDATE OrderItem oi "
+                + "JOIN `Order` o ON o.orderID=oi.orderID "
+                + "SET oi.quantity=? "
+                + "WHERE oi.orderItemID=? AND oi.orderID=? AND o.employeeID=? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled')";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, quantity);
+            ps.setInt(2, orderItemID);
+            ps.setInt(3, orderID);
+            ps.setInt(4, employeeID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public List<StaffTableDTO> getReservationsWaitingForTables() {
@@ -177,6 +299,94 @@ public class StaffTableDAO extends DBContext {
         return summary;
     }
     
+    /**
+     * [CHECKIN] Khách đặt trước đã đến quán. Đơn này đã có nhân viên phụ
+     * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
+     */
+    public boolean checkinArrivedReservation(int orderID) {
+        String sql = "UPDATE `Order` SET tableStatus='arrived' WHERE orderID=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * [MỞ BÀN CHO KHÁCH VÃNG LAI] Lễ tân xác nhận mở bàn -> đây mới là lúc
+     * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
+     * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
+     */
+    public boolean openTableForWalkIn(int orderID) {
+        try {
+            connection.setAutoCommit(false);
+            Integer staffID;
+            String tableName = "?";
+            try {
+                EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+                staffID = esDAO.getActiveEmployeeForCurrentShift();
+                if (staffID == null) {
+                    connection.rollback();
+                    return false;
+                }
+
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied' WHERE orderID=?")) {
+                    ps.setInt(1, staffID);
+                    ps.setInt(2, orderID);
+                    if (ps.executeUpdate() == 0) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                // Lấy tên bàn để nội dung thông báo rõ ràng
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "SELECT t.tableName FROM `Table` t "
+                        + "JOIN Order_Table ot ON ot.tableID=t.tableID "
+                        + "WHERE ot.orderID=? LIMIT 1")) {
+                    ps.setInt(1, orderID);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            tableName = rs.getString("tableName");
+                        }
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                // BẮT BUỘC: trả connection về pool ở chế độ autoCommit=true, nếu
+                // không lượt mượn connection tiếp theo (của DAO khác) sẽ vô tình
+                // bị kẹt trong transaction thủ công của mình.
+                connection.setAutoCommit(true);
+            }
+
+            // Báo cho nhân viên vừa được gán, sau khi commit thành công.
+            try {
+                Notifications n = new Notifications();
+                n.setRecipientID(staffID);
+                n.setRecipientType("staff");
+                n.setType("table_assigned");
+                n.setMessage("Bạn được phân công phục vụ bàn " + tableName
+                        + " (Đơn #" + orderID + ").");
+                n.setIsRead(0);
+                new NotificationDAO().insert(n);
+            } catch (Exception e) {
+                System.err.println("[StaffTableDAO] Gửi thông báo cho nhân viên thất bại: " + e.getMessage());
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
@@ -205,7 +415,7 @@ public class StaffTableDAO extends DBContext {
 
             if (servingEmployeeID == null) {
                 conn.rollback();
-                return "Khong co nhan vien phuc vu co lich lam viec hom nay de nhan don.";
+                return "Không có nhân viên phục vụ đã check-in để nhận đơn.";
             }
             
             try (PreparedStatement ps = conn.prepareStatement(
@@ -226,7 +436,7 @@ public class StaffTableDAO extends DBContext {
             boolean allDone = hasAllRequiredTables(conn, orderID);
             if (allDone) {
                 try (PreparedStatement ps = conn.prepareStatement(
-                        // 🌟 CHỈ SỬA Ở ĐÂY: Đổi tableStatus thành 'arrived'
+                        //   Đổi tableStatus thành 'arrived'
                         "UPDATE `Order` SET orderStatus='serving', tableStatus='arrived' WHERE orderID=?")) {
                     ps.setInt(1, orderID);
                     ps.executeUpdate();
@@ -279,7 +489,7 @@ public class StaffTableDAO extends DBContext {
      * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
      */
     public boolean markCleaningCompleted(int orderID, int employeeID) {
-        String sql = "UPDATE `Order` SET tableStatus='available' "
+        String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "
                 + "AND orderStatus='completed' AND tableStatus='cleaning'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -305,8 +515,10 @@ public class StaffTableDAO extends DBContext {
                 + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
                 + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "WHERE es.workDate=CURDATE() AND e.roleID=2 AND e.isActive=1 "
+                // Chi chon nhan vien da check-in ca lam va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
                 + "AND es.checkOutTime IS NULL "
-                + "AND es.status IN ('scheduled','present','late') "
+                + "AND es.status IN ('present','late') "
                 + "AND ((st.startTime<=st.endTime "
                 + "AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
                 + "OR (st.startTime>st.endTime "
@@ -331,7 +543,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Don da co nhan vien thi nhan vien do van phai dang check-in.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -357,7 +571,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Du phong cung chi chon nhan vien da check-in va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "GROUP BY e.employeeID "
                 + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1";
@@ -439,6 +655,7 @@ public class StaffTableDAO extends DBContext {
         row.setOrderID((Integer) rs.getObject("orderID"));
         row.setOrderStatus(rs.getString("orderStatus"));
         row.setTableStatus(rs.getString("tableStatus"));
+        row.setCheckoutRequestAt(rs.getTimestamp("checkoutRequestAt"));
         row.setOrderTime(rs.getTimestamp("orderTime"));
         return row;
     }

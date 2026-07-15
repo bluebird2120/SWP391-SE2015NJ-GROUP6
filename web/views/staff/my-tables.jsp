@@ -70,6 +70,11 @@
             .pending {
                 background: #ffe7c2;
             }
+            .checkout-request {
+                background: #ffe2e2;
+                color: #9f1239;
+                font-weight: 700;
+            }
             button {
                 border: 0;
                 border-radius: 7px;
@@ -84,6 +89,22 @@
                 background: #fff2cc;
                 border-radius: 8px;
             }
+            .filter-btn {
+                border: 0;
+                border-radius: 7px;
+                padding: 10px 14px;
+                color: #fff;
+                background: #76493b;
+                text-decoration: none;
+                cursor: pointer;
+                display: inline-block;
+            }
+            .top-actions {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 16px;
+                flex-wrap: wrap;
+            }
             .empty {
                 padding: 28px;
                 text-align: center;
@@ -97,7 +118,7 @@
             <%@ include file="/views/includes/dashboard.jsp" %>
             <main class="content">
                 <h1>Bàn tôi đang phục vụ</h1>
-                <p class="sub">Chỉ hiển thị những đơn được hệ thống giao cho bạn.</p>
+                <p class="sub">Chỉ hiển thị những đơn/bàn đang cần bạn phục vụ hoặc dọn dẹp.</p>
 
                 <c:if test="${not empty sessionScope.staffTableMessage}">
                     <div class="message">
@@ -108,6 +129,12 @@
                     </div>
                     <c:remove var="staffTableMessage" scope="session"/>
                 </c:if>
+
+                <div class="top-actions">
+                    <a class="filter-btn" href="${pageContext.request.contextPath}/staff/tables?action=history">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử phục vụ
+                    </a>
+                </div>
 
                 <%-- [PHAN QUYEN PHUC VU] Danh sach nay da duoc loc theo employeeID tai DAO. --%>
                 <div class="panel">
@@ -123,18 +150,28 @@
                                     <td>${t.areaType}</td>
                                     <td><fmt:formatDate value="${t.orderTime}" pattern="HH:mm - dd/MM/yyyy"/></td>
                                     <td>
-                                        <span class="badge ${t.physicalStatus}">
+                                        <span class="badge ${not empty t.checkoutRequestAt && t.physicalStatus != 'cleaning' && t.physicalStatus != 'completed' ? 'checkout-request' : t.physicalStatus}">
                                             <c:choose>
+                                                <%-- [YEU CAU THANH TOAN] Khach bam yeu cau tinh tien thi nhan vien se thay trang thai nay tren ban minh phuc vu. --%>
+                                                <c:when test="${not empty t.checkoutRequestAt && t.physicalStatus != 'cleaning' && t.physicalStatus != 'completed'}">Yêu cầu thanh toán</c:when>
                                                 <c:when test="${t.physicalStatus == 'available'}">Trống</c:when>
                                                 <c:when test="${t.physicalStatus == 'reserved'}">Đã đặt trước</c:when>
                                                 <c:when test="${t.physicalStatus == 'serving'}">Đang phục vụ</c:when>
                                                 <c:when test="${t.physicalStatus == 'cleaning'}">Chờ dọn</c:when>
+                                                <c:when test="${t.physicalStatus == 'completed'}">Hoàn tất</c:when>
                                                 <c:when test="${t.physicalStatus == 'pending'}">Chờ xác nhận</c:when>
                                                 <c:otherwise>${t.physicalStatus}</c:otherwise>
                                             </c:choose>
                                         </span>
                                     </td>
                                     <td>
+                                        <c:if test="${t.physicalStatus != 'cleaning' && t.physicalStatus != 'completed' && not empty t.checkoutRequestAt}">
+                                            <%-- [KIEM TRA DON] Nhan vien xem chi tiet, sua so luong neu can, roi moi thanh toan. --%>
+                                            <a href="${pageContext.request.contextPath}/staff/tables?action=detail&orderID=${t.orderID}"
+                                               style="display:inline-block;border-radius:7px;padding:8px 12px;background:#76493b;color:#fff;text-decoration:none;margin-right:8px;">
+                                                Chi tiết đơn
+                                            </a>
+                                        </c:if>
                                         <c:if test="${t.physicalStatus == 'cleaning'}">
                                             <form method="post" action="${pageContext.request.contextPath}/staff/tables">
                                                 <input type="hidden" name="action" value="cleaned">
@@ -148,7 +185,7 @@
                                 </tr>
                             </c:forEach>
                             <c:if test="${empty assignedTables}">
-                                <tr><td colspan="6" class="empty">Bạn chưa có bàn nào đang phục vụ.</td></tr>
+                                <tr><td colspan="6" class="empty">Bạn chưa có bàn nào cần phục vụ hoặc dọn dẹp.</td></tr>
                             </c:if>
                         </tbody>
                     </table>

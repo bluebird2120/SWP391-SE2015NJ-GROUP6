@@ -105,7 +105,7 @@ public class OrderDAOSon extends DBContext {
         // Chưa cọc: xóa dữ liệu giữ chỗ tạm. Đã cọc: giữ lịch sử và chỉ
         // chuyển cancelled để phục vụ đối soát/hoàn tiền khi cần.
         String stateSql
-                = "SELECT o.invoiceID, "
+                = "SELECT o.invoiceID, o.employeeID, "
                 + "CASE WHEN LOWER(COALESCE(i.status,''))='paid' "
                 + " OR EXISTS (SELECT 1 FROM Payments p "
                 + "            WHERE p.invoiceID=o.invoiceID "
@@ -125,6 +125,7 @@ public class OrderDAOSon extends DBContext {
         try {
             connection.setAutoCommit(false);
             Integer invoiceID;
+            Integer assignedEmployeeID;
             boolean paid;
             try (PreparedStatement ps = connection.prepareStatement(stateSql)) {
                 ps.setInt(1, orderID);
@@ -135,8 +136,18 @@ public class OrderDAOSon extends DBContext {
                         return false;
                     }
                     invoiceID = (Integer) rs.getObject("invoiceID");
+                    assignedEmployeeID = (Integer) rs.getObject("employeeID");
                     paid = rs.getInt("isPaid") == 1;
                 }
+            }
+
+            // [NGHIỆP VỤ] Bàn chỉ được gán khi khách thật sự đến quán (lễ tân gán
+            // lúc đó), không gán trước ngay khi cọc. Một khi đã gán bàn + gán nhân
+            // viên phụ trách rồi thì coi như khách đã có mặt/đang xử lý tại quán —
+            // không cho hủy online nữa (muốn hủy phải báo trực tiếp lễ tân/nhân viên).
+            if (assignedEmployeeID != null) {
+                connection.rollback();
+                return false;
             }
 
             boolean changed;
@@ -155,6 +166,7 @@ public class OrderDAOSon extends DBContext {
             } else {
                 connection.rollback();
             }
+
             return changed;
         } catch (Exception e) {
             rollbackQuietly();
@@ -294,26 +306,34 @@ public class OrderDAOSon extends DBContext {
 
             // ── [BƯỚC 1] Lấy trước danh sách orderID SẮP được confirm trong lần này.
             //    Phải query TRƯỚC khi UPDATE để chỉ lấy đúng đơn mới, không lặp đơn cũ.
-            //    - Chỉ lấy đơn HÔM NAY để thông báo ngay.
-            //    - Đơn TƯƠNG LAI: DailyReservationNotifyTask xử lý vào đúng ngày lúc 06:00.
-            String pendingTodaySql
-                    = "SELECT o.orderID, o.customerID "
+            //    LƯU Ý: KHÔNG lọc theo ngày ở đây nữa — khách đặt cho hôm nay hay
+            //    ngày mai/ngày kia đều phải được xác nhận "đặt bàn thành công".
+            //    Việc lọc theo ngày (chỉ hôm nay) CHỈ áp dụng cho thông báo của
+            //    LỄ TÂN ở BƯỚC 3 bên dưới (vì lễ tân chỉ cần xử lý đúng ngày,
+            //    đơn tương lai đã có DailyReservationNotifyTask lo vào đúng ngày lúc 06:00).
+            
+            String pendingSql
+                    = "SELECT o.orderID, o.customerID, DATE(o.orderTime) = CURDATE() AS isToday "
                     + "FROM `Order` o "
                     + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
                     + "WHERE o.orderType = 1 "
                     + "  AND o.orderStatus = 'pending' " // chưa confirm → sẽ được UPDATE
-                    + "  AND i.status = 'paid' "
-                    + "  AND DATE(o.orderTime) = CURDATE()"; // chỉ đơn HÔM NAY
+                    + "  AND i.status = 'paid'";
+            List<Integer> newlyConfirmedIDs = new ArrayList<>();
             List<Integer> newlyConfirmedTodayIDs = new ArrayList<>();
             // Map orderID → customerID để thông báo cho đúng customer
             java.util.Map<Integer, Integer> orderCustomerMap = new java.util.LinkedHashMap<>();
             try (PreparedStatement ps0
-                    = connection.prepareStatement(pendingTodaySql); ResultSet rs0 = ps0.executeQuery()) {
+                    = connection.prepareStatement(pendingSql); ResultSet rs0 = ps0.executeQuery()) {
                 while (rs0.next()) {
                     int oID = rs0.getInt("orderID");
                     int cID = rs0.getInt("customerID");
-                    newlyConfirmedTodayIDs.add(oID);
+                    boolean isToday = rs0.getBoolean("isToday");
+                    newlyConfirmedIDs.add(oID);
                     orderCustomerMap.put(oID, cID);
+                    if (isToday) {
+                        newlyConfirmedTodayIDs.add(oID);
+                    }
                 }
             }
 
@@ -328,33 +348,13 @@ public class OrderDAOSon extends DBContext {
             // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
             //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
             //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
-            if (confirmed > 0 && !newlyConfirmedTodayIDs.isEmpty()) {
-                String receptionistSql
-                        = "SELECT employeeID FROM Employee "
-                        + "WHERE roleID = 3 AND isActive = 1";
-                List<Integer> receptionistIDs = new ArrayList<>();
-                try (PreparedStatement rps
-                        = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
-                    while (rrs.next()) {
-                        receptionistIDs.add(rrs.getInt("employeeID"));
-                    }
-                }
-
+            if (confirmed > 0 && !newlyConfirmedIDs.isEmpty()) {
                 NotificationDAO notifDAO = new NotificationDAO();
-                for (int oID : newlyConfirmedTodayIDs) {
-                    // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
-                    for (int recID : receptionistIDs) {
-                        Notifications n = new Notifications();
-                        n.setRecipientID(recID);
-                        n.setRecipientType("staff");
-                        n.setType("reservation_needs_table");
-                        n.setMessage("Đơn đặt bàn online #" + oID
-                                + " vừa thanh toán cọc thành công, cần gán bàn hôm nay.");
-                        n.setIsRead(0);
-                        notifDAO.insert(n);
-                    }
 
-                    // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
+                // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
+                //    Áp dụng cho TẤT CẢ đơn mới confirm, không phân biệt hôm nay hay
+                //    ngày tương lai — khách luôn cần biết đơn của mình đã được xác nhận.
+                for (int oID : newlyConfirmedIDs) {
                     Integer customerID = orderCustomerMap.get(oID);
                     if (customerID != null) {
                         Notifications nc = new Notifications();
@@ -365,6 +365,36 @@ public class OrderDAOSon extends DBContext {
                                 + " đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
                         nc.setIsRead(0);
                         notifDAO.insert(nc);
+                    }
+                }
+
+                // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn của HÔM NAY.
+                //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
+                //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
+                if (!newlyConfirmedTodayIDs.isEmpty()) {
+                    String receptionistSql
+                            = "SELECT employeeID FROM Employee "
+                            + "WHERE roleID = 3 AND isActive = 1";
+                    List<Integer> receptionistIDs = new ArrayList<>();
+                    try (PreparedStatement rps
+                            = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
+                        while (rrs.next()) {
+                            receptionistIDs.add(rrs.getInt("employeeID"));
+                        }
+                    }
+
+                    for (int oID : newlyConfirmedTodayIDs) {
+                        // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
+                        for (int recID : receptionistIDs) {
+                            Notifications n = new Notifications();
+                            n.setRecipientID(recID);
+                            n.setRecipientType("staff");
+                            n.setType("reservation_needs_table");
+                            n.setMessage("Đơn đặt bàn online #" + oID
+                                    + " vừa thanh toán cọc thành công, cần gán bàn hôm nay.");
+                            n.setIsRead(0);
+                            notifDAO.insert(n);
+                        }
                     }
                 }
             }

@@ -15,6 +15,7 @@ public class StaffTableDTO {
     private Integer orderID;
     private String orderStatus;
     private String tableStatus;
+    private Timestamp checkoutRequestAt;
     private Timestamp orderTime;
     private int requiredQuantity;
     private int assignedQuantity;
@@ -37,6 +38,8 @@ public class StaffTableDTO {
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
     public String getTableStatus() { return tableStatus; }
     public void setTableStatus(String tableStatus) { this.tableStatus = tableStatus; }
+    public Timestamp getCheckoutRequestAt() { return checkoutRequestAt; }
+    public void setCheckoutRequestAt(Timestamp checkoutRequestAt) { this.checkoutRequestAt = checkoutRequestAt; }
     public Timestamp getOrderTime() { return orderTime; }
     public void setOrderTime(Timestamp orderTime) { this.orderTime = orderTime; }
     public int getRequiredQuantity() { return requiredQuantity; }

@@ -17,29 +17,30 @@ public class InvoicesDAO {
     // =========================================================
     public int createInvoice(Invoices invoice) {
         String sql = "INSERT INTO Invoices "
-                   + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
-                   + " depositDeducted, finalAmount, issuedDate, status) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
+                + " depositDeducted, finalAmount, issuedDate, status) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, invoice.getInvoiceNumber());
             ps.setString(2, invoice.getPaymentMethod());
-            ps.setLong  (3, invoice.getSubTotal());
-            ps.setLong  (4, invoice.getTaxAmount());
-            ps.setLong  (5, invoice.getDepositDeducted());
-            ps.setLong  (6, invoice.getFinalAmount());
-            ps.setDate  (7, invoice.getIssuedDate() != null
-                           ? invoice.getIssuedDate()
-                           : new Date(System.currentTimeMillis()));
+            ps.setLong(3, invoice.getSubTotal());
+            ps.setLong(4, invoice.getTaxAmount());
+            ps.setLong(5, invoice.getDepositDeducted());
+            ps.setLong(6, invoice.getFinalAmount());
+            ps.setDate(7, invoice.getIssuedDate() != null
+                    ? invoice.getIssuedDate()
+                    : new Date(System.currentTimeMillis()));
             ps.setString(8, invoice.getStatus() != null
-                           ? invoice.getStatus() : "unpaid");
+                    ? invoice.getStatus() : "unpaid");
 
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
 
         } catch (SQLException e) {
             System.err.println("[InvoicesDAO] createInvoice lỗi: " + e.getMessage());
@@ -53,12 +54,13 @@ public class InvoicesDAO {
     public Invoices getInvoiceById(int invoiceID) {
         String sql = "SELECT * FROM Invoices WHERE invoiceID = ?";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, invoiceID);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapToInvoice(rs);
+            if (rs.next()) {
+                return mapToInvoice(rs);
+            }
 
         } catch (SQLException e) {
             System.err.println("[InvoicesDAO] getInvoiceById lỗi: " + e.getMessage());
@@ -72,8 +74,7 @@ public class InvoicesDAO {
     public boolean linkInvoiceToOrder(int invoiceID, int orderID) {
         String sql = "UPDATE `Order` SET invoiceID = ? WHERE orderID = ?";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, invoiceID);
             ps.setInt(2, orderID);
@@ -90,18 +91,18 @@ public class InvoicesDAO {
     // =========================================================
     private Invoices mapToInvoice(ResultSet rs) throws SQLException {
         return new Invoices(
-            rs.getInt   ("invoiceID"),
-            rs.getString("invoiceNumber"),
-            rs.getString("paymentMethod"),
-            rs.getLong  ("subTotal"),
-            rs.getLong  ("taxAmount"),
-            rs.getLong  ("depositDeducted"),
-            rs.getLong  ("finalAmount"),
-            rs.getDate  ("issuedDate"),
-            rs.getString("status")
+                rs.getInt("invoiceID"),
+                rs.getString("invoiceNumber"),
+                rs.getString("paymentMethod"),
+                rs.getLong("subTotal"),
+                rs.getLong("taxAmount"),
+                rs.getLong("depositDeducted"),
+                rs.getLong("finalAmount"),
+                rs.getDate("issuedDate"),
+                rs.getString("status")
         );
     }
-    
+
     // =========================================================
     // 4. CẬP NHẬT TRẠNG THÁI VÀ PHƯƠNG THỨC THANH TOÁN
     // =========================================================
@@ -120,7 +121,7 @@ public class InvoicesDAO {
         }
         return false;
     }
-    
+
     // =========================================================
     // 5. CẬP NHẬT THANH TOÁN THÀNH CÔNG VÀ CHUYỂN BÀN SANG CHỜ DỌN
     // Tích hợp: Tự động thêm dòng tiền vào bảng Payments (Giao dịch an toàn ACID)
@@ -128,19 +129,27 @@ public class InvoicesDAO {
     public boolean updatePaymentSuccessAndCleaningTable(int invoiceID, int orderID, String paymentMethod, long amount, String transactionCode) {
         // 1. Thêm lịch sử giao dịch vào bảng Payments
         String sqlPayment = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, 'success', NOW())";
-        
+
         // 2. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
         String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? WHERE invoiceID = ?";
-        
+
         // 3. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
         String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', tableStatus = 'cleaning' WHERE orderID = ?";
+
+        // 4. Lấy employeeID phụ trách đơn này để gửi thông báo
+        String sqlGetEmployee = "SELECT employeeID FROM `Order` WHERE orderID = ?";
+
+        // 5. Gửi thông báo cho nhân viên phụ trách
+        String sqlNotify = "INSERT INTO Notifications (recipientID, recipientType, type, message, isRead) VALUES (?, 'staff', 'payment_success', ?, 0)";
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false); // Bật chế độ giao dịch an toàn (Transaction)
 
-            try (PreparedStatement ps0 = conn.prepareStatement(sqlPayment);
-                 PreparedStatement ps1 = conn.prepareStatement(sqlInvoice);
-                 PreparedStatement ps2 = conn.prepareStatement(sqlOrder)) {
+            try (PreparedStatement ps0 = conn.prepareStatement(sqlPayment); 
+                 PreparedStatement ps1 = conn.prepareStatement(sqlInvoice); 
+                 PreparedStatement ps2 = conn.prepareStatement(sqlOrder); 
+                 PreparedStatement psGetEmp = conn.prepareStatement(sqlGetEmployee); 
+                 PreparedStatement psNotify = conn.prepareStatement(sqlNotify)) {
 
                 // Insert Payment
                 ps0.setInt(1, invoiceID);
@@ -158,11 +167,28 @@ public class InvoicesDAO {
                 ps2.setInt(1, orderID);
                 ps2.executeUpdate();
 
+                // Gửi thông báo cho nhân viên phụ trách bàn (nếu có)
+                psGetEmp.setInt(1, orderID);
+                try (ResultSet rs = psGetEmp.executeQuery()) {
+                    if (rs.next()) {
+                        Object empObj = rs.getObject("employeeID");
+                        if (empObj != null) {
+                            int empID = (int) empObj;
+                            String msg = "Khách hàng đã thanh toán thành công đơn #" + orderID
+                                    + " qua " + paymentMethod.toUpperCase()
+                                    + ". Vui lòng dọn dẹp bàn.";
+                            psNotify.setInt(1, empID);
+                            psNotify.setString(2, msg);
+                            psNotify.executeUpdate();
+                        }
+                    }
+                }
+
                 conn.commit(); // Lưu toàn bộ thay đổi cùng lúc
                 return true;
 
             } catch (SQLException e) {
-                conn.rollback(); // Hoàn tác toàn bộ nếu 1 trong 3 câu lệnh trên bị lỗi
+                conn.rollback(); // Hoàn tác toàn bộ nếu 1 trong các câu lệnh bị lỗi
                 System.err.println("[InvoicesDAO] updatePaymentSuccessAndCleaningTable lỗi Transaction: " + e.getMessage());
             }
         } catch (SQLException e) {
@@ -170,18 +196,16 @@ public class InvoicesDAO {
         }
         return false;
     }
-    
+
     // =========================================================
     // LẤY TOÀN BỘ HÓA ĐƠN CHO ADMIN (Sắp xếp mới nhất lên đầu)
     // =========================================================
     public List<Invoices> getAllInvoices() {
         List<Invoices> list = new ArrayList<>();
         String sql = "SELECT * FROM Invoices ORDER BY issuedDate DESC";
-        
-        try (java.sql.Connection conn = new dal.DBContext().getConnection();
-             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
-             java.sql.ResultSet rs = ps.executeQuery()) {
-            
+
+        try (java.sql.Connection conn = new dal.DBContext().getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql); java.sql.ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 Invoices inv = new Invoices();
                 inv.setInvoiceID(rs.getInt("invoiceID"));
@@ -199,7 +223,7 @@ public class InvoicesDAO {
         }
         return list;
     }
-    
+
     // =========================================================
     // 1. ĐẾM TỔNG SỐ HÓA ĐƠN THEO BỘ LỌC (DÙNG ĐỂ TÍNH SỐ TRANG)
     // =========================================================
@@ -220,13 +244,12 @@ public class InvoicesDAO {
             params.add(status);
         }
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-             
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
-            
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);
@@ -264,8 +287,7 @@ public class InvoicesDAO {
         params.add(limit);
         params.add(offset);
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
@@ -281,14 +303,14 @@ public class InvoicesDAO {
                     inv.setTaxAmount(rs.getLong("taxAmount"));
                     inv.setDepositDeducted(rs.getLong("depositDeducted"));
                     inv.setFinalAmount(rs.getLong("finalAmount"));
-                    
+
                     // 🌟 MẸO QUAN TRỌNG: Lấy dữ liệu dạng Timestamp từ DB nhưng lưu vào vỏ bọc java.sql.Date của Model 
                     // để không làm thay đổi cấu trúc file Invoices.java của bạn mà trang JSP vẫn hiển thị được Giờ:Phút.
                     java.sql.Timestamp ts = rs.getTimestamp("issuedDate");
                     if (ts != null) {
                         inv.setIssuedDate(new java.sql.Date(ts.getTime()));
                     }
-                    
+
                     inv.setStatus(rs.getString("status"));
                     list.add(inv);
                 }
@@ -297,5 +319,57 @@ public class InvoicesDAO {
             System.err.println("[InvoicesDAO] getFilteredInvoices lỗi: " + e.getMessage());
         }
         return list;
+    }
+
+    // =========================================================
+    // THỐNG KÊ: TỔNG DOANH THU HÓA ĐƠN ĐÃ THANH TOÁN THEO KHOẢNG NGÀY
+    // =========================================================
+    public long getPaidRevenueByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COALESCE(SUM(finalAmount), 0) FROM Invoices "
+                + "WHERE status = 'paid' AND DATE(issuedDate) BETWEEN ? AND ?";
+
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getPaidRevenueByDateRange lỗi: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // =========================================================
+    // THỐNG KÊ: SỐ HÓA ĐƠN ĐÃ THANH TOÁN THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countPaidInvoicesByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM Invoices "
+                + "WHERE status = 'paid' AND DATE(issuedDate) BETWEEN ? AND ?";
+
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] countPaidInvoicesByDateRange lỗi: " + e.getMessage());
+        }
+        return 0;
     }
 }

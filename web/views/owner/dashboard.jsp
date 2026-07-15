@@ -77,50 +77,57 @@
     <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
+
             <h1 class="page-title">Owner Dashboard</h1>
-            <p class="page-sub">Restaurant operations overview</p>
+            <p class="page-sub">Tổng quan vận hành nhà hàng</p>
 
             <div class="welcome">
-                <h2>Welcome, ${sessionScope.employee.fullName}!</h2>
-                <p>Quick access to management modules from here.</p>
+                <h2>Chào mừng, ${sessionScope.employee.fullName}!</h2>
+                <p>Truy cập nhanh các chức năng quản lý tại đây.</p>
             </div>
 
             <div class="grid">
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/staff?action=list">
                     <div class="card-icon"><i class="fas fa-user-tie"></i></div>
-                    <div class="card-title">Manage Staff</div>
-                    <div class="card-desc">Add, edit, deactivate staff</div>
+                    <div class="card-title">Quản lý nhân viên</div>
+                    <div class="card-desc">Thêm, sửa, vô hiệu hóa nhân viên</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/shift-templates">
                     <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
-                    <div class="card-title">Shift Templates</div>
+                    <div class="card-title">Mẫu ca làm</div>
                     <div class="card-desc">Quản lý ca làm việc cố định</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/shift-roster">
                     <div class="card-icon"><i class="fas fa-user-clock"></i></div>
-                    <div class="card-title">Shift Roster</div>
+                    <div class="card-title">Phân ca nhân viên</div>
                     <div class="card-desc">Phân ca theo ngày cho nhân viên</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/attendance">
                     <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
-                    <div class="card-title">Attendance</div>
+                    <div class="card-title">Điểm danh</div>
                     <div class="card-desc">Điểm danh ca làm trong ngày</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/order-history">
                     <div class="card-icon"><i class="fas fa-history"></i></div>
-                    <div class="card-title">Order History</div>
-                    <div class="card-desc">View completed orders</div>
+                    <div class="card-title">Lịch sử đơn hàng</div>
+                    <div class="card-desc">Xem các đơn đã hoàn tất</div>
                 </a>
                 <a class="card" href="${pageContext.request.contextPath}/manage-table">
                     <div class="card-icon"><i class="fas fa-chair"></i></div>
-                    <div class="card-title">Restaurant Tables</div>
-                    <div class="card-desc">Table layout and status</div>
+                    <div class="card-title">Bàn nhà hàng</div>
+                    <div class="card-desc">Sơ đồ bàn và trạng thái bàn</div>
                 </a>
                 <a class="card" href="${pageContext.request.contextPath}/restaurant-analytics-dashboard">
                     <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-                    <div class="card-title">Revenue Reports</div>
-                    <div class="card-desc">Business analytics</div>
+                    <div class="card-title">Báo cáo doanh thu</div>
+                    <div class="card-desc">Phân tích hoạt động kinh doanh</div>
                 </a>
+
                 <a class="card" href="${pageContext.request.contextPath}/owner/reviews">
                     <div class="card-icon"><i class="fas fa-comment-dots"></i></div>
                     <div class="card-title">Quản lý đánh giá</div>
