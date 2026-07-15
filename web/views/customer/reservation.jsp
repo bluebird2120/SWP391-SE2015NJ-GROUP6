@@ -572,6 +572,17 @@
                                                         </div>
                                                     </c:if>
 
+                                                    <%-- Don da completed thi cho khach bam sang form review --%>
+                                                    <c:if test="${o.orderStatus == 'completed'}">
+                                                        <div class="d-flex justify-content-end gap-3 mt-2">
+                                                            <a href="${pageContext.request.contextPath}/customer/reviews?action=create&orderID=${o.orderID}"
+                                                               class="small text-decoration-none"
+                                                               style="color:#bc945c;font-weight:700;">
+                                                                ⭐ Đánh giá
+                                                            </a>
+                                                        </div>
+                                                    </c:if>
+
                                                 </div>
                                             </div>
                                         </div>

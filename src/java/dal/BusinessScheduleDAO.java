@@ -185,14 +185,16 @@ public class BusinessScheduleDAO extends DBContext {
         LocalTime open = schedule.getOpenTime().toLocalTime();
         LocalTime close = schedule.getCloseTime().toLocalTime();
         // [OPERATING HOURS] Khach phai dat ban truoc gio dong cua toi thieu 1 gio 30 phut.
-        LocalTime latestReservationTime = close.minusMinutes(90);
+        LocalTime latestReservationTime = close.minusMinutes(60);
         if (selected.isBefore(open) || selected.isAfter(close)) {
             return "Thời gian đặt bàn phải nằm trong giờ hoạt động: "
                     + open + " - " + close + ".";
         }
 
         if (selected.isAfter(latestReservationTime)) {
-            return "Nhà hàng chỉ nhận đặt bàn trước giờ đóng cửa tối thiểu 1 giờ 30 phút.";
+            return "Hôm nay nhà hàng hoạt động từ "+open+"-"+close+
+                   " Nhà hàng chỉ nhận đặt bàn trước giờ đóng cửa tối thiểu 1 giờ.";
+                    
         }
         return null;
     }

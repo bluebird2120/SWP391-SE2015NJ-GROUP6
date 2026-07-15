@@ -1,6 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -79,6 +78,28 @@
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
                 gap: 16px;
+            }
+            .review-actions {
+                display: flex;
+                justify-content: center;
+                margin-top: 22px;
+            }
+            .review-action-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: #fff;
+                background: #76493b;
+                border: 1px solid #76493b;
+                border-radius: 8px;
+                padding: 11px 18px;
+                font-weight: 700;
+                text-decoration: none;
+                box-shadow: 0 8px 18px rgba(118, 73, 59, 0.18);
+            }
+            .review-action-button:hover {
+                background: #5d3a2e;
+                border-color: #5d3a2e;
             }
             .review-card {
                 background: #fff;
@@ -185,7 +206,7 @@
                 <div class="summary-content">
                     <span class="summary-item">
                         <i class="fa-solid fa-comments"></i>
-                        <strong><c:out value="${fn:length(reviews)}" /> đánh giá </strong>
+                        <strong><c:out value="${totalPublicReviewsText}" /> đánh giá </strong>
                     </span>
                     <span class="summary-item">
                         <i class="fa-solid fa-star-half-stroke"></i>
@@ -254,6 +275,28 @@
                             </article>
                         </c:forEach>
                     </section>
+
+                    <c:if test="${hasMoreReviews}">
+                        <c:url var="showAllReviewsUrl" value="/reviews">
+                            <c:param name="show" value="all" />
+                        </c:url>
+                        <div class="review-actions">
+                            <a class="review-action-button" href="${showAllReviewsUrl}">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                Xem review trước đó
+                            </a>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${showAll}">
+                        <c:url var="latestReviewsUrl" value="/reviews" />
+                        <div class="review-actions">
+                            <a class="review-action-button" href="${latestReviewsUrl}">
+                                <i class="fa-solid fa-arrow-up"></i>
+                                Thu gọn đánh giá
+                            </a>
+                        </div>
+                    </c:if>
                 </c:otherwise>
             </c:choose>
         </main>

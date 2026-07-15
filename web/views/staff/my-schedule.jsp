@@ -55,7 +55,6 @@
         .badge-absent    { background:#f8d7da; color:#721c24; }
         .empty-state { text-align:center; color:#8a6e5a; padding:24px 0; font-size:0.92rem; }
 
-        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -169,8 +168,7 @@
             margin-top: 4px;
             display: none;
         }
-        
-        /* Custom Single-select Dropdown for cover staff */
+
         .single-select-container {
             position: relative;
             user-select: none;
@@ -189,7 +187,7 @@
         }
         .single-select-panel {
             position: absolute;
-            top: 100%; /* Force downward flow */
+            top: 100%;
             left: 0;
             right: 0;
             z-index: 1050;
@@ -222,7 +220,6 @@
             font-weight: bold;
         }
 
-        /* Custom confirmation modal style */
         .custom-confirm-modal {
             display: none;
             position: fixed;
@@ -301,7 +298,7 @@
             <h1 class="page-title">My Schedule</h1>
             <p class="page-sub">Lịch ca làm việc theo tháng — cập nhật trạng thái điểm danh</p>
 
-            <!-- Local Custom confirmation modal -->
+
             <div id="localConfirmModal" class="custom-confirm-modal">
                 <div class="custom-confirm-content">
                     <div id="localConfirmMessage" class="custom-confirm-message"></div>
@@ -312,7 +309,7 @@
                 </div>
             </div>
 
-            <!-- Status Alert Messages -->
+
             <c:if test="${not empty sessionScope.successMsg}">
                 <div style="background:#d4edda; border:1px solid #c3e6cb; color:#155724; padding:12px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:0.9rem;">
                     <i class="fas fa-check-circle"></i>
@@ -344,13 +341,16 @@
                         Tháng sau <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
+
                 <form method="get" action="${pageContext.request.contextPath}/staff/my-schedule" class="form-inline" novalidate>
                     <label style="font-size:0.78rem; color:#8a6e5a; font-weight:600;">Đi tới:</label>
+
                     <select name="month">
                         <c:forEach var="m" begin="1" end="12">
                             <option value="${m}" ${m == month ? 'selected' : ''}>Tháng ${m}</option>
                         </c:forEach>
                     </select>
+
                     <input type="number" name="year" value="${year}" min="2024">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Xem</button>
                     <span class="stats" style="margin-left:auto;">
@@ -384,6 +384,7 @@
                                 <div class="day-cell ${isToday ? 'today' : ''}">
                                     <div class="day-num ${dow == 0 ? 'sun' : ''}">${day}</div>
                                     <c:set var="dayKey" value="${day}" />
+
                                     <c:set var="shifts" value="${scheduleMap[dayKey.toString()]}" />
                                     <c:if test="${not empty shifts}">
                                         <c:forEach var="s" items="${shifts}">
@@ -393,9 +394,9 @@
                                                     <fmt:formatDate value="${s.startTime}" pattern="HH:mm"/> - <fmt:formatDate value="${s.endTime}" pattern="HH:mm"/>
                                                 </span>
                                                 <span class="badge badge-${s.status}">${s.status}</span>
-                                                
-                                                <!-- Request Status or Button -->
-                                                <c:set var="req" value="${pendingRequests[s.shiftID]}" />
+
+
+                                                 <c:set var="req" value="${pendingRequests[s.shiftID]}" />
                                                 <c:choose>
                                                     <c:when test="${not empty req}">
                                                         <c:choose>
@@ -419,6 +420,7 @@
                                                     <c:otherwise>
                                                         <fmt:formatDate var="shiftDateStr" value="${s.workDate}" pattern="yyyy-MM-dd"/>
                                                         <c:if test="${s.status == 'scheduled' && shiftDateStr >= today}">
+
                                                             <button type="button" class="request-btn"
                                                                     data-shift-id="${s.shiftID}"
                                                                     data-shift-name="${s.shiftName}"
@@ -447,7 +449,7 @@
                 </c:if>
             </div>
 
-            <!-- Yêu cầu làm thay từ đồng nghiệp -->
+
             <div class="card" style="margin-top: 24px; overflow-x: auto;">
                 <div class="section-title" style="font-size: 1.1rem; color: #76493b; margin-bottom: 16px; font-weight: 600;">
                     Yêu cầu làm thay từ đồng nghiệp đang chờ bạn xác nhận
@@ -474,16 +476,22 @@
                                 <td style="padding: 10px; color: #5d3a2e;"><c:out value="${cr.reason}"/></td>
                                 <td style="padding: 10px;">
                                     <div style="display: flex; gap: 8px;">
-                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Chấp nhận làm thay ca này?');">
-                                            <input type="hidden" name="action" value="acceptCoverRequest">
-                                            <input type="hidden" name="requestID" value="${cr.requestID}">
+
+                                         <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Chấp nhận làm thay ca này?');">
+
+                                             <input type="hidden" name="action" value="acceptCoverRequest">
+
+                                             <input type="hidden" name="requestID" value="${cr.requestID}">
                                             <button type="submit" class="btn btn-sm" style="background:#28a745; color:#fff; border-color:#28a745; font-size:0.75rem; padding:4px 8px; border-radius:4px; cursor:pointer;">
                                                 Đồng ý
                                             </button>
                                         </form>
-                                        <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối làm thay ca này?');">
-                                            <input type="hidden" name="action" value="rejectCoverRequest">
-                                            <input type="hidden" name="requestID" value="${cr.requestID}">
+
+                                         <form method="post" action="${pageContext.request.contextPath}/staff/my-schedule" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối làm thay ca này?');">
+
+                                             <input type="hidden" name="action" value="rejectCoverRequest">
+
+                                             <input type="hidden" name="requestID" value="${cr.requestID}">
                                             <button type="submit" class="btn btn-sm" style="background:#dc3545; color:#fff; border-color:#dc3545; font-size:0.75rem; padding:4px 8px; border-radius:4px; cursor:pointer;">
                                                 Từ chối
                                             </button>
@@ -503,7 +511,7 @@
         </main>
     </div>
 
-    <!-- Request Modal Overlay -->
+
     <div id="requestModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -518,11 +526,14 @@
                     <i class="fas fa-calendar-minus"></i> Xin Nghỉ Ca
                 </div>
             </div>
-            
-            <!-- Tab Cover Pane -->
+
+
             <div id="paneCover" class="modal-pane active">
+
                 <form id="coverForm" method="post" action="${pageContext.request.contextPath}/staff/my-schedule" onsubmit="return validateCoverForm()">
+
                     <input type="hidden" name="action" value="requestCover">
+
                     <input type="hidden" id="modalRequesterShiftID" name="requesterShiftID">
                     <div class="modal-body">
                         <div class="form-group">
@@ -531,6 +542,7 @@
                         </div>
                         <div class="form-group">
                             <label>Chọn nhân viên làm thay (chưa có ca ngày này):</label>
+
                             <input type="hidden" id="targetEmployeeSelect" name="targetEmployeeID" value="">
                             <div class="single-select-container">
                                 <div class="single-select-trigger" id="customCoverTrigger" onclick="toggleCustomCoverSelect(event)">
@@ -545,6 +557,7 @@
                                         </div>
                                         <c:forEach var="entry" items="${availableCoverStaffByDate}">
                                             <c:forEach var="staff" items="${entry.value}">
+
                                                 <div class="single-select-option cover-staff-option" data-date="${entry.key}" data-value="${staff.employeeID}" onclick="selectCustomCoverOption(this, '${staff.employeeID}', '${staff.fullName}')">
                                                     ${staff.fullName}
                                                 </div>
@@ -557,6 +570,7 @@
                         </div>
                         <div class="form-group">
                             <label for="coverReason">Lý do nhờ làm thay:</label>
+
                             <textarea id="coverReason" name="reason" placeholder="Nhập lý do nhờ làm thay của bạn..." maxlength="500"></textarea>
                             <span id="coverReasonError" class="error-feedback">Vui lòng nhập lý do nhờ làm thay!</span>
                         </div>
@@ -568,10 +582,13 @@
                 </form>
             </div>
 
-            <!-- Tab Leave Pane -->
+
             <div id="paneLeave" class="modal-pane">
+
                 <form id="leaveForm" method="post" action="${pageContext.request.contextPath}/staff/my-schedule" onsubmit="return validateLeaveForm()">
+
                     <input type="hidden" name="action" value="requestLeave">
+
                     <input type="hidden" id="modalRequesterShiftIDLeave" name="requesterShiftID">
                     <div class="modal-body">
                         <div class="form-group">
@@ -580,6 +597,7 @@
                         </div>
                         <div class="form-group">
                             <label for="leaveReason">Lý do xin nghỉ ca:</label>
+
                             <textarea id="leaveReason" name="reason" placeholder="Nhập lý do xin nghỉ của bạn..." maxlength="500"></textarea>
                             <span id="leaveReasonError" class="error-feedback">Vui lòng nhập lý do xin nghỉ!</span>
                         </div>
@@ -594,20 +612,21 @@
     </div>
 
     <%@ include file="/views/includes/footer.jsp" %>
-    
+
     <script>
         function openRequestModalFromButton(btn) {
             openRequestModal(btn.dataset.shiftId, btn.dataset.shiftName, btn.dataset.workDate);
         }
 
         function openRequestModal(shiftID, shiftName, workDate) {
+
             document.getElementById('modalRequesterShiftID').value = shiftID;
             document.getElementById('modalRequesterShiftIDLeave').value = shiftID;
             document.getElementById('selectedShiftInfo').innerText = shiftName + ' (' + formatDateVN(workDate) + ')';
             document.getElementById('selectedShiftInfoLeave').innerText = shiftName + ' (' + formatDateVN(workDate) + ')';
             document.getElementById('requestModal').style.display = 'flex';
-            
-            // Clear input states
+
+
             document.getElementById('coverReason').value = '';
             document.getElementById('leaveReason').value = '';
             document.getElementById('targetEmployeeSelect').value = '';
@@ -621,7 +640,7 @@
             filterCoverStaffOptions(workDate);
             var panel = document.getElementById('customCoverPanel');
             if (panel) panel.style.display = 'none';
-            
+
             hideErrors();
         }
 
@@ -632,10 +651,10 @@
         function switchTab(type) {
             const tabs = document.querySelectorAll('.modal-tab');
             const panes = document.querySelectorAll('.modal-pane');
-            
+
             tabs.forEach(t => t.classList.remove('active'));
             panes.forEach(p => p.classList.remove('active'));
-            
+
             if (type === 'cover') {
                 document.getElementById('tabCover').classList.add('active');
                 document.getElementById('paneCover').classList.add('active');
@@ -655,7 +674,7 @@
             let isValid = true;
             const target = document.getElementById('targetEmployeeSelect').value;
             const reason = document.getElementById('coverReason').value.trim();
-            
+
             if (!target) {
                 document.getElementById('targetError').style.display = 'block';
                 isValid = false;
@@ -676,7 +695,7 @@
             hideErrors();
             let isValid = true;
             const reason = document.getElementById('leaveReason').value.trim();
-            
+
             if (!reason) {
                 document.getElementById('leaveReasonError').innerText = 'Vui lòng nhập lý do xin nghỉ!';
                 document.getElementById('leaveReasonError').style.display = 'block';
@@ -711,12 +730,12 @@
         function selectCustomCoverOption(el, value, label) {
             document.getElementById('targetEmployeeSelect').value = value;
             document.getElementById('customCoverTriggerLabel').innerText = label;
-            
+
             document.querySelectorAll('#customCoverList .single-select-option').forEach(function(o) {
                 o.classList.remove('selected');
             });
             el.classList.add('selected');
-            
+
             document.getElementById('customCoverPanel').style.display = 'none';
         }
 
@@ -743,7 +762,7 @@
             }
         });
 
-        // Close modal when clicking outside content
+
         window.onclick = function(event) {
             const modal = document.getElementById('requestModal');
             if (event.target === modal) {
@@ -759,7 +778,7 @@
                 event.preventDefault();
             }
             activeConfirmForm = form;
-            
+
             var modal = document.getElementById('localConfirmModal');
             var msgEl = document.getElementById('localConfirmMessage');
             if (modal && msgEl) {
@@ -795,4 +814,3 @@
     </script>
 </body>
 </html>
-

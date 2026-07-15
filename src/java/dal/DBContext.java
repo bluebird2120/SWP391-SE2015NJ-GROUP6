@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DBContext {
+public class DBContext implements AutoCloseable {
 
     protected Connection connection;
     protected ResultSet resultSet;
@@ -52,6 +52,11 @@ public class DBContext {
 
     public Connection getConnection() {
         return this.connection;
+    }
+
+    @Override
+    public void close() {
+        closeResources();
     }
 
     public static void main(String[] args) {

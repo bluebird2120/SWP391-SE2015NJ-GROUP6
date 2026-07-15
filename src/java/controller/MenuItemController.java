@@ -8,6 +8,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URLEncoder;
 import java.util.List;
 import model.MenuCategory;
 import dal.MenuCategoryDAO;
@@ -46,6 +47,12 @@ public class MenuItemController extends HttpServlet {
 
         // === BẮT ĐẦU PHẦN THÊM MỚI: XỬ LÝ QUÉT MÃ QR BẰNG TOKEN (HOST/GUEST) ===
         String token = request.getParameter("token");
+        if (token != null && !token.isEmpty()) {
+            // [QR FLOW] Tat ca luong quet QR di qua ScanQRController de tranh bypass buoc xac nhan ban.
+            response.sendRedirect(request.getContextPath() + "/scan?token="
+                    + URLEncoder.encode(token, "UTF-8"));
+            return;
+        }
         int tableIdFromToken = 0;
 
         //logic gộp bàn
@@ -132,7 +139,11 @@ public class MenuItemController extends HttpServlet {
                 } else {
                     // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG (Người đầu tiên quét)
                     Order newOrder = new Order();
-                    newOrder.setTableStatus("serving");
+
+                    // [TABLE STATUS FLOW] Khach vang lai da vao menu thi ban da co HOST => occupied.
+                    newOrder.setTableStatus("occupied");
+
+
                     newOrder.setOrderType(1);
 
                     // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT

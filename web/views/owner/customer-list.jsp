@@ -100,6 +100,7 @@
     <div style="display: flex;">
         <%@ include file="/views/includes/dashboard.jsp" %>
         <main class="main">
+
             <div class="page-head">
                 <div>
                     <h1 class="page-title">Quản lý khách hàng</h1>
@@ -114,16 +115,19 @@
                 <c:remove var="customerStatusMessage" scope="session"/>
             </c:if>
 
+
             <form method="get"
                   action="${pageContext.request.contextPath}/owner/customer-list"
                   class="filter-bar">
                 <div class="field">
                     <label>Tìm kiếm</label>
+
                     <input type="text" name="search" value="${search}"
                            placeholder="Tên, số điện thoại hoặc email...">
                 </div>
                 <div class="field">
                     <label>Loại tài khoản</label>
+
                     <select name="loginProvider">
                         <option value="all" ${loginProvider == 'all' ? 'selected' : ''}>
                             Tất cả
@@ -170,6 +174,7 @@
                                 </tr>
                             </c:when>
                             <c:otherwise>
+
                                 <c:forEach var="customer" items="${customers}" varStatus="loop">
                                     <tr>
                                         <td>${(page - 1) * pageSize + loop.index + 1}</td>
@@ -201,13 +206,17 @@
                                                             pattern="dd/MM/yyyy HH:mm"/>
                                         </td>
                                         <td>
+
                                             <form method="post"
                                                   action="${pageContext.request.contextPath}/owner/customer-list">
+
                                                 <input type="hidden" name="customerID"
                                                        value="${customer.customerID}">
+
                                                 <input type="hidden" name="page" value="${page}">
                                                 <c:choose>
                                                     <c:when test="${customer.isActive == 1}">
+
                                                         <input type="hidden" name="isActive" value="0">
                                                         <button type="submit" class="btn btn-lock"
                                                                 onclick="return confirm('Bạn chắc chắn muốn khóa tài khoản này?')">
@@ -215,6 +224,7 @@
                                                         </button>
                                                     </c:when>
                                                     <c:otherwise>
+
                                                         <input type="hidden" name="isActive" value="1">
                                                         <button type="submit" class="btn btn-unlock"
                                                                 onclick="return confirm('Bạn chắc chắn muốn mở khóa tài khoản này?')">
@@ -234,6 +244,7 @@
                 <c:if test="${totalPages > 1}">
                     <div class="pagination">
                         <c:if test="${page > 1}">
+
                             <c:url var="prevUrl" value="/owner/customer-list">
                                 <c:param name="page" value="${page - 1}"/>
                                 <c:param name="search" value="${search}"/>

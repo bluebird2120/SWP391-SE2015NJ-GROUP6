@@ -61,6 +61,20 @@
             .cleaning {
                 background: #fff0c7;
             }
+            .serving {
+                background: #e4f4ff;
+            }
+            .reserved {
+                background: #e8edff;
+            }
+            .pending {
+                background: #ffe7c2;
+            }
+            .checkout-request {
+                background: #ffe2e2;
+                color: #9f1239;
+                font-weight: 700;
+            }
             button {
                 border: 0;
                 border-radius: 7px;
@@ -113,8 +127,28 @@
                                     <td>${t.tableName} (${t.capacity} chỗ)</td>
                                     <td>${t.areaType}</td>
                                     <td><fmt:formatDate value="${t.orderTime}" pattern="HH:mm - dd/MM/yyyy"/></td>
-                                    <td><span class="badge ${t.physicalStatus}">${t.physicalStatus}</span></td>
                                     <td>
+                                        <span class="badge ${not empty t.checkoutRequestAt && t.physicalStatus != 'cleaning' ? 'checkout-request' : t.physicalStatus}">
+                                            <c:choose>
+                                                <%-- [YEU CAU THANH TOAN] Khach bam yeu cau tinh tien thi nhan vien se thay trang thai nay tren ban minh phuc vu. --%>
+                                                <c:when test="${not empty t.checkoutRequestAt && t.physicalStatus != 'cleaning'}">Yêu cầu thanh toán</c:when>
+                                                <c:when test="${t.physicalStatus == 'available'}">Trống</c:when>
+                                                <c:when test="${t.physicalStatus == 'reserved'}">Đã đặt trước</c:when>
+                                                <c:when test="${t.physicalStatus == 'serving'}">Đang phục vụ</c:when>
+                                                <c:when test="${t.physicalStatus == 'cleaning'}">Chờ dọn</c:when>
+                                                <c:when test="${t.physicalStatus == 'pending'}">Chờ xác nhận</c:when>
+                                                <c:otherwise>${t.physicalStatus}</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <c:if test="${t.physicalStatus != 'cleaning' && not empty t.checkoutRequestAt}">
+                                            <%-- [KIEM TRA DON] Nhan vien xem chi tiet, sua so luong neu can, roi moi thanh toan. --%>
+                                            <a href="${pageContext.request.contextPath}/staff/tables?action=detail&orderID=${t.orderID}"
+                                               style="display:inline-block;border-radius:7px;padding:8px 12px;background:#76493b;color:#fff;text-decoration:none;margin-right:8px;">
+                                                Chi tiết đơn
+                                            </a>
+                                        </c:if>
                                         <c:if test="${t.physicalStatus == 'cleaning'}">
                                             <form method="post" action="${pageContext.request.contextPath}/staff/tables">
                                                 <input type="hidden" name="action" value="cleaned">

@@ -78,7 +78,8 @@ public class TableDAO extends DBContext {
                 + "WHERE o.orderType = 1 "
                 + "  AND ord.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
-                + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
+                // [TABLE AVAILABILITY] serving la orderStatus; tableStatus ban ban gom pending/reserved/arrived/occupied/cleaning.
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "  AND NOT EXISTS ( "
                 + "      SELECT 1 "
@@ -101,7 +102,8 @@ public class TableDAO extends DBContext {
                 + "WHERE t.isActive = 1 "
                 + "  AND t.areaType = ? "
                 + "  AND DATE(o.orderTime) = DATE(?) "
-                + "  AND o.tableStatus IN ('reserved', 'serving', 'cleaning') "
+                // [TABLE AVAILABILITY] Don da gan ban that cung phai tru ban arrived/occupied.
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
                 + "GROUP BY t.capacity";
 
@@ -208,21 +210,6 @@ public class TableDAO extends DBContext {
                 + "  AND o.orderStatus = 'pending' "
                 + "  AND i.status = 'paid'";
 
-        String releasePendingSql
-                = "UPDATE `Order` o "
-                + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
-                + "SET o.orderStatus = 'cancelled', "
-                + "    o.tableStatus = 'available' "
-                + "WHERE o.orderType = 1 "
-                + "  AND o.orderStatus = 'pending' "
-                + "  AND ("
-                + "      LOWER(COALESCE(i.status, '')) "
-                + "          IN ('failed', 'cancelled', 'expired') "
-                + "      OR (o.checkoutRequestAt IS NOT NULL "
-                + "          AND o.checkoutRequestAt <= NOW() "
-                + "          AND COALESCE(i.status, 'unpaid') <> 'paid')"
-                + "  )";
-
         String lateArrivalSql
                 = "UPDATE `Order` "
                 + "SET orderStatus = 'cancelled', tableStatus = 'available' "
@@ -232,10 +219,11 @@ public class TableDAO extends DBContext {
                 + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
 
         try (PreparedStatement confirmPs = connection.prepareStatement(confirmPaidSql);
-                PreparedStatement pendingPs = connection.prepareStatement(releasePendingSql);
                 PreparedStatement latePs = connection.prepareStatement(lateArrivalSql)) {
             confirmPs.executeUpdate();
-            int expired = pendingPs.executeUpdate() + latePs.executeUpdate();
+            // [UNPAID RESERVATION CLEANUP] Don pending chua coc khong doi sang
+            // cancelled o day nua; OrderDAOSon.synchronizeDepositStatus() se xoa han.
+            int expired = latePs.executeUpdate();
 
             if (expired > 0) {
                 System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");

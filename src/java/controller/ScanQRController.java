@@ -30,7 +30,7 @@ public class ScanQRController extends HttpServlet {
             if (currentTable != null && currentTable.getIsActive() == 1) {
 
                 OrderDAO orderDAO = new OrderDAO();
-                // 🌟 Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
+                //  Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
                 String role = (String) session.getAttribute("roleInTable");
@@ -112,8 +112,16 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
                     
-                    // Bàn đang có khách ngồi ăn (Serving / Occupied) -> Bắt buộc xin gộp bàn
-                    if ("serving".equals(activeOrder.getTableStatus()) || "occupied".equals(activeOrder.getTableStatus())) {
+                    // [TABLE STATUS FLOW] Ban da thanh toan nhung chua don xong thi chua cho khach moi vao.
+                    if ("cleaning".equals(activeOrder.getTableStatus())) {
+                        session.setAttribute("errorMsg", "Bàn này đang chờ dọn dẹp. Vui lòng chọn bàn khác hoặc liên hệ nhân viên.");
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+
+                    // Ban da co HOST/khach dang ngoi an thi phai xin gop ban.
+                    // [TABLE STATUS FLOW] occupied = da co HOST/khach dang dung ban.
+                    if ("occupied".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
@@ -138,12 +146,9 @@ public class ScanQRController extends HttpServlet {
                     newOrder.setOrderTime(new java.sql.Timestamp(System.currentTimeMillis()));
                     newOrder.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
                     
-                    // Gán nhân viên phụ trách theo ca làm việc hiện tại
-                    dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
-                    Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
-                    if (assignedStaffId != null) {
-                        newOrder.setEmployeeID(assignedStaffId);
-                    }
+                    // Nhân viên ít việc nhất chỉ được gán SAU KHI lễ tân bấm "mở bàn"
+                    // (xem ReceptionTableController#openTable). Ở đây employeeID để
+                    // NULL, chỉ tạo đơn + báo cho lễ tân biết có khách vãng lai mới.
 
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
@@ -153,20 +158,22 @@ public class ScanQRController extends HttpServlet {
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
 
-                        // Gửi thông báo cho nhân viên
-                        if (newOrder.getEmployeeID() != null) {
-                            try {
-                                dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                        // Gửi thông báo cho lễ tân biết cần ra mở bàn cho khách vãng lai này.
+                        try {
+                            dal.EmployeeDAO empDAO = new dal.EmployeeDAO();
+                            java.util.List<Integer> receptionistIDs = empDAO.getActiveReceptionistIDs();
+                            dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                            for (int recID : receptionistIDs) {
                                 model.Notifications n = new model.Notifications();
-                                n.setRecipientID(newOrder.getEmployeeID());
+                                n.setRecipientID(recID);
                                 n.setRecipientType("staff");
                                 n.setType("new_order");
-                                n.setMessage("Bàn " + currentTable.getTableID() + " (Đơn #" + newOrderID + ") đang chờ được mở.");
+                                n.setMessage("Bàn " + currentTable.getTableName() + " có khách vãng lai vừa quét QR, cần ra mở bàn (Đơn #" + newOrderID + ").");
                                 n.setIsRead(0);
                                 notifDAO.insert(n);
-                            } catch (Exception e) {
-                                System.err.println("[ScanQRController] Gửi thông báo thất bại: " + e.getMessage());
                             }
+                        } catch (Exception e) {
+                            System.err.println("[ScanQRController] Gửi thông báo cho lễ tân thất bại: " + e.getMessage());
                         }
 
                         // MỞ KHÓA MÀN HÌNH CHỜ (Waiting_staff.jsp)

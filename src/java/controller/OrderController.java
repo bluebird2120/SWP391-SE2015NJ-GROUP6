@@ -141,8 +141,8 @@ public class OrderController extends HttpServlet {
                 Order newOrder = new Order();
                 newOrder.setCustomerID(customerID);
                 newOrder.setOrderType(tableID != null ? 1 : 2); 
-                // [TABLE STATUS STANDARD] Ban co khach dang phuc vu thong nhat dung 'serving'.
-                newOrder.setTableStatus(tableID != null ? "serving" : "available");
+                // [TABLE STATUS FLOW] serving chi dung cho orderStatus; ban co khach/host thi la occupied.
+                newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
                 newOrder.setTotalAmount(0);
@@ -258,8 +258,40 @@ public class OrderController extends HttpServlet {
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            // 🌟 ĐÃ SỬA: Chuyển hướng sang CheckoutController để nó tính toán tiền bạc
-            response.sendRedirect(request.getContextPath() + "/checkout");
+            // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
+            // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
+            if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
+                session.setAttribute("successMsg", "Da gui yeu cau tinh tien. Vui long cho nhan vien kiem tra va chot hoa don.");
+
+                // Thông báo ngay cho nhân viên đang phụ trách bàn/đơn này để họ qua chốt hóa đơn.
+                try {
+                    Order order = orderDAO.getOrderById(currentOrderID);
+                    if (order != null && order.getEmployeeID() != null) {
+                        List<Table> tables = new TableDAO().getTablesByOrderId(currentOrderID);
+                        StringBuilder tableNames = new StringBuilder();
+                        for (int i = 0; i < tables.size(); i++) {
+                            if (i > 0) tableNames.append(", ");
+                            tableNames.append(tables.get(i).getTableName());
+                        }
+                        String tableLabel = tableNames.length() > 0 ? tableNames.toString() : ("#" + currentOrderID);
+
+                        dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                        model.Notifications n = new model.Notifications();
+                        n.setRecipientID(order.getEmployeeID());
+                        n.setRecipientType("staff");
+                        n.setType("checkout_requested");
+                        n.setMessage("Bàn " + tableLabel + " (Đơn #" + currentOrderID
+                                + ") vừa yêu cầu thanh toán. Vui lòng đến kiểm tra và chốt hóa đơn.");
+                        n.setIsRead(0);
+                        notifDAO.insert(n);
+                    }
+                } catch (Exception e) {
+                    System.err.println("[OrderController] Gửi thông báo yêu cầu thanh toán thất bại: " + e.getMessage());
+                }
+            } else {
+                session.setAttribute("errorMsg", "Khong the gui yeu cau tinh tien. Vui long kiem tra lai mon da goi.");
+            }
+            response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
         }
     }

@@ -223,7 +223,6 @@
                 border: 1px solid #c3e6cb;
             }
 
-            /* Tabs */
             .tabs {
                 display: flex;
                 gap: 0;
@@ -276,7 +275,6 @@
                 font-size: 0.85rem;
             }
 
-            /* Custom Multi-select Dropdown */
             .multi-select-container {
                 position: relative;
                 width: 100%;
@@ -338,7 +336,6 @@
                 cursor: pointer;
             }
 
-            /* Custom Single-select Dropdown (Tab Xem lịch NV) */
             .single-select-container {
                 position: relative;
                 width: 100%;
@@ -406,7 +403,6 @@
                 font-weight: 600;
             }
 
-            /* Custom confirmation modal style */
             .custom-confirm-modal {
                 display: none;
                 position: fixed;
@@ -486,10 +482,10 @@
                 <h1 class="page-title">Shift Roster</h1>
                 <p class="page-sub">Quản lý phân ca nhân viên</p>
 
-                <!-- Client-side error container -->
+
                 <div id="js-alert-container"></div>
 
-                <!-- Local Custom confirmation modal -->
+
                 <div id="localConfirmModal" class="custom-confirm-modal">
                     <div class="custom-confirm-content">
                         <div id="localConfirmMessage" class="custom-confirm-message"></div>
@@ -527,9 +523,6 @@
                 <c:if test="${param.msg == 'month_assigned'}">
                     <div class="alert alert-success">Đã áp dụng phân ca cho cả tháng.</div>
                 </c:if>
-                <c:if test="${param.msg == 'month_assigned_multi'}">
-                    <div class="alert alert-success">Đã áp dụng phân ca cho cả tháng cho ${param.cnt} nhân viên.</div>
-                </c:if>
                 <c:if test="${param.msg == 'plan_cancelled'}">
                     <div class="alert alert-success">Đã huỷ kế hoạch ca tháng.</div>
                 </c:if>
@@ -543,7 +536,7 @@
                     <div class="alert alert-success">Đã từ chối yêu cầu thành công.</div>
                 </c:if>
 
-                <!-- TABS -->
+
                 <div class="tabs">
                     <button class="tab-btn active" onclick="switchTab('daily')"><i
                             class="fas fa-calendar-day"></i> Phân ca ngày</button>
@@ -559,23 +552,28 @@
                     </button>
                 </div>
 
-                <!-- ===== TAB 1: PHÂN CA THEO NGÀY ===== -->
+
                 <div id="tab-daily" class="tab-content active">
                     <div class="card">
                         <div class="section-title"><i class="fas fa-plus-circle"></i> Gán ca theo ngày
                         </div>
+
                         <form method="post"
                               action="${pageContext.request.contextPath}/owner/shift-roster" class="row"
                               novalidate onsubmit="return validateRosterForm(this);">
+
                             <input type="hidden" name="action" value="assign">
+
                             <input type="hidden" name="date" value="${date}">
                             <div class="field field-sm" style="min-width:150px;">
                                 <label>Từ ngày</label>
+
                                 <input type="date" name="dateDisplay" value="${date}"
                                        onchange="document.querySelector('[name=date]').value = this.value; this.form.action = '${pageContext.request.contextPath}/owner/shift-roster'; this.form.method = 'get'; this.form.submit();">
                             </div>
                             <div class="field field-sm" style="min-width:150px;">
                                 <label>Đến ngày</label>
+
                                 <input type="date" name="toDate" value="${date}">
                             </div>
                             <div class="field">
@@ -584,7 +582,9 @@
                                     <div class="multi-select-trigger" onclick="toggleMultiSelect(this, event)">-- Chọn nhân viên (0) --</div>
                                     <div class="multi-select-dropdown">
                                         <label><input type="checkbox" onchange="toggleSelectAllStaff(this)"> <b>Chọn tất cả</b></label>
+
                                             <c:forEach var="s" items="${staffList}">
+
                                             <label><input type="checkbox" name="employeeIDs" value="${s.employeeID}" onchange="updateMultiSelectLabel(this)"> ${s.fullName}</label>
                                             </c:forEach>
                                     </div>
@@ -592,8 +592,10 @@
                             </div>
                             <div class="field">
                                 <label>Giờ</label>
+
                                 <select name="templateID">
                                     <option value="">Giờ làm việc</option>
+
                                     <c:forEach var="t" items="${templates}">
                                         <option value="${t.templateID}">${t.shiftName} (
                                             <fmt:formatDate value="${t.startTime}" pattern="HH:mm" />-
@@ -622,6 +624,7 @@
                                 </tr>
                             </thead>
                             <tbody id="dailyRosterBody">
+
                                 <c:forEach var="r" items="${roster}">
                                     <tr>
                                         <td>${r.fullName}</td>
@@ -635,14 +638,18 @@
                                         <td>
                                             <c:choose>
                                                 <c:when test="${r.status == 'scheduled'}">
+
                                                     <form method="post"
                                                           action="${pageContext.request.contextPath}/owner/shift-roster"
                                                           style="margin:0;"
                                                           onsubmit="return showCustomConfirm(this, event, 'Huỷ ca này?');">
+
                                                         <input type="hidden" name="action"
                                                                value="unassign">
+
                                                         <input type="hidden" name="shiftID"
                                                                value="${r.shiftID}">
+
                                                         <input type="hidden" name="date"
                                                                value="${date}">
                                                         <button type="submit"
@@ -670,14 +677,16 @@
                     </div>
                 </div>
 
-                <!-- ===== TAB 2: PHÂN CA THEO THÁNG ===== -->
+
                 <div id="tab-monthly" class="tab-content">
                     <div class="card">
                         <div class="section-title"><i class="fas fa-calendar-check"></i> Gán ca cả tháng
                         </div>
+
                         <form method="post"
                               action="${pageContext.request.contextPath}/owner/shift-roster" class="row"
                               novalidate onsubmit="return validateRosterForm(this);">
+
                             <input type="hidden" name="action" value="assignMonth">
                             <div class="field">
                                 <label>Nhân viên</label>
@@ -685,6 +694,7 @@
                                     <div class="multi-select-trigger" onclick="toggleMultiSelect(this, event)">-- Chọn nhân viên (0) --</div>
                                     <div class="multi-select-dropdown">
                                         <label><input type="checkbox" onchange="toggleSelectAllStaff(this)"> <b>Chọn tất cả</b></label>
+
                                             <c:forEach var="s" items="${staffList}">
                                             <label><input type="checkbox" name="employeeIDs" value="${s.employeeID}" onchange="updateMultiSelectLabel(this)"> ${s.fullName}</label>
                                             </c:forEach>
@@ -693,6 +703,7 @@
                             </div>
                             <div class="field">
                                 <label>Giờ</label>
+
                                 <select name="templateID">
                                     <option value="">Giờ làm việc</option>
                                     <c:forEach var="t" items="${templates}">
@@ -705,6 +716,7 @@
                             </div>
                             <div class="field field-sm">
                                 <label>Tháng</label>
+
                                 <select name="month">
                                     <c:forEach var="m" begin="1" end="12">
                                         <option value="${m}" ${m==planMonth ? 'selected' : '' }>${m}
@@ -719,6 +731,7 @@
                             </div>
                             <div class="field field-sm" style="min-width:170px;">
                                 <label>Chế độ</label>
+
                                 <select name="assignMode">
                                     <option value="SKIP_EXISTING">Bỏ qua ngày đã có</option>
                                     <option value="REPLACE_ALL">Thay thế cả tháng</option>
@@ -732,12 +745,13 @@
                         </form>
                     </div>
 
-                    <!-- Bảng kế hoạch tháng -->
+
                     <div class="card" style="padding:0;">
                         <div
                             style="padding:12px 18px; border-bottom:1px solid #f5ece4; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <span class="section-title" style="margin:0;"><i class="fas fa-list"></i> Kế
                                 hoạch tháng</span>
+
                             <form method="get"
                                   action="${pageContext.request.contextPath}/owner/shift-roster"
                                   style="display:flex; gap:8px; align-items:center; margin-left:auto;" novalidate>
@@ -767,6 +781,7 @@
                                 </tr>
                             </thead>
                             <tbody id="monthlyPlanBody">
+
                                 <c:forEach var="p" items="${monthlyPlans}">
                                     <tr>
                                         <td>${p.employeeName}</td>
@@ -782,12 +797,15 @@
                                             <c:choose>
                                                 <c:when
                                                     test="${p.status == 'DRAFT' or p.status == 'NOTIFIED' or p.status == 'APPLIED'}">
+
                                                     <form method="post"
                                                           action="${pageContext.request.contextPath}/owner/shift-roster"
                                                           style="margin:0;"
                                                           onsubmit="return showCustomConfirm(this, event, 'Huỷ kế hoạch này?');">
+
                                                         <input type="hidden" name="action"
                                                                value="cancelPlan">
+
                                                         <input type="hidden" name="planID"
                                                                value="${p.planID}">
                                                         <input type="hidden" name="planYear"
@@ -819,11 +837,12 @@
                     </div>
                 </div>
 
-                <!-- ===== TAB 3: XEM LỊCH NHÂN VIÊN ===== -->
+
                 <div id="tab-view" class="tab-content">
                     <div class="card">
                         <div class="section-title"><i class="fas fa-user-clock"></i> Xem lịch ca nhân
                             viên</div>
+
                         <form method="get"
                               action="${pageContext.request.contextPath}/owner/shift-roster" class="row" novalidate>
                             <input type="hidden" name="date" value="${date}">
@@ -832,7 +851,8 @@
                             <input type="hidden" name="activeTab" value="view">
                             <div class="field">
                                 <label>Nhân viên</label>
-                                <!-- Hidden input gửi giá trị khi submit -->
+
+
                                 <input type="hidden" name="viewEmployeeID" id="viewEmployeeIDInput" value="${viewEmployeeID}">
                                 <div class="single-select-container" id="singleSelectContainer">
                                     <div class="single-select-trigger" id="singleSelectTrigger"
@@ -845,6 +865,7 @@
                                     <div class="single-select-panel" id="singleSelectPanel">
                                         <div class="single-select-list" id="singleSelectList">
                                             <div class="single-select-option" data-value="" onclick="selectSingleOption(this, '', '-- Chọn nhân viên --')">-- Chọn --</div>
+
                                             <c:forEach var="s" items="${staffList}">
                                                 <div class="single-select-option ${s.employeeID==viewEmployeeID ? 'selected' : ''}"
                                                      data-value="${s.employeeID}"
@@ -856,6 +877,7 @@
                             </div>
                             <div class="field field-sm">
                                 <label>Tháng</label>
+
                                 <select name="viewMonth">
                                     <c:forEach var="m" begin="1" end="12">
                                         <option value="${m}" ${m==viewMonth ? 'selected' : '' }>${m}
@@ -896,6 +918,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+
                                     <c:forEach var="s" items="${staffSchedule}">
                                         <tr>
                                             <td>
@@ -939,7 +962,7 @@
                     </c:if>
                 </div>
 
-                <!-- ===== TAB 4: YÊU CẦU XIN NGHỈ ===== -->
+
                 <div id="tab-requests" class="tab-content">
                     <div class="card" style="overflow-x:auto;">
                         <div class="section-title"><i class="fas fa-paper-plane"></i> Yêu cầu xin nghỉ đang chờ duyệt</div>
@@ -955,6 +978,7 @@
                                 </tr>
                             </thead>
                             <tbody>
+
                                 <c:forEach var="pr" items="${pendingRequests}">
                                     <tr>
                                         <td>
@@ -975,17 +999,24 @@
                                         </td>
                                         <td>
                                             <div style="display:flex; gap:6px;">
+
                                                 <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Duyệt yêu cầu này?');">
+
                                                     <input type="hidden" name="action" value="approveRequest">
+
                                                     <input type="hidden" name="swapID" value="${pr.swapID}">
+
                                                     <input type="hidden" name="date" value="${date}">
                                                     <input type="hidden" name="activeTab" value="requests">
                                                     <button type="submit" class="btn btn-sm" style="background:#28a745; color:#fff; border-color:#28a745; font-size:0.75rem; padding:5px 10px;">
                                                         <i class="fas fa-check"></i> Duyệt
                                                     </button>
                                                 </form>
+
                                                 <form method="post" action="${pageContext.request.contextPath}/owner/shift-roster" style="margin:0;" onsubmit="return showCustomConfirm(this, event, 'Từ chối yêu cầu này?');">
+
                                                     <input type="hidden" name="action" value="rejectRequest">
+
                                                     <input type="hidden" name="swapID" value="${pr.swapID}">
                                                     <input type="hidden" name="date" value="${date}">
                                                     <input type="hidden" name="activeTab" value="requests">
@@ -1056,7 +1087,7 @@
             }
 
             function showJsError(message, form) {
-                // Hide existing server-side alerts
+
                 document.querySelectorAll('.alert').forEach(function (el) {
                     el.style.display = 'none';
                 });
@@ -1113,9 +1144,9 @@
                         var endParts = toDateVal.split('-');
                         if (startParts.length === 3 && endParts.length === 3) {
                             var startYear = parseInt(startParts[0], 10);
-                            var startMonth = parseInt(startParts[1], 10) - 1; // 0-based
+                            var startMonth = parseInt(startParts[1], 10) - 1;
                             var endYear = parseInt(endParts[0], 10);
-                            var endMonth = parseInt(endParts[1], 10) - 1; // 0-based
+                            var endMonth = parseInt(endParts[1], 10) - 1;
                             if (startYear !== endYear || startMonth !== endMonth) {
                                 showJsError('Khoảng ngày phân ca phải nằm trong cùng một tháng.', form);
                                 return false;
@@ -1158,7 +1189,7 @@
 
                         var now = new Date();
                         var currentYear = now.getFullYear();
-                        var currentMonth = now.getMonth() + 1; // 1-based
+                        var currentMonth = now.getMonth() + 1;
                         if (yearVal < currentYear || yearVal > currentYear + 1) {
                             showJsError('Chỉ được phân ca tháng trong năm hiện tại hoặc năm kế tiếp.', form);
                             return false;
@@ -1182,7 +1213,7 @@
                 return true;
             }
 
-            // Close dropdown when clicking outside
+
             document.addEventListener('click', function (event) {
                 if (!event.target.closest('.multi-select-container')) {
                     document.querySelectorAll('.multi-select-dropdown').forEach(function (dp) {
@@ -1195,7 +1226,7 @@
                 }
             });
 
-            /* ===== Single-select dropdown (Tab Xem lịch NV) ===== */
+
             function toggleSingleSelect(event) {
                 event.stopPropagation();
                 var panel = document.getElementById('singleSelectPanel');
@@ -1209,14 +1240,14 @@
             function openSingleSelect() {
                 var panel = document.getElementById('singleSelectPanel');
                 panel.classList.add('active');
-                // Focus search box
+
                 var search = panel.querySelector('.single-select-search');
                 if (search) {
                     search.value = '';
                     filterSingleSelect(search);
                     search.focus();
                 }
-                // Scroll selected item into view
+
                 var sel = panel.querySelector('.selected');
                 if (sel)
                     sel.scrollIntoView({block: 'nearest'});
@@ -1231,7 +1262,7 @@
             function selectSingleOption(el, value, label) {
                 document.getElementById('viewEmployeeIDInput').value = value;
                 document.getElementById('singleSelectTrigger').textContent = label || '-- Chọn nhân viên --';
-                // Update selected highlight
+
                 document.querySelectorAll('#singleSelectList .single-select-option').forEach(function (o) {
                     o.classList.remove('selected');
                 });
@@ -1256,7 +1287,7 @@
                 sessionStorage.setItem('shiftRosterTab', name);
             }
 
-            // Restore tab from URL param or sessionStorage
+
             (function () {
                 var params = new URLSearchParams(window.location.search);
                 var tab = params.get('activeTab') || sessionStorage.getItem('shiftRosterTab');
@@ -1273,7 +1304,7 @@
                         }
                     });
                 }
-                // Auto-switch to view tab if staffSchedule loaded
+
             <c:if test="${not empty staffSchedule || (viewEmployeeID > 0 && empty staffSchedule)}">
                 if (!params.get('activeTab')) {
                     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));

@@ -15,7 +15,7 @@ public class OrderDAO {
     }
 
     // =========================================================
-    // 1. TẠO ORDER MỚI
+    // 1. TẠO ORDER MỚI (ĐÃ TÍCH HỢP TỰ ĐỘNG GÁN NHÂN VIÊN)
     // =========================================================
     public int createOrder(Order order) {
         String sql = "INSERT INTO `Order` "
@@ -32,11 +32,33 @@ public class OrderDAO {
                 ps.setNull(1, Types.INTEGER);
             }
 
-            if (order.getEmployeeID() != null) {
-                ps.setInt(2, order.getEmployeeID());
+            // 🌟 BẮT ĐẦU ĐOẠN LOGIC TỰ ĐỘNG GÁN NHÂN VIÊN
+            Integer employeeID = order.getEmployeeID();
+            
+            // Nếu đơn hàng chưa có nhân viên (ví dụ: Khách tự quét QR)
+            if (employeeID == null) {
+                try {
+                    StaffTableDAO staffTableDAO = new StaffTableDAO();
+                    // Tìm nhân viên rảnh rỗi nhất trong ca làm việc hiện tại
+                    employeeID = staffTableDAO.findLeastLoadedServingEmployee(conn);
+                    
+                    // Nếu ngoài giờ ca làm việc, tìm nhân viên có lịch làm hôm nay
+                    if (employeeID == null) {
+                        employeeID = staffTableDAO.findLeastLoadedActiveServingEmployee(conn);
+                    }
+                } catch (Exception e) {
+                    System.err.println("[OrderDAO] Tự động gán nhân viên lỗi: " + e.getMessage());
+                }
+            }
+
+            // Gán dữ liệu vào câu lệnh SQL
+            if (employeeID != null) {
+                ps.setInt(2, employeeID);
+                order.setEmployeeID(employeeID); // Lưu lại vào object phòng khi cần dùng ở Controller
             } else {
                 ps.setNull(2, Types.INTEGER);
             }
+            // 🌟 KẾT THÚC ĐOẠN LOGIC TỰ ĐỘNG GÁN NHÂN VIÊN
 
             if (order.getInvoiceID() != null) {
                 ps.setInt(3, order.getInvoiceID());
@@ -127,12 +149,11 @@ public class OrderDAO {
     // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN (Đã fix lỗi nhận diện bàn)
     // =========================================================
     public Order getActiveOrderByTableId(int tableID) {
-        // 🌟 SỬA CÂU LỆNH SQL ĐỂ BẮT ĐƯỢC ĐƠN ĐẶT TRƯỚC
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
                 + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
-                + "  AND o.tableStatus IN ('reserved', 'arrived', 'occupied', 'serving', 'pending') "
+                + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND DATE(o.orderTime) = CURRENT_DATE "
                 + "ORDER BY o.createdAt DESC LIMIT 1";
 
@@ -236,6 +257,29 @@ public class OrderDAO {
 
         } catch (SQLException e) {
             System.err.println("[OrderDAO] updateOrderItemQuantity lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * [YEU CAU THANH TOAN] Khach bam nut tinh tien thi chi danh dau thoi diem
+     * yeu cau, khong tao hoa don va khong cho khach tu chot tien.
+     */
+    public boolean requestCheckout(int orderID) {
+        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), o.invoiceID = NULL "
+                + "WHERE o.orderID = ? "
+                + "AND o.orderStatus NOT IN ('completed','cancelled') "
+                + "AND EXISTS (SELECT 1 FROM OrderItem oi WHERE oi.orderID = o.orderID) "
+                // [CHOT HOA DON] Neu invoice dang gan la hoa don coc DEP-* hoac
+                // invoice cu chua paid, bo link de nhan vien chot hoa don bua an moi.
+                + "AND (o.invoiceID IS NULL OR EXISTS ("
+                + "SELECT 1 FROM Invoices i WHERE i.invoiceID=o.invoiceID "
+                + "AND (i.status <> 'paid' OR i.invoiceNumber LIKE 'DEP-%')))";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] requestCheckout loi: " + e.getMessage());
         }
         return false;
     }
@@ -460,7 +504,7 @@ public class OrderDAO {
             ps.setInt(1, invoiceID);
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapToOrder(rs); // Sử dụng lại hàm mapToOrder có sẵn của bạn
+                    return mapToOrder(rs);
                 }
             }
         } catch (java.sql.SQLException e) {
@@ -545,5 +589,44 @@ public class OrderDAO {
             e.printStackTrace();
         }
         return false;
+    }
+    // =========================================================
+    // THỐNG KÊ: ĐẾM TẤT CẢ ĐƠN THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countOrdersByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM `Order` "
+                + "WHERE DATE(createdAt) BETWEEN ? AND ? "
+                + "AND orderStatus <> 'cancelled'";
+        return countByDateRange(sql, startDate, endDate, "countOrdersByDateRange");
+    }
+
+    // =========================================================
+    // THỐNG KÊ: ĐẾM ĐƠN HOÀN TẤT THEO KHOẢNG NGÀY
+    // =========================================================
+    public int countCompletedOrdersByDateRange(String startDate, String endDate) {
+        String sql = "SELECT COUNT(*) FROM `Order` "
+                + "WHERE DATE(createdAt) BETWEEN ? AND ? "
+                + "AND orderStatus = 'completed'";
+        return countByDateRange(sql, startDate, endDate, "countCompletedOrdersByDateRange");
+    }
+
+    private int countByDateRange(String sql, String startDate, String endDate, String methodName) {
+        try (Connection conn = getConnection()) {
+            if (conn == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, startDate);
+                ps.setString(2, endDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] " + methodName + " lỗi: " + e.getMessage());
+        }
+        return 0;
     }
 }

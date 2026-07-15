@@ -241,15 +241,8 @@
                                      ${status.index >= 5 ? 'style="display: none;"' : ''}>
 
                                     <div class="item-icon">
-                                        <c:choose>
-                                            <c:when test="${n.type == 'reservation_needs_table'}">
-                                                <i class="fas fa-clipboard-list" style="color: #e67e22;"></i> </c:when>
-                                            <c:when test="${n.type == 'table_assigned' || n.type == 'table_assigned_offline'}">
-                                                <i class="fas fa-utensils" style="color: #2ec4b6;"></i> </c:when>
-                                            <c:when test="${n.type == 'reservation_confirmed'}">
-                                                <i class="fas fa-calendar-alt"></i>
-                                            </c:when>
-                                        </c:choose>
+                                        <%-- Dung chung icon chuong cho moi loai thong bao --%>
+                                        <i class="fas fa-bell"></i>
                                     </div>
 
                                     <div class="item-body">
@@ -259,20 +252,14 @@
                                                 <span style="color: #dc3545; font-weight: 700;">• Mới</span>
                                             </c:if>
                                         </div>
-                                        <c:choose>
-                                            <c:when test="${isCustomer}">
-                                                <form method="post" action="${pageContext.request.contextPath}/customer/notifications" style="margin: 0;">
-                                                    <input type="hidden" name="action" value="readAndRedirect">
-                                                    <input type="hidden" name="notificationID" value="${n.notificationID}">
-                                                    <button type="submit" class="item-msg-link" style="background:none;border:none;padding:0;cursor:pointer;text-align:left;">
-                                                        <p class="item-msg"><c:out value="${n.message}" /></p>
-                                                    </button>
-                                                </form>
-                                            </c:when>
-                                            <c:otherwise>
+                                        <%-- Tất cả role đều bấm vào message để readAndRedirect đúng trang --%>
+                                        <form method="post" action="${postAction}" style="margin: 0;">
+                                            <input type="hidden" name="action" value="readAndRedirect">
+                                            <input type="hidden" name="notificationID" value="${n.notificationID}">
+                                            <button type="submit" class="item-msg-link" style="background:none;border:none;padding:0;cursor:pointer;text-align:left;width:100%;">
                                                 <p class="item-msg"><c:out value="${n.message}" /></p>
-                                            </c:otherwise>
-                                        </c:choose>
+                                            </button>
+                                        </form>
                                         <div class="item-time">
                                             <i class="far fa-clock"></i>
                                             <fmt:formatDate value="${n.createdAt}" pattern="dd/MM/yyyy HH:mm"/>

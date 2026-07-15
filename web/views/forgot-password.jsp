@@ -177,7 +177,6 @@
     </head>
 
     <body>
-        <%@include file="/views/includes/header.jsp" %>
 
         <div class="page-body">
             <div class="login-box">
@@ -238,6 +237,5 @@
             </div>
         </div>
 
-        <%@include file="/views/includes/footer.jsp" %>
     </body>
 </html>
