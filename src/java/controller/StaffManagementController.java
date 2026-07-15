@@ -231,7 +231,7 @@ public class StaffManagementController extends HttpServlet {
 
         if (newId < 0) {
 
-            errors.put("_global", "Unable to create staff. Please try again.");
+            errors.put("_global", "Không thể tạo nhân viên. Vui lòng thử lại.");
             request.setAttribute("errors", errors);
             request.setAttribute("staff", e);
             request.setAttribute("mode", "create");
@@ -332,7 +332,7 @@ public class StaffManagementController extends HttpServlet {
         boolean ok = dao.update(e);
 
         if (!ok) {
-            errors.put("_global", "Unable to update. Please try again.");
+            errors.put("_global", "Không thể cập nhật nhân viên. Vui lòng thử lại.");
             request.setAttribute("errors", errors);
             request.setAttribute("staff", e);
             request.setAttribute("mode", "edit");
@@ -409,7 +409,7 @@ public class StaffManagementController extends HttpServlet {
             int selectedRoleID = parseIntOrDefault(roleIDStr, 0);
 
             if (!isManagedStaffRole(selectedRoleID)) {
-                errors.put("roleID", "Please select Staff or Receptionist.");
+                errors.put("roleID", "Vui lòng chọn Nhân viên phục vụ hoặc Lễ tân.");
             } else {
                 e.setRoleID(selectedRoleID);
             }
@@ -428,71 +428,71 @@ public class StaffManagementController extends HttpServlet {
         EmployeeDAO dao = new EmployeeDAO();
 
         if (fullName == null || fullName.isBlank()) {
-            errors.put("fullName", "Full name is required.");
+            errors.put("fullName", "Vui lòng nhập họ và tên.");
 
         } else if (fullName.length() < 2 || fullName.length() > 50) {
-            errors.put("fullName", "Full name must be 2-50 characters.");
+            errors.put("fullName", "Họ và tên phải từ 2 đến 50 ký tự.");
         }
 
         if (email == null || email.isBlank()) {
-            errors.put("email", "Email is required.");
+            errors.put("email", "Vui lòng nhập email.");
 
         } else if (!EMAIL_PATTERN.matcher(email).matches()) {
-            errors.put("email", "Invalid email format.");
+            errors.put("email", "Email không đúng định dạng.");
 
         } else if (dao.isEmailExists(email, excludeId)) {
-            errors.put("email", "Email already exists.");
+            errors.put("email", "Email đã tồn tại.");
         }
 
         if (phone == null || phone.isBlank()) {
-            errors.put("phoneNumber", "Phone number is required.");
+            errors.put("phoneNumber", "Vui lòng nhập số điện thoại.");
 
         } else if (!PHONE_PATTERN.matcher(phone).matches()) {
-            errors.put("phoneNumber", "Invalid phone number format. Phone number must be 10-11 digits.");
+            errors.put("phoneNumber", "Số điện thoại không đúng định dạng. Số điện thoại phải gồm 10-11 chữ số.");
 
         } else if (dao.isPhoneExists(phone, excludeId)) {
-            errors.put("phoneNumber", "Phone number already exists.");
+            errors.put("phoneNumber", "Số điện thoại đã tồn tại.");
         }
 
         if (isCreate) {
 
             if (password == null || password.isBlank()) {
-                errors.put("password", "Password is required.");
+                errors.put("password", "Vui lòng nhập mật khẩu.");
 
             } else if (password.length() < 6 || password.length() > 50) {
-                errors.put("password", "Password must be 6-50 characters.");
+                errors.put("password", "Mật khẩu phải từ 6 đến 50 ký tự.");
             }
         }
 
         if (dobStr == null || dobStr.isBlank()) {
 
-            errors.put("dob", "Date of birth is required.");
+            errors.put("dob", "Vui lòng nhập ngày sinh.");
         } else {
             try {
 
                 LocalDate dob = LocalDate.parse(dobStr);
 
                 if (!dob.isBefore(LocalDate.now())) {
-                    errors.put("dob", "Date of birth must be in the past.");
+                    errors.put("dob", "Ngày sinh phải là ngày trong quá khứ.");
 
                 } else if (dob.isAfter(LocalDate.now().minusYears(18))) {
-                    errors.put("dob", "Employee must be at least 18 years old.");
+                    errors.put("dob", "Nhân viên phải đủ ít nhất 18 tuổi.");
                 } else {
 
                     e.setDob(Date.valueOf(dob));
                 }
             } catch (Exception ex) {
 
-                errors.put("dob", "Invalid date of birth.");
+                errors.put("dob", "Ngày sinh không hợp lệ.");
             }
         }
 
         if (address == null || address.isBlank()) {
 
-            errors.put("address", "Address is required.");
+            errors.put("address", "Vui lòng nhập địa chỉ.");
 
         } else if (address.length() > 255) {
-            errors.put("address", "Address must not exceed 255 characters.");
+            errors.put("address", "Địa chỉ không được vượt quá 255 ký tự.");
         }
 
         return errors;
@@ -527,7 +527,7 @@ public class StaffManagementController extends HttpServlet {
             String safeSubmitted = Paths.get(submitted).getFileName().toString();
 
             if (!isValidImageFile(safeSubmitted)) {
-                errors.put("image", "Vui lòng chọn file ảnh (jpg, jpeg, png).");
+                errors.put("image", "Vui lòng chọn tệp ảnh (jpg, jpeg, png).");
                 return null;
             }
 
@@ -536,12 +536,12 @@ public class StaffManagementController extends HttpServlet {
             if (contentType == null
                     || (!contentType.equals("image/jpeg")
                         && !contentType.equals("image/png"))) {
-                errors.put("image", "File không hợp lệ. Chỉ chấp nhận ảnh JPG, PNG.");
+                errors.put("image", "Tệp không hợp lệ. Chỉ chấp nhận ảnh JPG, PNG.");
                 return null;
             }
 
             if (!isValidImageContent(filePart)) {
-                errors.put("image", "File không hợp lệ. Vui lòng chọn file ảnh thật JPG hoặc PNG.");
+                errors.put("image", "Tệp không hợp lệ. Vui lòng chọn tệp ảnh thật JPG hoặc PNG.");
                 return null;
             }
 
@@ -561,7 +561,7 @@ public class StaffManagementController extends HttpServlet {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            errors.put("image", "Không thể upload ảnh. Vui lòng thử lại.");
+            errors.put("image", "Không thể tải ảnh lên. Vui lòng thử lại.");
             return null;
         }
     }
@@ -609,7 +609,7 @@ public class StaffManagementController extends HttpServlet {
             throws ServletException, IOException {
 
         Map<String, String> errors = new HashMap<>();
-        errors.put("image", "File upload quá lớn hoặc không hợp lệ. Vui lòng chọn ảnh JPG/PNG tối đa 2MB.");
+        errors.put("image", "Tệp tải lên quá lớn hoặc không hợp lệ. Vui lòng chọn ảnh JPG/PNG tối đa 2MB.");
 
         String action = getQueryParameter(request, "action");
         if ("edit".equals(action)) {

@@ -161,10 +161,10 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 errorMainImage = "Ảnh chính không đúng định dạng (.jpg, .png, .webp, .jpeg)";
             } else {
                 if (!isValidImage(mainImage)) {
-                    errorMainImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                    errorMainImage = "Tệp ảnh bị hỏng, vui lòng kiểm tra lại";
                 } else {
                     if (mainImage.getSize() > MAX_FILE_SIZE) {
-                        errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                    errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
                     }
                 }
             }
@@ -191,11 +191,11 @@ public class UpdateMenuItemServlet extends HttpServlet {
         if (subImage != null && errorSubImage.isEmpty()) {
             for (Part p : subImage) {
                 if (!isValidImageFile(p.getSubmittedFileName())) {
-                    errorSubImage = "Có file ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
+                    errorSubImage = "Có tệp ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
                     break;
                 } else {
                     if (!isValidImage(p)) {
-                        errorSubImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                        errorSubImage = "Tệp ảnh bị hỏng, vui lòng kiểm tra lại";
                         break;
                     } else {
                         if (p.getSize() > MAX_FILE_SIZE) {

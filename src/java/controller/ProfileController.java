@@ -204,7 +204,7 @@ public class ProfileController extends HttpServlet {
                 //lấy ra 12 byte đầy tiên trong file
                 int bytesRead = in.read(header);
                 if (bytesRead < 4) {
-                    errors.put("image", "File không hợp lệ.");
+                    errors.put("image", "Tệp không hợp lệ.");
                     return null;
                 }
             }
@@ -212,7 +212,7 @@ public class ProfileController extends HttpServlet {
             // Xác định loại file thật sự qua magic bytes
             String detectedType = detectImageType(header);
             if (detectedType == null) {
-                errors.put("image", "File không phải ảnh hợp lệ (jpg, jpeg, png, webp).");
+                errors.put("image", "Tệp không phải ảnh hợp lệ (jpg, jpeg, png, webp).");
                 return null;
             }
 
@@ -232,7 +232,7 @@ public class ProfileController extends HttpServlet {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            errors.put("image", "Không thể upload ảnh. Vui lòng thử lại.");
+            errors.put("image", "Không thể tải ảnh lên. Vui lòng thử lại.");
             return null;
         }
     }

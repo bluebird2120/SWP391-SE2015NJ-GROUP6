@@ -265,7 +265,7 @@ public class StaffTableDAO extends DBContext {
 
             if (servingEmployeeID == null) {
                 conn.rollback();
-                return "Khong co nhan vien phuc vu co lich lam viec hom nay de nhan don.";
+                return "Không có nhân viên phục vụ đã check-in để nhận đơn.";
             }
             
             try (PreparedStatement ps = conn.prepareStatement(
@@ -365,8 +365,10 @@ public class StaffTableDAO extends DBContext {
                 + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
                 + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "WHERE es.workDate=CURDATE() AND e.roleID=2 AND e.isActive=1 "
+                // Chi chon nhan vien da check-in ca lam va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
                 + "AND es.checkOutTime IS NULL "
-                + "AND es.status IN ('scheduled','present','late') "
+                + "AND es.status IN ('present','late') "
                 + "AND ((st.startTime<=st.endTime "
                 + "AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
                 + "OR (st.startTime>st.endTime "
@@ -391,7 +393,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Don da co nhan vien thi nhan vien do van phai dang check-in.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -417,7 +421,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Du phong cung chi chon nhan vien da check-in va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "GROUP BY e.employeeID "
                 + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1";

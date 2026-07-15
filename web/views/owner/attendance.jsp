@@ -5,7 +5,7 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Attendance</title>
+        <title>Điểm danh</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
         <style>
@@ -271,7 +271,7 @@
         <div style="display:flex;">
             <%@ include file="/views/includes/dashboard.jsp" %>
             <main class="main">
-                <h1 class="page-title">Attendance</h1>
+                <h1 class="page-title">Điểm danh</h1>
                 <p class="page-sub">Điểm danh nhân viên theo ca</p>
 
 
