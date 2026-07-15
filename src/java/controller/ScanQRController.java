@@ -5,10 +5,12 @@ import dal.TableDAO;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.util.UUID;
 import model.Order;
 import model.Table;
 
@@ -30,11 +32,12 @@ public class ScanQRController extends HttpServlet {
             if (currentTable != null && currentTable.getIsActive() == 1) {
 
                 OrderDAO orderDAO = new OrderDAO();
-                //  Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
+                // Lấy đơn hàng hoạt động của bàn (đã bao gồm đơn đặt trước/arrived nhờ DAO cập nhật)
                 Order activeOrder = orderDAO.getActiveOrderByTableId(currentTable.getTableID());
 
                 String role = (String) session.getAttribute("roleInTable");
                 Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+                int tableID = currentTable.getTableID(); // Lấy sẵn tableID để dùng cho tiện
 
                 // =========================================================
                 // 1. TÍNH NĂNG CHỦ BÀN QUÉT MÃ QR ĐỂ GỘP BÀN
@@ -42,7 +45,7 @@ public class ScanQRController extends HttpServlet {
                 if ("HOST".equals(role) && sessionOrderID != null) {
                     // 👉 KHÁCH ĐANG GỘP BÀN -> TUYỆT ĐỐI KHÔNG GHI ĐÈ BÀN GỐC TRONG SESSION
                     if (activeOrder == null) {
-                        boolean isAdded = orderDAO.addTableToExistingOrder(sessionOrderID, currentTable.getTableID());
+                        boolean isAdded = orderDAO.addTableToExistingOrder(sessionOrderID, tableID);
                         if (isAdded) {
                             session.setAttribute("successMsg", "Đã gộp thêm bàn thành công vào hóa đơn của bạn!");
                             response.sendRedirect(request.getContextPath() + "/menu");
@@ -55,8 +58,8 @@ public class ScanQRController extends HttpServlet {
                     }
                 } else {
                     // 👉 KHÁCH LẠ LẦN ĐẦU QUÉT MÃ -> MỚI ĐƯỢC LƯU SESSION VỊ TRÍ
-                    session.setAttribute("tableID", currentTable.getTableID());
-                    session.setAttribute("currentTableID", currentTable.getTableID());
+                    session.setAttribute("tableID", tableID);
+                    session.setAttribute("currentTableID", tableID);
                     session.setAttribute("areaType", currentTable.getAreaType());
                 }
                 // =========================================================
@@ -65,11 +68,10 @@ public class ScanQRController extends HttpServlet {
 
                     // 👉 TRƯỜNG HỢP 1: BÀN ĐÃ CÓ ĐƠN HÀNG (PENDING / RESERVED / ARRIVED / SERVING / OCCUPIED)
 
-                    // 1. Kiểm tra xem người quét có phải là Host/Guest đã ở trong bàn này không
+                    // 1. Kiểm tra xem người quét có phải là Host/Guest đã ở trong bàn này không (Check bằng Session)
                     if (role != null && sessionOrderID != null && sessionOrderID == activeOrder.getOrderID()) {
                         
                         // --- BARIE CHẶN CHỜ NHÂN VIÊN DUYỆT BÀN ---
-                        // Nếu nhân viên chưa xác nhận mở bàn (Status: pending)
                         if ("pending".equals(activeOrder.getTableStatus())) {
                             session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                             request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
@@ -81,7 +83,34 @@ public class ScanQRController extends HttpServlet {
                         return;
                     } 
                     
-                    // 2. NGƯỜI LẠ HOẶC NGƯỜI QUÉT LẦN ĐẦU
+                    // 🌟 1.5 KIỂM TRA COOKIE XEM CÓ PHẢI CHỦ BÀN BỊ MẤT SESSION QUAY LẠI KHÔNG?
+                    boolean isHostReturning = false;
+                    Cookie[] cookies = request.getCookies();
+                    if (cookies != null && activeOrder.getHostToken() != null) {
+                        for (Cookie c : cookies) {
+                            if (c.getName().equals("HOST_OF_TABLE_" + tableID) 
+                                    && c.getValue().equals(activeOrder.getHostToken())) {
+                                isHostReturning = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isHostReturning) {
+                        // KHOAN HÔ! CHỦ BÀN ĐÃ TRỞ LẠI -> Khôi phục quyền HOST
+                        session.setAttribute("orderID", activeOrder.getOrderID());
+                        session.setAttribute("roleInTable", "HOST");
+                        
+                        if ("pending".equals(activeOrder.getTableStatus())) {
+                            session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                            request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
+                            return;
+                        }
+                        response.sendRedirect(request.getContextPath() + "/menu");
+                        return;
+                    }
+                    
+                    // 2. NGƯỜI LẠ HOẶC NGƯỜI QUÉT LẦN ĐẦU (Khách đến sau)
                     
                     // Bàn đang chờ khách đặt trước tới nhận (Reserved) - Chưa check-in
                     if ("reserved".equals(activeOrder.getTableStatus())) {
@@ -90,15 +119,28 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
                     
-                    // === 🌟 VÁ LỖ HỔNG DEADLOCK KHÁCH ĐẶT TRƯỚC ===
+                    // === 🌟 VÁ LỖ HỔNG ĐƠN ĐẶT TRƯỚC (BỔ SUNG HOST TOKEN) ===
                     // Bàn Đặt Trước vừa được nhân viên Check-in (Trạng thái: arrived)
                     if ("arrived".equals(activeOrder.getTableStatus())) {
-                        // Cấp ngay quyền HOST cho người quét đầu tiên của nhóm khách đặt trước
-                        session.setAttribute("orderID", activeOrder.getOrderID());
-                        session.setAttribute("roleInTable", "HOST");
-
+                        
                         // Đóng cửa lại thành 'occupied' để người thứ 2 quét mã phải xin gộp bàn
                         orderDAO.updateTableStatus(activeOrder.getOrderID(), "occupied");
+                        
+                        // 1. Sinh mã Định danh Host cho người quét đầu tiên của bàn đặt trước
+                        String newHostToken = UUID.randomUUID().toString();
+                        
+                        // 2. Lưu token này xuống CSDL để sau này nhận diện
+                        orderDAO.updateHostToken(activeOrder.getOrderID(), newHostToken);
+
+                        // 3. Gửi Cookie xuống điện thoại khách (Sống 24 tiếng)
+                        Cookie hostCookie = new Cookie("HOST_OF_TABLE_" + tableID, newHostToken);
+                        hostCookie.setMaxAge(24 * 60 * 60); 
+                        hostCookie.setPath("/"); 
+                        response.addCookie(hostCookie);
+
+                        // Cấp quyền HOST vào Session
+                        session.setAttribute("orderID", activeOrder.getOrderID());
+                        session.setAttribute("roleInTable", "HOST");
 
                         // Đưa khách vào Menu để tiến hành gọi thêm món hoặc thanh toán
                         response.sendRedirect(request.getContextPath() + "/menu");
@@ -128,7 +170,7 @@ public class ScanQRController extends HttpServlet {
                     }
 
                 } else {
-                    // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG TINH (Khách vãng lai đến quán)
+                    // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG TINH (Khách vãng lai đến quán mở bàn mới)
                     Order newOrder = new Order();
                     
                     // Set trạng thái là 'pending' để chờ nhân viên ra mở bàn
@@ -142,26 +184,31 @@ public class ScanQRController extends HttpServlet {
                     newOrder.setTotalAmount(0);
                     newOrder.setDepositAmount(0);
 
-                    // 🌟 ĐÃ VÁ LỖI TẠI ĐÂY: Gán thời gian tạo đơn để SQL bắt được đơn hàng
+                    // Gán thời gian tạo đơn
                     newOrder.setOrderTime(new java.sql.Timestamp(System.currentTimeMillis()));
                     newOrder.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
                     
-                    // Gán nhân viên phụ trách theo ca làm việc hiện tại
-                    dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO();
-                    Integer assignedStaffId = esDAO.getActiveEmployeeForCurrentShift();
-                    if (assignedStaffId != null) {
-                        newOrder.setEmployeeID(assignedStaffId);
-                    }
+                    // 🌟 TẠO MÃ ĐỊNH DANH HOST_TOKEN BẢO MẬT BẰNG UUID CHO KHÁCH VÃNG LAI
+                    String hostToken = UUID.randomUUID().toString();
+                    newOrder.setHostToken(hostToken);
+                    
+                    // (Lưu ý: Logic tự động gán nhân viên đã được tích hợp sẵn vào OrderDAO.createOrder)
 
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
-                        orderDAO.linkOrderAndTable(newOrderID, currentTable.getTableID());
+                        orderDAO.linkOrderAndTable(newOrderID, tableID);
                         
-                        // Cấp phiên làm việc
+                        // 🌟 GỬI COOKIE NHẬN DIỆN CHỦ BÀN XUỐNG ĐIỆN THOẠI KHÁCH (Sống 24 tiếng)
+                        Cookie hostCookie = new Cookie("HOST_OF_TABLE_" + tableID, hostToken);
+                        hostCookie.setMaxAge(24 * 60 * 60); 
+                        hostCookie.setPath("/"); 
+                        response.addCookie(hostCookie);
+                        
+                        // Cấp phiên làm việc tạm (Session)
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
 
-                        // Gửi thông báo cho nhân viên
+                        // Gửi thông báo cho nhân viên quản lý bàn này
                         if (newOrder.getEmployeeID() != null) {
                             try {
                                 dal.NotificationDAO notifDAO = new dal.NotificationDAO();
@@ -169,7 +216,7 @@ public class ScanQRController extends HttpServlet {
                                 n.setRecipientID(newOrder.getEmployeeID());
                                 n.setRecipientType("staff");
                                 n.setType("new_order");
-                                n.setMessage("Bàn " + currentTable.getTableID() + " (Đơn #" + newOrderID + ") đang chờ được mở.");
+                                n.setMessage("Bàn " + tableID + " (Đơn #" + newOrderID + ") đang chờ được mở.");
                                 n.setIsRead(0);
                                 notifDAO.insert(n);
                             } catch (Exception e) {
@@ -177,7 +224,7 @@ public class ScanQRController extends HttpServlet {
                             }
                         }
 
-                        // MỞ KHÓA MÀN HÌNH CHỜ (Waiting_staff.jsp)
+                        // MỞ KHÓA MÀN HÌNH CHỜ NHÂN VIÊN XÁC NHẬN BÀN
                         session.setAttribute("pendingOrderID", newOrderID);
                         request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
                         return;

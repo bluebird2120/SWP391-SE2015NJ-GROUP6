@@ -355,6 +355,15 @@
                 </div>
                 <c:remove var="successMsg" scope="session"/>
             </c:if>
+            
+            <%-- HIỂN THỊ THÔNG BÁO LỖI (VÍ DỤ: HẾT MÓN) --%>
+            <c:if test="${not empty sessionScope.errorMsg}">
+                <div style="color:#D9534F; background:#FDE8E8; padding:12px 20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #D9534F; font-weight:bold; line-height: 1.5;">
+                    ⚠ ${sessionScope.errorMsg}
+                </div>
+                <c:remove var="errorMsg" scope="session"/>
+            </c:if>
+            
             <c:if test="${not empty param.error && param.error == 'invalid_quantity'}">
                 <div style="color:#D9534F;background:#FDE8E8;padding:12px 20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #D9534F;font-weight:bold;">
                     ⚠ Hệ thống cảnh báo: Số lượng món ăn không hợp lệ! Vui lòng chỉ nhập số lượng trong khoảng từ 1 đến 99 phần.

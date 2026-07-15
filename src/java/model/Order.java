@@ -19,6 +19,8 @@ public class Order {
     // Đã sửa đồng bộ kiểu int
     private int totalAmount; 
     private int depositAmount;
+    // ... các thuộc tính cũ
+    private String hostToken; // 🌟 THÊM TRƯỜNG NÀY ĐỂ NHẬN DIỆN CHỦ BÀN
     
     
     public Order() {
@@ -28,7 +30,7 @@ public class Order {
     public Order(int orderID, Integer customerID, Integer employeeID, Integer invoiceID, 
                  int orderType, String tableStatus, int totalAmount, Timestamp checkoutRequestAt, 
                  int isStaffConfirmed, Timestamp createdAt, Timestamp orderTime, 
-                 int depositAmount, String orderStatus) {
+                 int depositAmount, String orderStatus, String hostToken) {
         this.orderID = orderID;
         this.customerID = customerID;
         this.employeeID = employeeID;
@@ -42,6 +44,7 @@ public class Order {
         this.orderTime = orderTime;
         this.depositAmount = depositAmount;
         this.orderStatus = orderStatus;
+        this.hostToken = hostToken;
         
     }
 
@@ -87,5 +90,12 @@ public class Order {
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
 
-    
+    // Thêm Getter và Setter cho hostToken
+    public String getHostToken() {
+        return hostToken;
+    }
+
+    public void setHostToken(String hostToken) {
+        this.hostToken = hostToken;
+    }
 }
