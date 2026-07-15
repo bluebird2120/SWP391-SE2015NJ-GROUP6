@@ -6,7 +6,7 @@
 
     <head>
         <meta charset="UTF-8">
-        <title>Shift Roster</title>
+        <title>Phân ca nhân viên</title>
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
             rel="stylesheet">
@@ -479,7 +479,7 @@
         <div style="display:flex;">
             <%@ include file="/views/includes/dashboard.jsp" %>
             <main class="main">
-                <h1 class="page-title">Shift Roster</h1>
+                <h1 class="page-title">Phân ca nhân viên</h1>
                 <p class="page-sub">Quản lý phân ca nhân viên</p>
 
 

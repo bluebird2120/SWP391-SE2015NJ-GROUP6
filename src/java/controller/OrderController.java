@@ -261,7 +261,7 @@ public class OrderController extends HttpServlet {
             // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
             // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
             if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
-                session.setAttribute("successMsg", "Da gui yeu cau tinh tien. Vui long cho nhan vien kiem tra va chot hoa don.");
+                session.setAttribute("successMsg", "Đã gửi yêu cầu tính tiền. Vui lòng chờ nhân viên kiểm tra và chốt hóa đơn.");
 
                 // Thông báo ngay cho nhân viên đang phụ trách bàn/đơn này để họ qua chốt hóa đơn.
                 try {
@@ -289,7 +289,7 @@ public class OrderController extends HttpServlet {
                     System.err.println("[OrderController] Gửi thông báo yêu cầu thanh toán thất bại: " + e.getMessage());
                 }
             } else {
-                session.setAttribute("errorMsg", "Khong the gui yeu cau tinh tien. Vui long kiem tra lai mon da goi.");
+                session.setAttribute("errorMsg", "Không thể gửi yêu cầu tính tiền. Vui lòng kiểm tra lại món đã gọi.");
             }
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
