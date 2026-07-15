@@ -299,6 +299,94 @@ public class StaffTableDAO extends DBContext {
         return summary;
     }
     
+    /**
+     * [CHECKIN] Khách đặt trước đã đến quán. Đơn này đã có nhân viên phụ
+     * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
+     */
+    public boolean checkinArrivedReservation(int orderID) {
+        String sql = "UPDATE `Order` SET tableStatus='arrived' WHERE orderID=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * [MỞ BÀN CHO KHÁCH VÃNG LAI] Lễ tân xác nhận mở bàn -> đây mới là lúc
+     * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
+     * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
+     */
+    public boolean openTableForWalkIn(int orderID) {
+        try {
+            connection.setAutoCommit(false);
+            Integer staffID;
+            String tableName = "?";
+            try {
+                EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+                staffID = esDAO.getActiveEmployeeForCurrentShift();
+                if (staffID == null) {
+                    connection.rollback();
+                    return false;
+                }
+
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied' WHERE orderID=?")) {
+                    ps.setInt(1, staffID);
+                    ps.setInt(2, orderID);
+                    if (ps.executeUpdate() == 0) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                // Lấy tên bàn để nội dung thông báo rõ ràng
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "SELECT t.tableName FROM `Table` t "
+                        + "JOIN Order_Table ot ON ot.tableID=t.tableID "
+                        + "WHERE ot.orderID=? LIMIT 1")) {
+                    ps.setInt(1, orderID);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            tableName = rs.getString("tableName");
+                        }
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                // BẮT BUỘC: trả connection về pool ở chế độ autoCommit=true, nếu
+                // không lượt mượn connection tiếp theo (của DAO khác) sẽ vô tình
+                // bị kẹt trong transaction thủ công của mình.
+                connection.setAutoCommit(true);
+            }
+
+            // Báo cho nhân viên vừa được gán, sau khi commit thành công.
+            try {
+                Notifications n = new Notifications();
+                n.setRecipientID(staffID);
+                n.setRecipientType("staff");
+                n.setType("table_assigned");
+                n.setMessage("Bạn được phân công phục vụ bàn " + tableName
+                        + " (Đơn #" + orderID + ").");
+                n.setIsRead(0);
+                new NotificationDAO().insert(n);
+            } catch (Exception e) {
+                System.err.println("[StaffTableDAO] Gửi thông báo cho nhân viên thất bại: " + e.getMessage());
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
@@ -327,7 +415,7 @@ public class StaffTableDAO extends DBContext {
 
             if (servingEmployeeID == null) {
                 conn.rollback();
-                return "Khong co nhan vien phuc vu co lich lam viec hom nay de nhan don.";
+                return "Không có nhân viên phục vụ đã check-in để nhận đơn.";
             }
             
             try (PreparedStatement ps = conn.prepareStatement(
@@ -427,8 +515,10 @@ public class StaffTableDAO extends DBContext {
                 + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
                 + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "WHERE es.workDate=CURDATE() AND e.roleID=2 AND e.isActive=1 "
+                // Chi chon nhan vien da check-in ca lam va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
                 + "AND es.checkOutTime IS NULL "
-                + "AND es.status IN ('scheduled','present','late') "
+                + "AND es.status IN ('present','late') "
                 + "AND ((st.startTime<=st.endTime "
                 + "AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
                 + "OR (st.startTime>st.endTime "
@@ -453,7 +543,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Don da co nhan vien thi nhan vien do van phai dang check-in.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -479,7 +571,9 @@ public class StaffTableDAO extends DBContext {
                 + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
                 + "WHERE es.employeeID=e.employeeID "
                 + "AND es.workDate=CURDATE() "
-                + "AND es.status IN ('scheduled','present','late') "
+                // Du phong cung chi chon nhan vien da check-in va chua checkout.
+                + "AND es.checkInTime IS NOT NULL "
+                + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "GROUP BY e.employeeID "
                 + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1";

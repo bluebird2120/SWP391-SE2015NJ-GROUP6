@@ -18,17 +18,21 @@ import model.Notifications;
  *
  * Mapping type → URL redirect:
  *
- * STAFF nhận: table_assigned → /staff/tables (bàn được giao) new_order →
- * /staff/tables (đơn mới cần phục vụ) shift_plan → /staff/my-schedule (lịch ca
- * tháng mới) shift_request → /staff/my-schedule (yêu cầu đổi ca từ đồng nghiệp)
- * shift_request_approved → /staff/my-schedule (đổi ca được duyệt)
- * shift_request_rejected → /staff/my-schedule (đổi ca bị từ chối)
- * shift_request_colleague_pending → /staff/my-schedule (đồng nghiệp chờ xác
- * nhận) shift_request_colleague_rejected→ /staff/my-schedule (đồng nghiệp từ
- * chối)
+ * STAFF (nhân viên phục vụ) nhận: table_assigned → /staff/tables (bàn được
+ * giao — có thể do lễ tân gán đơn online, hoặc do lễ tân mở bàn cho khách
+ * vãng lai) payment_success → /staff/tables (khách thanh toán xong, cần dọn
+ * bàn) checkout_requested → /staff/tables (khách yêu cầu thanh toán)
+ * shift_plan → /staff/my-schedule (lịch ca tháng mới) shift_request →
+ * /staff/my-schedule (yêu cầu đổi ca từ đồng nghiệp) shift_request_approved →
+ * /staff/my-schedule (đổi ca được duyệt) shift_request_rejected →
+ * /staff/my-schedule (đổi ca bị từ chối) shift_request_colleague_pending →
+ * /staff/my-schedule (đồng nghiệp chờ xác nhận)
+ * shift_request_colleague_rejected→ /staff/my-schedule (đồng nghiệp từ chối)
  *
- * LỄ TÂN nhận: reservation_needs_table → /reception/tables (đơn online cần gán
- * bàn)
+ * LỄ TÂN nhận: new_order → /reception/tables (khách vãng lai quét QR, cần ra
+ * mở bàn — lễ tân mở bàn xong hệ thống MỚI gán nhân viên ít việc nhất, nhân
+ * viên đó nhận table_assigned ở trên) reservation_needs_table →
+ * /reception/tables (đơn online cần gán bàn)
  */
 @WebServlet(name = "StaffNotificationsController", urlPatterns = {"/staff/notifications"})
 public class StaffNotificationsController extends HttpServlet {
@@ -111,29 +115,39 @@ public class StaffNotificationsController extends HttpServlet {
         }
 
         switch (type) {
-            // ── Bàn & đơn hàng (Staff phục vụ) ──
+            // ── BÀN & ĐƠN HÀNG (Staff phục vụ) ──────────────────────────
+            // Bàn được giao cho nhân viên
             case "table_assigned":
-            case "new_order":
-                return ctx + "/staff/tables";
-
-            // ── Thanh toán thành công (cần dọn bàn) ──
+            // Khách thanh toán thành công → cần dọn bàn
             case "payment_success":
+            // Khách yêu cầu thanh toán → cần chốt hóa đơn
+            case "checkout_requested":
                 return ctx + "/staff/tables";
 
-            // ── Ca làm việc (tất cả loại shift) ──
-            case "shift_plan":
-            case "shift_request":
-            case "shift_request_approved":
-            case "shift_request_rejected":
-            case "shift_request_colleague_pending":
-            case "shift_request_colleague_rejected":
-                return ctx + "/staff/my-schedule";
-
-            // ── Lễ tân: đơn online cần gán bàn ──
+            // ── LỄ TÂN: khách vãng lai quét QR, cần ra mở bàn ──────────
+            // (new_order chỉ gửi cho lễ tân — họ mở bàn xong hệ thống mới
+            //  gán nhân viên ít việc nhất, lúc đó nhân viên mới nhận table_assigned)
+            case "new_order":
+            // đơn online cần gán bàn ─────────────────────────
             case "reservation_needs_table":
                 return ctx + "/reception/tables";
 
-            // ── Mặc định: ở lại trang thông báo ──
+            // ── CA LÀM VIỆC (tất cả loại shift notification) ────────────
+            // Lịch ca tháng mới được phát hành
+            case "shift_plan":
+            // Có yêu cầu đổi ca từ đồng nghiệp
+            case "shift_request":
+            // Yêu cầu đổi ca của mình được duyệt
+            case "shift_request_approved":
+            // Yêu cầu đổi ca của mình bị từ chối
+            case "shift_request_rejected":
+            // Đồng nghiệp đang chờ mình xác nhận đổi ca
+            case "shift_request_colleague_pending":
+            // Đồng nghiệp từ chối đổi ca với mình
+            case "shift_request_colleague_rejected":
+                return ctx + "/staff/my-schedule";
+
+            // ── MẶC ĐỊNH: ở lại trang thông báo ─────────────────────────
             default:
                 return ctx + "/staff/notifications";
         }

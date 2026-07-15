@@ -79,7 +79,9 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
         String id_raw = request.getParameter("id");
+        String backUrl = (String) session.getAttribute("lastDishListUrl");
         int id = ((id_raw != null) && (!id_raw.isEmpty())) ? Integer.parseInt(id_raw) : 0;
         MenuItem mi;
         if (id == 0) {
@@ -92,7 +94,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.setAttribute("subImages", subImages);
         }
 
-        HttpSession session = request.getSession();
         if (session.getAttribute("updateSuccess") != null) {
             request.setAttribute("updateSuccess", session.getAttribute("updateSuccess"));
             session.removeAttribute("updateSuccess");
@@ -107,6 +108,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         request.setAttribute("dish", mi);
         request.setAttribute("list", categoryList);
         request.setAttribute("listMethod", listMethod);
+        request.setAttribute("backUrl", backUrl);
         request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
     }
 
@@ -133,6 +135,8 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String discountPercent_raw = request.getParameter("discountPercent");
         String isAvailable_raw = request.getParameter("isAvailable");
         String allergyNotes_raw = request.getParameter("allergyNotes");
+        String backUrl = (String) session.getAttribute("lastDishListUrl");
+        request.setAttribute("backUrl", backUrl);
         //lấy ảnh chính cũ
         String oldImage = request.getParameter("oldImage");
         //lấy ảnh chính
@@ -161,10 +165,10 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 errorMainImage = "Ảnh chính không đúng định dạng (.jpg, .png, .webp, .jpeg)";
             } else {
                 if (!isValidImage(mainImage)) {
-                    errorMainImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                    errorMainImage = "Tệp ảnh bị hỏng, vui lòng kiểm tra lại";
                 } else {
                     if (mainImage.getSize() > MAX_FILE_SIZE) {
-                        errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                    errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
                     }
                 }
             }
@@ -191,11 +195,11 @@ public class UpdateMenuItemServlet extends HttpServlet {
         if (subImage != null && errorSubImage.isEmpty()) {
             for (Part p : subImage) {
                 if (!isValidImageFile(p.getSubmittedFileName())) {
-                    errorSubImage = "Có file ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
+                    errorSubImage = "Có tệp ảnh phụ không đúng định dạng (.jpg, .png, .webp, .jpeg)";
                     break;
                 } else {
                     if (!isValidImage(p)) {
-                        errorSubImage = "File ảnh bị hỏng, vui lòng kiểm tra lại";
+                        errorSubImage = "Tệp ảnh bị hỏng, vui lòng kiểm tra lại";
                         break;
                     } else {
                         if (p.getSize() > MAX_FILE_SIZE) {

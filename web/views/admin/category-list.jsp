@@ -35,6 +35,7 @@
                 margin: 0;
                 font-size: 24px;
                 font-weight: 600;
+                color: #78493b;
             }
             .search-container {
                 background-color: #fdfaf7;
@@ -298,7 +299,7 @@
             <div style="flex: 1; min-width: 0;">
                 <div class="layout">
                     <div class="page-header">
-                        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
+                        <h2>DANH SÁCH LOẠI MÓN ẮN</h2>
                         <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN" onclick="openCreateModal()"/>
                     </div>
 
@@ -347,7 +348,8 @@
                                     <td><span style="font-weight: 500;">${cat.inactiveMenuItem} món</span></td>
                                     <td style="text-align: center;">
                                         <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
-                                        <form action="${pageContext.request.contextPath}/category-management" method="post">
+
+                                        <form action="${pageContext.request.contextPath}/category-management" method="post" onsubmit="return confirmDisableCategory('${cat.categoryName}');">
                                             <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${currentSearch}" name="search"/>
@@ -422,7 +424,6 @@
                 <form id="createForm" action="category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
                     <label class="form-label">Nhập loại mới:</label>
-                    <!-- 🌟 ĐÃ SỬA CHUẨN: name="createCategoryName" đổi thành name="categoryName" để khớp với Servlet -->
                     <input type="text" id="createCategoryName" name="categoryName"/>
                     <span class="modal-error-text" id="createErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
@@ -431,6 +432,15 @@
         </div>
 
         <script>
+            function confirmDisableCategory(categoryName) {
+                const activeSubmitButton = document.activeElement;
+                if (activeSubmitButton && activeSubmitButton.name === "status" && activeSubmitButton.value === "0") {
+                    const message = "Bạn có chắc chắn muốn vô hiệu hóa không?\nNếu bạn vô hiệu hóa, tất cả các món ăn thuộc loại \"" + categoryName + "\" cũng sẽ bị vô hiệu hóa.";
+                    return confirm(message);
+                }
+                return true; 
+            }
+
             function openEditModal(id, name) {
                 document.getElementById('modalCategoryID').value = id;
                 document.getElementById('modalCategoryName').value = name;

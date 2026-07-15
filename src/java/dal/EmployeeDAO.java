@@ -380,13 +380,16 @@ public class EmployeeDAO extends DBContext {
         if (phone == null || phone.isBlank()) {
             return false;
         }
-
-        String sql = "SELECT 1 FROM Employee WHERE phoneNumber = ? AND employeeID <> ?";
+        String sql = "SELECT 1 FROM Employee WHERE phoneNumber = ? AND employeeID <> ? "
+                + "UNION "
+                + "SELECT 1 FROM Customer WHERE phoneNumber = ? "
+                + "LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setString(1, phone);
 
             ps.setInt(2, excludeID);
+            ps.setString(3, phone);
             try (ResultSet rs = ps.executeQuery()) {
 
                 return rs.next();
@@ -422,6 +425,25 @@ public class EmployeeDAO extends DBContext {
         String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, UserRole.RESTAURANT_OWNER.getRoleID());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(rs.getInt("employeeID"));
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Lấy danh sách ID của các Lễ tân (RECEPTIONIST) active để gửi notification.
+     */
+    public List<Integer> getActiveReceptionistIDs() {
+        List<Integer> list = new ArrayList<>();
+        String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, UserRole.RECEPTIONIST.getRoleID());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(rs.getInt("employeeID"));
