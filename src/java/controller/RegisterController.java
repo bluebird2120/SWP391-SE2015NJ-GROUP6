@@ -6,6 +6,7 @@ package controller;
 
 import dal.CustomerDAO;
 import dal.EmailDAO;
+import dal.EmployeeDAO;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -22,6 +23,7 @@ import java.sql.SQLException;
 public class RegisterController extends HttpServlet {
 
     private final CustomerDAO customerDAO = new CustomerDAO();
+    private final EmployeeDAO employeeDAO = new EmployeeDAO();
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -94,7 +96,9 @@ public class RegisterController extends HttpServlet {
 
         //PhoneNumber
         String phoneNumberError = validatePhone(phoneNumber);
-        if (phoneNumberError == null && customerDAO.isPhoneExists(phoneNumber, 0)) {
+        if (phoneNumberError == null 
+                && (customerDAO.isPhoneExists(phoneNumber, 0)
+                || employeeDAO.isPhoneExists(phoneNumber, 0))) {
             phoneNumberError = "Số điện thoại này đã được đăng ký hoặc không khả dụng.";
         }
         if (phoneNumberError != null) {
@@ -104,7 +108,9 @@ public class RegisterController extends HttpServlet {
 
         //Email
         String emailError = validateEmail(email);
-        if (emailError == null && customerDAO.isEmailExists(email, 0)) {
+        if (emailError == null 
+                && (customerDAO.isEmailExists(email, 0)
+                || employeeDAO.isEmailExists(email, 0))) {
             emailError = "Email này đã được đăng ký hoặc không khả dụng.";
         }
         if (emailError != null) {
