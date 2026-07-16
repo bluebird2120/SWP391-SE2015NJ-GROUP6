@@ -44,7 +44,6 @@ public class EmployeeDAO extends DBContext {
 
     public Employee findByEmail(String email) {
 
-
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE email = ?";
@@ -66,7 +65,6 @@ public class EmployeeDAO extends DBContext {
 
     public Employee findById(int id) {
 
-
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
                 + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword "
                 + "FROM Employee WHERE employeeID = ?";
@@ -85,7 +83,6 @@ public class EmployeeDAO extends DBContext {
         }
         return null;
     }
-
 
     public List<Employee> listStaff(String keyword) {
         List<Employee> list = new ArrayList<>();
@@ -121,9 +118,7 @@ public class EmployeeDAO extends DBContext {
         return list;
     }
 
-
     public int insert(Employee e) {
-
 
         String sql = "INSERT INTO Employee "
                 + "(roleID, password, fullName, dob, phoneNumber, email, isActive, address, image, mustChangePassword) "
@@ -142,7 +137,6 @@ public class EmployeeDAO extends DBContext {
             }
             ps.setString(5, e.getPhoneNumber());
             ps.setString(6, e.getEmail());
-
 
             ps.setInt(7, e.getIsActive());
             ps.setString(8, e.getAddress());
@@ -166,10 +160,7 @@ public class EmployeeDAO extends DBContext {
         return -1;
     }
 
-
     public boolean update(Employee e) {
-
-
         String sql = "UPDATE Employee SET fullName = ?, dob = ?, phoneNumber = ?, email = ?, "
                 + "isActive = ?, address = ?, image = ? WHERE employeeID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -196,7 +187,6 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-
     public boolean softDelete(int employeeID) {
 
         String sql = "UPDATE Employee SET isActive = 0 WHERE employeeID = ?";
@@ -211,7 +201,6 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-
     public boolean reactivate(int employeeID) {
 
         String sql = "UPDATE Employee SET isActive = 1 WHERE employeeID = ?";
@@ -225,7 +214,6 @@ public class EmployeeDAO extends DBContext {
             return false;
         }
     }
-
 
     public int countStaff(String keyword, Integer status, Integer roleID) {
 
@@ -248,7 +236,6 @@ public class EmployeeDAO extends DBContext {
             int idx = 1;
 
             ps.setInt(idx++, UserRole.RESTAURANT_STAFF.getRoleID());
-
 
             ps.setInt(idx++, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
@@ -274,7 +261,6 @@ public class EmployeeDAO extends DBContext {
         }
         return 0;
     }
-
 
     public List<Employee> listStaffPaged(
             String keyword, Integer status, Integer roleID,
@@ -310,7 +296,6 @@ public class EmployeeDAO extends DBContext {
             int idx = 1;
 
             ps.setInt(idx++, UserRole.RESTAURANT_STAFF.getRoleID());
-
 
             ps.setInt(idx++, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
@@ -416,7 +401,6 @@ public class EmployeeDAO extends DBContext {
         return false;
     }
 
-
     public List<Integer> getActiveOwnerIDs() {
         List<Integer> list = new ArrayList<>();
         String sql = "SELECT employeeID FROM Employee WHERE roleID = ? AND isActive = 1";
@@ -434,7 +418,8 @@ public class EmployeeDAO extends DBContext {
     }
 
     /**
-     * Lấy danh sách ID của các Lễ tân (RECEPTIONIST) active để gửi notification.
+     * Lấy danh sách ID của các Lễ tân (RECEPTIONIST) active để gửi
+     * notification.
      */
     public List<Integer> getActiveReceptionistIDs() {
         List<Integer> list = new ArrayList<>();
@@ -529,7 +514,6 @@ public class EmployeeDAO extends DBContext {
         }
     }
 
-
     public int getLeastBusyAndLongestIdleStaffID() {
         String sql = "SELECT e.employeeID, "
                 + "COUNT(CASE WHEN o.orderStatus NOT IN ('completed', 'cancelled') THEN 1 END) AS activeOrders, "
@@ -571,7 +555,6 @@ public class EmployeeDAO extends DBContext {
         e.setPhoneNumber(rs.getString("phoneNumber"));
 
         e.setEmail(rs.getString("email"));
-
 
         e.setIsActive(rs.getInt("isActive"));
 

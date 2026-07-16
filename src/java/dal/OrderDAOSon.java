@@ -311,7 +311,6 @@ public class OrderDAOSon extends DBContext {
             //    Việc lọc theo ngày (chỉ hôm nay) CHỈ áp dụng cho thông báo của
             //    LỄ TÂN ở BƯỚC 3 bên dưới (vì lễ tân chỉ cần xử lý đúng ngày,
             //    đơn tương lai đã có DailyReservationNotifyTask lo vào đúng ngày lúc 06:00).
-            
             String pendingSql
                     = "SELECT o.orderID, o.customerID, DATE(o.orderTime) = CURDATE() AS isToday "
                     + "FROM `Order` o "
@@ -361,8 +360,7 @@ public class OrderDAOSon extends DBContext {
                         nc.setRecipientID(customerID);
                         nc.setRecipientType("customer");
                         nc.setType("reservation_confirmed");
-                        nc.setMessage("Đặt bàn thành công! Đơn #" + oID
-                                + " đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
+                        nc.setMessage("Đặt bàn thành công! Đơn đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
                         nc.setIsRead(0);
                         notifDAO.insert(nc);
                     }
