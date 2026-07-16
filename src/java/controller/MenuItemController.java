@@ -265,6 +265,11 @@ public class MenuItemController extends HttpServlet {
 
         // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
         if (sessionTableID == null) {
+            String currentUrl = request.getRequestURI();
+            if (request.getQueryString() != null) {
+                currentUrl += "?" + request.getQueryString();
+            }
+            request.getSession().setAttribute("lastDishListUrl", currentUrl);
             request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
         } else {
             // Còn lại (Khách vãng lai, Khách quét QR) -> Trỏ vào trang Menu User
@@ -324,10 +329,10 @@ public class MenuItemController extends HttpServlet {
         String trimmedValue = value.trim().toLowerCase();
         for (String allowed : allowedValues) {
             if (trimmedValue.equals(allowed.toLowerCase())) {
-                return trimmedValue; 
+                return trimmedValue;
             }
         }
-        return defaultValue; 
+        return defaultValue;
     }
 
     @Override

@@ -347,7 +347,9 @@
                                     <td><span style="font-weight: 500;">${method.inactiveMenuItem} món</span></td>
                                     <td>
                                         <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${method.methodID}', '${method.methodName}')"/>
-                                        <form action="${pageContext.request.contextPath}/method-management" method="post">
+
+                                        <!-- 🌟 ĐÃ TÍNH HỢP: Thêm sự kiện onsubmit để kích hoạt cảnh báo khi vô hiệu hóa phương thức -->
+                                        <form action="${pageContext.request.contextPath}/method-management" method="post" onsubmit="return confirmDisableMethod('${method.methodName}');">
                                             <input type="hidden" value="${method.methodID}" name="methodID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${currentSearch}" name="search"/>
@@ -422,7 +424,6 @@
                 <form id="createForm" action="method-management" method="post">
                     <input type="hidden" name="methodID" value="0"/>
                     <label class="form-label">Nhập cách chế biến mới:</label>
-                    <!-- 🌟 ĐÃ KHỚP TÊN CHUẨN: Giữ nguyên thuộc tính name="methodName" để đẩy đúng dữ liệu đồng bộ lên Servlet -->
                     <input type="text" id="createMethodName" name="methodName"/>
                     <span class="modal-error-text" id="createErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
@@ -431,6 +432,16 @@
         </div>
 
         <script>
+            // 🌟 ĐÃ TÍCH HỢP: Hàm kiểm tra hành động gửi form và kích hoạt hộp thoại xác nhận khi chọn VÔ HIỆU HÓA
+            function confirmDisableMethod(methodName) {
+                const activeSubmitButton = document.activeElement;
+                if (activeSubmitButton && activeSubmitButton.name === "status" && activeSubmitButton.value === "0") {
+                    const message = "Bạn có chắc chắn muốn vô hiệu hóa không?\nNếu bạn vô hiệu hóa, tất cả các món ăn thuộc phương thức \"" + methodName + "\" cũng sẽ bị vô hiệu hóa.";
+                    return confirm(message);
+                }
+                return true;
+            }
+
             function openEditModal(id, name) {
                 document.getElementById('modalMethodID').value = id;
                 document.getElementById('modalMethodName').value = name;

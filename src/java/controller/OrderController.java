@@ -1,5 +1,6 @@
 package controller;
 
+import dal.DailyInventoryDAO; // Đã thêm import cho hàm trừ kho
 import dal.OrderDAO;
 import dal.TableDAO;
 import model.Order;
@@ -47,7 +48,7 @@ public class OrderController extends HttpServlet {
                 List<MenuItem> dbMenuItems = orderDAO.getMenuItemsByOrderId(orderID);
                 
                 // Lấy thông tin đơn hàng gốc để biết tiền cọc
-                Order currentOrder = orderDAO.getOrderById(orderID); // Hãy đảm bảo bạn có hàm này trong OrderDAO
+                Order currentOrder = orderDAO.getOrderById(orderID); 
                 request.setAttribute("currentOrder", currentOrder);
                 
                 // 2. KÉO CÁC MÓN MỚI CHỌN (SESSION CART)
@@ -124,7 +125,7 @@ public class OrderController extends HttpServlet {
             int itemID = Integer.parseInt(request.getParameter("itemID"));
             int quantity = Integer.parseInt(request.getParameter("quantity"));
             
-            // 🌟 ĐÃ SỬA LỖI 500: Chống lỗi NullPointerException cho note
+            // Chống lỗi NullPointerException cho note
             String note = request.getParameter("note");
             if (note == null) {
                 note = "";
@@ -135,13 +136,12 @@ public class OrderController extends HttpServlet {
             Integer tableID = request.getParameter("tableID") != null && !request.getParameter("tableID").isEmpty() ? 
                               Integer.parseInt(request.getParameter("tableID")) : (Integer) session.getAttribute("tableID");
 
-            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI (Vẫn phải tạo DB Order trước để lấy cái khung)
+            // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
             if (currentOrderID == null) {
                 Integer customerID = (Integer) session.getAttribute("customerID");
                 Order newOrder = new Order();
                 newOrder.setCustomerID(customerID);
                 newOrder.setOrderType(tableID != null ? 1 : 2); 
-                // [TABLE STATUS FLOW] serving chi dung cho orderStatus; ban co khach/host thi la occupied.
                 newOrder.setTableStatus(tableID != null ? "occupied" : "available");
                 newOrder.setOrderStatus("ordering");
                 newOrder.setIsStaffConfirmed(0);
@@ -162,7 +162,6 @@ public class OrderController extends HttpServlet {
             // Thêm vào Session thay vì DB
             boolean found = false;
             for (OrderItem item : sessionCart) {
-                // 🌟 ĐÃ SỬA LỖI 500: An toàn khi so sánh chuỗi note
                 String itemNote = (item.getNote() == null) ? "" : item.getNote();
                 
                 // Nếu cùng món, cùng bàn, cùng ghi chú -> Gộp số lượng
@@ -177,7 +176,6 @@ public class OrderController extends HttpServlet {
             
             if (!found) {
                 OrderItem newItem = new OrderItem();
-                // Dùng id âm tạm thời để phân biệt trong session
                 newItem.setOrderItemID(-(sessionCart.size() + 1)); 
                 newItem.setOrderID(currentOrderID);
                 newItem.setItemID(itemID);
@@ -224,74 +222,68 @@ public class OrderController extends HttpServlet {
             return;
 
         // =========================================================
-        // GỬI BẾP CÁC MÓN ĐƯỢC CHỌN (SESSION -> DATABASE)
+        // GỬI BẾP CÁC MÓN ĐƯỢC CHỌN (TRỪ KHO + GHI DATABASE)
         // =========================================================
         } else if ("sendToKitchen".equals(action)) {
             String[] selectedItems = request.getParameterValues("selectedItems");
             
             if (currentOrderID != null && !sessionCart.isEmpty() && selectedItems != null) {
-                // Gom các ID món được chọn từ giao diện (là các số âm)
                 List<Integer> idsToSend = new java.util.ArrayList<>();
                 for (String s : selectedItems) {
                     idsToSend.add(Integer.parseInt(s));
                 }
                 
-                // Duyệt giỏ hàng Session, cái nào có tích thì gửi đi và xóa khỏi giỏ
+                // Khởi tạo DAO để thao tác với bảng tồn kho
+                DailyInventoryDAO inventoryDAO = new DailyInventoryDAO();
+                List<String> outOfStockMessages = new ArrayList<>();
+                boolean hasSuccess = false;
+                
                 Iterator<OrderItem> iterator = sessionCart.iterator();
                 while (iterator.hasNext()) {
                     OrderItem oi = iterator.next();
+                    
+                    // Chỉ xử lý những món có ID nằm trong danh sách khách đã tích chọn
                     if (idsToSend.contains(oi.getOrderItemID())) {
-                        orderDAO.addOrderItem(currentOrderID, oi.getItemID(), oi.getTableID(), oi.getQuantity(), oi.getPrice(), oi.getNote());
-                        iterator.remove(); // Xóa món này khỏi giỏ tạm sau khi đã đẩy xuống bếp
+                        
+                        // 1. Cố gắng trừ kho an toàn (Sử dụng hàm đã viết trước đó)
+                        boolean isStockDeducted = inventoryDAO.decreaseQuantityInStock(oi.getItemID(), oi.getQuantity());
+                        
+                        if (isStockDeducted) {
+                            // 2A. Nếu trừ kho thành công -> Ghi vào đơn hàng và xóa khỏi giỏ tạm
+                            orderDAO.addOrderItem(currentOrderID, oi.getItemID(), oi.getTableID(), oi.getQuantity(), oi.getPrice(), oi.getNote());
+                            iterator.remove(); 
+                            hasSuccess = true;
+                        } else {
+                            // 2B. Nếu kho không đủ -> Giữ lại món trong giỏ và lấy tên món báo lỗi
+                            MenuItem mi = getMenuItemById(oi.getItemID());
+                            String itemName = (mi != null) ? mi.getItemName() : "Một món ăn";
+                            outOfStockMessages.add("Rất tiếc, " + itemName + " đã hết hoặc không đủ số lượng phục vụ!");
+                        }
                     }
                 }
                 
-                // Cập nhật lại giỏ Session mới (chứa các món chưa gửi)
+                // Cập nhật lại giỏ hàng (chỉ còn những món chưa gửi đi hoặc bị lỗi hết kho)
                 session.setAttribute("sessionCart", sessionCart);
-                session.setAttribute("successMsg", "Đã gửi các món được chọn xuống Bếp thành công!");
+                
+                // Phản hồi về giao diện dựa trên kết quả trừ kho
+                if (!outOfStockMessages.isEmpty()) {
+                    // Nếu có món hết hàng, gộp các câu thông báo lại
+                    String errorMsg = String.join("<br>", outOfStockMessages);
+                    session.setAttribute("errorMsg", errorMsg);
+                } 
+                
+                if (hasSuccess) {
+                    session.setAttribute("successMsg", "Đã gửi các món ăn hợp lệ xuống Bếp!");
+                }
             }
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
-            
             
         // =========================================================
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
-            // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
-            if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
-                session.setAttribute("successMsg", "Da gui yeu cau tinh tien. Vui long cho nhan vien kiem tra va chot hoa don.");
-
-                // Thông báo ngay cho nhân viên đang phụ trách bàn/đơn này để họ qua chốt hóa đơn.
-                try {
-                    Order order = orderDAO.getOrderById(currentOrderID);
-                    if (order != null && order.getEmployeeID() != null) {
-                        List<Table> tables = new TableDAO().getTablesByOrderId(currentOrderID);
-                        StringBuilder tableNames = new StringBuilder();
-                        for (int i = 0; i < tables.size(); i++) {
-                            if (i > 0) tableNames.append(", ");
-                            tableNames.append(tables.get(i).getTableName());
-                        }
-                        String tableLabel = tableNames.length() > 0 ? tableNames.toString() : ("#" + currentOrderID);
-
-                        dal.NotificationDAO notifDAO = new dal.NotificationDAO();
-                        model.Notifications n = new model.Notifications();
-                        n.setRecipientID(order.getEmployeeID());
-                        n.setRecipientType("staff");
-                        n.setType("checkout_requested");
-                        n.setMessage("Bàn " + tableLabel + " (Đơn #" + currentOrderID
-                                + ") vừa yêu cầu thanh toán. Vui lòng đến kiểm tra và chốt hóa đơn.");
-                        n.setIsRead(0);
-                        notifDAO.insert(n);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[OrderController] Gửi thông báo yêu cầu thanh toán thất bại: " + e.getMessage());
-                }
-            } else {
-                session.setAttribute("errorMsg", "Khong the gui yeu cau tinh tien. Vui long kiem tra lai mon da goi.");
-            }
-            response.sendRedirect(request.getContextPath() + "/order?action=cart");
+            response.sendRedirect(request.getContextPath() + "/checkout");
             return;
         }
     }
@@ -323,6 +315,6 @@ public class OrderController extends HttpServlet {
         } catch (Exception e) {
             System.err.println("Lỗi lấy thông tin món ăn: " + e.getMessage());
         }
-        return new MenuItem(); // Trả về object rỗng để không bị lỗi màn hình
+        return new MenuItem(); 
     }
 }

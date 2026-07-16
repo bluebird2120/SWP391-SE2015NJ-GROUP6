@@ -7,6 +7,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Tổng quan thống kê</title>
+    <%-- Nap Font Awesome rieng cho man Tong quan de icon header/sidebar khong bi mat --%>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: sans-serif; background: #faf6f2; }

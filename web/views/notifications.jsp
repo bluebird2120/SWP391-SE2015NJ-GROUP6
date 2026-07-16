@@ -241,15 +241,8 @@
                                      ${status.index >= 5 ? 'style="display: none;"' : ''}>
 
                                     <div class="item-icon">
-                                        <c:choose>
-                                            <c:when test="${n.type == 'reservation_needs_table'}">
-                                                <i class="fas fa-clipboard-list" style="color: #e67e22;"></i> </c:when>
-                                            <c:when test="${n.type == 'table_assigned' || n.type == 'table_assigned_offline'}">
-                                                <i class="fas fa-utensils" style="color: #2ec4b6;"></i> </c:when>
-                                            <c:when test="${n.type == 'reservation_confirmed'}">
-                                                <i class="fas fa-calendar-alt"></i>
-                                            </c:when>
-                                        </c:choose>
+                                        <%-- Dung chung icon chuong cho moi loai thong bao --%>
+                                        <i class="fas fa-bell"></i>
                                     </div>
 
                                     <div class="item-body">

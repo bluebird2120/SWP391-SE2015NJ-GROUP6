@@ -33,8 +33,8 @@
 
             .main-content {
                 flex: 1;
-                width: 100%; /* 🌟 CHỐT CHẶN 1: Ép khung mở rộng hết nấc theo màn hình */
-                max-width: 95%; /* 🌟 CHỐT CHẶN 2: Thay vì 1200px tù túng, đổi sang 95% để tự giãn rộng trên màn hình máy tính lớn */
+                width: 100%; 
+                max-width: 95%; 
                 padding: 24px;
                 box-sizing: border-box;
             }
@@ -127,7 +127,7 @@
                 display: flex;
                 gap: 12px;
                 align-items: center;
-                justify-content: flex-start; /* Xếp các ô nối đuôi nhau từ trái qua phải */
+                justify-content: flex-start; 
                 background: white;
                 border: 1px solid #e2e8f0;
                 color: #475569;
@@ -135,7 +135,7 @@
                 border-radius: 12px;
                 margin-bottom: 20px;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-                flex-wrap: wrap; /* 🌟 CHỐT CHẶN 3: Cho phép co giãn hoặc xuống hàng tự nhiên nếu màn hình laptop quá nhỏ */
+                flex-wrap: wrap; 
             }
 
             .line2 {
@@ -154,8 +154,8 @@
                 color: #333333;
                 background-color: #ffffff;
                 outline: none;
-                flex: 1; /* Tự động chia đều đất diễn trên hàng ngang */
-                min-width: 140px; /* Chống bị bóp quá nhỏ chữ */
+                flex: 1; 
+                min-width: 140px; 
             }
 
             .filter-input:focus,
@@ -173,7 +173,7 @@
             }
 
             .filter-price input {
-                width: 100px; /* Định dạng cứng độ rộng ô nhập số tiền từ... đến... */
+                width: 100px; 
                 min-width: 90px;
                 flex: 0 0 auto;
             }
@@ -484,13 +484,13 @@
                             </div>
 
                             <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                                <%-- 🌟 ĐẢM BẢO DÙNG CONTEXT PATH CHUẨN --%>
                                 <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex; flex-direction: column; gap: 8px;">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
                                     <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
 
-                                    
                                     <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white; margin-top: 0;">
                                         Thêm vào giỏ
                                     </button>
@@ -626,9 +626,26 @@
             <script>
                         let html5QrcodeScanner = null;
 
+                        function submitManualQR() {
+                            let inputVal = document.getElementById("manual-qr-input").value.trim();
+                            if (inputVal === "")
+                                return;
+
+                            let targetUrl = "";
+                            if (inputVal.includes("token=")) {
+                                targetUrl = inputVal; 
+                            } else {
+                                targetUrl = "${pageContext.request.contextPath}/scan?token=" + inputVal;
+                            }
+                            
+                            console.log("Đang chuyển hướng đến: " + targetUrl); 
+
+                            closeQRScanner();
+                            window.location.href = targetUrl;
+                        }
+                        
                         function openQRScanner() {
                             document.getElementById("qr-modal-overlay").style.display = "flex";
-                            // Reset lại ô input mỗi lần mở
                             document.getElementById("manual-qr-input").value = "";
 
                             if (!html5QrcodeScanner) {
@@ -637,82 +654,18 @@
 
                             html5QrcodeScanner.start(
                                     {facingMode: "environment"},
-                                    {fps: 10, qrbox: {width: 250, height: 250}},
+                                    {
+                                        fps: 10, 
+                                        qrbox: {width: 250, height: 250} 
+                                    },
                                     (decodedText, decodedResult) => {
-                                closeQRScanner();
+                                closeQRScanner(); 
                                 window.location.href = decodedText;
                             },
                                     (errorMessage) => {
                             }
                             ).catch((err) => {
                                 console.log("Không có camera, sử dụng chế độ nhập tay.");
-                                // Không alert nữa để đỡ phiền khi test trên laptop không có webcam
-                            });
-                        }
-
-                        function closeQRScanner() {
-                            document.getElementById("qr-modal-overlay").style.display = "none";
-                            if (html5QrcodeScanner) {
-                                html5QrcodeScanner.stop().then((ignore) => {
-                                    html5QrcodeScanner.clear();
-                                }).catch((err) => {
-                                    console.log(err);
-                                });
-                            }
-                        }
-
-                        function submitManualQR() {
-                            let inputVal = document.getElementById("manual-qr-input").value.trim();
-                            if (inputVal === "")
-                                return;
-
-                            // Nếu người dùng dán nguyên cái URL đầy đủ (ví dụ: http://localhost:8080/.../scan?token=abc)
-                            // thì ta lấy thẳng giá trị đó. Nếu chỉ dán mã (abc), ta ghép lại.
-                            let targetUrl = "";
-                            if (inputVal.includes("token=")) {
-                                targetUrl = inputVal; // Dán link đầy đủ -> Giữ nguyên
-                            } else {
-                                // Dán mã token -> Ghép vào
-                                targetUrl = "${pageContext.request.contextPath}/scan?token=" + inputVal;
-                            }
-                            
-                            console.log("Đang chuyển hướng đến: " + targetUrl); // 👈 THÊM DÒNG NÀY
-
-                            closeQRScanner();
-                            // Chuyển hướng trình duyệt
-                            window.location.href = targetUrl;
-                        }
-                        
-                        function openQRScanner() {
-                            // Hiện khung đen che màn hình
-                            document.getElementById("qr-modal-overlay").style.display = "flex";
-
-                            // Khởi tạo máy quét
-                            if (!html5QrcodeScanner) {
-                                html5QrcodeScanner = new Html5Qrcode("qr-reader");
-                            }
-
-                            // Mở camera mặt sau (environment)
-                            html5QrcodeScanner.start(
-                                    {facingMode: "environment"},
-                                    {
-                                        fps: 10, // Khung hình trên giây
-                                        qrbox: {width: 250, height: 250} // Vùng quét hình vuông
-                                    },
-                                    (decodedText, decodedResult) => {
-                                // KHI QUÉT THÀNH CÔNG:
-                                closeQRScanner(); // Tắt camera đi
-
-                                // decodedText chính là cái đường link http://localhost:8080/.../scan?token=...
-                                // Chuyển hướng trình duyệt chạy thẳng vào link đó luôn!
-                                window.location.href = decodedText;
-                            },
-                                    (errorMessage) => {
-                                // Đang dò tìm QR (Bỏ qua lỗi này)
-                            }
-                            ).catch((err) => {
-                                alert("Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!");
-                                closeQRScanner();
                             });
                         }
 
@@ -756,19 +709,16 @@
                 const apiPath = "${pageContext.request.contextPath}/api/table-join";
                 let isPanelOpen = false;
 
-                // 1. Hàm bật/tắt cái bảng danh sách
                 function toggleRequestPanel() {
                     const panel = document.getElementById('request-panel');
                     isPanelOpen = !isPanelOpen;
                     panel.style.display = isPanelOpen ? 'block' : 'none';
                     if (isPanelOpen)
-                        fetchPendingRequests(); // Mở ra thì load dữ liệu luôn
+                        fetchPendingRequests(); 
                 }
 
-                // 2. Chạy ngầm quét dữ liệu mỗi 3 giây
                 setInterval(fetchPendingRequests, 3000);
 
-                // 3. Hàm gọi API lấy danh sách người đang chờ
                 function fetchPendingRequests() {
                     fetch(apiPath + '?action=getPending')
                             .then(response => response.json())
@@ -777,18 +727,16 @@
                                 const listDiv = document.getElementById('request-list-content');
                                 const panelCount = document.getElementById('panel-count');
 
-                                // Cập nhật số lượng trên chuông và tiêu đề
                                 panelCount.innerText = data.length;
                                 if (data.length > 0) {
                                     badge.style.display = 'flex';
                                     badge.innerText = data.length;
-                                    document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; // Rung chuông xíu cho vui
+                                    document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; 
                                     setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
                                 } else {
                                     badge.style.display = 'none';
                                 }
 
-                                // Vẽ HTML cho danh sách người chờ
                                 if (data.length === 0) {
                                     listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
                                 } else {
@@ -810,7 +758,6 @@
                             });
                 }
 
-                // 4. Hàm Duyệt / Từ chối
                 function handleRequest(reqID, actionType) {
                     fetch(apiPath, {
                         method: 'POST',
@@ -820,28 +767,18 @@
                             .then(response => response.text())
                             .then(res => {
                                 if (res === 'success') {
-                                    fetchPendingRequests(); // Tải lại danh sách ngay lập tức
+                                    fetchPendingRequests(); 
                                 }
                             });
                 }
             </script>
             <style>
                 @keyframes shake {
-                    0% {
-                        transform: rotate(0deg);
-                    }
-                    25% {
-                        transform: rotate(-10deg);
-                    }
-                    50% {
-                        transform: rotate(10deg);
-                    }
-                    75% {
-                        transform: rotate(-10deg);
-                    }
-                    100% {
-                        transform: rotate(0deg);
-                    }
+                    0% { transform: rotate(0deg); }
+                    25% { transform: rotate(-10deg); }
+                    50% { transform: rotate(10deg); }
+                    75% { transform: rotate(-10deg); }
+                    100% { transform: rotate(0deg); }
                 }
             </style>
         </c:if>

@@ -5,7 +5,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Shift Templates</title>
+    <title>Mẫu ca làm</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
@@ -112,12 +112,12 @@
 
             <div class="page-head">
                 <div>
-                    <h1 class="page-title">Shift Templates</h1>
+                    <h1 class="page-title">Mẫu ca làm</h1>
                     <p class="page-sub">Quản lý các ca làm việc cố định</p>
                 </div>
 
                 <a class="btn btn-primary" href="${pageContext.request.contextPath}/owner/shift-templates?action=create">
-                    <i class="fas fa-plus"></i> Add Template
+                    <i class="fas fa-plus"></i> Thêm mẫu ca
                 </a>
             </div>
 

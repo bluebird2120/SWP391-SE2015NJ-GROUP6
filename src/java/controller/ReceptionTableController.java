@@ -1,5 +1,7 @@
 package controller;
 
+
+import dal.DBContext;
 import dal.EmployeeShiftDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
@@ -57,6 +59,13 @@ public class ReceptionTableController extends HttpServlet {
                 return;
             }
             if ("assign".equals(action)) {
+                // Nhan vien/le tan phai check-in ca lam truoc khi duoc gan ban cho khach.
+                if (!new EmployeeShiftDAO().isEmployeeOnShift(employee.getEmployeeID())) {
+                    message = "Bạn cần check-in ca làm trước khi gán bàn cho khách.";
+                    request.getSession().setAttribute("staffTableMessage", message);
+                    response.sendRedirect(request.getContextPath() + "/reception/tables");
+                    return;
+                }
                 int tableID = Integer.parseInt(request.getParameter("tableID"));
                 // [PHAN QUYEN LE TAN] Khong truyen ID le tan vao Order.
                 String error = new StaffTableDAO().assignTable(orderID, tableID);
@@ -68,13 +77,13 @@ public class ReceptionTableController extends HttpServlet {
                         : dao.openTableForWalkIn(orderID);
                 message = ok
                         ? ("checkin".equals(action)
-                        ? "checkin_success" : "open_table_success")
-                        : "Khong the mo ban cho don nay.";
+                                ? "checkin_success" : "open_table_success")
+                        : "Không thể mở bàn cho đơn này.";
             } else {
-                message = "Thao tac khong hop le.";
+                message = "Thao tác không hợp lệ.";
             }
         } catch (NumberFormatException e) {
-            message = "Ma don hoac ma ban khong hop le.";
+            message = "Mã đơn hoặc mã bàn không hợp lệ.";
         }
 
         request.getSession().setAttribute("staffTableMessage", message);

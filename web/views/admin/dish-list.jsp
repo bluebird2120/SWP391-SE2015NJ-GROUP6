@@ -60,8 +60,11 @@
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                width: max-content;
-                flex-shrink: 0;
+                flex: 2 1 320px;
+            }
+            .line2 select {
+                flex: 1;
+                min-width: 130px;
             }
 
             .main-content {
@@ -74,43 +77,92 @@
             .filter-form {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 15px;
+                gap: 16px;
                 background: #fdfaf7;
                 border: 1px solid #ebdcd0;
-                padding: 16px;
+                padding: 18px 16px;
                 border-radius: 12px;
                 margin-bottom: 20px;
                 font-family: Arial, sans-serif;
-                align-items: center;
+                align-items: flex-end;
+            }
+
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .filter-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: #7c7267;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
             }
 
             .filter-input, .filter-select {
-                padding: 8px 12px;
+                padding: 9px 12px;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
                 font-size: 14px;
-                min-width: 160px;
-                flex: 1;
+                background-color: #fff;
             }
             .filter-input:focus, .filter-select:focus {
                 border-color: #78493b;
                 outline: none;
             }
-            .filter-form input[name="search"] {
-                flex: 2;
+
+            .group-search {
+                flex: 2 1 260px;
+            }
+            .group-search .filter-input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .group-select {
+                flex: 1 1 170px;
+            }
+            .group-select .filter-select {
+                width: 100%;
+                box-sizing: border-box;
             }
 
             .filter-price {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                font-size: 14px;
             }
             .filter-price input {
-                width: 90px;
-                padding: 8px;
+                width: 100px;
+                padding: 9px;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
+                box-sizing: border-box;
+            }
+            .filter-price span {
+                font-size: 14px;
+                color: #4a3f35;
+                white-space: nowrap;
+            }
+
+            .line2 {
+                display: flex;
+                align-items: flex-end;
+                gap: 10px;
+                flex: 2 1 320px;
+            }
+            .line2 .filter-group {
+                flex: 1;
+                min-width: 130px;
+            }
+            .line2 .filter-select {
+                width: 96%;
+                box-sizing: border-box;
+            }
+            .sort-order-group {
+                margin-left: -15px; /* chỉnh số này để dịch sang trái nhiều/ít */
             }
 
             .btn-submit {
@@ -327,52 +379,72 @@
                 </div>
 
                 <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
-                    <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm món ăn..." class="filter-input"/>
 
-                    <select name="category" class="filter-select">
-                        <option value="0">Tất cả danh mục</option>
-                        <c:forEach var="cat" items="${list}">
-                            <option value="${cat.categoryID}" ${currentCategory == cat.categoryID ? "selected" : "" }>
-                                ${cat.categoryName}
-                            </option>
-                        </c:forEach>
-                    </select>
+                    <div class="filter-group group-search">
 
-                    <select name="cookingMethod" class="filter-select">
-                        <option value="0">Tất cả phương thức</option>
-                        <c:forEach var="method" items="${listMethod}">
-                            <option value="${method.methodID}" ${currentMethod == method.methodID ? "selected" : "" }>
-                                ${method.methodName}
-                            </option>
-                        </c:forEach>
-                    </select>
+                        <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm món ăn..." class="filter-input"/>
+                    </div>
+
+                    <div class="filter-group group-select">
+
+                        <select name="category" class="filter-select">
+                            <option value="0">Tất cả danh mục</option>
+                            <c:forEach var="cat" items="${list}">
+                                <option value="${cat.categoryID}" ${currentCategory == cat.categoryID ? "selected" : "" }>
+                                    ${cat.categoryName}
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+
+                    <div class="filter-group group-select">
+
+                        <select name="cookingMethod" class="filter-select">
+                            <option value="0">Tất cả phương thức</option>
+                            <c:forEach var="method" items="${listMethod}">
+                                <option value="${method.methodID}" ${currentMethod == method.methodID ? "selected" : "" }>
+                                    ${method.methodName}
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
 
                     <c:if test="${sessionScope.employee.roleID == 1}">
-                        <select name="status" class="filter-select">
-                            <option value="-1" ${currentStatus == -1 ? 'selected' : '' }>Tất Cả Trạng Thái</option>
-                            <option value="1" ${currentStatus == 1 ? 'selected' : '' }>Đang Bán</option>
-                            <option value="0" ${currentStatus == 0 ? 'selected' : '' }>Tạm Ngưng</option>
-                        </select>
+                        <div class="filter-group group-select">
+
+                            <select name="status" class="filter-select">
+                                <option value="-1" ${currentStatus == -1 ? 'selected' : '' }>Tất Cả Trạng Thái</option>
+                                <option value="1" ${currentStatus == 1 ? 'selected' : '' }>Đang Bán</option>
+                                <option value="0" ${currentStatus == 0 ? 'selected' : '' }>Tạm Ngưng</option>
+                            </select>
+                        </div>
                     </c:if>
 
-                    <div class="filter-price">
-                        <span>Giá từ:</span>
-                        <input type="number" name="minPrice" value="${currentMinPrice}" class="filter-input" />
-                        <span>đến:</span>
-                        <input type="number" name="maxPrice" value="${currentMaxPrice}" class="filter-input" />
+                    <div class="filter-group">
+
+                        <div class="filter-price">
+                            <input type="number" name="minPrice" value="${currentMinPrice}" placeholder="Từ" class="filter-input" />
+                            <span>—</span>
+                            <input type="number" name="maxPrice" value="${currentMaxPrice}" placeholder="Đến" class="filter-input" />
+                        </div>
                     </div>
 
                     <div class="line2">
-                        <span>Sắp xếp:</span>
-                        <select name="price" class="filter-select">
-                            <option value="price" ${currentPriceType == 'price' ? 'selected' : '' }>Giá Gốc</option>
-                            <option value="discountedPrice" ${currentPriceType == 'discountedPrice' ? 'selected' : '' }>Giá Thực Tế</option>
-                        </select>
+                        <div class="filter-group">
 
-                        <select name="sort" class="filter-select">
-                            <option value="asc" ${currentSort == 'asc' ? 'selected' : '' }>Tăng Dần ↑</option>
-                            <option value="desc" ${currentSort == 'desc' ? 'selected' : '' }>Giảm Dần ↓</option>
-                        </select>
+                            <select name="price" class="filter-select">
+                                <option value="price" ${currentPriceType == 'price' ? 'selected' : '' }>Giá Gốc</option>
+                                <option value="discountedPrice" ${currentPriceType == 'discountedPrice' ? 'selected' : '' }>Giá Thực Tế</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+
+                            <select name="sort" class="filter-select sort-order-group">
+                                <option value="asc" ${currentSort == 'asc' ? 'selected' : '' }>Tăng Dần ↑</option>
+                                <option value="desc" ${currentSort == 'desc' ? 'selected' : '' }>Giảm Dần ↓</option>
+                            </select>
+                        </div>
 
                         <input type="submit" value="LỌC" class="btn-submit" />
                     </div>
