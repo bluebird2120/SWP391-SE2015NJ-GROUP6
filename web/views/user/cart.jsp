@@ -547,8 +547,8 @@
 
                         <%-- NÚT: THANH TOÁN TỔNG --%>
                         <c:if test="${sessionScope.roleInTable == 'HOST'}">
-                            <%-- 🌟 ĐÃ SỬA: Đổi action sang /checkout và method thành GET --%>
-                            <form method="get" action="${pageContext.request.contextPath}/checkout" style="margin-top: 20px;">
+                            <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
+                                <input type="hidden" name="action" value="checkoutTotal">
                                 <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
                                         onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
                                     🧾 YÊU CẦU TÍNH TIỀN

@@ -3,9 +3,11 @@ package controller;
 import dal.DailyInventoryDAO; // Đã thêm import cho hàm trừ kho
 import dal.OrderDAO;
 import dal.TableDAO;
+import dal.NotificationDAO;
 import model.Order;
 import model.OrderItem;
 import model.MenuItem;
+import model.Notifications;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -283,7 +285,41 @@ public class OrderController extends HttpServlet {
         // THANH TOÁN TỔNG
         // =========================================================
         } else if ("checkoutTotal".equals(action)) {
-            response.sendRedirect(request.getContextPath() + "/checkout");
+            // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
+            // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
+            if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
+                session.setAttribute("successMsg", "Đã gửi yêu cầu tính tiền. Vui lòng chờ nhân viên kiểm tra và chốt hóa đơn.");
+
+                // Thông báo ngay cho nhân viên đang phụ trách bàn/đơn này để họ qua chốt hóa đơn.
+                try {
+                    Order order = orderDAO.getOrderById(currentOrderID);
+                    if (order != null && order.getEmployeeID() != null) {
+                        List<Table> tables = new TableDAO().getTablesByOrderId(currentOrderID);
+                        StringBuilder tableNames = new StringBuilder();
+                        for (int i = 0; i < tables.size(); i++) {
+                            if (i > 0) tableNames.append(", ");
+                            tableNames.append(tables.get(i).getTableName());
+                        }
+                        String tableLabel = tableNames.length() > 0 ? tableNames.toString() : ("#" + currentOrderID);
+
+                        try (NotificationDAO notifDAO = new NotificationDAO()) {
+                            Notifications n = new Notifications();
+                            n.setRecipientID(order.getEmployeeID());
+                            n.setRecipientType("staff");
+                            n.setType("checkout_requested");
+                            n.setMessage("Bàn " + tableLabel + " (Đơn #" + currentOrderID
+                                    + ") vừa yêu cầu thanh toán. Vui lòng đến kiểm tra và chốt hóa đơn.");
+                            n.setIsRead(0);
+                            notifDAO.insert(n);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[OrderController] Gửi thông báo yêu cầu thanh toán thất bại: " + e.getMessage());
+                }
+            } else {
+                session.setAttribute("errorMsg", "Không thể gửi yêu cầu tính tiền. Vui lòng kiểm tra lại món đã gọi.");
+            }
+            response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
         }
     }

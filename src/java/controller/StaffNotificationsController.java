@@ -12,28 +12,6 @@ import java.util.List;
 import model.Employee;
 import model.Notifications;
 
-/**
- * Xử lý thông báo cho Staff (roleID=2) VÀ Lễ tân (roleID=3). Cả 2 role đều dùng
- * recipientType = "staff" trong DB.
- *
- * Mapping type → URL redirect:
- *
- * STAFF (nhân viên phục vụ) nhận: table_assigned → /staff/tables (bàn được
- * giao — có thể do lễ tân gán đơn online, hoặc do lễ tân mở bàn cho khách
- * vãng lai) payment_success → /staff/tables (khách thanh toán xong, cần dọn
- * bàn) checkout_requested → /staff/tables (khách yêu cầu thanh toán)
- * shift_plan → /staff/my-schedule (lịch ca tháng mới) shift_request →
- * /staff/my-schedule (yêu cầu đổi ca từ đồng nghiệp) shift_request_approved →
- * /staff/my-schedule (đổi ca được duyệt) shift_request_rejected →
- * /staff/my-schedule (đổi ca bị từ chối) shift_request_colleague_pending →
- * /staff/my-schedule (đồng nghiệp chờ xác nhận)
- * shift_request_colleague_rejected→ /staff/my-schedule (đồng nghiệp từ chối)
- *
- * LỄ TÂN nhận: new_order → /reception/tables (khách vãng lai quét QR, cần ra
- * mở bàn — lễ tân mở bàn xong hệ thống MỚI gán nhân viên ít việc nhất, nhân
- * viên đó nhận table_assigned ở trên) reservation_needs_table →
- * /reception/tables (đơn online cần gán bàn)
- */
 @WebServlet(name = "StaffNotificationsController", urlPatterns = {"/staff/notifications"})
 public class StaffNotificationsController extends HttpServlet {
 
@@ -128,6 +106,8 @@ public class StaffNotificationsController extends HttpServlet {
             // (new_order chỉ gửi cho lễ tân — họ mở bàn xong hệ thống mới
             //  gán nhân viên ít việc nhất, lúc đó nhân viên mới nhận table_assigned)
             case "new_order":
+            // khách vãng lai quét QR cần mở bàn
+            case "table_open_request":
             // đơn online cần gán bàn ─────────────────────────
             case "reservation_needs_table":
                 return ctx + "/reception/tables";

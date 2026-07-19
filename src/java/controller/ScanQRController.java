@@ -208,20 +208,31 @@ public class ScanQRController extends HttpServlet {
                         session.setAttribute("orderID", newOrderID);
                         session.setAttribute("roleInTable", "HOST");
 
-                        // Gửi thông báo cho nhân viên quản lý bàn này
-                        if (newOrder.getEmployeeID() != null) {
-                            try {
-                                dal.NotificationDAO notifDAO = new dal.NotificationDAO();
-                                model.Notifications n = new model.Notifications();
-                                n.setRecipientID(newOrder.getEmployeeID());
-                                n.setRecipientType("staff");
-                                n.setType("new_order");
-                                n.setMessage("Bàn " + tableID + " (Đơn #" + newOrderID + ") đang chờ được mở.");
-                                n.setIsRead(0);
-                                notifDAO.insert(n);
-                            } catch (Exception e) {
-                                System.err.println("[ScanQRController] Gửi thông báo thất bại: " + e.getMessage());
+                        // Gửi thông báo cho TẤT CẢ Lễ tân đang trực để mở bàn
+                        // (Staff sẽ nhận thông báo riêng sau khi Lễ tân bấm mở bàn)
+                        try {
+                            dal.NotificationDAO notifDAO = new dal.NotificationDAO();
+                            dal.EmployeeShiftDAO shiftDAO = new dal.EmployeeShiftDAO();
+                            java.util.List<Integer> receptionistIDs = shiftDAO.getOnDutyReceptionistIDs();
+
+                            if (receptionistIDs.isEmpty()) {
+                                // Không có Lễ tân đang trực → log để biết, không crash
+                                System.err.println("[ScanQRController] Không có Lễ tân đang trực để nhận thông báo đơn #" + newOrderID);
+                            } else {
+                                String msg = "Khách vãng lai vừa quét QR bàn #" + tableID
+                                        + " (Đơn #" + newOrderID + "). Vui lòng mở bàn cho khách.";
+                                for (int receptionistID : receptionistIDs) {
+                                    model.Notifications n = new model.Notifications();
+                                    n.setRecipientID(receptionistID);
+                                    n.setRecipientType("staff");
+                                    n.setType("table_open_request");
+                                    n.setMessage(msg);
+                                    n.setIsRead(0);
+                                    notifDAO.insert(n);
+                                }
                             }
+                        } catch (Exception e) {
+                            System.err.println("[ScanQRController] Gửi thông báo Lễ tân thất bại: " + e.getMessage());
                         }
 
                         // MỞ KHÓA MÀN HÌNH CHỜ NHÂN VIÊN XÁC NHẬN BÀN

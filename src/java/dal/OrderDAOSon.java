@@ -370,9 +370,16 @@ public class OrderDAOSon extends DBContext {
                 //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
                 //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
                 if (!newlyConfirmedTodayIDs.isEmpty()) {
+                    // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy
+                    // TẤT CẢ Employee roleID=3 isActive=1, kể cả người không
+                    // có lịch làm hôm nay. Giờ join thêm EmployeeShifts để
+                    // chỉ lấy đúng lễ tân có ca hôm nay
                     String receptionistSql
-                            = "SELECT employeeID FROM Employee "
-                            + "WHERE roleID = 3 AND isActive = 1";
+                            = "SELECT DISTINCT es.employeeID "
+                            + "FROM EmployeeShifts es "
+                            + "JOIN Employee e ON e.employeeID = es.employeeID "
+                            + "WHERE es.workDate = CURDATE() "
+                            + "AND e.roleID = 3 AND e.isActive = 1";
                     List<Integer> receptionistIDs = new ArrayList<>();
                     try (PreparedStatement rps
                             = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
