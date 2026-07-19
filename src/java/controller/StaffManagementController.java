@@ -186,13 +186,9 @@ public class StaffManagementController extends HttpServlet {
             throws ServletException, IOException {
 
         Employee e = new Employee();
-
         e.setRoleID(UserRole.RESTAURANT_STAFF.getRoleID());
-
         e.setIsActive(1);
-
         e.setMustChangePassword(1);
-
         Map<String, String> errors = bindAndValidate(request, e, true, 0);
 
         if (!errors.isEmpty()) {
@@ -208,7 +204,6 @@ public class StaffManagementController extends HttpServlet {
         }
 
         String rawPassword = request.getParameter("password");
-
         e.setPassword(PasswordUtil.hash(rawPassword));
 
         String imagePath = handleImageUpload(request, 0, errors);
@@ -567,11 +562,9 @@ public class StaffManagementController extends HttpServlet {
     }
 
     private boolean isValidImageContent(Part imagePart) throws IOException {
-
         if (imagePart == null || imagePart.getSize() == 0) {
             return false;
         }
-
         try (InputStream input = imagePart.getInputStream()) {
             return ImageIO.read(input) != null;
 

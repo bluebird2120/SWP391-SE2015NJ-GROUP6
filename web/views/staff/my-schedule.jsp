@@ -541,7 +541,7 @@
                             <div id="selectedShiftInfo" style="font-size:0.85rem; font-weight:600; color:#76493b; padding:8px 0;"></div>
                         </div>
                         <div class="form-group">
-                            <label>Chọn nhân viên làm thay (chưa có ca ngày này):</label>
+                            <label>Chọn nhân viên cùng vai trò làm thay (chưa có ca ngày này):</label>
 
                             <input type="hidden" id="targetEmployeeSelect" name="targetEmployeeID" value="">
                             <div class="single-select-container">
@@ -553,7 +553,7 @@
                                     <div class="single-select-list" id="customCoverList">
                                         <div class="single-select-option" data-static="true" data-value="" onclick="selectCustomCoverOption(this, '', '-- Chọn nhân viên làm thay --')">-- Chọn --</div>
                                         <div class="single-select-option" id="noCoverStaffOption" data-empty="true" style="display:none; color:#8a6e5a; cursor:default;">
-                                            Không có nhân viên rảnh trong ngày này
+                                            Không có nhân viên cùng vai trò rảnh trong ngày này
                                         </div>
                                         <c:forEach var="entry" items="${availableCoverStaffByDate}">
                                             <c:forEach var="staff" items="${entry.value}">

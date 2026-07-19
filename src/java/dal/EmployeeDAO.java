@@ -466,10 +466,15 @@ public class EmployeeDAO extends DBContext {
     }
 
     public List<Employee> listAvailableStaffByDate(Date workDate, int excludeEmployeeID) {
+        return listAvailableStaffByDate(workDate, excludeEmployeeID,
+                UserRole.RESTAURANT_STAFF.getRoleID());
+    }
+
+    public List<Employee> listAvailableStaffByDate(Date workDate, int excludeEmployeeID, int roleID) {
 
         List<Employee> list = new ArrayList<>();
 
-        String sql = "SELECT e.employeeID, e.fullName "
+        String sql = "SELECT e.employeeID, e.roleID, e.fullName "
                 + "FROM Employee e "
                 + "WHERE e.roleID = ? AND e.isActive = 1 AND e.employeeID <> ? "
                 + "AND NOT EXISTS ("
@@ -479,7 +484,7 @@ public class EmployeeDAO extends DBContext {
                 + "ORDER BY e.fullName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setInt(1, UserRole.RESTAURANT_STAFF.getRoleID());
+            ps.setInt(1, roleID);
 
             ps.setInt(2, excludeEmployeeID);
 
@@ -489,6 +494,7 @@ public class EmployeeDAO extends DBContext {
 
                     Employee e = new Employee();
                     e.setEmployeeID(rs.getInt("employeeID"));
+                    e.setRoleID(rs.getInt("roleID"));
                     e.setFullName(rs.getString("fullName"));
                     list.add(e);
                 }

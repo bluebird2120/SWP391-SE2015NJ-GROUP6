@@ -282,6 +282,7 @@ public class CustomerReviewController extends HttpServlet {
         return value.substring(0, maxLength - 3) + "...";
     }
 
+    //Hàm tạo token
     private String getOrCreateCsrfToken(HttpServletRequest request) {
         HttpSession session = request.getSession(true);
         Object token = session.getAttribute(CSRF_TOKEN_SESSION_KEY);
@@ -294,6 +295,7 @@ public class CustomerReviewController extends HttpServlet {
         return newToken;
     }
 
+    //Hàm ktra token
     private boolean isValidCsrfToken(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null) {
