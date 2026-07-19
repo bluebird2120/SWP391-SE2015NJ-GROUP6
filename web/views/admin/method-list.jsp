@@ -463,49 +463,49 @@
                 document.getElementById('createModal').style.display = "none";
             }
 
-            function validateMethodInput(inputElement, errorElement) {
-                const value = inputElement.value.trim();
-                if (value === "") {
-                    errorElement.innerHTML = "Tên cách chế biến không được để trống";
-                    return false;
-                }
-                if (value.length > 100) {
-                    errorElement.innerHTML = "Tên cách chế biến phải ít hơn 100 kí tự";
-                    return false;
-                }
-                errorElement.innerHTML = "";
-                return true;
-            }
-
-            document.getElementById("createForm").onsubmit = function (event) {
-                const input = document.getElementById("createMethodName");
-                const error = document.getElementById("createErrorName");
-                if (!validateMethodInput(input, error)) {
-                    event.preventDefault();
-                }
-            };
-
-            document.getElementById("editForm").onsubmit = function (event) {
-                const input = document.getElementById("modalMethodName");
-                const error = document.getElementById("editErrorName");
-                if (!validateMethodInput(input, error)) {
-                    event.preventDefault();
-                }
-            };
-
-            document.getElementById("searchForm").onsubmit = function (event) {
-                const searchInput = this.elements["search"].value.trim();
-                const errorBox = document.getElementById("jsErrorSearch");
-
-                if (searchInput.length > 100) {
-                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
-                    errorBox.style.display = "block";
-                    event.preventDefault();
-                } else {
-                    errorBox.innerHTML = "";
-                    errorBox.style.display = "none";
-                }
-            };
+//            function validateMethodInput(inputElement, errorElement) {
+//                const value = inputElement.value.trim();
+//                if (value === "") {
+//                    errorElement.innerHTML = "Tên cách chế biến không được để trống";
+//                    return false;
+//                }
+//                if (value.length > 100) {
+//                    errorElement.innerHTML = "Tên cách chế biến phải ít hơn 100 kí tự";
+//                    return false;
+//                }
+//                errorElement.innerHTML = "";
+//                return true;
+//            }
+//
+//            document.getElementById("createForm").onsubmit = function (event) {
+//                const input = document.getElementById("createMethodName");
+//                const error = document.getElementById("createErrorName");
+//                if (!validateMethodInput(input, error)) {
+//                    event.preventDefault();
+//                }
+//            };
+//
+//            document.getElementById("editForm").onsubmit = function (event) {
+//                const input = document.getElementById("modalMethodName");
+//                const error = document.getElementById("editErrorName");
+//                if (!validateMethodInput(input, error)) {
+//                    event.preventDefault();
+//                }
+//            };
+//
+//            document.getElementById("searchForm").onsubmit = function (event) {
+//                const searchInput = this.elements["search"].value.trim();
+//                const errorBox = document.getElementById("jsErrorSearch");
+//
+//                if (searchInput.length > 100) {
+//                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
+//                    errorBox.style.display = "block";
+//                    event.preventDefault();
+//                } else {
+//                    errorBox.innerHTML = "";
+//                    errorBox.style.display = "none";
+//                }
+//            };
         </script>
         <%@ include file="/views/includes/footer.jsp" %>
     </body>

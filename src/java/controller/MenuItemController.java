@@ -143,7 +143,6 @@ public class MenuItemController extends HttpServlet {
                     // [TABLE STATUS FLOW] Khach vang lai da vao menu thi ban da co HOST => occupied.
                     newOrder.setTableStatus("occupied");
 
-
                     newOrder.setOrderType(1);
 
                     // SỬA SỐ 0 THÀNH SỐ 1: FIX CỨNG ĐÃ ĐƯỢC DUYỆT
