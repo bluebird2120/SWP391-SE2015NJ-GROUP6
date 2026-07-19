@@ -137,6 +137,7 @@ public class OwnerReviewController extends HttpServlet {
         }
     }
 
+    //kiểm tra người đang truy cập có phải Owner hay không.
     private boolean isOwner(HttpServletRequest request) {
 
         HttpSession session = request.getSession(false);

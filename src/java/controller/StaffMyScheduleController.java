@@ -98,7 +98,7 @@ public class StaffMyScheduleController extends HttpServlet {
             String key = workDate.toString();
             if ("scheduled".equals(row.getStatus()) && !workDate.isBefore(today) && !availableCoverStaffByDate.containsKey(key)) {
 
-                availableCoverStaffByDate.put(key, employeeDAO.listAvailableStaffByDate(row.getWorkDate(), emp.getEmployeeID()));
+                availableCoverStaffByDate.put(key, employeeDAO.listAvailableStaffByDate(row.getWorkDate(), emp.getEmployeeID(), emp.getRoleID()));
             }
         }
 
@@ -195,13 +195,20 @@ public class StaffMyScheduleController extends HttpServlet {
                 if ("acceptCoverRequest".equals(action)) {
 
                     EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-                    if (esDAO.getConnection() == null) {
+                    EmployeeDAO employeeDAO = new EmployeeDAO();
+                    if (esDAO.getConnection() == null || employeeDAO.getConnection() == null) {
                         session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                         resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                         return;
                     }
                     if (!"cover".equals(detail.getRequestType())) {
                         session.setAttribute("errorMsg", "Yêu cầu này không phải yêu cầu làm thay.");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
+                    }
+                    Employee requester = employeeDAO.findById(detail.getReqEmployeeID());
+                    if (requester == null || requester.getRoleID() != emp.getRoleID()) {
+                        session.setAttribute("errorMsg", "Chỉ được nhận làm thay ca của nhân viên cùng vai trò.");
                         resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                         return;
                     }
@@ -347,8 +354,14 @@ public class StaffMyScheduleController extends HttpServlet {
 
                 coverEmployee = employeeDAO.findById(targetEmployeeID);
 
-                if (coverEmployee == null || !employeeDAO.isActiveStaff(targetEmployeeID)) {
+                if (coverEmployee == null || coverEmployee.getIsActive() != 1) {
                     session.setAttribute("errorMsg", "Không tìm thấy nhân viên làm thay phù hợp!");
+                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                    return;
+                }
+
+                if (coverEmployee.getRoleID() != emp.getRoleID()) {
+                    session.setAttribute("errorMsg", "Chỉ được nhờ làm thay với nhân viên cùng vai trò.");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }

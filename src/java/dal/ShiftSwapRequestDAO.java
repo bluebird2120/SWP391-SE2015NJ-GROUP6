@@ -284,10 +284,12 @@ public class ShiftSwapRequestDAO extends DBContext {
                 + "FROM ShiftSwapRequests ssr "
                 + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
                 + "JOIN Employee req_e ON req_es.employeeID = req_e.employeeID "
+                + "JOIN Employee target_e ON target_e.employeeID = ssr.approvedByID "
                 + "JOIN ShiftTemplates req_st ON req_es.templateID = req_st.templateID "
                 + "LEFT JOIN Employee cover_e ON ssr.approvedByID = cover_e.employeeID "
                 + "WHERE ssr.status = 'pending_colleague' "
                 + "AND ssr.requestType = 'cover' AND ssr.approvedByID = ? "
+                + "AND req_e.roleID = target_e.roleID "
                 + "ORDER BY ssr.createdAt DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 

@@ -321,7 +321,7 @@
 
                                     <c:forEach var="s" items="${staffList}" varStatus="loop">
                                         <tr>
-                                            <td>${(currentPage - 1) * pageSize + loop.index + 1}</td>
+                                            <td>${(currentPage - 1) * pageSize + loop.index +1}</td>
                                             <td>
                                                 <c:choose>
                                                     <c:when test="${not empty s.image}">

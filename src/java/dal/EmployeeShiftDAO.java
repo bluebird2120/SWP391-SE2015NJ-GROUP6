@@ -737,6 +737,7 @@ public class EmployeeShiftDAO extends DBContext {
         return false;
     }
 
+    //Tính trạng thái chấm công
     static String computeStatus(Timestamp checkInTime, Time startTime) {
 
         long checkInMs = checkInTime.getTime();
@@ -753,9 +754,9 @@ public class EmployeeShiftDAO extends DBContext {
         int h = Integer.parseInt(parts[0]);
         int m = Integer.parseInt(parts[1]);
         int s = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
-
+        //Tính thời điểm bắt đầu ca đầy đủ trong ngày checkIn
         long startAbs = midnight + ((h * 3600L) + (m * 60L) + s) * 1000L;
-
+        //Tính mốc đi muộn
         long lateThreshold = startAbs + LATE_THRESHOLD_MINUTES * 60_000L;
 
         return checkInMs > lateThreshold ? "late" : "present";
