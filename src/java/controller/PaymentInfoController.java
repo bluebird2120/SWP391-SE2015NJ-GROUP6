@@ -72,7 +72,8 @@ public class PaymentInfoController extends HttpServlet {
         request.setAttribute("order", order);
         request.setAttribute("orderItems", orderItems);
         request.setAttribute("menuItems", menuItems);
-        // phân biệt cọc và thanh toán khi ăn xong 
+        
+        // Phân biệt cọc và thanh toán khi ăn xong 
         request.setAttribute("isDepositPayment",
                 invoice.getInvoiceNumber() != null
                 && invoice.getInvoiceNumber().startsWith("DEP-"));
@@ -85,6 +86,7 @@ public class PaymentInfoController extends HttpServlet {
         String sql = "SELECT * FROM `Order` WHERE invoiceID = ? LIMIT 1";
         try (Connection conn = new dal.DBContext().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+             
             ps.setInt(1, invoiceID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -92,7 +94,7 @@ public class PaymentInfoController extends HttpServlet {
                         rs.getInt("orderID"),
                         (Integer) rs.getObject("customerID"),
                         (Integer) rs.getObject("employeeID"),
-                        rs.getInt("invoiceID"),
+                        rs.getInt("invoiceID"), // Đã sửa lỗi ép kiểu (getObject -> getInt cho đúng constructor)
                         rs.getInt("orderType"),
                         rs.getString("tableStatus"),
                         rs.getInt("totalAmount"),
@@ -101,7 +103,8 @@ public class PaymentInfoController extends HttpServlet {
                         rs.getTimestamp("createdAt"),
                         rs.getTimestamp("orderTime"),
                         rs.getInt("depositAmount"),
-                        rs.getString("orderStatus")
+                        rs.getString("orderStatus"),
+                        rs.getString("hostToken") // 🌟 ĐÃ SỬA: Thêm tham số thứ 14 vào đây
                     );
                 }
             }

@@ -1,6 +1,7 @@
 package dal;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -72,6 +73,67 @@ public class StaffTableDAO extends DBContext {
                 + "ORDER BY o.orderTime,t.tableName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, employeeID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tables.add(mapTable(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return tables;
+    }
+
+    /**
+     * [LICH SU BAN PHUC VU] Lay ban/don cua nhan vien theo ngay hoac ma don.
+     * Du lieu lich su da duoc luu bang Order.employeeID va Order_Table.
+     */
+    public List<StaffTableDTO> getTablesForEmployee(int employeeID,
+            Date filterDate, Integer filterOrderID) {
+        return getTablesForEmployee(employeeID, filterDate, filterOrderID, true);
+    }
+
+    public List<StaffTableDTO> getTablesForEmployee(int employeeID,
+            Date filterDate, Integer filterOrderID, boolean includeHistory) {
+        List<StaffTableDTO> tables = new ArrayList<>();
+        String sql = "SELECT t.tableID, t.tableName, t.capacity, t.areaType, "
+                + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
+                + "CASE "
+                // [DON DEP BAN] Sau thanh toan orderStatus='completed' nhung tableStatus='cleaning',
+                // nen phai uu tien cleaning de hien nut "Da don dep xong".
+                + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
+                + "WHEN o.orderStatus='completed' THEN 'completed' "
+                + "WHEN o.tableStatus='occupied' OR o.tableStatus='arrived' THEN 'serving' "
+                + "WHEN o.tableStatus='reserved' THEN 'reserved' "
+                + "WHEN o.tableStatus='pending' THEN 'pending' "
+                + "ELSE 'available' END physicalStatus "
+                + "FROM `Order` o "
+                + "JOIN Order_Table ot ON ot.orderID=o.orderID "
+                + "JOIN `Table` t ON t.tableID=ot.tableID "
+                + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' ";
+        if (!includeHistory) {
+            // [BAN DANG PHUC VU] Man hinh chinh chi hien don con can thao tac,
+            // don da hoan tat/da don xong se xem o lich su phuc vu.
+            sql += "AND (o.orderStatus<>'completed' OR o.tableStatus='cleaning') ";
+        }
+        if (filterDate != null) {
+            sql += "AND DATE(o.orderTime)=? ";
+        }
+        if (filterOrderID != null) {
+            sql += "AND o.orderID=? ";
+        }
+        // [LICH SU BAN PHUC VU] Khong loc tableStatus de don da hoan tat/da don van hien trong lich su.
+        sql += "ORDER BY o.orderTime DESC,t.tableName";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int index = 1;
+            ps.setInt(index++, employeeID);
+            if (filterDate != null) {
+                ps.setDate(index++, filterDate);
+            }
+            if (filterOrderID != null) {
+                ps.setInt(index++, filterOrderID);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     tables.add(mapTable(rs));
@@ -427,7 +489,7 @@ public class StaffTableDAO extends DBContext {
      * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
      */
     public boolean markCleaningCompleted(int orderID, int employeeID) {
-        String sql = "UPDATE `Order` SET tableStatus='available' "
+        String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "
                 + "AND orderStatus='completed' AND tableStatus='cleaning'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

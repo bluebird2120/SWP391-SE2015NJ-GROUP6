@@ -79,7 +79,9 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
         String id_raw = request.getParameter("id");
+        String backUrl = (String) session.getAttribute("lastDishListUrl");
         int id = ((id_raw != null) && (!id_raw.isEmpty())) ? Integer.parseInt(id_raw) : 0;
         MenuItem mi;
         if (id == 0) {
@@ -92,7 +94,6 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.setAttribute("subImages", subImages);
         }
 
-        HttpSession session = request.getSession();
         if (session.getAttribute("updateSuccess") != null) {
             request.setAttribute("updateSuccess", session.getAttribute("updateSuccess"));
             session.removeAttribute("updateSuccess");
@@ -107,6 +108,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         request.setAttribute("dish", mi);
         request.setAttribute("list", categoryList);
         request.setAttribute("listMethod", listMethod);
+        request.setAttribute("backUrl", backUrl);
         request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
     }
 
@@ -133,6 +135,8 @@ public class UpdateMenuItemServlet extends HttpServlet {
         String discountPercent_raw = request.getParameter("discountPercent");
         String isAvailable_raw = request.getParameter("isAvailable");
         String allergyNotes_raw = request.getParameter("allergyNotes");
+        String backUrl = (String) session.getAttribute("lastDishListUrl");
+        request.setAttribute("backUrl", backUrl);
         //lấy ảnh chính cũ
         String oldImage = request.getParameter("oldImage");
         //lấy ảnh chính

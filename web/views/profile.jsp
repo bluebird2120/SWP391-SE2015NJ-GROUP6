@@ -447,9 +447,20 @@
 
                             <%-- Avatar --%>
                             <div class="avatar-block">
-                                <div class="avatar-circle">
-                                    ${sessionScope.customer.userName.substring(0,1).toUpperCase()}
+                                <div class="avatar-circle" id="avatar-current">
+                                    <c:choose>
+                                        <c:when test="${not empty sessionScope.customer.image}">
+                                            <img id="current-img" src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span id="avatar-initial">${sessionScope.customer.userName.substring(0,1).toUpperCase()}</span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
+                                <%-- Preview ảnh mới (chỉ hiển thị khi edit và người dùng chọn file) --%>
+                                <c:if test="${isEdit}">
+                                    <img id="avatar-preview" src="#" alt="preview">
+                                </c:if>
                                 <div class="avatar-info">
                                     <h3>${sessionScope.customer.userName}</h3>
                                     <span class="badge-role badge-customer">
@@ -489,6 +500,26 @@
                                         </span>
                                     </div>
                                     <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-birthday-cake"></i> Ngày sinh</span>
+                                        <span class="info-value ${empty sessionScope.customer.dob ? 'empty' : ''}">
+                                            <c:choose>
+                                                <c:when test="${not empty sessionScope.customer.dob}">
+                                                    <fmt:formatDate value="${sessionScope.customer.dob}" pattern="dd/MM/yyyy"/>
+                                                </c:when>
+                                                <c:otherwise>Chưa cập nhật</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </div>
+                                    <div class="info-item full-width">
+                                        <span class="info-label"><i class="fas fa-map-marker-alt"></i> Địa chỉ</span>
+                                        <span class="info-value ${empty sessionScope.customer.address ? 'empty' : ''}">
+                                            <c:choose>
+                                                <c:when test="${not empty sessionScope.customer.address}">${sessionScope.customer.address}</c:when>
+                                                <c:otherwise>Chưa cập nhật</c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
                                         <span class="info-label"><i class="fas fa-calendar"></i> Ngày tham gia</span>
                                         <span class="info-value">${sessionScope.customer.createdAt}</span>
                                     </div>
@@ -497,7 +528,7 @@
 
                             <%-- EDIT MODE --%>
                             <c:if test="${isEdit}">
-                                <form action="${pageContext.request.contextPath}/profile" method="post">
+                                <form action="${pageContext.request.contextPath}/profile" method="post" enctype="multipart/form-data">
                                     <div class="form-grid">
 
                                         <%-- Tên hiển thị — CÓ THỂ SỬA --%>
@@ -538,10 +569,68 @@
                                             <span class="readonly-note"><i class="fas fa-lock"></i> Liên hệ quản trị để thay đổi số điện thoại</span>
                                         </div>
 
+                                        <%-- Ngày sinh — CÓ THỂ SỬA, KHÔNG BẮT BUỘC --%>
+                                        <div class="form-group">
+                                            <label class="form-label" for="dob">
+                                                <i class="fas fa-birthday-cake"></i> Ngày sinh
+                                            </label>
+                                            <input type="date" id="dob" name="dob"
+                                                   class="form-control ${not empty errors['dob'] ? 'error-field' : ''}"
+                                                   value="${not empty param.dob ? param.dob : sessionScope.customer.dob}"
+                                                   max="<fmt:formatDate value='<%= new java.util.Date() %>' pattern='yyyy-MM-dd'/>">
+                                            <c:if test="${not empty errors['dob']}">
+                                                <span class="error-msg"><i class="fas fa-triangle-exclamation"></i> ${errors['dob']}</span>
+                                            </c:if>
+                                        </div>
+
                                         <%-- Ngày tham gia — KHÔNG SỬA ĐƯỢC --%>
                                         <div class="form-group">
                                             <label class="form-label"><i class="fas fa-calendar"></i> Ngày tham gia</label>
                                             <div class="form-control-readonly">${sessionScope.customer.createdAt}</div>
+                                        </div>
+
+                                        <%-- Địa chỉ — CÓ THỂ SỬA, KHÔNG BẮT BUỘC --%>
+                                        <div class="form-group full-width">
+                                            <label class="form-label" for="address">
+                                                <i class="fas fa-map-marker-alt"></i> Địa chỉ
+                                            </label>
+                                            <input type="text" id="address" name="address"
+                                                   class="form-control ${not empty errors['address'] ? 'error-field' : ''}"
+                                                   value="${not empty param.address ? param.address : sessionScope.customer.address}"
+                                                   maxlength="255"
+                                                   placeholder="Nhập địa chỉ của bạn ...">
+                                            <c:if test="${not empty errors['address']}">
+                                                <span class="error-msg"><i class="fas fa-triangle-exclamation"></i> ${errors['address']}</span>
+                                            </c:if>
+                                        </div>
+
+                                        <%-- Ảnh đại diện — CÓ THỂ SỬA, KHÔNG BẮT BUỘC --%>
+                                        <div class="form-group full-width">
+                                            <label class="form-label"><i class="fas fa-camera"></i> Ảnh đại diện</label>
+                                            <div class="image-upload-wrap">
+                                                <label for="image" class="upload-btn-label">
+                                                    <i class="fas fa-upload"></i> Chọn ảnh mới
+                                                </label>
+                                                <input type="file" id="image" name="image" accept="image/jpg,image/jpeg,image/png,image/webp">
+                                                <span class="upload-hint">JPG, PNG, WEBP — tối đa 2MB. Không bắt buộc.</span>
+                                            </div>
+
+                                            <c:if test="${not empty sessionScope.customer.image}">
+                                                <div style="margin-top:10px;">
+                                                    <input type="checkbox"
+                                                           id="removeImage"
+                                                           name="removeImage"
+                                                           value="true">
+
+                                                    <label for="removeImage">
+                                                        Xóa ảnh hiện tại
+                                                    </label>
+                                                </div>
+                                            </c:if>
+
+                                            <c:if test="${not empty errors['image']}">
+                                                <span class="error-msg"><i class="fas fa-triangle-exclamation"></i> ${errors['image']}</span>
+                                            </c:if>
                                         </div>
 
                                     </div>
