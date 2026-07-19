@@ -76,11 +76,14 @@ public class ProfileController extends HttpServlet {
         }
     }
 
-    // ── Customer: chỉ cho sửa userName ──────────────────────────────────────
+    // ── Customer: sửa userName (bắt buộc) + dob, address, image (tùy chọn) ──
     private void handleCustomerUpdate(HttpServletRequest request, HttpServletResponse response,
             HttpSession session, Customer customer) throws ServletException, IOException {
 
         String userName = trim(request.getParameter("userName"));
+        String addressParam = trim(request.getParameter("address"));
+        String dobParam = trim(request.getParameter("dob"));
+        boolean removeImage = "true".equals(request.getParameter("removeImage"));
         Map<String, String> errors = new HashMap<>();
 
         if (userName.isEmpty()) {
@@ -91,6 +94,29 @@ public class ProfileController extends HttpServlet {
             errors.put("userName", "Tên này đã được sử dụng.");
         }
 
+        if (addressParam.length() > 255) {
+            errors.put("address", "Địa chỉ không được vượt quá 255 ký tự.");
+        }
+
+        java.sql.Date dob = null;
+        if (!dobParam.isEmpty()) {
+            try {
+                java.time.LocalDate parsed = java.time.LocalDate.parse(dobParam);
+                if (parsed.isAfter(java.time.LocalDate.now())) {
+                    errors.put("dob", "Ngày sinh không được ở tương lai.");
+                } else {
+                    dob = java.sql.Date.valueOf(parsed);
+                }
+            } catch (Exception ex) {
+                errors.put("dob", "Ngày sinh không hợp lệ.");
+            }
+        }
+
+        String imagePath = null;
+        if (!removeImage) {
+            imagePath = handleImageUpload(request, errors, "customer", "customer");
+        }
+
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
             request.setAttribute("editMode", true);
@@ -99,6 +125,17 @@ public class ProfileController extends HttpServlet {
         }
 
         customer.setUserName(userName);
+        customer.setAddress(addressParam.isEmpty() ? null : addressParam);
+        customer.setDob(dob);
+
+        if (removeImage) {
+            deleteOldImageFile(request, customer.getImage());
+            customer.setImage(null);
+        } else if (imagePath != null) {
+            deleteOldImageFile(request, customer.getImage());
+            customer.setImage(imagePath);
+        }
+
         boolean ok = customerDAO.updateProfile(customer);
         if (!ok) {
             errors.put("_global", "Không thể cập nhật. Vui lòng thử lại.");
@@ -113,7 +150,7 @@ public class ProfileController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/profile");
     }
 
-    // ── Employee: sửa fullName, dob, address, image ──────────────────────────
+    // ── Employee: sửa fullName, address, image ──────────────────────────
     private void handleEmployeeUpdate(HttpServletRequest request, HttpServletResponse response,
             HttpSession session, Employee employee) throws ServletException, IOException {
 
@@ -135,7 +172,7 @@ public class ProfileController extends HttpServlet {
         String imagePath = null;
 
         if (!removeImage) {
-            imagePath = handleImageUpload(request, errors);
+            imagePath = handleImageUpload(request, errors, "staff", "staff");
         }
 
         if (!errors.isEmpty()) {
@@ -149,18 +186,13 @@ public class ProfileController extends HttpServlet {
         employee.setAddress(address.isEmpty() ? null : address);
 
         if (removeImage) {
-
             // Xóa ảnh khỏi server
             deleteOldImageFile(request, employee.getImage());
-
             // Xóa ảnh trong DB
             employee.setImage(null);
-
         } else if (imagePath != null) {
-
             // Nếu upload ảnh mới thì xóa ảnh cũ trước
             deleteOldImageFile(request, employee.getImage());
-
             employee.setImage(imagePath);
         }
 
@@ -178,7 +210,8 @@ public class ProfileController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/profile");
     }
 
-    private String handleImageUpload(HttpServletRequest request, Map<String, String> errors) {
+    private String handleImageUpload(HttpServletRequest request, Map<String, String> errors,
+            String subFolder, String filePrefix) {
         try {
             Part filePart = request.getPart("image");
             if (filePart == null || filePart.getSize() == 0) {
@@ -204,7 +237,7 @@ public class ProfileController extends HttpServlet {
                 //lấy ra 12 byte đầy tiên trong file
                 int bytesRead = in.read(header);
                 if (bytesRead < 4) {
-                    errors.put("image", "File không hợp lệ.");
+                    errors.put("image", "Tệp không hợp lệ.");
                     return null;
                 }
             }
@@ -212,14 +245,13 @@ public class ProfileController extends HttpServlet {
             // Xác định loại file thật sự qua magic bytes
             String detectedType = detectImageType(header);
             if (detectedType == null) {
-                errors.put("image", "File không phải ảnh hợp lệ (jpg, jpeg, png, webp).");
+                errors.put("image", "Tệp không phải ảnh hợp lệ (jpg, jpeg, png, webp).");
                 return null;
             }
 
             // Tên file dùng extension thật sự từ magic bytes (không tin đuôi file user đặt)
-            String fileName = "staff_" + System.currentTimeMillis() + "." + detectedType;
-            Path uploadFolder = Paths.get(request.getServletContext().getRealPath("/"), "uploads/staff");
-            //System.out.println("ANH LUU TAI LOCAL: " + uploadFolder.toAbsolutePath());
+            String fileName = filePrefix + "_" + System.currentTimeMillis() + "." + detectedType;
+            Path uploadFolder = Paths.get(request.getServletContext().getRealPath("/"), "uploads/" + subFolder);
             Files.createDirectories(uploadFolder);
 
             // Upload lại từ đầu (vì đã đọc stream rồi, cần đọc lại)
@@ -228,11 +260,11 @@ public class ProfileController extends HttpServlet {
                 Files.copy(in2, uploadFolder.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             }
 
-            return "uploads/staff" + "/" + fileName;
+            return "uploads/" + subFolder + "/" + fileName;
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            errors.put("image", "Không thể upload ảnh. Vui lòng thử lại.");
+            errors.put("image", "Không thể tải ảnh lên. Vui lòng thử lại.");
             return null;
         }
     }

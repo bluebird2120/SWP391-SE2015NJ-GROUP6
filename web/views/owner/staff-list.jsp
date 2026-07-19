@@ -5,7 +5,7 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Staff Management</title>
+        <title>Quản lý nhân viên</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
         <style>
@@ -243,22 +243,22 @@
 
                 <div class="page-head">
                     <div>
-                        <h1 class="page-title">Staff Management</h1>
-                        <div class="page-sub">Total: <strong>${totalRecords}</strong> staff member(s)</div>
+                        <h1 class="page-title">Quản lý nhân viên</h1>
+                        <div class="page-sub">Tổng cộng: <strong>${totalRecords}</strong> nhân viên</div>
                     </div>
 
                     <a class="btn btn-primary" href="${pageContext.request.contextPath}/owner/staff?action=create">
-                        <i class="fas fa-plus"></i> Add Staff
+                        <i class="fas fa-plus"></i> Thêm nhân viên
                     </a>
                 </div>
 
                 <c:if test="${not empty param.msg}">
                     <div class="alert">
                         <c:choose>
-                            <c:when test="${param.msg == 'created'}">Staff created successfully.</c:when>
-                            <c:when test="${param.msg == 'updated'}">Staff updated successfully.</c:when>
-                            <c:when test="${param.msg == 'deactivated'}">Staff has been deactivated.</c:when>
-                            <c:when test="${param.msg == 'reactivated'}">Staff has been reactivated.</c:when>
+                            <c:when test="${param.msg == 'created'}">Tạo nhân viên thành công.</c:when>
+                            <c:when test="${param.msg == 'updated'}">Cập nhật nhân viên thành công.</c:when>
+                            <c:when test="${param.msg == 'deactivated'}">Đã vô hiệu hóa nhân viên.</c:when>
+                            <c:when test="${param.msg == 'reactivated'}">Đã kích hoạt lại nhân viên.</c:when>
                         </c:choose>
                     </div>
                 </c:if>
@@ -268,32 +268,32 @@
 
                     <input type="hidden" name="action" value="list">
                     <div class="field">
-                        <label>Search</label>
+                        <label>Tìm kiếm</label>
 
-                        <input type="text" name="keyword" value="${keyword}" placeholder="Name, phone or email...">
+                        <input type="text" name="keyword" value="${keyword}" placeholder="Tên, số điện thoại hoặc email...">
                     </div>
                     <div class="field">
-                        <label>Status</label>
+                        <label>Trạng thái</label>
 
                         <select name="status">
-                            <option value="" ${empty status ? 'selected' : ''}>All</option>
-                            <option value="1" ${status == '1' ? 'selected' : ''}>Active</option>
-                            <option value="0" ${status == '0' ? 'selected' : ''}>Inactive</option>
+                            <option value="" ${empty status ? 'selected' : ''}>Tất cả</option>
+                            <option value="1" ${status == '1' ? 'selected' : ''}>Đang hoạt động</option>
+                            <option value="0" ${status == '0' ? 'selected' : ''}>Ngừng hoạt động</option>
                         </select>
                     </div>
 
                     <div class="field">
-                        <label>Role</label>
+                        <label>Vai trò</label>
 
                         <select name="role">
-                            <option value="" ${empty role ? 'selected' : ''}>All</option>
+                            <option value="" ${empty role ? 'selected' : ''}>Tất cả</option>
                             <option value="2" ${role == '2' ? 'selected' : ''}>Nhân viên phục vụ</option>
                             <option value="3" ${role == '3' ? 'selected' : ''}>Lễ tân</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Tìm kiếm</button>
                     <a href="${pageContext.request.contextPath}/owner/staff?action=list" class="btn btn-edit">
-                        <i class="fas fa-rotate-left"></i> Reset
+                        <i class="fas fa-rotate-left"></i> Đặt lại
                     </a>
                 </form>
 
@@ -303,25 +303,25 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Photo</th>
-                                <th>Full Name</th>
-                                <th>Role</th>
+                                <th>Ảnh</th>
+                                <th>Họ và tên</th>
+                                <th>Vai trò</th>
                                 <th>Email</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th>Số điện thoại</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             <c:choose>
                                 <c:when test="${empty staffList}">
-                                    <tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i> No staff found.</td></tr>
+                                    <tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i> Không tìm thấy nhân viên.</td></tr>
                                 </c:when>
                                 <c:otherwise>
 
                                     <c:forEach var="s" items="${staffList}" varStatus="loop">
                                         <tr>
-                                            <td>${(currentPage - 1) * pageSize + loop.index + 1}</td>
+                                            <td>${(currentPage - 1) * pageSize + loop.index +1}</td>
                                             <td>
                                                 <c:choose>
                                                     <c:when test="${not empty s.image}">
@@ -344,18 +344,18 @@
                                             <td>${s.phoneNumber}</td>
                                             <td>
                                                 <span class="badge ${s.isActive == 1 ? 'badge-active' : 'badge-inactive'}">
-                                                    ${s.isActive == 1 ? 'Active' : 'Inactive'}
+                                                    ${s.isActive == 1 ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div class="actions-cell">
 
                                                     <a class="btn btn-sm btn-edit" href="${pageContext.request.contextPath}/owner/staff?action=edit&id=${s.employeeID}">
-                                                        <i class="fas fa-edit"></i> Edit
+                                                        <i class="fas fa-edit"></i> Sửa
                                                     </a>
 
                                                     <form method="post" class="inline-form" action="${pageContext.request.contextPath}/owner/staff"
-                                                          onsubmit="return showConfirm(this, event, '${s.isActive == 1 ? 'Deactivate' : 'Reactivate'} this staff member?');">
+                                                          onsubmit="return showConfirm(this, event, '${s.isActive == 1 ? 'Bạn có chắc muốn vô hiệu hóa nhân viên này?' : 'Bạn có chắc muốn kích hoạt lại nhân viên này?'}');">
 
                                                         <input type="hidden" name="action" value="${s.isActive == 1 ? 'deactivate' : 'reactivate'}">
 
@@ -367,7 +367,7 @@
                                                         <input type="hidden" name="page" value="${currentPage}">
                                                         <button class="btn btn-sm ${s.isActive == 1 ? 'btn-danger' : 'btn-success'}" type="submit">
                                                             <i class="fas ${s.isActive == 1 ? 'fa-lock' : 'fa-unlock'}"></i>
-                                                            ${s.isActive == 1 ? 'Deactivate' : 'Reactivate'}
+                                                            ${s.isActive == 1 ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                                                         </button>
                                                     </form>
                                                 </div>
@@ -413,7 +413,7 @@
                             <c:if test="${currentPage < totalPages}">
                                 <a href="${pageContext.request.contextPath}/owner/staff?${qs}&page=${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
                                 </c:if>
-                            <span class="info">Page ${currentPage} / ${totalPages}</span>
+                            <span class="info">Trang ${currentPage} / ${totalPages}</span>
                         </div>
                     </c:if>
                 </div>
@@ -424,8 +424,8 @@
             <div class="confirm-box">
                 <div id="confirmMessage"></div>
                 <div class="confirm-actions">
-                    <button type="button" class="btn btn-edit" onclick="closeConfirm()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="submitConfirmed()">Confirm</button>
+                    <button type="button" class="btn btn-edit" onclick="closeConfirm()">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="submitConfirmed()">Xác nhận</button>
                 </div>
             </div>
         </div>

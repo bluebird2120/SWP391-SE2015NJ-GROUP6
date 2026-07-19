@@ -70,8 +70,7 @@ public class DailyReservationNotifyTask implements Runnable {
     //Lấy ra những đơn đã thanh toán cọc xong trong quá khứ của ngày hôm nay
     private List<int[]> getTodayPendingOrders() {
         List<int[]> list = new ArrayList<>();
-        dal.DBContext db = new dal.DBContext();
-        
+
         String sql = "SELECT o.orderID "
                    + "FROM `Order` o "
                    + "WHERE o.orderType = 1 "
@@ -85,8 +84,11 @@ public class DailyReservationNotifyTask implements Runnable {
                    + "  ) "
                    + "ORDER BY o.orderTime ASC";
 
-        // Thay vì gọi trực tiếp db.connection, ta gọi qua hàm public db.getConnection()
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql);
+        // [FIX RÒ RỈ CONNECTION] DBContext giờ nằm trong try-with-resources
+        // để luôn được đóng, dù trước đây task này chỉ chạy 1 lần/ngày nên
+        // rò rỉ chậm, vẫn là 1 kết nối MySQL mất vĩnh viễn mỗi lần chạy.
+        try (dal.DBContext db = new dal.DBContext();
+             PreparedStatement ps = db.getConnection().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             
             while (rs.next()) {
@@ -99,20 +101,14 @@ public class DailyReservationNotifyTask implements Runnable {
     }
 
     private List<Integer> getReceptionistIDs() {
-        List<Integer> list = new ArrayList<>();
-        dal.DBContext db = new dal.DBContext();
-        String sql = "SELECT employeeID FROM Employee WHERE roleID = 3 AND isActive = 1";
-        
-        // Thay vì gọi trực tiếp db.connection, ta gọi qua hàm public db.getConnection()
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            
-            while (rs.next()) {
-                list.add(rs.getInt("employeeID"));
-            }
+        // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy TẤT CẢ
+        // Employee roleID=3 isActive=1, kể cả người không có lịch làm hôm
+        // nay. Giờ lọc đúng theo EmployeeShifts của hôm nay.
+        try (dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO()) {
+            return esDAO.getReceptionistsScheduledToday();
         } catch (Exception e) {
             e.printStackTrace();
+            return new ArrayList<>();
         }
-        return list;
     }
 }

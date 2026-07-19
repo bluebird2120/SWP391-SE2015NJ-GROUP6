@@ -12,7 +12,8 @@ public class CustomerDAO extends DBContext {
     public Customer findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, "
+                + "dob, address, image "
                 + "FROM Customer "
                 + "WHERE phoneNumber = ?";
 
@@ -115,6 +116,9 @@ public class CustomerDAO extends DBContext {
         c.setCreatedAt(rs.getTimestamp("createdAt"));
         c.setLoginProvider(rs.getString("loginProvider"));
         c.setIsActive(rs.getInt("isActive"));
+        c.setDob(rs.getDate("dob"));
+        c.setAddress(rs.getString("address"));
+        c.setImage(rs.getString("image"));
         return c;
     }
 
@@ -135,7 +139,8 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo customerID
      */
     public Customer findByID(int id) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, "
+                + "dob, address, image "
                 + "FROM Customer WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -152,7 +157,8 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo email
      */
     public Customer findByEmail(String email) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, "
+                + "dob, address, image "
                 + "FROM Customer WHERE email = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
@@ -335,14 +341,19 @@ public class CustomerDAO extends DBContext {
         }
     }
 
-    public boolean updateProfile(Customer c) {
-        String sql = "UPDATE Customer SET userName = ?, phoneNumber = ?, email = ? "
+    public boolean updateProfile(Customer customer) {
+        String sql = "UPDATE Customer SET userName = ?, dob = ?, address = ?, image = ? "
                 + "WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, c.getUserName());
-            ps.setString(2, c.getPhoneNumber());
-            ps.setString(3, c.getEmail());
-            ps.setInt(4, c.getCustomerID());
+            ps.setString(1, customer.getUserName());
+            if (customer.getDob() != null) {
+                ps.setDate(2, customer.getDob());
+            } else {
+                ps.setNull(2, java.sql.Types.DATE);
+            }
+            ps.setString(3, customer.getAddress());
+            ps.setString(4, customer.getImage());
+            ps.setInt(5, customer.getCustomerID());
             return ps.executeUpdate() > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();

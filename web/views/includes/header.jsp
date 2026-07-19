@@ -6,6 +6,8 @@
     String employeeInitial = "";
     model.Customer cust = (model.Customer) session.getAttribute("customer");
     model.Employee emp  = (model.Employee) session.getAttribute("employee");
+    
+    // Lấy chữ cái đầu làm avatar mặc định nếu không có ảnh
     if (cust != null && cust.getUserName() != null && !cust.getUserName().isEmpty())
         customerInitial = String.valueOf(cust.getUserName().charAt(0)).toUpperCase();
     if (emp != null && emp.getFullName() != null && !emp.getFullName().isEmpty())
@@ -87,8 +89,6 @@
         align-items: center;
         gap: 16px;
     }
-
-    /* (search-box đã chuyển sang trang chủ, không còn dùng ở header) */
 
     /* ── AUTH BUTTONS ── */
     .auth-buttons {
@@ -345,7 +345,6 @@
         <a href="${pageContext.request.contextPath}/reviews">Đánh giá</a>
         <a href="${pageContext.request.contextPath}/page/album">Album ảnh</a>
         <c:if test="${sessionScope.employee != null}">
-            <%-- [PHAN QUYEN LE TAN] Dieu huong dung man hinh theo role. --%>
             <a href="${pageContext.request.contextPath}${sessionScope.employee.roleID == 1 ? '/owner/dashboard' : '/staff/dashboard'}">
                 <i class="fa-solid fa-gauge-high"></i>Quản lý
             </a>
@@ -364,6 +363,7 @@
             </div>
         </c:if>
 
+        <!-- KHU VỰC KHÁCH HÀNG (CUSTOMER) ĐÃ ĐĂNG NHẬP -->
         <c:if test="${sessionScope.customer != null}">
             <a href="${pageContext.request.contextPath}/customer/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
@@ -374,7 +374,13 @@
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
                     <div class="user-avatar">
-                        <%= customerInitial %>
+                        <!-- ĐOẠN SỬA ĐỔI: Check hiển thị ảnh đại diện cho Customer -->
+                        <c:choose>
+                            <c:when test="${not empty sessionScope.customer.image}">
+                                <img src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">
+                            </c:when>
+                            <c:otherwise><%= customerInitial %></c:otherwise>
+                        </c:choose>
                     </div>
                     <div class="user-info">
                         <span class="user-name">${sessionScope.customer.userName}</span>
@@ -401,6 +407,7 @@
             </div>
         </c:if>
 
+        <!-- KHU VỰC NHÂN VIÊN (EMPLOYEE) ĐÃ ĐĂNG NHẬP -->
         <c:if test="${sessionScope.employee != null}">
             <a href="${pageContext.request.contextPath}/${sessionScope.employee.roleID == 1 ? 'owner' : 'staff'}/notifications" class="notif-btn">
                 <i class="fa-solid fa-bell"></i>
@@ -422,10 +429,9 @@
                         <span class="user-name">${sessionScope.employee.fullName}</span>
                         <c:choose>
                             <c:when test="${sessionScope.employee.roleID == 1}">
-                                <span class="role-badge badge-owner">Owner</span>
+                                <span class="role-badge badge-owner">Chủ nhà hàng</span>
                             </c:when>
                             <c:when test="${sessionScope.employee.roleID == 3}">
-                                <%-- [PHAN QUYEN LE TAN] Hien dung ten vai tro. --%>
                                 <span class="role-badge badge-staff">Lễ tân</span>
                             </c:when>
                             <c:otherwise>
@@ -444,7 +450,9 @@
                         <a href="${pageContext.request.contextPath}/profile"><i class="fa-solid fa-user"></i>Hồ sơ của tôi</a>
                     </div>
                     <div class="dd-section">
-                        <a href="${pageContext.request.contextPath}/owner/reviews"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
+                        <c:if test="${sessionScope.employee.roleID == 1}">
+                            <a href="${pageContext.request.contextPath}/owner/reviews"><i class="fa-solid fa-comment-dots"></i>Phản hồi</a>
+                        </c:if>
                         <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Đăng xuất</a>
                     </div>
                 </div>
@@ -466,28 +474,29 @@
     });
 
     setInterval(function () {
-    fetch('${pageContext.request.contextPath}/api/unread-count')
-        .then(res => res.json())
-        .then(data => {
-            const badge = document.querySelector('.notif-count');
-            if (data.unread > 0) {
-                if (badge) {
-                    badge.textContent = data.unread;
-                    badge.style.display = 'flex';
-                } else {
-                    // Chưa có badge → tạo mới và gắn vào nút bell
-                    const btn = document.querySelector('.notif-btn');
-                    if (btn) {
-                        const span = document.createElement('span');
-                        span.className = 'notif-count';
-                        span.textContent = data.unread;
-                        btn.appendChild(span);
+        fetch('${pageContext.request.contextPath}/api/unread-count')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.querySelector('.notif-count');
+                    if (data.unread > 0) {
+                        if (badge) {
+                            badge.textContent = data.unread;
+                            badge.style.display = 'flex';
+                        } else {
+                            const btn = document.querySelector('.notif-btn');
+                            if (btn) {
+                                const span = document.createElement('span');
+                                span.className = 'notif-count';
+                                span.textContent = data.unread;
+                                btn.appendChild(span);
+                            }
+                        }
+                    } else {
+                        if (badge)
+                            badge.style.display = 'none';
                     }
-                }
-            } else {
-                if (badge) badge.style.display = 'none';
-            }
-        })
-        .catch(() => {});
-}, 30000);
+                })
+                .catch(() => {
+                });
+    }, 30000);
 </script>
