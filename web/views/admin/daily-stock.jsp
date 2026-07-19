@@ -1,8 +1,3 @@
-<%-- 
-    Document   : daily-stock
-    Author     : Admin
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -14,7 +9,7 @@
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #fdfbf7; 
+                background-color: #fdfbf7;
                 color: #333;
                 margin: 0;
             }
@@ -33,9 +28,8 @@
             }
             .page-header h2 {
                 margin: 0 0 5px 0;
-                color: #78493b; 
+                color: #78493b;
             }
-
             .alert-box {
                 background-color: #fffaf0;
                 border-left: 4px solid #dd6b20;
@@ -46,7 +40,6 @@
                 color: #7b341e;
                 line-height: 1.5;
             }
-
             .danger-warning-box {
                 background-color: #fdeaea;
                 border-left: 4px solid #dc3545;
@@ -57,7 +50,6 @@
                 color: #c62828;
                 font-weight: 600;
             }
-
             .success-annouce-box {
                 background-color: #edf7ed;
                 border-left: 4px solid #28a745;
@@ -68,7 +60,6 @@
                 color: #1e4620;
                 font-weight: 600;
             }
-
             .error-validation-box {
                 display: none;
                 background-color: #fdeaea;
@@ -79,7 +70,6 @@
                 font-size: 14px;
                 color: #c62828;
             }
-
             .filter-form {
                 display: flex;
                 gap: 12px;
@@ -103,7 +93,7 @@
                 outline: none;
             }
             .btn-search {
-                background-color: #78493b; 
+                background-color: #78493b;
                 color: white;
                 border: none;
                 padding: 8px 16px;
@@ -115,7 +105,6 @@
             .btn-search:hover {
                 background-color: #5c352d;
             }
-
             .fast-input-box {
                 background-color: #fdfaf7;
                 border: 1px solid #ebdcd0;
@@ -139,7 +128,7 @@
                 outline: none;
             }
             .btn-apply-all {
-                background-color: #4b6b40; 
+                background-color: #4b6b40;
                 color: white;
                 border: none;
                 padding: 6px 14px;
@@ -151,7 +140,6 @@
             .btn-apply-all:hover {
                 background-color: #395231;
             }
-
             table {
                 width: 100%;
                 border-collapse: collapse;
@@ -191,9 +179,8 @@
                 font-weight: 600;
                 font-size: 13px;
             }
-
             .btn-submit {
-                background-color: #de6b48; 
+                background-color: #de6b48;
                 color: white;
                 border: none;
                 padding: 12px 40px;
@@ -207,7 +194,6 @@
             .btn-submit:hover {
                 background-color: #c44d2d;
             }
-
             .pagination {
                 display: flex;
                 justify-content: center;
@@ -263,7 +249,16 @@
                         <span style="font-size: 14px; color: #7c7267;">
                             Phiên làm việc ngày: 
                             <b style="color: #de6b48;">
-                                <fmt:formatDate value="${currentDate}" pattern="dd-MM-yyyy" />
+                                <!-- 🌟 ĐÃ SỬA CHUẨN: Tự động bóc tách và định dạng lại ngày của thanh lọc sang dạng dd-MM-yyyy xuôi tăm tắp -->
+                                <c:choose>
+                                    <c:when test="${not empty date}">
+                                        <fmt:parseDate value="${date}" pattern="yyyy-MM-dd" var="parsedFilterDate" />
+                                        <fmt:formatDate value="${parsedFilterDate}" pattern="dd-MM-yyyy" />
+                                    </c:when>
+                                    <c:otherwise>
+                                        <fmt:formatDate value="${currentDate}" pattern="dd-MM-yyyy" />
+                                    </c:otherwise>
+                                </c:choose>
                             </b>
                         </span>
                     </div>
@@ -301,7 +296,6 @@
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
                     </div>
 
-                    <!-- Form lọc kết quả (🌟 ĐÃ SỬA: Thay toàn bộ sang biến current sạch từ Servlet) -->
                     <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form" id="filterFormID">
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
 
@@ -336,6 +330,12 @@
                     </div>
 
                     <form id="stockMainForm" action="${pageContext.request.contextPath}/daily-stock" method="post" style="display: block; width: 100%;">
+                        <input type="hidden" name="search" value="${currentSearch}"/>
+                        <input type="hidden" name="categoryID" value="${currentCategory}"/>
+                        <input type="hidden" name="cookingMethod" value="${currentMethod}"/>
+                        <input type="hidden" name="page" value="${currentPage}"/>
+                        <input type="hidden" name="date" value="${date}"/>
+
                         <table>
                             <thead>
                                 <tr>
@@ -362,7 +362,7 @@
                                                    value="${not empty saveInputData ? saveInputData[item.itemID] : (item.initialQuantity > 0 ? item.initialQuantity : '')}" 
                                                    class="input-item-qty field-stock-input"/>
                                             <c:if test="${item.initialQuantity > 0 && item.quantityInStock < item.initialQuantity * 20/100}">
-                                                <br/><small style="color: #dc3545; font-weight: bold;">🚨 Sắp hết (< 20%)</small>
+                                                <br/><small style="color: #dc3545; font-weight: bold;">🚨 Sắp hết (&lt; 20%)</small>
                                             </c:if>
                                         </td>
                                     </tr>
@@ -461,8 +461,7 @@
                         const li = document.createElement('li');
                         li.innerText = "Món '" + nameText + "' đang bị bỏ trống số lượng!";
                         missingItemsList.appendChild(li);
-                    } 
-                    else {
+                    } else {
                         const parsedValue = parseInt(valueTrim);
                         if (isNaN(parsedValue) || parsedValue < 0 || parseFloat(valueTrim) !== parsedValue) {
                             isFormValid = false;

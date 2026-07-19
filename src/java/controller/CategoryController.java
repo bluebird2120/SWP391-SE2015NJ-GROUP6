@@ -24,14 +24,14 @@ public class CategoryController extends HttpServlet {
         String page_raw = request.getParameter("page");
         String isAvailable_raw = request.getParameter("isAvailable");
 
-        //Validate
+        // Validate đầu vào bộ lọc
         if (!checkEmpty(search)) {
             search = "";
         }
         int page = parseIntSafe(page_raw, 1, 1);
         int isAvailable = parseIntSafe(isAvailable_raw, -1, -1);
 
-        String errorSearch = search.length() > 100 ? "Tìm kiếm vượt quá 100 kí tự" : "";
+        String errorSearch = search.length() > 100 ? "Tìm kiếm không vượt quá 100 kí tự" : "";
 
         if (checkEmpty(errorSearch)) {
             request.setAttribute("errorSearch", errorSearch);
@@ -58,12 +58,6 @@ public class CategoryController extends HttpServlet {
         int offset = (page - 1) * PAGE_SIZE;
         List<MenuCategory> categoryList = menuCategoryDAO.searchCategoryPaging(search, isAvailable, offset, PAGE_SIZE);
 
-        request.setAttribute("currentSearch", search);
-        request.setAttribute("currentAvailable", isAvailable);
-        request.setAttribute("categoryList", categoryList);
-        request.setAttribute("totalPage", totalPage);
-        request.setAttribute("currentPage", page);
-
         for (MenuCategory mc : categoryList) {
             int activeDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 1);
             int inactiveDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 0);
@@ -72,6 +66,13 @@ public class CategoryController extends HttpServlet {
             mc.setInactiveMenuItem(inactiveDish);
             mc.setTotalDish(totalDish);
         }
+
+        // Đồng bộ hóa việc truyền biến trạng thái lọc an toàn sang JSP
+        request.setAttribute("currentSearch", search);
+        request.setAttribute("currentAvailable", isAvailable);
+        request.setAttribute("categoryList", categoryList);
+        request.setAttribute("totalPage", totalPage);
+        request.setAttribute("currentPage", page);
 
         request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
     }
@@ -87,13 +88,14 @@ public class CategoryController extends HttpServlet {
         String search_raw = request.getParameter("search");
         String isAvailable_raw = request.getParameter("isAvailable");
 
-        //Validate 
+        // Ép kiểu an toàn dữ liệu trạng thái
         int id = parseIntSafe(categoryID, 0, 0);
         int status = parseIntSafe(status_raw, -1, -1);
-        String currentPage = String.valueOf(parseIntSafe(page_raw, 1, 1));
+        int page = parseIntSafe(page_raw, 1, 1);
+        int isAvailable = parseIntSafe(isAvailable_raw, -1, -1);
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
-        String currentAvailable = String.valueOf(parseIntSafe(isAvailable_raw, -1, -1));
 
+        // LUỒNG 1: Xử lý kích hoạt/vô hiệu hóa trạng thái danh mục chính và món ăn đi kèm
         if (status != -1 && id > 0) {
             boolean isCategoryChanged = menuCategoryDAO.changeStatusCategory(id, status);
             boolean isItemsChanged = menuCategoryDAO.changeStatusItemsByCategory(id, status);
@@ -103,22 +105,54 @@ public class CategoryController extends HttpServlet {
             } else {
                 session.setAttribute("updateFail", "Thay đổi trạng thái thất bại!");
             }
-            response.sendRedirect(request.getContextPath() + "/category-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + currentAvailable);
+            response.sendRedirect(request.getContextPath() + "/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
             return;
         }
 
+        // Khớp hoàn toàn thông báo text kiểm tra dữ liệu với file JSP
         String errorName = isValidString(categoryName, 100, "Tên loại không được để trống", "Tên loại phải ít hơn 100 kí tự");
         if (!checkEmpty(errorName)) {
             if (menuCategoryDAO.checkDuplicateCategory(categoryName, id)) {
                 errorName = "Tên loại món ăn đã tồn tại";
             }
         }
+
+        // LUỒNG 2: Xử lý chặn lỗi và tái dựng lại dữ liệu bảng tại chỗ, KHÔNG GỌI BẮC CẦU DOGET TRỰC TIẾP
         if (checkEmpty(errorName)) {
+            int totalCategory = menuCategoryDAO.countSearchCategory(currentSearch, isAvailable);
+            int totalPage = (int) Math.ceil((double) totalCategory / PAGE_SIZE);
+            if (page > totalPage && totalPage > 0) {
+                page = totalPage;
+            }
+            int offset = (page - 1) * PAGE_SIZE;
+            List<MenuCategory> categoryList = menuCategoryDAO.searchCategoryPaging(currentSearch, isAvailable, offset, PAGE_SIZE);
+
+            for (MenuCategory mc : categoryList) {
+                int activeDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 1);
+                int inactiveDish = menuCategoryDAO.countDishByStatus(mc.getCategoryID(), 0);
+                int totalDish = menuCategoryDAO.countDishByCategory(mc.getCategoryID());
+                mc.setActiveMenuItem(activeDish);
+                mc.setInactiveMenuItem(inactiveDish);
+                mc.setTotalDish(totalDish);
+            }
+
+            // Đẩy lại toàn bộ dữ liệu bẩn và lỗi trực tiếp sang View
             request.setAttribute("errorName", errorName);
-            doGet(request, response);
+            request.setAttribute("currentSearch", currentSearch);
+            request.setAttribute("currentAvailable", isAvailable);
+            request.setAttribute("categoryList", categoryList);
+            request.setAttribute("totalPage", totalPage);
+            request.setAttribute("currentPage", page);
+
+            // Găm lại tên vừa nhập lỗi để JavaScript tự động mở lại đúng Modal Popup cho người dùng sửa
+            request.setAttribute("modalErrorID", id);
+            request.setAttribute("modalErrorName", categoryName);
+
+            request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
             return;
         }
 
+        // LUỒNG 3: Lưu dữ liệu vào hệ thống khi kiểm tra hoàn tất
         boolean isSuccess = false;
         if (id > 0) {
             isSuccess = menuCategoryDAO.updateCategory(categoryName, id);
@@ -136,7 +170,7 @@ public class CategoryController extends HttpServlet {
             }
         }
 
-        response.sendRedirect(request.getContextPath() + "/category-management");
+        response.sendRedirect(request.getContextPath() + "/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {

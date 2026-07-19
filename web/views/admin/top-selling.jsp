@@ -1,6 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -368,6 +367,29 @@
                 border-bottom: 1px solid #f5ece4;
                 color: #4a3528;
             }
+
+            /* 🌟 TÁCH RIÊNG CSS CHO PHẦN THÔNG BÁO TRỐNG LỊCH SỬ MỚI BỔ SUNG */
+            .modal-empty-notice {
+                text-align: center;
+                padding: 30px 10px;
+                color: #a0714f;
+            }
+            .modal-empty-icon {
+                font-size: 35px;
+                display: block;
+                margin-bottom: 8px;
+            }
+            .modal-empty-title {
+                font-size: 14px;
+                color: #76493b;
+                display: block;
+            }
+            .modal-empty-desc {
+                font-size: 12px;
+                display: block;
+                margin-top: 4px;
+                line-height: 1.4;
+            }
         </style>
     </head>
     <body>
@@ -507,29 +529,40 @@
                     </c:if>
                 </div>
 
-                <div class="modal-overlay ${not empty historyList ? 'active' : ''}">
+                <div class="modal-overlay ${not empty param.viewHistoryItemID ? 'active' : ''}">
                     <div class="modal-box">
                         <a href="?page=${currentPage}&search=${search}&category=${selectedCategory}&cookingMethod=${selectedMethod}&filterType=${filterType}&startDate=${startDate}&endDate=${endDate}" class="btn-close-modal">&times;</a>
                         <div class="modal-title">📈 Lịch Sử: ${currentViewDishName}</div>
 
-                        <div class="modal-table-container">
-                            <table class="modal-table">
-                                <thead>
-                                    <tr>
-                                        <th>Ngày bán</th>
-                                        <th>Sản lượng</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach items="${historyList}" var="h">
-                                        <tr>
-                                            <td>${h.workingDate}</td>
-                                            <td><span class="qty-badge">${h.totalQuantity} đĩa</span></td>
-                                        </tr>
-                                    </c:forEach>
-                                </tbody>
-                            </table>
-                        </div>
+                        <c:choose>
+                            <c:when test="${not empty historyList}">
+                                <div class="modal-table-container">
+                                    <table class="modal-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ngày bán</th>
+                                                <th>Sản lượng</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <c:forEach items="${historyList}" var="h">
+                                                <tr>
+                                                    <td>${h.workingDate}</td>
+                                                    <td><span class="qty-badge">${h.totalQuantity} đĩa</span></td>
+                                                </tr>
+                                            </c:forEach>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="modal-empty-notice">
+                                    <span class="modal-empty-icon">📊</span>
+                                    <b class="modal-empty-title">Chưa có dữ liệu tiêu thụ.</b>
+                                    <span class="modal-empty-desc">Món ăn này chưa phát sinh lượt bán hoặc chưa hoàn thành hóa đơn nào trong khoảng thời gian bạn đang chọn lọc.</span>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
                 </div>
 
