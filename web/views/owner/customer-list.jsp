@@ -66,6 +66,15 @@
         .badge-google { background: #e4edff; color: #2456a6; }
         .badge-active { background: #d4edda; color: #155724; }
         .badge-locked { background: #f8d7da; color: #842029; }
+        .customer-cell { display: flex; align-items: center; gap: 10px; }
+        .customer-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            object-fit: cover; background: #eaded6; color: #76493b;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 700;
+        }
+        .btn-detail { background: #d7bfa4; color: #5a3428; }
+        .btn-detail:hover { background: #c5a98a; }
         .btn-lock { background: #dc3545; color: #fff; }
         .btn-lock:hover { background: #bb2d3b; }
         .btn-unlock { background: #198754; color: #fff; }
@@ -154,12 +163,9 @@
                     <thead>
                         <tr>
                             <th style="width: 60px;">#</th>
-                            <th>Tên khách hàng</th>
-                            <th>Email</th>
-                            <th>Số điện thoại</th>
+                            <th>Khách hàng</th>
                             <th>Loại tài khoản</th>
                             <th>Trạng thái</th>
-                            <th>Ngày tạo</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
@@ -167,7 +173,7 @@
                         <c:choose>
                             <c:when test="${empty customers}">
                                 <tr>
-                                    <td colspan="8" class="empty">
+                                    <td colspan="5" class="empty">
                                         <i class="fas fa-inbox"></i>
                                         Không tìm thấy khách hàng nào.
                                     </td>
@@ -178,9 +184,23 @@
                                 <c:forEach var="customer" items="${customers}" varStatus="loop">
                                     <tr>
                                         <td>${(page - 1) * pageSize + loop.index + 1}</td>
-                                        <td><strong>${customer.userName}</strong></td>
-                                        <td>${customer.email}</td>
-                                        <td>${customer.phoneNumber}</td>
+                                        <td>
+                                            <div class="customer-cell">
+                                                <c:choose>
+                                                    <c:when test="${not empty customer.image}">
+                                                        <img class="customer-avatar"
+                                                             src="${pageContext.request.contextPath}/${customer.image}"
+                                                             alt="${customer.userName}">
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="customer-avatar">
+                                                            <i class="fas fa-user"></i>
+                                                        </span>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                                <strong>${customer.userName}</strong>
+                                            </div>
+                                        </td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${customer.loginProvider == 'google'}">
@@ -202,13 +222,13 @@
                                             </c:choose>
                                         </td>
                                         <td>
-                                            <fmt:formatDate value="${customer.createdAt}"
-                                                            pattern="dd/MM/yyyy HH:mm"/>
-                                        </td>
-                                        <td>
-
+                                            <a href="${pageContext.request.contextPath}/owner/customer-list?action=detail&customerID=${customer.customerID}"
+                                               class="btn btn-detail">
+                                                <i class="fas fa-eye"></i> Chi tiết
+                                            </a>
                                             <form method="post"
-                                                  action="${pageContext.request.contextPath}/owner/customer-list">
+                                                  action="${pageContext.request.contextPath}/owner/customer-list"
+                                                  style="display:inline-flex; margin-left:6px;">
 
                                                 <input type="hidden" name="customerID"
                                                        value="${customer.customerID}">

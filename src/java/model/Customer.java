@@ -1,5 +1,6 @@
 package model;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 
 public class Customer {
@@ -12,6 +13,9 @@ public class Customer {
     private Timestamp createdAt;      // DATETIME
     private String loginProvider;     // local / google
     private int isActive;
+    private Date dob;
+    private String address;
+    private String image;
 
     public Customer() {
     }
@@ -91,5 +95,27 @@ public class Customer {
         this.isActive = isActive;
     }
 
-    
+    public Date getDob() {
+        return dob;
+    }
+
+    public void setDob(Date dob) {
+        this.dob = dob;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
 }

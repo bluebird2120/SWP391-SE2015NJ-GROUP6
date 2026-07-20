@@ -12,7 +12,7 @@ public class CustomerDAO extends DBContext {
     public Customer findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, dob, address, image "
                 + "FROM Customer "
                 + "WHERE phoneNumber = ?";
 
@@ -115,6 +115,9 @@ public class CustomerDAO extends DBContext {
         c.setCreatedAt(rs.getTimestamp("createdAt"));
         c.setLoginProvider(rs.getString("loginProvider"));
         c.setIsActive(rs.getInt("isActive"));
+        c.setDob(rs.getDate("dob"));
+        c.setAddress(rs.getString("address"));
+        c.setImage(rs.getString("image"));
         return c;
     }
 
@@ -135,7 +138,7 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo customerID
      */
     public Customer findByID(int id) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, dob, address, image "
                 + "FROM Customer WHERE customerID = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -152,7 +155,7 @@ public class CustomerDAO extends DBContext {
      * Tìm Customer theo email
      */
     public Customer findByEmail(String email) throws SQLException {
-        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive "
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, dob, address, image "
                 + "FROM Customer WHERE email = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
@@ -225,7 +228,7 @@ public class CustomerDAO extends DBContext {
         List<Customer> list = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT customerID, userName, password, phoneNumber, email, isActive, createdAt, loginProvider ");
+        sql.append("SELECT customerID, userName, password, phoneNumber, email, isActive, createdAt, loginProvider, dob, address, image ");
         sql.append("FROM Customer ");
         sql.append("WHERE 1 = 1 ");
 

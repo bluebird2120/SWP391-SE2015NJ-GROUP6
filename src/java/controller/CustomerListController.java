@@ -28,6 +28,12 @@ public class CustomerListController extends HttpServlet {
 
         String search = request.getParameter("search");
         String loginProvider = request.getParameter("loginProvider");
+        String action = request.getParameter("action");
+
+        if ("detail".equals(action)) {
+            showCustomerDetail(request, response);
+            return;
+        }
 
         if (loginProvider == null || loginProvider.trim().isEmpty()) {
             loginProvider = "all";
@@ -115,6 +121,35 @@ public class CustomerListController extends HttpServlet {
         }
         Employee employee = (Employee) session.getAttribute("employee");
         return employee != null && employee.getRoleID() == 1;
+    }
+
+    private void showCustomerDetail(HttpServletRequest request,
+            HttpServletResponse response) throws ServletException, IOException {
+        int customerID = parseInt(request.getParameter("customerID"), -1);
+        if (customerID <= 0) {
+            response.sendRedirect(request.getContextPath() + "/owner/customer-list");
+            return;
+        }
+
+        try {
+            Customer customer = customerDAO.findByID(customerID);
+            if (customer == null) {
+                request.getSession().setAttribute("customerStatusMessage",
+                        "Không tìm thấy khách hàng.");
+                response.sendRedirect(request.getContextPath() + "/owner/customer-list");
+                return;
+            }
+
+            // [CHI TIET KHACH HANG] Trang danh sach chi hien thong tin gon,
+            // thong tin day du duoc dua sang JSP rieng.
+            request.setAttribute("customer", customer);
+            request.getRequestDispatcher("/views/owner/customer-detail.jsp")
+                    .forward(request, response);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.setAttribute("errorMessage", "Không thể tải thông tin khách hàng.");
+            request.getRequestDispatcher("/views/error.jsp").forward(request, response);
+        }
     }
 
     private String buildListRedirect(HttpServletRequest request) {
