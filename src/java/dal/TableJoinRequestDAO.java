@@ -91,4 +91,38 @@ public class TableJoinRequestDAO extends DBContext {
         }
         return null;
     }
+    
+    /**
+     * 5. YÊU CẦU CẤP LẠI QUYỀN CHỦ BÀN (Khách hàng báo mất Session, chờ Nhân viên duyệt)
+     */
+    public boolean createReclaimRequest(int orderID, String guestSessionID) {
+        // Đánh dấu status là 'pending_reclaim' để phân biệt với xin vào bàn thông thường
+        String sql = "INSERT INTO TableJoinRequest (orderID, guestSessionID, guestName, status) VALUES (?, ?, 'YÊU CẦU LẤY LẠI QUYỀN CHỦ BÀN', 'pending_reclaim')";
+        try (java.sql.PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setString(2, guestSessionID);
+            
+            return ps.executeUpdate() > 0;
+        } catch (java.sql.SQLException e) {
+            System.err.println("[TableJoinRequestDAO] createReclaimRequest lỗi: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * 5. UPDATE RECLAIM STATUS BY ORDER ID (For Staff Approval)
+     * Updates the status from 'pending_reclaim' to the new status to prevent accidental updates to normal join requests.
+     */
+    public boolean updateReclaimStatusByOrder(int orderID, String newStatus) {
+        String sql = "UPDATE TableJoinRequest SET status = ? WHERE orderID = ? AND status = 'pending_reclaim'";
+        try (java.sql.PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, newStatus); 
+            ps.setInt(2, orderID);
+            
+            return ps.executeUpdate() > 0;
+        } catch (java.sql.SQLException e) {
+            System.err.println("[TableJoinRequestDAO] updateReclaimStatusByOrder error: " + e.getMessage());
+        }
+        return false;
+    }
 }
