@@ -52,9 +52,9 @@ public class ForgotPasswordController extends HttpServlet {
             //Giữ lại email đã nhập cho toàn bộ phía dưới
             request.setAttribute("email", email);
             
-            //Tìm Customer trước
-            Customer customer = customerDAO.findByEmail(email);
-            Employee employee = (customer == null) ? employeeDAO.findByEmail(email) : null;
+            // Tìm Employee trước 
+            Employee employee = employeeDAO.findByEmail(email);
+            Customer customer = (employee == null) ? customerDAO.findByEmail(email) : null;
             if (customer == null && employee == null) {
                 request.setAttribute("emailError", "Email này chưa được đăng kí hoặc không khả dụng");
                 request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
