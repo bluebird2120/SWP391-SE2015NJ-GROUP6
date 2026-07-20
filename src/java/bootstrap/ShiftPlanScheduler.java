@@ -61,7 +61,6 @@ public class ShiftPlanScheduler implements ServletContextListener {
         }
         System.out.println("[ShiftPlanScheduler] Stopped.");
     }
-
     private long computeInitialDelayToNextRun() {
         return computeDelayTo(0, 5);
     }

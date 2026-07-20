@@ -197,9 +197,7 @@ public class ShiftRosterController extends HttpServlet {
             showRoster(req, resp, "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.", null);
             return;
         }
-
         YearMonth startYm = YearMonth.from(date);
-
         YearMonth endYm = YearMonth.from(toDate);
 
         if (!startYm.equals(endYm)) {
@@ -222,43 +220,30 @@ public class ShiftRosterController extends HttpServlet {
 
         try (EmployeeShiftDAO dao = new EmployeeShiftDAO()) {
             for (String empIdStr : empIDsStr) {
-
                 int employeeID = parseInt(empIdStr, 0);
-
                 if (employeeID <= 0) {
                     continue;
                 }
-
                 LocalDate current = date;
-
                 while (!current.isAfter(toDate)) {
-
                     Date sqlDate = Date.valueOf(current);
-
                     if (dao.hasOverlap(employeeID, sqlDate, templateID)) {
-
                         overlapCount++;
-
                         current = current.plusDays(1);
                         continue;
                     }
-
                     int shiftID = dao.assign(employeeID, templateID, sqlDate);
-
                     if (shiftID < 0) {
                         failedCount++;
                     } else {
-
                         successCount++;
                     }
-
                     current = current.plusDays(1);
                 }
             }
         }
 
         String successMsg = null;
-
         String errorMsg = null;
 
         if (successCount > 0) {
@@ -267,7 +252,7 @@ public class ShiftRosterController extends HttpServlet {
 
         if (overlapCount > 0 || failedCount > 0) {
             errorMsg = (overlapCount > 0
-                    ? overlapCount + " nhân viên bị bỏ qua vì đã có ca trong ngày đó. "
+                    ? overlapCount + " ca bị bỏ qua vì nhân viên đã có ca trong ngày đó. "
                     : "")
                     + (failedCount > 0 ? failedCount + " ca gán lỗi." : "");
         }

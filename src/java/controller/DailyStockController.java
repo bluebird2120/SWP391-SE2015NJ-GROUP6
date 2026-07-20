@@ -10,6 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -57,10 +58,7 @@ public class DailyStockController extends HttpServlet {
         }
 
         try {
-            // Ép kiểu thử để bắt lỗi định dạng bẩn (abc, gachien,...)
             dateSql = java.sql.Date.valueOf(date.trim());
-
-            // Kiểm tra logic ngày tương lai
             if (LocalDate.parse(date.trim()).isAfter(LocalDate.now())) {
                 errorDate = "Không thể xem hoặc cấu hình kho cho ngày ở tương lai!";
                 date = LocalDate.now().toString();
@@ -117,33 +115,68 @@ public class DailyStockController extends HttpServlet {
         String[] initialQuantity = request.getParameterValues("initialQuantity");
         String[] itemID = request.getParameterValues("itemID");
 
+        String search_raw = request.getParameter("search");
+        String category_raw = request.getParameter("categoryID");
+        String page_raw = request.getParameter("page");
+        String method_raw = request.getParameter("cookingMethod");
+        String date_raw = request.getParameter("date");
+
         boolean hasError = false;
         String errorMessage = "";
 
-        java.sql.Date dateSql = java.sql.Date.valueOf(LocalDate.now().toString());
-        int totalDish = menuItemDAO.countSearchDish("", dateSql, 0, 0);
+        // Trích xuất bộ lọc ẩn để phục hồi hiện trạng trang
+        int categoryID = parseIntSafe(category_raw, 0, 0);
+        int methodID = parseIntSafe(method_raw, 0, 0);
+        int page = parseIntSafe(page_raw, 1, 1);
+        String currentSearch = checkEmpty(search_raw) ? search_raw : "";
+        String date = checkEmpty(date_raw) ? date_raw : LocalDate.now().toString();
+        java.sql.Date dateSql = java.sql.Date.valueOf(date);
 
-        if (initialQuantity == null || itemID == null || initialQuantity.length != totalDish) {
+        // 🌟 ĐÃ SỬA CHUẨN: Băm chuỗi và đảo ngược YYYY-MM-DD hoặc YYYY/MM/DD thành DD-MM-YYYY trong thông báo lỗi của Servlet
+        if (!LocalDate.now().toString().equals(date.trim())) {
             hasError = true;
-            errorMessage = "Thao tác bị chặn! Bạn đang bật bộ lọc ẩn món ăn. Vui lòng chọn 'Tất cả loại món', 'Tất cả phương thức' và nhập đủ tất cả món ăn trước khi chốt kho.";
-        } else {
-            for (int i = 0; i < initialQuantity.length; i++) {
-                String qty = initialQuantity[i];
-
-                if (!checkEmpty(qty)) {
-                    hasError = true;
-                    errorMessage = "Lỗi hệ thống: Bạn bắt buộc phải nhập đầy đủ số lượng các món ăn";
-                    break;
+            String displayDate = date.trim();
+            if (date.contains("-")) {
+                String[] parts = date.trim().split("-");
+                if (parts.length == 3) {
+                    displayDate = parts[2] + "-" + parts[1] + "-" + parts[0];
                 }
+            } else if (date.contains("/")) {
+                String[] parts = date.trim().split("/");
+                if (parts.length == 3) {
+                    displayDate = parts[2] + "-" + parts[1] + "-" + parts[0];
+                }
+            }
+            errorMessage = "Hệ thống chặn thao tác! Bạn không thể chỉnh sửa hoặc cấu hình lại số lượng món ăn của ngày đã qua (Ngày " + displayDate + ").";
+        }
 
-                errorMessage = checkQuantity(qty);
-                if (!errorMessage.isEmpty()) {
-                    hasError = true;
-                    break;
+        int totalDish = menuItemDAO.countSearchDish("", java.sql.Date.valueOf(LocalDate.now().toString()), 0, 0);
+
+        // Nếu chưa dính lỗi ngày cũ thì mới kiểm tra tính hợp lệ của mảng số lượng
+        if (!hasError) {
+            if (initialQuantity == null || itemID == null || initialQuantity.length != totalDish) {
+                hasError = true;
+                errorMessage = "Thao tác bị chặn! Bạn đang bật bộ lọc ẩn món ăn. Vui lòng chọn 'Tất cả loại món', 'Tất cả phương thức' và nhập đủ tất cả món ăn trước khi chốt kho.";
+            } else {
+                for (int i = 0; i < initialQuantity.length; i++) {
+                    String qty = initialQuantity[i];
+
+                    if (!checkEmpty(qty)) {
+                        hasError = true;
+                        errorMessage = "Lỗi hệ thống: Bạn bắt buộc phải nhập đầy đủ số lượng các món ăn";
+                        break;
+                    }
+
+                    errorMessage = checkQuantity(qty);
+                    if (!errorMessage.isEmpty()) {
+                        hasError = true;
+                        break;
+                    }
                 }
             }
         }
 
+        // LUỒNG XỬ LÝ KHI DÍNH LỖI (Bao gồm cả lỗi sửa ngày cũ)
         if (hasError) {
             Map<Integer, String> saveInputData = new HashMap<>();
             if (itemID != null && initialQuantity != null) {
@@ -156,21 +189,57 @@ public class DailyStockController extends HttpServlet {
                     }
                 }
             }
+
+            // Tải lại dữ liệu bảng theo đúng ngày người dùng đang chọn để giữ hiện trạng
+            int totalItem = menuItemDAO.countSearchDish(currentSearch, dateSql, categoryID, methodID);
+            int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
+            if (page > totalPage && totalPage > 0) {
+                page = totalPage;
+            }
+            int offSet = (page - 1) * PAGE_SIZE;
+            List<CookingMethod> listMethod = cookingMethodDAO.getAllCookingMethod();
+            List<MenuCategory> list = menuCategoryDAO.getAllMenuCategory();
+            List<MenuItem> listItem = menuItemDAO.searchDishPaging(currentSearch, dateSql, categoryID, methodID, offSet, PAGE_SIZE);
+
             request.setAttribute("errorMessage", errorMessage);
             request.setAttribute("saveInputData", saveInputData);
-            doGet(request, response);
-        } else {
-            for (int i = 0; i < itemID.length; i++) {
-                boolean result = dailyInventoryDAO.updateStockMenuItem(Integer.parseInt(itemID[i]), Integer.parseInt(initialQuantity[i]));
-                if (!result) {
-                    request.setAttribute("updateFail", "Cập nhật thất bại vì bạn đã nhập số lượng cho ngày hôm nay");
-                    doGet(request, response);
-                    return;
-                }
-            }
-            request.setAttribute("updateSuccess", "Bạn đã cập nhập thành công số lượng món ăn cho ngày hôm nay");
-            doGet(request, response);
+
+            request.setAttribute("currentSearch", currentSearch);
+            request.setAttribute("currentCategory", categoryID);
+            request.setAttribute("currentMethod", methodID);
+            request.setAttribute("date", date);
+
+            request.setAttribute("listMethod", listMethod);
+            request.setAttribute("hasLowStock", checkHasLowStock(listItem));
+            request.setAttribute("isConfigYet", isConfigYet(listItem, date));
+            request.setAttribute("categoryList", list);
+            request.setAttribute("menuItemList", listItem);
+            request.setAttribute("totalPage", totalPage);
+            request.setAttribute("currentPage", page);
+
+            request.getRequestDispatcher("/views/admin/daily-stock.jsp").forward(request, response);
+            return;
         }
+
+        // LUỒNG LƯU THÀNH CÔNG (Chỉ chạy khi cấu hình đúng ngày hôm nay)
+        HttpSession session = request.getSession();
+        boolean isAllSuccess = true;
+
+        for (int i = 0; i < itemID.length; i++) {
+            boolean result = dailyInventoryDAO.updateStockMenuItem(Integer.parseInt(itemID[i]), Integer.parseInt(initialQuantity[i]));
+            if (!result) {
+                isAllSuccess = false;
+                break;
+            }
+        }
+
+        if (isAllSuccess) {
+            session.setAttribute("updateSuccess", "Bạn đã cập nhật thành công số lượng món ăn cho ngày hôm nay");
+        } else {
+            session.setAttribute("updateFail", "Cập nhật thất bại vì bạn đã nhập số lượng cho ngày hôm nay");
+        }
+
+        response.sendRedirect(request.getContextPath() + "/daily-stock?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&categoryID=" + categoryID + "&cookingMethod=" + methodID + "&date=" + date);
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {
@@ -225,10 +294,5 @@ public class DailyStockController extends HttpServlet {
             return "Số lượng nhập vào phải là số nguyên hợp lệ!";
         }
         return "";
-    }
-
-    @Override
-    public String getServletInfo() {
-        return "Short description";
     }
 }

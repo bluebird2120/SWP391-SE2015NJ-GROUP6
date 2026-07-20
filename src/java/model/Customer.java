@@ -10,8 +10,8 @@ public class Customer {
     private String password;
     private String phoneNumber;
     private String email;
-    private Timestamp createdAt;      // DATETIME
-    private String loginProvider;     // local / google
+    private Timestamp createdAt;
+    private String loginProvider;
     private int isActive;
     private Date dob;
     private String address;
@@ -19,8 +19,7 @@ public class Customer {
 
     public Customer() {
     }
-
-    public Customer(int customerID, String userName, String password, String phoneNumber, String email, Timestamp createdAt, String loginProvider, int isActive) {
+    public Customer(int customerID, String userName, String password, String phoneNumber, String email, Timestamp createdAt, String loginProvider, int isActive, Date dob, String address, String image) {
         this.customerID = customerID;
         this.userName = userName;
         this.password = password;
@@ -29,6 +28,9 @@ public class Customer {
         this.createdAt = createdAt;
         this.loginProvider = loginProvider;
         this.isActive = isActive;
+        this.dob = dob;
+        this.address = address;
+        this.image = image;
     }
 
     public int getCustomerID() {

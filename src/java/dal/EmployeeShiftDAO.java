@@ -737,6 +737,7 @@ public class EmployeeShiftDAO extends DBContext {
         return false;
     }
 
+    //Tính trạng thái chấm công
     static String computeStatus(Timestamp checkInTime, Time startTime) {
 
         long checkInMs = checkInTime.getTime();
@@ -753,11 +754,76 @@ public class EmployeeShiftDAO extends DBContext {
         int h = Integer.parseInt(parts[0]);
         int m = Integer.parseInt(parts[1]);
         int s = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
-
+        //Tính thời điểm bắt đầu ca đầy đủ trong ngày checkIn
         long startAbs = midnight + ((h * 3600L) + (m * 60L) + s) * 1000L;
-
+        //Tính mốc đi muộn
         long lateThreshold = startAbs + LATE_THRESHOLD_MINUTES * 60_000L;
 
         return checkInMs > lateThreshold ? "late" : "present";
     }
+    /**
+     * Lấy danh sách ID tất cả Lễ tân (roleID=3) đang trực ca hiện tại.
+     * Dùng để gửi thông báo khi khách vãng lai quét QR tạo đơn mới.
+     * Nếu không có lễ tân nào đang trực thì trả về danh sách rỗng.
+     */
+    public List<Integer> getOnDutyReceptionistIDs() {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "SELECT DISTINCT es.employeeID "
+                + "FROM EmployeeShifts es "
+                + "JOIN ShiftTemplates st ON es.templateID = st.templateID "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "WHERE es.workDate = CURDATE() "
+                + "  AND e.roleID = 3 "
+                + "  AND e.isActive = 1 "
+                + "  AND es.checkInTime IS NOT NULL "
+                + "  AND es.checkOutTime IS NULL "
+                + "  AND es.status IN ('present', 'late') "
+                + "  AND ( "
+                + "    (st.startTime <= st.endTime AND CURRENT_TIME() BETWEEN st.startTime AND st.endTime) "
+                + "    OR "
+                + "    (st.startTime > st.endTime AND (CURRENT_TIME() >= st.startTime OR CURRENT_TIME() <= st.endTime)) "
+                + "  )";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ids.add(rs.getInt("employeeID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return ids;
+    }
+
+    /**
+     * [THÔNG BÁO ĐẶT BÀN TRƯỚC] Lấy danh sách ID Lễ tân (roleID=3) CÓ LỊCH
+     * LÀM hôm nay - không đòi hỏi đã check-in, khác với
+     * getOnDutyReceptionistIDs(). Lý do: thông báo đặt bàn trước (xác nhận
+     * cọc thành công, digest sáng 6h) cần đến tay lễ tân TRƯỚC CẢ KHI họ bắt
+     * đầu ca/check-in (vd digest chạy lúc 6h nhưng ca có thể bắt đầu lúc 8h),
+     * khác với thông báo "khách đang đứng chờ ở quầy ngay bây giờ" của luồng
+     * quét QR - lúc đó mới cần đòi hỏi đã check-in thật sự.
+     * Lễ tân không có ca hôm nay sẽ KHÔNG nhận thông báo này, dù vẫn xem
+     * được danh sách đơn chờ gán bàn trên trang /reception/tables và vẫn bị
+     * chặn nếu cố thao tác gán/mở bàn khi chưa check-in.
+     */
+    public List<Integer> getReceptionistsScheduledToday() {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "SELECT DISTINCT es.employeeID "
+                + "FROM EmployeeShifts es "
+                + "JOIN Employee e ON es.employeeID = e.employeeID "
+                + "WHERE es.workDate = CURDATE() "
+                + "  AND e.roleID = 3 "
+                + "  AND e.isActive = 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ids.add(rs.getInt("employeeID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return ids;
+    }
+
+
 }

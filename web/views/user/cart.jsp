@@ -355,12 +355,15 @@
                 </div>
                 <c:remove var="successMsg" scope="session"/>
             </c:if>
+            
+            <%-- HIỂN THỊ THÔNG BÁO LỖI (VÍ DỤ: HẾT MÓN) --%>
             <c:if test="${not empty sessionScope.errorMsg}">
-                <div style="color:#D9534F;background:#FDE8E8;padding:12px 20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #D9534F;font-weight:bold;">
+                <div style="color:#D9534F; background:#FDE8E8; padding:12px 20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #D9534F; font-weight:bold; line-height: 1.5;">
                     ⚠ ${sessionScope.errorMsg}
                 </div>
                 <c:remove var="errorMsg" scope="session"/>
             </c:if>
+            
             <c:if test="${not empty param.error && param.error == 'invalid_quantity'}">
                 <div style="color:#D9534F;background:#FDE8E8;padding:12px 20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #D9534F;font-weight:bold;">
                     ⚠ Hệ thống cảnh báo: Số lượng món ăn không hợp lệ! Vui lòng chỉ nhập số lượng trong khoảng từ 1 đến 99 phần.
@@ -544,25 +547,14 @@
 
                         <%-- NÚT: THANH TOÁN TỔNG --%>
                         <c:if test="${sessionScope.roleInTable == 'HOST'}">
-                            <c:choose>
-                                <c:when test="${not empty currentOrder.checkoutRequestAt}">
-                                    <%-- [CHO NHAN VIEN THANH TOAN] Khach da gui yeu cau, nhan vien se thao tac thanh toan. --%>
-                                    <button class="btn-summary-action btn-sidebar-checkout" type="button" disabled style="margin-top:20px;">
-                                        ⏳ ĐÃ GỬI YÊU CẦU - CHỜ NHÂN VIÊN THANH TOÁN
-                                    </button>
-                                </c:when>
-                                <c:otherwise>
-                                    <%-- [YEU CAU THANH TOAN] Khach chi gui yeu cau, nhan vien phuc vu moi vao man thanh toan. --%>
-                                    <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
-                                        <input type="hidden" name="action" value="checkoutTotal">
-                                        <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
-                                                onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
-                                            🧾 YÊU CẦU TÍNH TIỀN
-                                        </button>
-                                        <p style="font-size:11px; text-align:center; color:#a8988e; margin-top:8px;">(Lưu ý: Không bao gồm các món chưa Gửi Bếp)</p>
-                                    </form>
-                                </c:otherwise>
-                            </c:choose>
+                            <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
+                                <input type="hidden" name="action" value="checkoutTotal">
+                                <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
+                                        onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
+                                    🧾 YÊU CẦU TÍNH TIỀN
+                                </button>
+                                <p style="font-size:11px; text-align:center; color:#a8988e; margin-top:8px;">(Lưu ý: Không bao gồm các món chưa Gửi Bếp)</p>
+                            </form>
                         </c:if>
                     </div>
                 </div>

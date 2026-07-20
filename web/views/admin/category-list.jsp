@@ -35,7 +35,6 @@
                 margin: 0;
                 font-size: 24px;
                 font-weight: 600;
-                color: #78493b;
             }
             .search-container {
                 background-color: #fdfaf7;
@@ -183,7 +182,6 @@
                 border-color: #e2e8f0;
                 pointer-events: none;
             }
-
             .error-message {
                 background-color: #fdeaea;
                 border-left: 4px solid #dc3545;
@@ -206,8 +204,6 @@
                 font-weight: 600;
                 display: block;
             }
-
-            /* Modal Popup */
             .modal-wrapper {
                 display: none;
                 position: fixed;
@@ -299,7 +295,7 @@
             <div style="flex: 1; min-width: 0;">
                 <div class="layout">
                     <div class="page-header">
-                        <h2>DANH SÁCH LOẠI MÓN ẮN</h2>
+                        <h2>DANH SÁCH LOẠI MÓN ĂN</h2>
                         <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN" onclick="openCreateModal()"/>
                     </div>
 
@@ -408,8 +404,14 @@
                 <h3>Chỉnh sửa tên loại món</h3>
                 <form id="editForm" action="category-management" method="post">
                     <input type="hidden" id="modalCategoryID" name="categoryID"/>
+                    <!-- Phục hồi bộ lọc ẩn để tránh mất trang khi submit lỗi -->
+                    <input type="hidden" value="${currentPage}" name="page"/>
+                    <input type="hidden" value="${currentSearch}" name="search"/>
+                    <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
+
                     <label class="form-label">Tên loại:</label>
-                    <input type="text" id="modalCategoryName" name="categoryName"/>
+                    <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
+                    <input type="text" id="modalCategoryName" name="categoryName" value="${not empty errorName and modalErrorID > 0 ? modalErrorName : ''}"/>
                     <span class="modal-error-text" id="editErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
@@ -423,8 +425,14 @@
                 <h3>Thêm mới loại món ăn</h3>
                 <form id="createForm" action="category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
+                    <!-- Phục hồi bộ lọc ẩn để tránh mất trang khi submit lỗi -->
+                    <input type="hidden" value="${currentPage}" name="page"/>
+                    <input type="hidden" value="${currentSearch}" name="search"/>
+                    <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
+
                     <label class="form-label">Nhập loại mới:</label>
-                    <input type="text" id="createCategoryName" name="categoryName"/>
+                    <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
+                    <input type="text" id="createCategoryName" name="categoryName" value="${not empty errorName and modalErrorID == 0 ? modalErrorName : ''}"/>
                     <span class="modal-error-text" id="createErrorName"></span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
@@ -438,7 +446,7 @@
                     const message = "Bạn có chắc chắn muốn vô hiệu hóa không?\nNếu bạn vô hiệu hóa, tất cả các món ăn thuộc loại \"" + categoryName + "\" cũng sẽ bị vô hiệu hóa.";
                     return confirm(message);
                 }
-                return true; 
+                return true;
             }
 
             function openEditModal(id, name) {
@@ -497,7 +505,7 @@
                 const errorBox = document.getElementById("jsErrorSearch");
 
                 if (searchInput.length > 100) {
-                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
+                    errorBox.innerHTML = "<b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
                     errorBox.style.display = "block";
                     event.preventDefault();
                 } else {
@@ -505,6 +513,19 @@
                     errorBox.style.display = "none";
                 }
             };
+
+            // 🌟 TỰ ĐỘNG MỞ LẠI MODAL KHI SERVER PHÁT HIỆN LỖI TRÙNG TÊN HOẶC ĐỂ TRỐNG
+            document.addEventListener("DOMContentLoaded", function () {
+                const hasError = "${not empty errorName}";
+                const errorID = "${modalErrorID}";
+                if (hasError === "true") {
+                    if (errorID !== "" && parseInt(errorID) > 0) {
+                        document.getElementById('editModal').style.display = "block";
+                    } else if (errorID !== "" && parseInt(errorID) === 0) {
+                        document.getElementById('createModal').style.display = "block";
+                    }
+                }
+            });
         </script>
         <%@ include file="/views/includes/footer.jsp" %>
     </body>
