@@ -56,12 +56,11 @@ public class ScanQRController extends HttpServlet {
                         response.sendRedirect(request.getContextPath() + "/menu");
                         return;
                     }
-                } else {
-                    // 👉 KHÁCH LẠ LẦN ĐẦU QUÉT MÃ -> MỚI ĐƯỢC LƯU SESSION VỊ TRÍ
-                    session.setAttribute("tableID", tableID);
-                    session.setAttribute("currentTableID", tableID);
-                    session.setAttribute("areaType", currentTable.getAreaType());
-                }
+                } 
+                
+                // 🌟 LỖ HỔNG ĐÃ VÁ: 
+                // Phần gán Session tableID (Khách lạ lần đầu) đã được chuyển xuống mục BÀN TRỐNG TINH.
+                // Tuyệt đối không gán ở đây để tránh tạo Order ảo!
                 // =========================================================
 
                 if (activeOrder != null) {
@@ -147,13 +146,6 @@ public class ScanQRController extends HttpServlet {
                         return;
                     }
 
-                    // Bàn đang chờ nhân viên mở (Pending) nhưng là người lạ quét
-                    if ("pending".equals(activeOrder.getTableStatus())) {
-                        session.setAttribute("errorMsg", "Bàn này đang chờ nhân viên mở bàn. Vui lòng đợi trong giây lát.");
-                        response.sendRedirect(request.getContextPath() + "/menu");
-                        return;
-                    }
-                    
                     // [TABLE STATUS FLOW] Ban da thanh toan nhung chua don xong thi chua cho khach moi vao.
                     if ("cleaning".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("errorMsg", "Bàn này đang chờ dọn dẹp. Vui lòng chọn bàn khác hoặc liên hệ nhân viên.");
@@ -163,14 +155,28 @@ public class ScanQRController extends HttpServlet {
 
                     // Ban da co HOST/khach dang ngoi an thi phai xin gop ban.
                     // [TABLE STATUS FLOW] occupied = da co HOST/khach dang dung ban.
-                    if ("occupied".equals(activeOrder.getTableStatus())) {
+                    // 🌟 ĐÃ GỘP THÊM 'pending' VÀO ĐÂY ĐỂ CHẶN NGƯỜI LẠ LỌT VÀO MENU.
+                    // 🌟 ĐÃ GỘP THÊM 'pending' VÀO ĐÂY ĐỂ CHẶN NGƯỜI LẠ LỌT VÀO MENU.
+                    if ("occupied".equals(activeOrder.getTableStatus()) || "pending".equals(activeOrder.getTableStatus())) {
                         session.setAttribute("pendingOrderID", activeOrder.getOrderID());
+                        
+                        // --- THÊM 2 DÒNG NÀY ĐỂ GIỮ TẠM VỊ TRÍ BÀN ---
+                        session.setAttribute("pendingTableID", tableID);
+                        session.setAttribute("pendingAreaType", currentTable.getAreaType());
+                        // ---------------------------------------------
+                        
                         request.getRequestDispatcher("/views/user/join_table.jsp").forward(request, response);
                         return;
                     }
 
                 } else {
                     // 👉 TRƯỜNG HỢP 2: BÀN TRỐNG TINH (Khách vãng lai đến quán mở bàn mới)
+                    
+                    // 👉 KHÁCH LẠ LẦN ĐẦU QUÉT MÃ -> MỚI ĐƯỢC LƯU SESSION VỊ TRÍ
+                    session.setAttribute("tableID", tableID);
+                    session.setAttribute("currentTableID", tableID);
+                    session.setAttribute("areaType", currentTable.getAreaType());
+
                     Order newOrder = new Order();
                     
                     // Set trạng thái là 'pending' để chờ nhân viên ra mở bàn
@@ -193,7 +199,6 @@ public class ScanQRController extends HttpServlet {
                     newOrder.setHostToken(hostToken);
                     
                     // (Lưu ý: Logic tự động gán nhân viên đã được tích hợp sẵn vào OrderDAO.createOrder)
-
                     int newOrderID = orderDAO.createOrder(newOrder);
                     if (newOrderID > 0) {
                         orderDAO.linkOrderAndTable(newOrderID, tableID);

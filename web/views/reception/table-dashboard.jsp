@@ -297,6 +297,15 @@
                                                 </button>
                                             </form>
                                         </c:if>
+                                        
+                                        <%-- NÚT CẤP LẠI QUYỀN CHỦ BÀN DÀNH CHO NHÂN VIÊN --%>
+                                        <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
+                                            <button type="button" 
+                                                    style="background: transparent; color: #dc2626; border: 1px solid #dc2626; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-top: 4px;" 
+                                                    onclick="approveReclaimHost(${t.orderID})">
+                                                <i class="fas fa-sync-alt"></i> Cấp lại Quyền
+                                            </button>
+                                        </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -306,5 +315,33 @@
             </main>
         </div>
         <%@ include file="/views/includes/footer.jsp" %>
+        <%-- KỊCH BẢN XỬ LÝ NÚT BẤM CẤP LẠI QUYỀN --%>
+        <script>
+            function approveReclaimHost(orderID) {
+                if(confirm("Xác nhận cấp lại quyền Chủ bàn cho khách tại Đơn #" + orderID + "?\nLưu ý: Mã bảo mật cũ sẽ bị hủy hoàn toàn!")) {
+                    
+                    fetch('${pageContext.request.contextPath}/api/table-join', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        // Truyền requestID = 0 (Hoặc bạn có thể tối ưu Backend để chỉ cần duyệt theo orderID)
+                        body: 'action=staffApproveReclaim&requestID=0&orderID=' + orderID
+                    })
+                    .then(response => response.text())
+                    .then(res => {
+                        if(res === 'success') {
+                            alert("✅ Đã cấp lại quyền Chủ bàn thành công! Trình duyệt của khách sẽ tự động khôi phục.");
+                            window.location.reload(); 
+                        } else {
+                            alert("❌ Cấp lại quyền thất bại (Hoặc khách chưa gửi yêu cầu)!");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("Lỗi kết nối đến máy chủ!");
+                    });
+                }
+            }
+        </script>
+        
     </body>
 </html>
