@@ -59,7 +59,7 @@ public class StaffTableDAO extends DBContext {
                 + "o.orderID, o.orderStatus, o.tableStatus, o.checkoutRequestAt, o.orderTime, "
                 + "CASE "
                 + "WHEN o.tableStatus='cleaning' THEN 'cleaning' "
-                //  ĐÃ SỬA
+               
                 + "WHEN o.tableStatus='occupied' OR o.tableStatus='arrived' THEN 'serving' "
                 + "WHEN o.tableStatus='reserved' THEN 'reserved' "
                 + "WHEN o.tableStatus='pending' THEN 'pending' "
@@ -68,7 +68,7 @@ public class StaffTableDAO extends DBContext {
                 + "JOIN Order_Table ot ON ot.orderID=o.orderID "
                 + "JOIN `Table` t ON t.tableID=ot.tableID "
                 + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' "
-                //  ĐÃ SỬA
+            
                 + "AND o.tableStatus IN ('pending','reserved','arrived','occupied','cleaning') "
                 + "ORDER BY o.orderTime,t.tableName";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -556,13 +556,10 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
-    /**
-     * [DU PHONG GAN PHUC VU] Dung khi ngoai khung gio ca nhung van can chon
-     * nhan vien co lich lam viec trong ngay. Khong chon nguoi khong co lich.
-     */
+   // tìm nhân viên nào ít order nhất 
     public Integer findLeastLoadedActiveServingEmployee(Connection conn)
             throws SQLException {
-        // 🌟 ĐÃ SỬA: Thêm chữ 'e' vào "FROM Employee e"
+     
         String sql = "SELECT e.employeeID,COUNT(o.orderID) active_orders "
                 + "FROM Employee e " 
                 + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "

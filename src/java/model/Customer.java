@@ -10,8 +10,8 @@ public class Customer {
     private String password;
     private String phoneNumber;
     private String email;
-    private Timestamp createdAt;      // DATETIME
-    private String loginProvider;     // local / google
+    private Timestamp createdAt;
+    private String loginProvider;
     private int isActive;
     private Date dob;
     private String address;
@@ -19,18 +19,6 @@ public class Customer {
 
     public Customer() {
     }
-
-    public Customer(int customerID, String userName, String password, String phoneNumber, String email, Timestamp createdAt, String loginProvider, int isActive) {
-        this.customerID = customerID;
-        this.userName = userName;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
-        this.email = email;
-        this.createdAt = createdAt;
-        this.loginProvider = loginProvider;
-        this.isActive = isActive;
-    }
-
     public Customer(int customerID, String userName, String password, String phoneNumber, String email, Timestamp createdAt, String loginProvider, int isActive, Date dob, String address, String image) {
         this.customerID = customerID;
         this.userName = userName;
@@ -132,5 +120,4 @@ public class Customer {
     public void setImage(String image) {
         this.image = image;
     }
-
 }
