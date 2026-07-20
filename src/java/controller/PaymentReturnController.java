@@ -1,7 +1,7 @@
 package controller;
 
 import dal.InvoicesDAO;
-import dal.OrderDAOSon;
+import dal.ReservationDAO;
 import dal.DBContext; // Thêm import DBContext để dùng cho hàm logPayment
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,7 +29,7 @@ import util.Config;
 public class PaymentReturnController extends HttpServlet {
 
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
-    private final OrderDAOSon orderDAOSon = new OrderDAOSon();
+    private final ReservationDAO reservationDAO = new ReservationDAO();
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -94,7 +94,7 @@ public class PaymentReturnController extends HttpServlet {
                         isDepositPayment = true;
                         invoicesDAO.updateInvoiceStatus(invoiceID, "paid", "vnpay");
                         logPaymentRecord(invoiceID, txnRef, "vnpay", vnpAmount, "success");
-                        orderDAOSon.synchronizeDepositStatus();
+                        reservationDAO.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {
                         // Nhánh 2: Thanh toán bữa ăn (Transaction gộp)
                         invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "vnpay", vnpAmount, txnRef);

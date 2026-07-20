@@ -222,7 +222,7 @@ public class TableDAO extends DBContext {
                 PreparedStatement latePs = connection.prepareStatement(lateArrivalSql)) {
             confirmPs.executeUpdate();
             // [UNPAID RESERVATION CLEANUP] Don pending chua coc khong doi sang
-            // cancelled o day nua; OrderDAOSon.synchronizeDepositStatus() se xoa han.
+            // cancelled o day nua; ReservationDAO.synchronizeDepositStatus() se xoa han.
             int expired = latePs.executeUpdate();
 
             if (expired > 0) {

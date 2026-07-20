@@ -1,6 +1,6 @@
 package controller;
 
-import dal.OrderDAOSon;
+import dal.ReservationDAO;
 import dal.OrderDAO;
 import dal.MenuItemDAO;
 import dal.TableDAO;
@@ -32,7 +32,7 @@ import model.Table;
 public class ReservationController extends HttpServlet {
 
     private final TableDAO tableDAO = new TableDAO();
-    private final OrderDAOSon orderDAO = new OrderDAOSon();
+    private final ReservationDAO orderDAO = new ReservationDAO();
     private final OrderDAO preorderDAO = new OrderDAO();
     private final MenuItemDAO menuItemDAO = new MenuItemDAO();
     private final BusinessScheduleDAO businessScheduleDAO = new BusinessScheduleDAO();
@@ -295,7 +295,7 @@ public class ReservationController extends HttpServlet {
 
         int orderID = orderDAO.createReservation(
                 customer.getCustomerID(), orderTime, details,
-                Integer.valueOf(OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT));
+                Integer.valueOf(ReservationDAO.DEFAULT_DEPOSIT_AMOUNT));
 
         if (orderID < 0) {
             showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
@@ -308,16 +308,16 @@ public class ReservationController extends HttpServlet {
         session.setAttribute("reservationOrderID", orderID);
         session.setAttribute("reservationFlow", true);
         session.setAttribute("depositAmount",
-                OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+                ReservationDAO.DEFAULT_DEPOSIT_AMOUNT);
         session.setAttribute("reservationHoldExpiresAt",
                 System.currentTimeMillis()
-                + OrderDAOSon.HOLD_MINUTES * 60_000L);
+                + ReservationDAO.HOLD_MINUTES * 60_000L);
         session.removeAttribute("redirectAfterLogin");
 
         // [DEPOSIT FIRST] Sau khi chọn bàn luôn thanh toán cọc bàn ngay.
         // Thời gian giữ chỗ 5 phút chỉ dành cho bước thanh toán này.
         int invoiceID = orderDAO.createDepositInvoice(
-                orderID, OrderDAOSon.DEFAULT_DEPOSIT_AMOUNT);
+                orderID, ReservationDAO.DEFAULT_DEPOSIT_AMOUNT);
         if (invoiceID < 0) {
             orderDAO.cancelReservation(
                     orderID, customer.getCustomerID());

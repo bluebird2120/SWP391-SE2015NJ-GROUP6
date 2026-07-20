@@ -13,7 +13,7 @@ import model.Notifications;
 import model.Order;
 import model.OrderReservationDetail;
 
-public class OrderDAOSon extends DBContext {
+public class ReservationDAO extends DBContext {
 
     public static final int HOLD_MINUTES = 2;
     // Tiền cọc cố định khi khách chỉ đặt bàn.

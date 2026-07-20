@@ -231,7 +231,7 @@ public class CustomerDAO extends DBContext {
         List<Customer> list = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT customerID, userName, password, phoneNumber, email, isActive, createdAt, loginProvider ");
+        sql.append("SELECT customerID, userName, password, phoneNumber, email, isActive, createdAt, loginProvider, dob, address, image ");
         sql.append("FROM Customer ");
         sql.append("WHERE 1 = 1 ");
 

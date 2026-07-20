@@ -29,14 +29,21 @@
             <h2>Bàn này đã có người ngồi!</h2>
             <p>Vui lòng nhập tên của bạn để chủ bàn nhận diện và cho phép bạn cùng gọi món.</p>
             <input type="text" id="guestName" placeholder="Ví dụ: Hoàng Anh..." required>
+            
             <button onclick="requestJoin()">Gửi yêu cầu vào bàn</button>
+            
+            <%-- Nút mới dành cho Chủ bàn bị mất kết nối --%>
+            <button onclick="requestReclaim()" style="background-color: #f59e0b; margin-top: 15px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);">
+                <i class="fas fa-crown"></i> Tôi là Chủ bàn (Xin khôi phục quyền)
+            </button>
+            
             <div id="errorTxt" class="error-msg">Vui lòng nhập tên!</div>
         </div>
 
         <div id="waitingScreen">
             <div class="spinner"></div>
-            <h2>Đang chờ phê duyệt...</h2>
-            <p>Hãy bảo chủ bàn kiểm tra điện thoại và bấm "Cho phép" nhé!</p>
+            <h2 id="waitingTitle">Đang chờ phê duyệt...</h2>
+            <p id="waitingDesc">Hãy bảo chủ bàn kiểm tra điện thoại và bấm "Cho phép" nhé!</p>
             <div id="rejectMsg" class="error-msg">Chủ bàn đã từ chối yêu cầu của bạn!</div>
         </div>
     </div>
@@ -45,6 +52,7 @@
         const contextPath = "${pageContext.request.contextPath}";
         let checkInterval;
 
+        // Hành động 1: GUEST xin vào bàn
         function requestJoin() {
             const name = document.getElementById('guestName').value.trim();
             if(!name) {
@@ -61,7 +69,7 @@
             .then(response => response.text())
             .then(res => {
                 if(res === 'success') {
-                    // Chuyển sang giao diện chờ duyệt
+                    // Chuyển sang giao diện chờ duyệt của Guest
                     document.getElementById('inputScreen').style.display = 'none';
                     document.getElementById('waitingScreen').style.display = 'block';
                     
@@ -71,11 +79,39 @@
             });
         }
 
+        // Hành động 2: HOST xin khôi phục quyền (Mất Cookie)
+        function requestReclaim() {
+            // Đổi giao diện sang màn hình chờ Nhân viên
+            document.getElementById('inputScreen').style.display = 'none';
+            document.getElementById('waitingScreen').style.display = 'block';
+            document.getElementById('waitingTitle').innerText = "Đang báo cho Nhân viên...";
+            document.getElementById('waitingDesc').innerText = "Vui lòng đợi nhân viên nhà hàng kiểm tra và khôi phục quyền Chủ bàn cho bạn.";
+
+            // Bắn API xin cấp lại quyền
+            fetch(contextPath + '/api/table-join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=requestReclaimHost'
+            })
+            .then(response => response.text())
+            .then(res => {
+                if(res === 'success') {
+                    // Chờ nhân viên duyệt
+                    checkInterval = setInterval(checkStatus, 3000);
+                } else {
+                    alert("Có lỗi xảy ra khi gửi yêu cầu!");
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Vòng lặp kiểm tra kết quả duyệt (Dùng chung cho cả Guest và Host)
         function checkStatus() {
             fetch(contextPath + '/api/table-join?action=checkStatus')
             .then(response => response.json())
             .then(data => {
-                if(data.status === 'approved') {
+                // Đã xử lý gộp chung logic cho cả Guest (approved) và Host khôi phục (approved_reclaim)
+                if(data.status === 'approved' || data.status === 'approved_reclaim') {
                     clearInterval(checkInterval); // Ngừng hỏi
                     // Thành công -> Tự động chuyển hướng nhảy vào trang Menu chọn món
                     window.location.href = contextPath + '/menu';
