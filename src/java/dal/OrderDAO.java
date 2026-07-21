@@ -33,21 +33,7 @@ public class OrderDAO {
                 ps.setNull(1, Types.INTEGER);
             }
 
-            // 🌟 BẮT ĐẦU ĐOẠN LOGIC TỰ ĐỘNG GÁN NHÂN VIÊN
             Integer employeeID = order.getEmployeeID();
-            
-            if (employeeID == null) {
-                try {
-                    StaffTableDAO staffTableDAO = new StaffTableDAO();
-                    employeeID = staffTableDAO.findLeastLoadedServingEmployee(conn);
-                    
-                    if (employeeID == null) {
-                        employeeID = staffTableDAO.findLeastLoadedActiveServingEmployee(conn);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[OrderDAO] Tự động gán nhân viên lỗi: " + e.getMessage());
-                }
-            }
 
             if (employeeID != null) {
                 ps.setInt(2, employeeID);
