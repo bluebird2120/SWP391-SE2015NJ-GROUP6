@@ -299,7 +299,8 @@
                                         </c:if>
                                         
                                         <%-- NÚT CẤP LẠI QUYỀN CHỦ BÀN DÀNH CHO NHÂN VIÊN --%>
-                                        <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
+                                        <%-- Chỉ hiện khi bàn đang có khách VÀ orderID nằm trong danh sách đang xin cấp lại --%>
+                                        <c:if test="${(t.physicalStatus == 'serving' || t.physicalStatus == 'occupied') && reclaimOrders.contains(t.orderID)}">
                                             <button type="button" 
                                                     style="background: transparent; color: #dc2626; border: 1px solid #dc2626; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-top: 4px;" 
                                                     onclick="approveReclaimHost(${t.orderID})">
