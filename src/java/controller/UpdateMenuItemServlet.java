@@ -30,7 +30,7 @@ import model.MenuItemImages;
  *
  * @author Admin
  */
-@WebServlet(name = "UpdateMenuItemServlet", urlPatterns = {"/update-menu"})
+@WebServlet(name = "UpdateMenuItemServlet", urlPatterns = {"/owner/update-menu"})
 @MultipartConfig(
         fileSizeThreshold = 2 * 1024 * 1024,
         maxFileSize = 10 * 1024 * 1024,
@@ -79,7 +79,13 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession();
+        HttpSession session = request.getSession(false);
+        // [PHAN QUYEN] Chi Owner (roleID=1) moi duoc them/sua mon an
+        model.Employee emp = (session != null) ? (model.Employee) session.getAttribute("employee") : null;
+        if (emp == null || emp.getRoleID() != 1) {
+            response.sendRedirect(request.getContextPath() + "/unauthorized");
+            return;
+        }
         String id_raw = request.getParameter("id");
         String backUrl = (String) session.getAttribute("lastDishListUrl");
         int id = ((id_raw != null) && (!id_raw.isEmpty())) ? Integer.parseInt(id_raw) : 0;
@@ -109,7 +115,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         request.setAttribute("list", categoryList);
         request.setAttribute("listMethod", listMethod);
         request.setAttribute("backUrl", backUrl);
-        request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/dish-update.jsp").forward(request, response);
     }
 
     /**
@@ -123,7 +129,13 @@ public class UpdateMenuItemServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession();
+        HttpSession session = request.getSession(false);
+        // [PHAN QUYEN] Chi Owner (roleID=1) moi duoc them/sua mon an
+        model.Employee emp = (session != null) ? (model.Employee) session.getAttribute("employee") : null;
+        if (emp == null || emp.getRoleID() != 1) {
+            response.sendRedirect(request.getContextPath() + "/unauthorized");
+            return;
+        }
         MenuItem mi;
         double MAX_FILE_SIZE = 5 * 1024 * 1024;
         String itemName = request.getParameter("name");
@@ -222,8 +234,10 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 request.setAttribute("subImages", subImages);
             }
             List categoryList = menuCategoryDAO.getAllMenuCategory();
+            List<CookingMethod> listMethodErr = cm.getAllCookingMethod();
             request.setAttribute("dish", mi);
             request.setAttribute("list", categoryList);
+            request.setAttribute("listMethod", listMethodErr); // [FIX] thêm listMethod để select không rỗng
             request.setAttribute("errorName", errorName);
             request.setAttribute("errorDescription", errorDescription);
             request.setAttribute("errorPrice", errorPrice);
@@ -231,7 +245,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             request.setAttribute("errorAllergyNotes", errorAllergyNotes);
             request.setAttribute("errorMainImage", errorMainImage);
             request.setAttribute("errorSubImage", errorSubImage);
-            request.getRequestDispatcher("views/admin/dish-update.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/dish-update.jsp").forward(request, response);
             return;
         }
         int categoryId = Integer.parseInt(categoryId_raw);

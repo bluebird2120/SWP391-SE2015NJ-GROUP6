@@ -74,7 +74,7 @@ public class CategoryController extends HttpServlet {
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
 
-        request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/category-list.jsp").forward(request, response);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class CategoryController extends HttpServlet {
             request.setAttribute("modalErrorID", id);
             request.setAttribute("modalErrorName", categoryName);
 
-            request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/category-list.jsp").forward(request, response);
             return;
         }
 

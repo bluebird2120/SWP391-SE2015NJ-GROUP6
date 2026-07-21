@@ -67,7 +67,7 @@ public class AdminInvoiceDetailController extends HttpServlet {
             request.setAttribute("orderItems", orderItems);
             request.setAttribute("menuItems", menuItems);
             
-            request.getRequestDispatcher("/views/admin/invoice-detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/invoice-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/owner/invoices");

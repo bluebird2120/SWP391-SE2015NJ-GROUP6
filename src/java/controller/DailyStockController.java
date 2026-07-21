@@ -106,7 +106,7 @@ public class DailyStockController extends HttpServlet {
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
 
-        request.getRequestDispatcher("/views/admin/daily-stock.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/daily-stock.jsp").forward(request, response);
     }
 
     @Override
@@ -217,7 +217,7 @@ public class DailyStockController extends HttpServlet {
             request.setAttribute("totalPage", totalPage);
             request.setAttribute("currentPage", page);
 
-            request.getRequestDispatcher("/views/admin/daily-stock.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/daily-stock.jsp").forward(request, response);
             return;
         }
 

@@ -74,7 +74,7 @@ public class MethodCookingController extends HttpServlet {
             cookingMethod.setInactiveMenuItem(inactiveDish);
             cookingMethod.setTotalDish(totalDish);
         }
-        request.getRequestDispatcher("/views/admin/method-list.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/method-list.jsp").forward(request, response);
     }
 
     @Override

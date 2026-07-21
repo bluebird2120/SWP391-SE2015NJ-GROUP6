@@ -384,8 +384,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=1&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${currentPage - 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -397,8 +397,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${currentPage + 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${totalPage}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>

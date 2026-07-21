@@ -169,7 +169,7 @@ public class MenuPerformaneController extends HttpServlet {
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
 
-        request.getRequestDispatcher("views/admin/top-selling.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/top-selling.jsp").forward(request, response);
     }
 
     // Hàm tiện ích bẫy lỗi gộp 

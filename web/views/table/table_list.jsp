@@ -216,7 +216,7 @@
         </c:if>
 
         <c:if test="${userRole == 1}">
-            <a href="${pageContext.request.contextPath}/manage-table?action=add" class="btn-vian btn-add">
+            <a href="${pageContext.request.contextPath}/owner/manage-table?action=add" class="btn-vian btn-add">
                 + Thêm bàn mới
             </a>
         </c:if>
@@ -309,10 +309,10 @@
                             </c:choose>
                         </td>
                         <td>
-                            <a href="${pageContext.request.contextPath}/manage-table?action=detail&id=${t.tableID}" class="btn-vian btn-detail">Chi tiết</a>
+                            <a href="${pageContext.request.contextPath}/owner/manage-table?action=detail&id=${t.tableID}" class="btn-vian btn-detail">Chi tiết</a>
 
                             <c:if test="${userRole == 1}">
-                                <a href="${pageContext.request.contextPath}/manage-table?action=edit&id=${t.tableID}" class="btn-vian btn-edit">Sửa</a>
+                                <a href="${pageContext.request.contextPath}/owner/manage-table?action=edit&id=${t.tableID}" class="btn-vian btn-edit">Sửa</a>
                             </c:if>
                         </td>
                     </tr>
@@ -323,8 +323,8 @@
             <div class="pagination">
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/manage-table?page=1&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage - 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang trước">Trước</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=1&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${currentPage - 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang trước">Trước</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Đầu</span>
@@ -336,8 +336,8 @@
 
                 <c:choose>
                     <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage + 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${totalPage}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Đến trang cuối">Cuối</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${currentPage + 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${totalPage}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Đến trang cuối">Cuối</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Sau</span>

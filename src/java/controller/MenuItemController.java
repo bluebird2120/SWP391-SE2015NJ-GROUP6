@@ -258,24 +258,25 @@ public class MenuItemController extends HttpServlet {
         }
         // === KẾT THÚC CHÈN THÊM ===
 
-        // === PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
+        // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Employee loginUser = (Employee) session.getAttribute("employee");
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
 
-        boolean isOwnerViewingAdmin = loginUser != null
-                && loginUser.getRoleID() == 1
-                && sessionTableID == null;
-
-        if (isOwnerViewingAdmin) {
+        // Nếu là Employee VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Owner/Staff
+        if (loginUser != null && sessionTableID == null) {
+            // [PHAN QUYEN] Chi Owner (1) va Staff (2) moi xem duoc dish-list
+            if (loginUser.getRoleID() != 1 && loginUser.getRoleID() != 2) {
+                response.sendRedirect(request.getContextPath() + "/unauthorized");
+                return;
+            }
             String currentUrl = request.getRequestURI();
             if (request.getQueryString() != null) {
                 currentUrl += "?" + request.getQueryString();
             }
             request.getSession().setAttribute("lastDishListUrl", currentUrl);
-            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/dish-list.jsp").forward(request, response);
         } else {
-            // Còn lại (khách vãng lai, khách quét QR, staff xem menu tham khảo,
-            // hoặc bất kỳ ai chưa đăng nhập) -> Trỏ vào trang Menu công khai.
+            // Khách vãng lai, Khách quét QR -> Trang Menu User
             request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
         }
         // === KẾT THÚC PHẦN CHỈNH SỬA ===

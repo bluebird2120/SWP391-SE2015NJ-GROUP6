@@ -374,8 +374,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/method-management?page=1&search=${currentSearch}&isAvailable=${currentAvailable}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage - 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/owner/method-management?page=1&search=${currentSearch}&isAvailable=${currentAvailable}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/owner/method-management?page=${currentPage - 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -387,8 +387,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${currentPage + 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/method-management?page=${totalPage}&search=${currentSearch}&isAvailable=${currentAvailable}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/owner/method-management?page=${currentPage + 1}&search=${currentSearch}&isAvailable=${currentAvailable}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/owner/method-management?page=${totalPage}&search=${currentSearch}&isAvailable=${currentAvailable}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
