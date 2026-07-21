@@ -112,17 +112,17 @@
                     <div class="card-desc">Điểm danh ca làm trong ngày</div>
                 </a>
 
-                <a class="card" href="${pageContext.request.contextPath}/owner/order-history">
+                <a class="card" href="${pageContext.request.contextPath}/owner/invoices">
                     <div class="card-icon"><i class="fas fa-history"></i></div>
                     <div class="card-title">Lịch sử đơn hàng</div>
                     <div class="card-desc">Xem các đơn đã hoàn tất</div>
                 </a>
-                <a class="card" href="${pageContext.request.contextPath}/manage-table">
+                <a class="card" href="${pageContext.request.contextPath}/owner/manage-table">
                     <div class="card-icon"><i class="fas fa-chair"></i></div>
                     <div class="card-title">Bàn nhà hàng</div>
                     <div class="card-desc">Sơ đồ bàn và trạng thái bàn</div>
                 </a>
-                <a class="card" href="${pageContext.request.contextPath}/restaurant-analytics-dashboard">
+                <a class="card" href="${pageContext.request.contextPath}/owner/restaurant-analytics-dashboard">
                     <div class="card-icon"><i class="fas fa-chart-line"></i></div>
                     <div class="card-title">Báo cáo doanh thu</div>
                     <div class="card-desc">Phân tích hoạt động kinh doanh</div>

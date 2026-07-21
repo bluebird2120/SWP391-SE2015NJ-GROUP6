@@ -84,7 +84,7 @@
 
                 <h2 class="vian-title">
                     Chi tiết Chứng từ
-                    <a href="${pageContext.request.contextPath}/admin/invoices" style="font-size: 14px; color: #8B4513; text-decoration: none;">← Quay lại danh sách</a>
+                    <a href="${pageContext.request.contextPath}/owner/invoices" style="font-size: 14px; color: #8B4513; text-decoration: none;">← Quay lại danh sách</a>
                 </h2>
 
                 <div class="invoice-card" id="printableInvoice">

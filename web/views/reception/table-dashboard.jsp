@@ -300,6 +300,7 @@
                                         </c:if>
                                         
                                         <%-- NÚT CẤP LẠI QUYỀN CHỦ BÀN DÀNH CHO NHÂN VIÊN --%>
+
                                         <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
                                             <%-- [HUY PHUC VU LE TAN] Chi cho huy khi don chua co mon gui bep; backend se kiem tra lai. --%>
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables" style="display:inline-block;">
@@ -311,11 +312,16 @@
                                                     <i class="fas fa-ban"></i> Huy phuc vu
                                                 </button>
                                             </form>
+
+                                        <%-- Chỉ hiện khi bàn đang có khách VÀ orderID nằm trong danh sách đang xin cấp lại --%>
+                                        <c:if test="${(t.physicalStatus == 'serving' || t.physicalStatus == 'occupied') && reclaimOrders.contains(t.orderID)}">
+
                                             <button type="button" 
                                                     style="background: transparent; color: #dc2626; border: 1px solid #dc2626; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-top: 4px;" 
                                                     onclick="approveReclaimHost(${t.orderID})">
                                                 <i class="fas fa-sync-alt"></i> Cấp lại Quyền
                                             </button>
+                                        </c:if>
                                         </c:if>
                                     </td>
                                 </tr>

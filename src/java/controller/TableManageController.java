@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet(name = "TableManageController", urlPatterns = {"/manage-table"})
+@WebServlet(name = "TableManageController", urlPatterns = {"/owner/manage-table"})
 public class TableManageController extends HttpServlet {
 
     private final TableDAO tableDAO = new TableDAO();
@@ -42,7 +42,7 @@ public class TableManageController extends HttpServlet {
         switch (action) {
             case "add":
                 if (roleID != 1) { // KHÔNG PHẢI OWNER
-                    response.sendRedirect("manage-table?error=unauthorized");
+                    response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
                     return;
                 }
                 request.setAttribute("mode", "add"); // Truyền cờ trạng thái "Thêm"
@@ -51,7 +51,7 @@ public class TableManageController extends HttpServlet {
 
             case "edit":
                 if (roleID != 1) { // KHÔNG PHẢI OWNER
-                    response.sendRedirect("manage-table?error=unauthorized");
+                    response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
                     return;
                 }
                 int editId = Integer.parseInt(request.getParameter("id"));
@@ -147,7 +147,7 @@ public class TableManageController extends HttpServlet {
 
         // BẢO MẬT CẤP 2: Chặn ngay nếu nhân viên (Role != 1) cố tình gửi POST request bằng tool
         if (loginUser == null || loginUser.getRoleID() != 1) {
-            response.sendRedirect("manage-table?error=unauthorized");
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
             return;
         }
 
@@ -216,17 +216,17 @@ public class TableManageController extends HttpServlet {
         // BẮT ĐẦU SỬA TỪ ĐÂY
         if ("add".equals(action)) {
             tableDAO.addTable(t);
-            response.sendRedirect("manage-table?msg=add_success");
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table?msg=add_success");
             
         } else if ("edit".equals(action) || "update".equals(action)) { 
             // ĐÃ SỬA: Chấp nhận cả "edit" và "update"
             tableDAO.updateTable(t);
-            response.sendRedirect("manage-table?msg=update_success");
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table?msg=update_success");
             
         } else {
             // BỔ SUNG: Cứu cánh cuối cùng. Nếu vì lý do nào đó action bị sai, 
             // nó sẽ tự động đá về trang danh sách thay vì hiện trang trắng
-            response.sendRedirect("manage-table");
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table");
         }
     }
 }

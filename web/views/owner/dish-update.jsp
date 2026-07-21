@@ -195,7 +195,7 @@
                         </div>
                     </c:if>
 
-                    <form id="dishForm" action="${pageContext.request.contextPath}/update-menu" method="post" enctype="multipart/form-data">
+                    <form id="dishForm" action="${pageContext.request.contextPath}/owner/update-menu" method="post" enctype="multipart/form-data">
                         <input type="hidden" value="${dish.itemID}" name="id"/>
                         <div class="form-layout">
                             <div class="data-block">

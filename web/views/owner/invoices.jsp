@@ -208,7 +208,7 @@
                 </h2>
 
                 <div class="vian-filter-bar">
-                    <form action="${pageContext.request.contextPath}/admin/invoices" method="GET" class="filter-form">
+                    <form action="${pageContext.request.contextPath}/owner/invoices" method="GET" class="filter-form">
                         
                         <div class="filter-group">
                             <label>Từ ngày:</label>
@@ -231,7 +231,7 @@
 
                         <div style="display: flex; gap: 8px;">
                             <button type="submit" class="btn-filter">Tìm kiếm</button>
-                            <a href="${pageContext.request.contextPath}/admin/invoices" class="btn-clear">Xóa bộ lọc</a>
+                            <a href="${pageContext.request.contextPath}/owner/invoices" class="btn-clear">Xóa bộ lọc</a>
                         </div>
                     </form>
                 </div>
@@ -265,7 +265,7 @@
                                     </c:choose>
                                 </td>
                                 <td>
-                                    <a href="${pageContext.request.contextPath}/admin/invoice-detail?id=${inv.invoiceID}" class="btn-vian btn-detail">Chi tiết</a>
+                                    <a href="${pageContext.request.contextPath}/owner/invoice-detail?id=${inv.invoiceID}" class="btn-vian btn-detail">Chi tiết</a>
                                 </td>
                             </tr>
                         </c:forEach>
@@ -283,8 +283,8 @@
                     <div class="pagination">
                         <c:choose>
                             <c:when test="${currentPage > 1}">
-                                <a href="${pageContext.request.contextPath}/admin/invoices?page=1&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Về trang đầu">Đầu</a>
-                                <a href="${pageContext.request.contextPath}/admin/invoices?page=${currentPage - 1}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Trang trước">Trước</a>
+                                <a href="${pageContext.request.contextPath}/owner/invoices?page=1&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Về trang đầu">Đầu</a>
+                                <a href="${pageContext.request.contextPath}/owner/invoices?page=${currentPage - 1}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Trang trước">Trước</a>
                             </c:when>
                             <c:otherwise>
                                 <span class="disabled">Đầu</span>
@@ -296,8 +296,8 @@
 
                         <c:choose>
                             <c:when test="${currentPage < totalPages}">
-                                <a href="${pageContext.request.contextPath}/admin/invoices?page=${currentPage + 1}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Trang sau">Sau</a>
-                                <a href="${pageContext.request.contextPath}/admin/invoices?page=${totalPages}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Đến trang cuối">Cuối</a>
+                                <a href="${pageContext.request.contextPath}/owner/invoices?page=${currentPage + 1}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Trang sau">Sau</a>
+                                <a href="${pageContext.request.contextPath}/owner/invoices?page=${totalPages}&startDate=${param.startDate}&endDate=${param.endDate}&status=${param.status}" title="Đến trang cuối">Cuối</a>
                             </c:when>
                             <c:otherwise>
                                 <span class="disabled">Sau</span>

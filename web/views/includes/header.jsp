@@ -343,7 +343,6 @@
             <a href="${pageContext.request.contextPath}/reservation">Đặt bàn</a>
         </c:if>
         <a href="${pageContext.request.contextPath}/reviews">Đánh giá</a>
-        <a href="${pageContext.request.contextPath}/page/album">Album ảnh</a>
         <c:if test="${sessionScope.employee != null}">
             <a href="${pageContext.request.contextPath}${sessionScope.employee.roleID == 1 ? '/owner/dashboard' : '/staff/dashboard'}">
                 <i class="fa-solid fa-gauge-high"></i>Quản lý

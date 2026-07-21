@@ -262,16 +262,21 @@ public class MenuItemController extends HttpServlet {
         Employee loginUser = (Employee) session.getAttribute("employee");
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
 
-        // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
-        if (sessionTableID == null) {
+        // Nếu là Employee VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Owner/Staff
+        if (loginUser != null && sessionTableID == null) {
+            // [PHAN QUYEN] Chi Owner (1) va Staff (2) moi xem duoc dish-list
+            if (loginUser.getRoleID() != 1 && loginUser.getRoleID() != 2) {
+                response.sendRedirect(request.getContextPath() + "/unauthorized");
+                return;
+            }
             String currentUrl = request.getRequestURI();
             if (request.getQueryString() != null) {
                 currentUrl += "?" + request.getQueryString();
             }
             request.getSession().setAttribute("lastDishListUrl", currentUrl);
-            request.getRequestDispatcher("/views/admin/dish-list.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/dish-list.jsp").forward(request, response);
         } else {
-            // Còn lại (Khách vãng lai, Khách quét QR) -> Trỏ vào trang Menu User
+            // Khách vãng lai, Khách quét QR -> Trang Menu User
             request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
         }
         // === KẾT THÚC PHẦN CHỈNH SỬA ===
