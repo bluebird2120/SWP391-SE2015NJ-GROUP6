@@ -16,7 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet(name = "AdminInvoiceDetailController", urlPatterns = {"/admin/invoice-detail"})
+@WebServlet(name = "AdminInvoiceDetailController", urlPatterns = {"/owner/invoice-detail"})
 public class AdminInvoiceDetailController extends HttpServlet {
 
     @Override
@@ -34,7 +34,7 @@ public class AdminInvoiceDetailController extends HttpServlet {
         // 2. LẤY ID HÓA ĐƠN TỪ URL
         String idParam = request.getParameter("id");
         if (idParam == null || idParam.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/admin/invoices");
+            response.sendRedirect(request.getContextPath() + "/owner/invoices");
             return;
         }
 
@@ -47,7 +47,7 @@ public class AdminInvoiceDetailController extends HttpServlet {
             
             Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
             if (invoice == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/invoices");
+                response.sendRedirect(request.getContextPath() + "/owner/invoices");
                 return;
             }
             
@@ -67,10 +67,10 @@ public class AdminInvoiceDetailController extends HttpServlet {
             request.setAttribute("orderItems", orderItems);
             request.setAttribute("menuItems", menuItems);
             
-            request.getRequestDispatcher("/views/admin/invoice-detail.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/invoice-detail.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/admin/invoices");
+            response.sendRedirect(request.getContextPath() + "/owner/invoices");
         }
     }
 

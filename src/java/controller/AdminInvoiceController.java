@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet(name = "AdminInvoiceController", urlPatterns = {"/admin/invoices"})
+@WebServlet(name = "AdminInvoiceController", urlPatterns = {"/owner/invoices"})
 public class AdminInvoiceController extends HttpServlet {
 
     @Override
@@ -65,7 +65,7 @@ public class AdminInvoiceController extends HttpServlet {
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalRecords", totalRecords);
         
-        request.getRequestDispatcher("/views/admin/invoices.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/invoices.jsp").forward(request, response);
     }
 
     @Override

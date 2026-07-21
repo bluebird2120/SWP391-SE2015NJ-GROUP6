@@ -296,7 +296,7 @@
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form" id="filterFormID">
+                    <form action="${pageContext.request.contextPath}/owner/daily-stock" method="get" class="filter-form" id="filterFormID">
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
 
                         <select name="categoryID" class="filter-select" id="jsSelectCategory">
@@ -329,7 +329,7 @@
                         <button type="button" class="btn-apply-all" onclick="applyQuantityToAllFields()">Áp dụng</button>
                     </div>
 
-                    <form id="stockMainForm" action="${pageContext.request.contextPath}/daily-stock" method="post" style="display: block; width: 100%;">
+                    <form id="stockMainForm" action="${pageContext.request.contextPath}/owner/daily-stock" method="post" style="display: block; width: 100%;">
                         <input type="hidden" name="search" value="${currentSearch}"/>
                         <input type="hidden" name="categoryID" value="${currentCategory}"/>
                         <input type="hidden" name="cookingMethod" value="${currentMethod}"/>
@@ -384,8 +384,8 @@
                         <div class="pagination">
                             <c:choose>
                                 <c:when test="${currentPage > 1}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=1&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Đầu</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage - 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Trước</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=1&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Đầu</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${currentPage - 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Trước</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Đầu</span>
@@ -397,8 +397,8 @@
 
                             <c:choose>
                                 <c:when test="${currentPage < totalPage}">
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${currentPage + 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Sau</a>
-                                    <a href="${pageContext.request.contextPath}/daily-stock?page=${totalPage}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Cuối</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${currentPage + 1}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Sau</a>
+                                    <a href="${pageContext.request.contextPath}/owner/daily-stock?page=${totalPage}&search=${currentSearch}&categoryID=${currentCategory}&cookingMethod=${currentMethod}&date=${date}">Cuối</a>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="disabled">Sau</span>
