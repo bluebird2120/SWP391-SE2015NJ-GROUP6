@@ -31,7 +31,9 @@ public class StaffTableDAO extends DBContext {
                 + "LEFT JOIN Order_Table ot ON ot.tableID = t.tableID "
                 + " AND EXISTS (SELECT 1 FROM `Order` active_o "
                 + " WHERE active_o.orderID = ot.orderID "
-                + " AND active_o.orderStatus <> 'cancelled' "
+                // [HUY PHUC VU LE TAN] Don cancelled nhung tableStatus='cleaning'
+                // van phai giu ban o trang thai cho don, khong duoc tinh la trong.
+                + " AND (active_o.orderStatus <> 'cancelled' OR active_o.tableStatus = 'cleaning') "
                 //  ĐÃ SỬA: Đưa arrived và occupied vào danh sách bàn bận
                 + " AND active_o.tableStatus IN ('pending','reserved','arrived','occupied','cleaning')) "
                 + "LEFT JOIN `Order` o ON o.orderID = ot.orderID "
@@ -67,7 +69,10 @@ public class StaffTableDAO extends DBContext {
                 + "FROM `Order` o "
                 + "JOIN Order_Table ot ON ot.orderID=o.orderID "
                 + "JOIN `Table` t ON t.tableID=ot.tableID "
-                + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' "
+                + "WHERE o.employeeID=? "
+                // [HUY PHUC VU LE TAN] Don huy phuc vu se la cancelled + cleaning
+                // de nhan vien van thay ban can don dep.
+                + "AND (o.orderStatus<>'cancelled' OR o.tableStatus='cleaning') "
             
                 + "AND o.tableStatus IN ('pending','reserved','arrived','occupied','cleaning') "
                 + "ORDER BY o.orderTime,t.tableName";
@@ -110,7 +115,9 @@ public class StaffTableDAO extends DBContext {
                 + "FROM `Order` o "
                 + "JOIN Order_Table ot ON ot.orderID=o.orderID "
                 + "JOIN `Table` t ON t.tableID=ot.tableID "
-                + "WHERE o.employeeID=? AND o.orderStatus<>'cancelled' ";
+                + "WHERE o.employeeID=? "
+                // [HUY PHUC VU LE TAN] Van hien don cancelled neu ban dang cho don.
+                + "AND (o.orderStatus<>'cancelled' OR o.tableStatus='cleaning') ";
         if (!includeHistory) {
             // [BAN DANG PHUC VU] Man hinh chinh chi hien don con can thao tac,
             // don da hoan tat/da don xong se xem o lich su phuc vu.
@@ -486,12 +493,50 @@ public class StaffTableDAO extends DBContext {
     }
 
     /**
+     * [HUY PHUC VU LE TAN]
+     * Le tan chi duoc huy phuc vu khi don chua co mon gui bep. Ban da gan cho
+     * khach thi khong tra ve available ngay, ma chuyen sang cleaning de nhan
+     * vien don dep xong moi mo lai ban.
+     */
+    public String cancelServiceByReception(int orderID) {
+        String hasItemSql = "SELECT 1 FROM OrderItem WHERE orderID=? LIMIT 1";
+        String cancelSql = "UPDATE `Order` "
+                + "SET orderStatus='cancelled', tableStatus='cleaning', "
+                + "checkoutRequestAt=NULL, hostToken=NULL "
+                + "WHERE orderID=? "
+                + "AND orderStatus NOT IN ('completed','cancelled') "
+                + "AND tableStatus IN ('arrived','occupied','pending')";
+
+        try {
+            try (PreparedStatement ps = connection.prepareStatement(hasItemSql)) {
+                ps.setInt(1, orderID);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return "Don da co mon gui bep, vui long de nhan vien xu ly thanh toan.";
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = connection.prepareStatement(cancelSql)) {
+                ps.setInt(1, orderID);
+                return ps.executeUpdate() > 0
+                        ? "cancel_service_success"
+                        : "Khong the huy phuc vu cho don nay.";
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Khong the huy phuc vu do loi du lieu.";
+        }
+    }
+
+    /**
      * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
      */
     public boolean markCleaningCompleted(int orderID, int employeeID) {
         String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "
-                + "AND orderStatus='completed' AND tableStatus='cleaning'";
+                // [HUY PHUC VU LE TAN] Cho phep nhan vien don xong ca ban bi huy phuc vu.
+                + "AND orderStatus IN ('completed','cancelled') AND tableStatus='cleaning'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, orderID);
             ps.setInt(2, employeeID);
@@ -612,7 +657,9 @@ public class StaffTableDAO extends DBContext {
         // [TABLE STATUS FLOW] Ban pending/reserved/arrived/occupied/cleaning deu duoc xem la ban.
         String sql = "SELECT 1 FROM Order_Table ot "
                 + "JOIN `Order` o ON o.orderID=ot.orderID "
-                + "WHERE ot.tableID=? AND o.orderStatus<>'cancelled' "
+                + "WHERE ot.tableID=? "
+                // [HUY PHUC VU LE TAN] Cancelled + cleaning van la ban dang ban vi chua don xong.
+                + "AND (o.orderStatus<>'cancelled' OR o.tableStatus='cleaning') "
                 //  ĐÃ SỬA
                 + "AND o.tableStatus IN ('pending','reserved','arrived','occupied','cleaning') "
                 + "LIMIT 1 FOR UPDATE";
