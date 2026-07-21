@@ -91,9 +91,8 @@
                             <li><b>Sức chứa:</b> ${table.capacity} người</li>
                             <li><b>Khu vực:</b> 
                                 <c:choose>
-                                    <c:when test="${table.areaType == 'public'}">Sảnh chung</c:when>
-                                    <c:when test="${table.areaType == 'private'}">Phòng VIP</c:when>
-                                    <c:when test="${table.areaType == 'outdoor'}">Ngoài trời</c:when>
+                                    <c:when test="${table.areaType == 'public'}">Ngoài Sảnh</c:when>
+                                    <c:when test="${table.areaType == 'private'}">Trong Phòng</c:when>
                                     <c:otherwise>${table.areaType}</c:otherwise>
                                 </c:choose>
                             </li>
@@ -151,9 +150,8 @@
                         <div class="vian-form-group">
                             <label>Khu vực:</label>
                             <select class="vian-input" name="areaType">
-                                <option value="public" ${table.areaType == 'public' ? 'selected' : ''}>Sảnh chung (Public)</option>
-                                <option value="private" ${table.areaType == 'private' ? 'selected' : ''}>Phòng riêng (Private)</option>
-                                <option value="outdoor" ${table.areaType == 'outdoor' ? 'selected' : ''}>Ngoài trời (Outdoor)</option>
+                                <option value="public" ${table.areaType == 'public' ? 'selected' : ''}>Ngoài Sảnh (Public)</option>
+                                <option value="private" ${table.areaType == 'private' ? 'selected' : ''}>Trong Phòng (Private)</option>                          
                             </select>
                         </div>
 

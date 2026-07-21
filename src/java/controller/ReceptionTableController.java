@@ -35,6 +35,10 @@ public class ReceptionTableController extends HttpServlet {
         request.setAttribute("tableSummary", dao.getSummaryByTableType());
         request.setAttribute("reservationRequirements",
                 dao.getReservationsWaitingForTables());
+        // Lấy danh sách các bàn đang xin cấp lại quyền Chủ bàn
+        dal.TableJoinRequestDAO joinReqDAO = new dal.TableJoinRequestDAO();
+        java.util.List<Integer> reclaimOrders = joinReqDAO.getOrdersWithPendingReclaim();
+        request.setAttribute("reclaimOrders", reclaimOrders);
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 

@@ -125,4 +125,22 @@ public class TableJoinRequestDAO extends DBContext {
         }
         return false;
     }
+    
+    /**
+     * Lấy danh sách các Đơn hàng (orderID) đang có yêu cầu khôi phục quyền Chủ bàn
+     */
+    public java.util.List<Integer> getOrdersWithPendingReclaim() {
+        java.util.List<Integer> list = new java.util.ArrayList<>();
+        String sql = "SELECT DISTINCT orderID FROM TableJoinRequest WHERE status = 'pending_reclaim'";
+        
+        try (java.sql.PreparedStatement ps = connection.prepareStatement(sql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(rs.getInt("orderID"));
+            }
+        } catch (java.sql.SQLException e) {
+            System.err.println("[TableJoinRequestDAO] getOrdersWithPendingReclaim lỗi: " + e.getMessage());
+        }
+        return list;
+    }
 }

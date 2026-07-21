@@ -345,8 +345,7 @@
             }
         </style>
     </head>
-    <body>
-        <%@ include file="/views/includes/header.jsp" %>
+    <body>        
         <div class="container">
 
             <c:if test="${not empty sessionScope.successMsg}">

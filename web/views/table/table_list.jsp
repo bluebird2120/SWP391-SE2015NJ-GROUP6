@@ -246,9 +246,8 @@
                     <label>Khu vực:</label>
                     <select name="searchArea" class="filter-input">
                         <option value="all" ${searchArea == 'all' || empty searchArea ? 'selected' : ''}>-- Tất cả khu vực --</option>
-                        <option value="public" ${searchArea == 'public' ? 'selected' : ''}>Sảnh chung</option>
-                        <option value="private" ${searchArea == 'private' ? 'selected' : ''}>Phòng VIP</option>
-                        <option value="outdoor" ${searchArea == 'outdoor' ? 'selected' : ''}>Ngoài trời</option>
+                        <option value="public" ${searchArea == 'public' ? 'selected' : ''}>Ngoài Sảnh</option>
+                        <option value="private" ${searchArea == 'private' ? 'selected' : ''}>Trong Phòng</option>                       
                     </select>
                 </div>
 
@@ -298,9 +297,8 @@
                         <td>${t.capacity} người</td>
                         <td>
                             <c:choose>
-                                <c:when test="${t.areaType == 'public'}">Sảnh chung</c:when>
-                                <c:when test="${t.areaType == 'private'}">Phòng VIP</c:when>
-                                <c:when test="${t.areaType == 'outdoor'}">Ngoài trời</c:when>
+                                <c:when test="${t.areaType == 'public'}">Ngoài Sảnh</c:when>
+                                <c:when test="${t.areaType == 'private'}">Trong Phòng</c:when>
                                 <c:otherwise>${t.areaType}</c:otherwise>
                             </c:choose>
                         </td>
