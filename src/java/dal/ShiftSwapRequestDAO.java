@@ -158,8 +158,13 @@ public class ShiftSwapRequestDAO extends DBContext {
                 storedApprovedByID = detail.getTargetEmployeeID();
             }
 
+            String expectedStatus = "pending";
+            if (detail != null && "cover".equals(detail.getRequestType())) {
+                expectedStatus = "pending_colleague";
+            }
 
-            String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? WHERE swapID = ?";
+            String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? "
+                    + "WHERE swapID = ? AND status = ?";
             try (PreparedStatement ps = conn.prepareStatement(updateRequestSql)) {
 
 
@@ -176,7 +181,12 @@ public class ShiftSwapRequestDAO extends DBContext {
 
                 ps.setInt(3, swapID);
 
-                ps.executeUpdate();
+                ps.setString(4, expectedStatus);
+
+                int affected = ps.executeUpdate();
+                if (affected == 0) {
+                    throw new SQLException("Yêu cầu đã được xử lý bởi người khác.");
+                }
             }
 
 
@@ -187,7 +197,7 @@ public class ShiftSwapRequestDAO extends DBContext {
                     if ("leave".equals(detail.getRequestType())) {
 
 
-                        String updateShiftSql = "UPDATE EmployeeShifts SET status = 'absent' WHERE shiftID = ?";
+                        String updateShiftSql = "UPDATE EmployeeShifts SET status = 'leave_approved' WHERE shiftID = ?";
                         try (PreparedStatement ps = conn.prepareStatement(updateShiftSql)) {
 
                             ps.setInt(1, detail.getRequesterShiftID());
