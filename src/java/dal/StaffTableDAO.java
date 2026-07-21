@@ -325,8 +325,10 @@ public class StaffTableDAO extends DBContext {
             Integer staffID;
             String tableName = "?";
             try {
-                EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-                staffID = esDAO.getActiveEmployeeForCurrentShift();
+                staffID = findLeastLoadedServingEmployee(connection);
+                if (staffID == null) {
+                    staffID = findLeastLoadedActiveServingEmployee(connection);
+                }
                 if (staffID == null) {
                     connection.rollback();
                     return false;
@@ -524,7 +526,7 @@ public class StaffTableDAO extends DBContext {
                 + "OR (st.startTime>st.endTime "
                 + "AND (CURRENT_TIME()>=st.startTime OR CURRENT_TIME()<=st.endTime))) "
                 + "GROUP BY es.employeeID "
-                + "ORDER BY active_orders ASC,es.employeeID ASC LIMIT 1";
+                + "ORDER BY active_orders ASC,es.employeeID ASC LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt("employeeID") : null;
@@ -573,7 +575,7 @@ public class StaffTableDAO extends DBContext {
                 + "AND es.status IN ('present','late') "
                 + "AND es.checkOutTime IS NULL) "
                 + "GROUP BY e.employeeID "
-                + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1";
+                + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt("employeeID") : null;
