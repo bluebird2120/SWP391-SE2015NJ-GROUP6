@@ -133,6 +133,12 @@
                 </a>
             </li>
             <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/reception/tables">
+                    <i class="fas fa-concierge-bell"></i> Tiếp nhận và gán bàn
+                </a>
+            </li>
+            <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/my-schedule">
                     <i class="fas fa-calendar-week"></i> Lịch làm việc
