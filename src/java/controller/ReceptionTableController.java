@@ -83,6 +83,11 @@ public class ReceptionTableController extends HttpServlet {
                         ? ("checkin".equals(action)
                                 ? "checkin_success" : "Mở bàn thành công")
                         : "Không thể mở bàn cho đơn này.";
+            } else if ("cancel_service".equals(action)) {
+                // [HUY PHUC VU LE TAN]
+                // Le tan chi huy duoc khi don chua co mon gui bep.
+                // Ban da duoc gan cho khach thi chuyen sang cleaning, khong ve available ngay.
+                message = new StaffTableDAO().cancelServiceByReception(orderID);
             } else {
                 message = "Thao tác không hợp lệ.";
             }
