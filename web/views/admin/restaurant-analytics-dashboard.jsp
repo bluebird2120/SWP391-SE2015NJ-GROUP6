@@ -156,7 +156,7 @@
                 <div class="alert">${dateMessage}</div>
             </c:if>
 
-            <form action="${pageContext.request.contextPath}/restaurant-analytics-dashboard" method="get" class="filter-bar">
+            <form action="${pageContext.request.contextPath}/owner/restaurant-analytics-dashboard" method="get" class="filter-bar">
                 <div class="quick-filter-group">
                     <a class="btn-quick ${filterType == 'today' ? 'active' : ''}" href="${pageContext.request.contextPath}/restaurant-analytics-dashboard?filterType=today">Hôm nay</a>
                     <a class="btn-quick ${filterType == 'week' ? 'active' : ''}" href="${pageContext.request.contextPath}/restaurant-analytics-dashboard?filterType=week">Tuần này</a>

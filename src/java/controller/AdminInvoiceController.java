@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet(name = "AdminInvoiceController", urlPatterns = {"/admin/invoices"})
+@WebServlet(name = "AdminInvoiceController", urlPatterns = {"/owner/invoices"})
 public class AdminInvoiceController extends HttpServlet {
 
     @Override

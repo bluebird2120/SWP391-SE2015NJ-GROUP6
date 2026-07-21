@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 import model.HourStat;
 
-@WebServlet(name = "PeakHoursController", urlPatterns = {"/peak-hours-analysis"})
+@WebServlet(name = "PeakHoursController", urlPatterns = {"/owner/peak-hours-analysis"})
 public class PeakHoursController extends HttpServlet {
 
     private final PeakHoursDAO dao = new PeakHoursDAO();

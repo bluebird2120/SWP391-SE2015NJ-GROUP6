@@ -299,7 +299,7 @@
                         <input class="btn-create" type="button" value="THÊM MỚI LOẠI MÓN" onclick="openCreateModal()"/>
                     </div>
 
-                    <form id="searchForm" action="${pageContext.request.contextPath}/category-management" method="get" class="search-container">
+                    <form id="searchForm" action="${pageContext.request.contextPath}/owner/category-management" method="get" class="search-container">
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm loại món ăn..." class="search-input"/>
 
                         <select name="isAvailable" class="filter-select" onchange="document.getElementById('searchForm').submit();">
@@ -345,7 +345,7 @@
                                     <td style="text-align: center;">
                                         <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${cat.categoryID}', '${cat.categoryName}')"/>
 
-                                        <form action="${pageContext.request.contextPath}/category-management" method="post" onsubmit="return confirmDisableCategory('${cat.categoryName}');">
+                                        <form action="${pageContext.request.contextPath}/owner/category-management" method="post" onsubmit="return confirmDisableCategory('${cat.categoryName}');">
                                             <input type="hidden" value="${cat.categoryID}" name="categoryID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${currentSearch}" name="search"/>
@@ -402,7 +402,7 @@
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
                 <h3>Chỉnh sửa tên loại món</h3>
-                <form id="editForm" action="category-management" method="post">
+                <form id="editForm" action="${pageContext.request.contextPath}/owner/category-management" method="post">
                     <input type="hidden" id="modalCategoryID" name="categoryID"/>
                     <!-- Phục hồi bộ lọc ẩn để tránh mất trang khi submit lỗi -->
                     <input type="hidden" value="${currentPage}" name="page"/>
@@ -423,7 +423,7 @@
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
                 <h3>Thêm mới loại món ăn</h3>
-                <form id="createForm" action="category-management" method="post">
+                <form id="createForm" action="${pageContext.request.contextPath}/owner/category-management" method="post">
                     <input type="hidden" name="categoryID" value="0"/>
                     <!-- Phục hồi bộ lọc ẩn để tránh mất trang khi submit lỗi -->
                     <input type="hidden" value="${currentPage}" name="page"/>

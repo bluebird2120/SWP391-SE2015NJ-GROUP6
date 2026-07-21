@@ -208,7 +208,7 @@
                 </h2>
 
                 <div class="vian-filter-bar">
-                    <form action="${pageContext.request.contextPath}/admin/invoices" method="GET" class="filter-form">
+                    <form action="${pageContext.request.contextPath}/owner/invoices" method="GET" class="filter-form">
                         
                         <div class="filter-group">
                             <label>Từ ngày:</label>
@@ -231,7 +231,7 @@
 
                         <div style="display: flex; gap: 8px;">
                             <button type="submit" class="btn-filter">Tìm kiếm</button>
-                            <a href="${pageContext.request.contextPath}/admin/invoices" class="btn-clear">Xóa bộ lọc</a>
+                            <a href="${pageContext.request.contextPath}/owner/invoices" class="btn-clear">Xóa bộ lọc</a>
                         </div>
                     </form>
                 </div>

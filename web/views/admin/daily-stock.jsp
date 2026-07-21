@@ -296,7 +296,7 @@
                         <ul id="missingItemsList" style="margin: 5px 0 0 0; padding-left: 20px; font-weight: 600;"></ul>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/daily-stock" method="get" class="filter-form" id="filterFormID">
+                    <form action="${pageContext.request.contextPath}/owner/daily-stock" method="get" class="filter-form" id="filterFormID">
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm tên món ăn..." class="filter-input" style="width: 220px;"/>
 
                         <select name="categoryID" class="filter-select" id="jsSelectCategory">
@@ -329,7 +329,7 @@
                         <button type="button" class="btn-apply-all" onclick="applyQuantityToAllFields()">Áp dụng</button>
                     </div>
 
-                    <form id="stockMainForm" action="${pageContext.request.contextPath}/daily-stock" method="post" style="display: block; width: 100%;">
+                    <form id="stockMainForm" action="${pageContext.request.contextPath}/owner/daily-stock" method="post" style="display: block; width: 100%;">
                         <input type="hidden" name="search" value="${currentSearch}"/>
                         <input type="hidden" name="categoryID" value="${currentCategory}"/>
                         <input type="hidden" name="cookingMethod" value="${currentMethod}"/>

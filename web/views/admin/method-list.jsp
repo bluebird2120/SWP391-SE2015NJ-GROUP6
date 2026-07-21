@@ -302,7 +302,7 @@
                         <input class="btn-create" type="button" value="THÊM MỚI CÁCH CHẾ BIẾN" onclick="openCreateModal()"/>
                     </div>
 
-                    <form id="searchForm" action="${pageContext.request.contextPath}/method-management" method="get" class="search-container">
+                    <form id="searchForm" action="${pageContext.request.contextPath}/owner/method-management" method="get" class="search-container">
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm cách chế biến..." class="search-input"/>
 
                         <select name="isAvailable" class="filter-select" onchange="document.getElementById('searchForm').submit();">
@@ -349,7 +349,7 @@
                                         <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${method.methodID}', '${method.methodName}')"/>
 
                                         <!-- 🌟 ĐÃ TÍNH HỢP: Thêm sự kiện onsubmit để kích hoạt cảnh báo khi vô hiệu hóa phương thức -->
-                                        <form action="${pageContext.request.contextPath}/method-management" method="post" onsubmit="return confirmDisableMethod('${method.methodName}');">
+                                        <form action="${pageContext.request.contextPath}/owner/method-management" method="post" onsubmit="return confirmDisableMethod('${method.methodName}');">
                                             <input type="hidden" value="${method.methodID}" name="methodID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
                                             <input type="hidden" value="${currentSearch}" name="search"/>
@@ -406,7 +406,7 @@
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
                 <h3>Chỉnh sửa tên chế biến</h3>
-                <form id="editForm" action="method-management" method="post">
+                <form id="editForm" action="${pageContext.request.contextPath}/owner/method-management" method="post">
                     <input type="hidden" id="modalMethodID" name="methodID"/>
                     <label class="form-label">Tên cách chế biến:</label>
                     <input type="text" id="modalMethodName" name="methodName"/>
@@ -421,7 +421,7 @@
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
                 <h3>Thêm mới cách chế biến</h3>
-                <form id="createForm" action="method-management" method="post">
+                <form id="createForm" action="${pageContext.request.contextPath}/owner/method-management" method="post">
                     <input type="hidden" name="methodID" value="0"/>
                     <label class="form-label">Nhập cách chế biến mới:</label>
                     <input type="text" id="createMethodName" name="methodName"/>

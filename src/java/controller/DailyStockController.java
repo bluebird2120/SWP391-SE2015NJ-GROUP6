@@ -19,7 +19,7 @@ import model.CookingMethod;
 import model.MenuCategory;
 import model.MenuItem;
 
-@WebServlet(name = "DailyStockController", urlPatterns = {"/daily-stock"})
+@WebServlet(name = "DailyStockController", urlPatterns = {"/owner/daily-stock"})
 public class DailyStockController extends HttpServlet {
 
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
@@ -239,7 +239,7 @@ public class DailyStockController extends HttpServlet {
             session.setAttribute("updateFail", "Cập nhật thất bại vì bạn đã nhập số lượng cho ngày hôm nay");
         }
 
-        response.sendRedirect(request.getContextPath() + "/daily-stock?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&categoryID=" + categoryID + "&cookingMethod=" + methodID + "&date=" + date);
+        response.sendRedirect(request.getContextPath() + "/owner/daily-stock?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&categoryID=" + categoryID + "&cookingMethod=" + methodID + "&date=" + date);
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {

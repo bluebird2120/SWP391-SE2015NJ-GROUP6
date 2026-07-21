@@ -16,7 +16,7 @@ import model.CookingMethod;
 import model.MenuCategory;
 import model.MenuItem;
 
-@WebServlet(name = "MenuPerformaneController", urlPatterns = {"/menu-performance"})
+@WebServlet(name = "MenuPerformaneController", urlPatterns = {"/owner/menu-performance"})
 public class MenuPerformaneController extends HttpServlet {
 
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();

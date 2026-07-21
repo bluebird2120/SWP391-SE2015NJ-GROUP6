@@ -114,7 +114,7 @@
                     <i class="fas fa-house"></i> Trang tổng quan
                 </a>
             </li>
-           
+
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/tables') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/tables">
@@ -130,12 +130,6 @@
                 <a class="nav-link ${pageContext.request.requestURI.contains('staff/dashboard') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/staff/dashboard">
                     <i class="fas fa-house"></i> Trang tổng quan
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/reception/tables">
-                    <i class="fas fa-chair"></i> Tiếp nhận và gán bàn
                 </a>
             </li>
             <li>
@@ -157,32 +151,20 @@
 
         <c:if test="${isOwner}">
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/reception/tables">
-                    <i class="fas fa-concierge-bell"></i> Tiếp nhận và gán bàn
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/order-history') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/order-history">
-                    <i class="fas fa-history"></i> Lịch sử đơn hàng
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('manage-table') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/manage-table">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/manage-table') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/manage-table">
                     <i class="fas fa-chair"></i> Bàn nhà hàng
                 </a>
             </li>
         </c:if>
 
         <c:if test="${!isReceptionist}">
-        <li>
-            <a class="nav-link ${pageContext.request.requestURI.contains('business-hours') ? 'active' : ''}"
-               href="${pageContext.request.contextPath}/business-hours?action=list">
-                <i class="fas fa-clock"></i> Giờ hoạt động
-            </a>
-        </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/business-hours') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/business-hours?action=list">
+                    <i class="fas fa-clock"></i> Giờ hoạt động
+                </a>
+            </li>
         </c:if>
 
         <%-- [PHAN QUYEN PHUC VU] Giu nguyen cac menu rieng cua Staff. --%>
@@ -256,8 +238,8 @@
         <c:if test="${isOwner}">
             <li><div class="nav-section-title"><i class="fas fa-money-bill-wave"></i> Tài chính</div></li>
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('invoice') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/admin/invoices">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/invoice') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/invoices">
                     <i class="fas fa-file-invoice"></i> Hóa đơn
                 </a>
             </li>
@@ -267,8 +249,8 @@
         <c:if test="${isOwner}">
             <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('categor') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/category-management">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/category-management') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/category-management">
                     <i class="fas fa-list"></i> Danh mục món
                 </a>
             </li>
@@ -279,14 +261,14 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('daily-inventory') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/daily-stock">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/daily-stock') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/daily-stock">
                     <i class="fas fa-boxes"></i> Tồn kho hàng ngày
                 </a>
             </li>
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('method-management') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/method-management">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/method-management') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/method-management">
                     <i class="fas fa-fire-burner"></i> Phương thức chế biến
                 </a>
             </li>
@@ -298,20 +280,20 @@
                 <div class="nav-section-title"><i class="fas fa-chart-pie"></i> Thống kê & Báo cáo</div>
             </li>
             <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('restaurant-analytics-dashboard') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/restaurant-analytics-dashboard">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/restaurant-analytics-dashboard') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/restaurant-analytics-dashboard">
                     <i class="fas fa-chart-line"></i> Tổng quan
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('top-dishes-report') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/menu-performance">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/menu-performance') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/menu-performance">
                     <i class="fas fa-award"></i> Món bán chạy
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link ${pageContext.request.requestURI.contains('peak-hours-analysis') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/peak-hours-analysis">
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/peak-hours-analysis') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/peak-hours-analysis">
                     <i class="fas fa-clock"></i> Giờ cao điểm
                 </a>
             </li>

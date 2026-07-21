@@ -54,7 +54,7 @@ public class ReceptionTableController extends HttpServlet {
             String action = request.getParameter("action");
             if (!canOperateReceptionTable(employee)) {
                 request.getSession().setAttribute("staffTableMessage",
-                        "Ban chua co lich lam hom nay nen khong the thao tac van hanh ban.");
+                        "Bạn chưa có lịch làm hôm nay nên không thể thao tác");
                 response.sendRedirect(request.getContextPath() + "/reception/tables");
                 return;
             }
@@ -77,7 +77,7 @@ public class ReceptionTableController extends HttpServlet {
                         : dao.openTableForWalkIn(orderID);
                 message = ok
                         ? ("checkin".equals(action)
-                                ? "checkin_success" : "open_table_success")
+                                ? "checkin_success" : "Mở bàn thành công")
                         : "Không thể mở bàn cho đơn này.";
             } else {
                 message = "Thao tác không hợp lệ.";

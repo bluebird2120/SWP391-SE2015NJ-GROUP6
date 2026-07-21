@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 import model.Employee;
 
-@WebServlet(name = "BusinessHoursController", urlPatterns = {"/business-hours"})
+@WebServlet(name = "BusinessHoursController", urlPatterns = {"/owner/business-hours"})
 public class BusinessHoursController extends HttpServlet {
 
     private static final String VIEW = "/views/owner/business-hours.jsp";
@@ -49,7 +49,7 @@ public class BusinessHoursController extends HttpServlet {
         // [OPERATING HOURS] Staff chi duoc xem, Owner moi duoc cap nhat gio hoat dong.
         if (employee.getRoleID() != OWNER_ROLE_ID) {
             response.sendRedirect(request.getContextPath()
-                    + "/business-hours?action=list&msg=forbidden");
+                    + "/owner/business-hours?action=list&msg=forbidden");
             return;
         }
 
@@ -66,7 +66,7 @@ public class BusinessHoursController extends HttpServlet {
         }
 
         response.sendRedirect(request.getContextPath()
-                + "/business-hours?action=list&msg=" + message);
+                + "/owner/business-hours?action=list&msg=" + message);
     }
 
     private boolean saveWeekly(HttpServletRequest request) {

@@ -165,7 +165,7 @@
                                 <fmt:formatDate var="closeValue" value="${s.closeTime}" pattern="HH:mm"/>
                                 <tr>
                                         <td>
-                                            <form id="${weeklyFormId}" method="post" action="${pageContext.request.contextPath}/business-hours">
+                                            <form id="${weeklyFormId}" method="post" action="${pageContext.request.contextPath}/owner/business-hours">
                                                 <input type="hidden" name="action" value="saveWeekly">
                                                 <input type="hidden" name="dayOfWeek" value="${entry.key}">
                                                 <input type="hidden" name="isClosed" value="${s.isClosed}" class="weekly-status-value">
@@ -229,7 +229,7 @@
                 <div class="panel">
                     <c:if test="${isOwner}">
                         <%-- [OPERATING HOURS] Ngày đặc biệt được ưu tiên hơn lịch theo tuần. --%>
-                        <form method="post" action="${pageContext.request.contextPath}/business-hours" class="inline" style="margin-bottom:14px;">
+                        <form method="post" action="${pageContext.request.contextPath}/owner/business-hours" class="inline" style="margin-bottom:14px;">
                             <input type="hidden" name="action" value="saveSpecial">
                             <input type="date" name="specificDate" required>
                             <input type="time" name="openTime">
@@ -269,7 +269,7 @@
                                     <td>
                                         <c:choose>
                                             <c:when test="${isOwner}">
-                                                <form method="post" action="${pageContext.request.contextPath}/business-hours"
+                                                <form method="post" action="${pageContext.request.contextPath}/owner/business-hours"
                                                       onsubmit="return confirm('Xóa ngày đặc biệt này?')">
                                                     <input type="hidden" name="action" value="deleteSpecial">
                                                     <input type="hidden" name="scheduleID" value="${s.scheduleID}">

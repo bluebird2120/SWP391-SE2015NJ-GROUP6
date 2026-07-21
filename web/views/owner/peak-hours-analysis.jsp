@@ -288,7 +288,7 @@
                 </c:if>
 
                 <%-- BỘ LỌC --%>
-                <form action="${pageContext.request.contextPath}/peak-hours-analysis"
+                <form action="${pageContext.request.contextPath}/owner/peak-hours-analysis"
                       method="get" class="filter-bar" id="filterForm">
 
                     <div class="quick-filter-group">

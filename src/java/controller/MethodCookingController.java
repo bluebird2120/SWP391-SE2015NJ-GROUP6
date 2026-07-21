@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import model.CookingMethod;
 
-@WebServlet(name = "MethodCookingController", urlPatterns = {"/method-management"})
+@WebServlet(name = "MethodCookingController", urlPatterns = {"/owner/method-management"})
 public class MethodCookingController extends HttpServlet {
 
     private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
@@ -107,7 +107,7 @@ public class MethodCookingController extends HttpServlet {
                 session.setAttribute("updateFail", "Thay đổi trạng thái thất bại!");
             }
 
-            response.sendRedirect(request.getContextPath() + "/method-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + currentAvailable);
+            response.sendRedirect(request.getContextPath() + "/owner/method-management?page=" + currentPage + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + currentAvailable);
             return;
         }
 
@@ -143,7 +143,7 @@ public class MethodCookingController extends HttpServlet {
             }
         }
 
-        response.sendRedirect(request.getContextPath() + "/method-management");
+        response.sendRedirect(request.getContextPath() + "/owner/method-management");
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {

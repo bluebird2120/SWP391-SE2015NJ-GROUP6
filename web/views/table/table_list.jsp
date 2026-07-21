@@ -221,7 +221,7 @@
             </a>
         </c:if>
         <div class="vian-filter-bar">
-            <form action="${pageContext.request.contextPath}/manage-table" method="GET" class="filter-form" onsubmit="return validateFilterForm();">
+            <form action="${pageContext.request.contextPath}/owner/manage-table" method="GET" class="filter-form" onsubmit="return validateFilterForm();">
                 <input type="hidden" name="action" value="list">
 
                 <div class="filter-group">
@@ -263,7 +263,7 @@
 
                 <div style="display: flex; gap: 8px;">
                     <button type="submit" class="btn-filter">Tìm kiếm</button>
-                    <a href="${pageContext.request.contextPath}/manage-table" class="btn-clear">Xóa bộ lọc</a>
+                    <a href="${pageContext.request.contextPath}/owner/manage-table" class="btn-clear">Xóa bộ lọc</a>
                 </div>
             </form>
         </div>

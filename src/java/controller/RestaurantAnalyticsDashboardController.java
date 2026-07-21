@@ -21,7 +21,7 @@ import model.Employee;
 import model.MenuItem;
 import util.UserRole;
 
-@WebServlet(name = "RestaurantAnalyticsDashboardController", urlPatterns = {"/restaurant-analytics-dashboard"})
+@WebServlet(name = "RestaurantAnalyticsDashboardController", urlPatterns = {"/owner/restaurant-analytics-dashboard"})
 public class RestaurantAnalyticsDashboardController extends HttpServlet {
 
     private static final String VIEW = "/views/admin/restaurant-analytics-dashboard.jsp";

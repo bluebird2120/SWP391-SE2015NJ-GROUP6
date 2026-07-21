@@ -207,7 +207,7 @@
             </c:if>
 
             <main class="${isStaffOrOwner ? 'main' : 'notif-page'}">
-                <h1 class="page-title">Notifications</h1>
+                <h1 class="page-title">Thông báo</h1>
                 <p class="page-sub">${pageSub}</p>
 
                 <c:choose>
@@ -247,7 +247,26 @@
 
                                     <div class="item-body">
                                         <div class="item-meta">
-                                            <span class="item-type">${n.type}</span>
+                                            <span class="item-type">
+                                                <c:choose>
+                                                    <c:when test="${n.type == 'new_review'}">Đánh giá mới</c:when>
+                                                    <c:when test="${n.type == 'feedback_response'}">Phản hồi đánh giá</c:when>
+                                                    <c:when test="${n.type == 'table_assigned'}">Phân công bàn</c:when>
+                                                    <c:when test="${n.type == 'table_open_request'}">Yêu cầu mở bàn</c:when>
+                                                    <c:when test="${n.type == 'new_order'}">Đơn hàng mới</c:when>
+                                                    <c:when test="${n.type == 'checkout_requested'}">Yêu cầu thanh toán</c:when>
+                                                    <c:when test="${n.type == 'payment_success'}">Thanh toán thành công</c:when>
+                                                    <c:when test="${n.type == 'reservation_confirmed'}">Đặt bàn thành công</c:when>
+                                                    <c:when test="${n.type == 'reservation_needs_table'}">Cần gán bàn</c:when>
+                                                    <c:when test="${n.type == 'shift_plan'}">Lịch ca làm việc</c:when>
+                                                    <c:when test="${n.type == 'shift_request'}">Yêu cầu xin nghỉ</c:when>
+                                                    <c:when test="${n.type == 'shift_request_approved'}">Yêu cầu được duyệt</c:when>
+                                                    <c:when test="${n.type == 'shift_request_rejected'}">Yêu cầu bị từ chối</c:when>
+                                                    <c:when test="${n.type == 'shift_request_colleague_pending'}">Nhờ làm thay ca</c:when>
+                                                    <c:when test="${n.type == 'shift_request_colleague_rejected'}">Từ chối làm thay</c:when>
+                                                    <c:otherwise>${n.type}</c:otherwise>
+                                                </c:choose>
+                                            </span>
                                             <c:if test="${n.isRead == 0}">
                                                 <span style="color: #dc3545; font-weight: 700;">• Mới</span>
                                             </c:if>

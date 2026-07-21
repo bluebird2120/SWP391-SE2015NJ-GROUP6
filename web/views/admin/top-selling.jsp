@@ -412,7 +412,7 @@
                     </c:if>
                 </div>
 
-                <form id="filterForm" action="${pageContext.request.contextPath}/menu-performance" method="get" class="filter-bar">
+                <form id="filterForm" action="${pageContext.request.contextPath}/owner/menu-performance" method="get" class="filter-bar">
                     <div class="quick-filter-group">
                         <button type="submit" name="filterType" value="today" class="btn-quick ${filterType == 'today' ? 'active' : ''}">Hôm nay</button>
                         <button type="submit" name="filterType" value="week" class="btn-quick ${filterType == 'week' ? 'active' : ''}">Tuần này</button>
