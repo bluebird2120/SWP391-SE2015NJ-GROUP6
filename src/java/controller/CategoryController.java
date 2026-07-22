@@ -11,7 +11,7 @@ import java.util.List;
 import dal.MenuCategoryDAO;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet(name = "CategoryController", urlPatterns = {"/category-management"})
+@WebServlet(name = "CategoryController", urlPatterns = {"/owner/category-management"})
 public class CategoryController extends HttpServlet {
 
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
@@ -74,7 +74,7 @@ public class CategoryController extends HttpServlet {
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
 
-        request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/category-list.jsp").forward(request, response);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class CategoryController extends HttpServlet {
             } else {
                 session.setAttribute("updateFail", "Thay đổi trạng thái thất bại!");
             }
-            response.sendRedirect(request.getContextPath() + "/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
+            response.sendRedirect(request.getContextPath() + "/owner/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
             return;
         }
 
@@ -148,7 +148,7 @@ public class CategoryController extends HttpServlet {
             request.setAttribute("modalErrorID", id);
             request.setAttribute("modalErrorName", categoryName);
 
-            request.getRequestDispatcher("/views/admin/category-list.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/owner/category-list.jsp").forward(request, response);
             return;
         }
 
@@ -170,7 +170,7 @@ public class CategoryController extends HttpServlet {
             }
         }
 
-        response.sendRedirect(request.getContextPath() + "/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
+        response.sendRedirect(request.getContextPath() + "/owner/category-management?page=" + page + "&search=" + java.net.URLEncoder.encode(currentSearch, "UTF-8") + "&isAvailable=" + isAvailable);
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {

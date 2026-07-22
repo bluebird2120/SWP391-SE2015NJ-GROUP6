@@ -148,6 +148,7 @@
                         <c:choose>
                             <c:when test="${sessionScope.staffTableMessage == 'assign_success'}">Đã gán bàn thành công.</c:when>
                             <c:when test="${sessionScope.staffTableMessage == 'clean_success'}">Đã xác nhận dọn bàn xong.</c:when>
+                            <c:when test="${sessionScope.staffTableMessage == 'cancel_service_success'}">Da huy phuc vu va chuyen ban sang cho don.</c:when>
                             <c:otherwise>${sessionScope.staffTableMessage}</c:otherwise>
                         </c:choose>
                     </div>
@@ -299,12 +300,28 @@
                                         </c:if>
                                         
                                         <%-- NÚT CẤP LẠI QUYỀN CHỦ BÀN DÀNH CHO NHÂN VIÊN --%>
+
                                         <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
+                                            <%-- [HUY PHUC VU LE TAN] Chi cho huy khi don chua co mon gui bep; backend se kiem tra lai. --%>
+                                            <form method="post" action="${pageContext.request.contextPath}/reception/tables" style="display:inline-block;">
+                                                <input type="hidden" name="action" value="cancel_service">
+                                                <input type="hidden" name="orderID" value="${t.orderID}">
+                                                <button type="submit"
+                                                        style="background: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-top: 4px;"
+                                                        onclick="return confirm('Xac nhan huy phuc vu don #${t.orderID}? Ban se chuyen sang cho don, khong ve trong ngay.')">
+                                                    <i class="fas fa-ban"></i> Huy phuc vu
+                                                </button>
+                                            </form>
+
+                                        <%-- Chỉ hiện khi bàn đang có khách VÀ orderID nằm trong danh sách đang xin cấp lại --%>
+                                        <c:if test="${(t.physicalStatus == 'serving' || t.physicalStatus == 'occupied') && reclaimOrders.contains(t.orderID)}">
+
                                             <button type="button" 
                                                     style="background: transparent; color: #dc2626; border: 1px solid #dc2626; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-top: 4px;" 
                                                     onclick="approveReclaimHost(${t.orderID})">
                                                 <i class="fas fa-sync-alt"></i> Cấp lại Quyền
                                             </button>
+                                        </c:if>
                                         </c:if>
                                     </td>
                                 </tr>

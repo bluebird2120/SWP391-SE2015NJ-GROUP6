@@ -21,13 +21,12 @@ import model.Employee;
 import model.MenuItem;
 import util.UserRole;
 
-@WebServlet(name = "RestaurantAnalyticsDashboardController", urlPatterns = {"/restaurant-analytics-dashboard"})
+@WebServlet(name = "RestaurantAnalyticsDashboardController", urlPatterns = {"/owner/restaurant-analytics-dashboard"})
 public class RestaurantAnalyticsDashboardController extends HttpServlet {
 
-    // Trang JSP dùng để hiển thị dashboard phân tích nhà hàng.
-    private static final String VIEW = "/views/admin/restaurant-analytics-dashboard.jsp";
 
     // Dashboard chỉ lấy top 5 món bán chạy nhất trong khoảng ngày đang lọc.
+    private static final String VIEW = "/views/owner/restaurant-analytics-dashboard.jsp";
     private static final int TOP_DISH_LIMIT = 5;
 
     @Override

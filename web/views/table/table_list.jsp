@@ -216,12 +216,12 @@
         </c:if>
 
         <c:if test="${userRole == 1}">
-            <a href="${pageContext.request.contextPath}/manage-table?action=add" class="btn-vian btn-add">
+            <a href="${pageContext.request.contextPath}/owner/manage-table?action=add" class="btn-vian btn-add">
                 + Thêm bàn mới
             </a>
         </c:if>
         <div class="vian-filter-bar">
-            <form action="${pageContext.request.contextPath}/manage-table" method="GET" class="filter-form" onsubmit="return validateFilterForm();">
+            <form action="${pageContext.request.contextPath}/owner/manage-table" method="GET" class="filter-form" onsubmit="return validateFilterForm();">
                 <input type="hidden" name="action" value="list">
 
                 <div class="filter-group">
@@ -246,9 +246,8 @@
                     <label>Khu vực:</label>
                     <select name="searchArea" class="filter-input">
                         <option value="all" ${searchArea == 'all' || empty searchArea ? 'selected' : ''}>-- Tất cả khu vực --</option>
-                        <option value="public" ${searchArea == 'public' ? 'selected' : ''}>Sảnh chung</option>
-                        <option value="private" ${searchArea == 'private' ? 'selected' : ''}>Phòng VIP</option>
-                        <option value="outdoor" ${searchArea == 'outdoor' ? 'selected' : ''}>Ngoài trời</option>
+                        <option value="public" ${searchArea == 'public' ? 'selected' : ''}>Ngoài Sảnh</option>
+                        <option value="private" ${searchArea == 'private' ? 'selected' : ''}>Trong Phòng</option>                       
                     </select>
                 </div>
 
@@ -263,7 +262,7 @@
 
                 <div style="display: flex; gap: 8px;">
                     <button type="submit" class="btn-filter">Tìm kiếm</button>
-                    <a href="${pageContext.request.contextPath}/manage-table" class="btn-clear">Xóa bộ lọc</a>
+                    <a href="${pageContext.request.contextPath}/owner/manage-table" class="btn-clear">Xóa bộ lọc</a>
                 </div>
             </form>
         </div>
@@ -298,9 +297,8 @@
                         <td>${t.capacity} người</td>
                         <td>
                             <c:choose>
-                                <c:when test="${t.areaType == 'public'}">Sảnh chung</c:when>
-                                <c:when test="${t.areaType == 'private'}">Phòng VIP</c:when>
-                                <c:when test="${t.areaType == 'outdoor'}">Ngoài trời</c:when>
+                                <c:when test="${t.areaType == 'public'}">Ngoài Sảnh</c:when>
+                                <c:when test="${t.areaType == 'private'}">Trong Phòng</c:when>
                                 <c:otherwise>${t.areaType}</c:otherwise>
                             </c:choose>
                         </td>
@@ -311,10 +309,10 @@
                             </c:choose>
                         </td>
                         <td>
-                            <a href="${pageContext.request.contextPath}/manage-table?action=detail&id=${t.tableID}" class="btn-vian btn-detail">Chi tiết</a>
+                            <a href="${pageContext.request.contextPath}/owner/manage-table?action=detail&id=${t.tableID}" class="btn-vian btn-detail">Chi tiết</a>
 
                             <c:if test="${userRole == 1}">
-                                <a href="${pageContext.request.contextPath}/manage-table?action=edit&id=${t.tableID}" class="btn-vian btn-edit">Sửa</a>
+                                <a href="${pageContext.request.contextPath}/owner/manage-table?action=edit&id=${t.tableID}" class="btn-vian btn-edit">Sửa</a>
                             </c:if>
                         </td>
                     </tr>
@@ -325,8 +323,8 @@
             <div class="pagination">
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/manage-table?page=1&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage - 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang trước">Trước</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=1&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${currentPage - 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang trước">Trước</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Đầu</span>
@@ -338,8 +336,8 @@
 
                 <c:choose>
                     <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${currentPage + 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/manage-table?page=${totalPage}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Đến trang cuối">Cuối</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${currentPage + 1}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table?page=${totalPage}&searchName=${param.searchName}&searchCapacity=${param.searchCapacity}&searchArea=${param.searchArea}&searchStatus=${param.searchStatus}" title="Đến trang cuối">Cuối</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Sau</span>

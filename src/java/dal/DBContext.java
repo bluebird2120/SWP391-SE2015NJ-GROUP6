@@ -31,6 +31,9 @@ public class DBContext implements AutoCloseable {
 
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println("[DBContext] KHÔNG kết nối được MySQL: " + ex.getMessage());
+            System.err.println("[DBContext] Kiểm tra: MySQL service đã chạy? "
+                    + "Username/password đúng chưa? Database đã được tạo (đã chạy file .sql) chưa?");
         }
     }
 

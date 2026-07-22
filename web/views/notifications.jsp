@@ -204,11 +204,72 @@
         <c:if test="${isStaffOrOwner}">
             <div style="display:flex;">
                 <%@ include file="/views/includes/dashboard.jsp" %>
-            </c:if>
+        </c:if>
 
             <main class="${isStaffOrOwner ? 'main' : 'notif-page'}">
-                <h1 class="page-title">Notifications</h1>
+                <h1 class="page-title">Thông báo</h1>
                 <p class="page-sub">${pageSub}</p>
+
+                <%-- ── FILTER BAR & FORM VALIDATION ── --%>
+                <form method="get" action="${pageContext.request.contextPath}${isCustomer ? '/customer/notifications' : isOwner ? '/owner/notifications' : '/staff/notifications'}"
+                      id="filterForm" style="margin-bottom: 16px;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+                         background:#fff; border:1px solid #ede0d8; border-radius:12px;
+                         padding:12px 16px;">
+
+                        <%-- 1. Khung tìm kiếm từ khóa --%>
+                        <div style="position:relative; flex:1; min-width:200px;">
+                            <i class="fas fa-search" style="position:absolute; left:12px; top:50%;
+                               transform:translateY(-50%); color:#a0714f; font-size:0.85rem;"></i>
+                            <input type="text" id="keyword" name="keyword"
+                                   value="${fn:escapeXml(keyword)}"
+                                   placeholder="Tìm theo nội dung thông báo..."
+                                   maxlength="100"
+                                   style="width:100%; padding:8px 12px 8px 34px;
+                                   border:1px solid #d7bfa4; border-radius:8px;
+                                   font-size:0.88rem; font-family:inherit; outline:none;">
+                        </div>
+
+                        <%-- 2. Các nút bấm lọc theo trạng thái --%>
+                        <div style="display:flex; gap:6px;">
+                            <button type="submit" name="readStatus" value="all"
+                                    style="padding:8px 14px; border-radius:8px; border:1px solid #d7bfa4;
+                                    font-size:0.85rem; font-weight:600; cursor:pointer;
+                                    background:${readStatus == 'all' || empty readStatus ? '#76493b' : '#fff'};
+                                    color:${readStatus == 'all' || empty readStatus ? '#fff' : '#76493b'};">
+                                Tất cả
+                            </button>
+                            <button type="submit" name="readStatus" value="unread"
+                                    style="padding:8px 14px; border-radius:8px; border:1px solid #d7bfa4;
+                                    font-size:0.85rem; font-weight:600; cursor:pointer;
+                                    background:${readStatus == 'unread' ? '#76493b' : '#fff'};
+                                    color:${readStatus == 'unread' ? '#fff' : '#76493b'};">
+                                Chưa đọc
+                            </button>
+                            <button type="submit" name="readStatus" value="read"
+                                    style="padding:8px 14px; border-radius:8px; border:1px solid #d7bfa4;
+                                    font-size:0.85rem; font-weight:600; cursor:pointer;
+                                    background:${readStatus == 'read' ? '#76493b' : '#fff'};
+                                    color:${readStatus == 'read' ? '#fff' : '#76493b'};">
+                                Đã đọc
+                            </button>
+                        </div>
+                    </div>
+
+                    <%-- Khung hiển thị lỗi Frontend Validation --%>
+                    <div id="filterError" style="color:#dc3545; font-size:0.82rem; font-weight:600;
+                         margin-top:6px; display:none; padding-left:4px;"></div>
+                </form>
+
+                <%-- Hiển thị tóm tắt kết quả Lọc --%>
+                <c:if test="${not empty keyword || (not empty readStatus && readStatus != 'all')}">
+                    <div style="font-size:0.85rem; color:#8a6e5a; margin-bottom:12px;">
+                        Kết quả tìm kiếm: <strong>${fn:length(notifications)}</strong> thông báo
+                        <c:if test="${not empty keyword}"> cho từ khóa "<strong><c:out value="${keyword}"/></strong>"</c:if>
+                        <c:if test="${readStatus == 'unread'}"> — <i>chỉ xem thông báo chưa đọc</i></c:if>
+                        <c:if test="${readStatus == 'read'}"> — <i>chỉ xem thông báo đã đọc</i></c:if>
+                    </div>
+                </c:if>
 
                 <c:choose>
                     <c:when test="${empty notifications}">
@@ -241,18 +302,35 @@
                                      ${status.index >= 5 ? 'style="display: none;"' : ''}>
 
                                     <div class="item-icon">
-                                        <%-- Dung chung icon chuong cho moi loai thong bao --%>
                                         <i class="fas fa-bell"></i>
                                     </div>
 
                                     <div class="item-body">
                                         <div class="item-meta">
-                                            <span class="item-type">${n.type}</span>
+                                            <span class="item-type">
+                                                <c:choose>
+                                                    <c:when test="${n.type == 'new_review'}">Đánh giá mới</c:when>
+                                                    <c:when test="${n.type == 'feedback_response'}">Phản hồi đánh giá</c:when>
+                                                    <c:when test="${n.type == 'table_assigned'}">Phân công bàn</c:when>
+                                                    <c:when test="${n.type == 'table_open_request'}">Yêu cầu mở bàn</c:when>
+                                                    <c:when test="${n.type == 'new_order'}">Đơn hàng mới</c:when>
+                                                    <c:when test="${n.type == 'checkout_requested'}">Yêu cầu thanh toán</c:when>
+                                                    <c:when test="${n.type == 'payment_success'}">Thanh toán thành công</c:when>
+                                                    <c:when test="${n.type == 'reservation_confirmed'}">Đặt bàn thành công</c:when>
+                                                    <c:when test="${n.type == 'reservation_needs_table'}">Cần gán bàn</c:when>
+                                                    <c:when test="${n.type == 'shift_plan'}">Lịch ca làm việc</c:when>
+                                                    <c:when test="${n.type == 'shift_request'}">Yêu cầu xin nghỉ</c:when>
+                                                    <c:when test="${n.type == 'shift_request_approved'}">Yêu cầu được duyệt</c:when>
+                                                    <c:when test="${n.type == 'shift_request_rejected'}">Yêu cầu bị từ chối</c:when>
+                                                    <c:when test="${n.type == 'shift_request_colleague_pending'}">Nhờ làm thay ca</c:when>
+                                                    <c:when test="${n.type == 'shift_request_colleague_rejected'}">Từ chối làm thay</c:when>
+                                                    <c:otherwise>${n.type}</c:otherwise>
+                                                </c:choose>
+                                            </span>
                                             <c:if test="${n.isRead == 0}">
                                                 <span style="color: #dc3545; font-weight: 700;">• Mới</span>
                                             </c:if>
                                         </div>
-                                        <%-- Tất cả role đều bấm vào message để readAndRedirect đúng trang --%>
                                         <form method="post" action="${postAction}" style="margin: 0;">
                                             <input type="hidden" name="action" value="readAndRedirect">
                                             <input type="hidden" name="notificationID" value="${n.notificationID}">
@@ -297,7 +375,7 @@
                 </c:choose>
             </main>
 
-            <c:if test="${isStaffOrOwner}">
+        <c:if test="${isStaffOrOwner}">
             </div>
         </c:if>
 
@@ -319,6 +397,46 @@
                     container.style.display = 'none';
                 }
             }
+
+            // ── FRONTEND VALIDATION SEARCH FORM ─────────────────────
+            document.getElementById('filterForm')?.addEventListener('submit', function (e) {
+                const keywordInput = document.getElementById('keyword');
+                const keyword = keywordInput ? keywordInput.value.trim() : '';
+                const errDiv = document.getElementById('filterError');
+
+                if (errDiv) {
+                    errDiv.style.display = 'none';
+                    errDiv.textContent = '';
+                }
+
+                if (keyword.length > 100) {
+                    e.preventDefault();
+                    if (errDiv) {
+                        errDiv.textContent = 'Từ khóa tìm kiếm không được vượt quá 100 ký tự!';
+                        errDiv.style.display = 'block';
+                    }
+                    return;
+                }
+
+                const dangerousChars = /[<>"'`;]/;
+                if (dangerousChars.test(keyword)) {
+                    e.preventDefault();
+                    if (errDiv) {
+                        errDiv.textContent = 'Từ khóa không được chứa các ký tự đặc biệt nguy hiểm (< > " \' ` ;)!';
+                        errDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            });
+
+            // ── REALTIME SEARCH ─────────────────────
+            document.getElementById('keyword')?.addEventListener('input', function () {
+                const kw = this.value.toLowerCase().trim();
+                document.querySelectorAll('.list .item').forEach(el => {
+                    const msg = el.querySelector('.item-msg')?.textContent.toLowerCase() || '';
+                    el.style.display = (kw === '' || msg.includes(kw)) ? 'flex' : 'none';
+                });
+            });
         </script>
     </body>
 </html>
