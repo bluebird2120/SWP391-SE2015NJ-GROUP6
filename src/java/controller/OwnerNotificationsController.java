@@ -30,7 +30,21 @@ public class OwnerNotificationsController extends HttpServlet {
             return;
         }
 
-        List<Notifications> list = notificationDAO.listByRecipient(emp.getEmployeeID(), "staff", LIST_LIMIT);
+        // ── 1. Lấy tham số Filter ──
+        String keyword = trim(request.getParameter("keyword"));
+        String readStatus = request.getParameter("readStatus");
+
+        // ── 2. Validate Backend ──
+        if (keyword != null && keyword.length() > 100) {
+            keyword = keyword.substring(0, 100);
+        }
+        if (readStatus == null || (!readStatus.equals("unread") && !readStatus.equals("read"))) {
+            readStatus = "all";
+        }
+
+        // ── 3. Gọi DAO đã có Filter ──
+        List<Notifications> list = notificationDAO.listByRecipientFiltered(
+                emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
         int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
 
         //Nuôi header
@@ -38,6 +52,8 @@ public class OwnerNotificationsController extends HttpServlet {
         request.setAttribute("notifications", list);
         //Nuôi trang notification
         request.setAttribute("unreadCount", unread);
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("readStatus", readStatus);
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
@@ -115,5 +131,9 @@ public class OwnerNotificationsController extends HttpServlet {
         } catch (NumberFormatException e) {
             return def;
         }
+    }
+
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }
