@@ -204,6 +204,14 @@
                 background: #d1ecf1;
                 color: #0c5460;
             }
+            /**
+             * [RESTAURANT CLOSED]
+             * Chỉ tô đỏ dòng trạng thái đóng cửa.
+             */
+/*            .badge-restaurant_closed {
+                background:#dc2626;
+                color:#ffffff;
+            }*/
             .empty-state {
                 text-align:center;
                 color:#8a6e5a;
@@ -558,6 +566,10 @@
                                                     <span class="shift-time">
                                                         <fmt:formatDate value="${s.startTime}" pattern="HH:mm"/> - <fmt:formatDate value="${s.endTime}" pattern="HH:mm"/>
                                                     </span>
+                                                    <%--
+                                                        [RESTAURANT CLOSED]
+                                                        Giữ nguyên tên trạng thái; CSS badge tô màu đỏ.
+                                                    --%>
                                                     <span class="badge badge-${s.status}">${s.status}</span>
 
 
