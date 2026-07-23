@@ -25,12 +25,27 @@ public class CustomerNotificationsController extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         Customer customer = (session != null) ? (Customer) session.getAttribute("customer") : null;
+
         if (customer == null) {
             response.sendRedirect(request.getContextPath() + "/login?msg=required");
             return;
         }
 
-        List<Notifications> list = notificationDAO.listByRecipient(customer.getCustomerID(), "customer", LIST_LIMIT);
+        // ── 1. Lấy tham số Filter ──
+        String keyword = trim(request.getParameter("keyword"));
+        String readStatus = request.getParameter("readStatus");
+
+        // ── 2. Validate Backend ──
+        if (keyword != null && keyword.length() > 100) {
+            keyword = keyword.substring(0, 100);
+        }
+        if (readStatus == null || (!readStatus.equals("unread") && !readStatus.equals("read"))) {
+            readStatus = "all";
+        }
+
+        // ── 3. Gọi DAO đã có Filter ──
+        List<Notifications> list = notificationDAO.listByRecipientFiltered(
+                customer.getCustomerID(), "customer", LIST_LIMIT, keyword, readStatus);
         int unread = notificationDAO.countUnread(customer.getCustomerID(), "customer");
 
         //Nuôi header
@@ -38,6 +53,8 @@ public class CustomerNotificationsController extends HttpServlet {
         request.setAttribute("notifications", list);
         //Nuôi trang notification
         request.setAttribute("unreadCount", unread);
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("readStatus", readStatus);
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
@@ -108,5 +125,9 @@ public class CustomerNotificationsController extends HttpServlet {
         } catch (NumberFormatException e) {
             return def;
         }
+    }
+
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }

@@ -367,7 +367,7 @@
                 <div class="page-header">
                     <h2>Danh sách món ăn</h2>
                     <c:if test="${sessionScope.employee.roleID == 1}">
-                        <a href="${pageContext.request.contextPath}/update-menu" class="btn-add-new">
+                        <a href="${pageContext.request.contextPath}/owner/update-menu" class="btn-add-new">
                             Thêm Món Ăn Mới
                         </a>
                     </c:if>
@@ -499,7 +499,7 @@
                                         <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>
                                     </c:when>
                                     <c:when test="${sessionScope.employee.roleID == 1}">
-                                        <a href="${pageContext.request.contextPath}/update-menu?id=${item.itemID}" class="btn">Chỉnh sửa</a>
+                                        <a href="${pageContext.request.contextPath}/owner/update-menu?id=${item.itemID}" class="btn">Chỉnh sửa</a>
                                     </c:when>
                                     <c:otherwise>
                                         <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>

@@ -80,7 +80,8 @@ public class TableDAO extends DBContext {
                 + "  AND DATE(o.orderTime) = DATE(?) "
                 // [TABLE AVAILABILITY] serving la orderStatus; tableStatus ban ban gom pending/reserved/arrived/occupied/cleaning.
                 + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
+                // [HUY PHUC VU LE TAN] Cancelled + cleaning van khoa ban cho den khi don xong.
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled' OR o.tableStatus = 'cleaning') "
                 + "  AND NOT EXISTS ( "
                 + "      SELECT 1 "
                 + "      FROM Order_Table ot "
@@ -104,7 +105,8 @@ public class TableDAO extends DBContext {
                 + "  AND DATE(o.orderTime) = DATE(?) "
                 // [TABLE AVAILABILITY] Don da gan ban that cung phai tru ban arrived/occupied.
                 + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
-                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled') "
+                // [HUY PHUC VU LE TAN] Cancelled + cleaning van khoa ban cho den khi don xong.
+                + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled' OR o.tableStatus = 'cleaning') "
                 + "GROUP BY t.capacity";
 
         Map<Integer, Integer> totalMap = new HashMap<>();

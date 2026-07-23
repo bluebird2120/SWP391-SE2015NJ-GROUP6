@@ -63,41 +63,12 @@
             .badge-paid { background: #e6f4ea; color: #1e8e3e; border: 1px solid #cce8d6; }
             .badge-unpaid { background: #fce8e6; color: #d93025; border: 1px solid #fad2cf; }
 
-            /* ========================================= */
-            /* CSS CHỈ CÓ TÁC DỤNG KHI BẤM IN (CTRL + P) */
-            /* ========================================= */
+            /* Khi in hóa đơn ra giấy thì ẩn các phần thừa */
             @media print {
-                /* Xóa margin mặc định của giấy in để vô hiệu hóa URL và ngày giờ của trình duyệt */
-                @page { margin: 0; }
-
-                /* Căn chỉnh lại padding giấy in để nội dung không dính mép */
-                body { 
-                    background: #fff !important; 
-                    margin: 0 !important;
-                    padding: 1.5cm !important; 
-                }
-
-                /* Ẩn các thành phần không cần thiết */
-                header, footer, nav, aside, .sidebar, 
-                .vian-title, .btn-group, .dashboard-sidebar, .header-navbar { 
-                    display: none !important; 
-                }
-
-                /* Đẩy layout tràn viền giấy */
-                .layout, .vian-container { 
-                    padding: 0 !important; 
-                    margin: 0 !important; 
-                    width: 100% !important; 
-                    display: block !important; 
-                }
-
-                /* Bỏ viền và shadow của khối hóa đơn */
-                .invoice-card { 
-                    box-shadow: none !important; 
-                    border: none !important; 
-                    padding: 0 !important; 
-                    max-width: 100% !important; 
-                }
+                body { background: #fff; }
+                .vian-title, .btn-group, .dashboard-sidebar, .header-navbar { display: none !important; }
+                .vian-container { padding: 0; width: 100%; display: block; }
+                .invoice-card { box-shadow: none; border: none; padding: 0; max-width: 100%; }
             }
         </style>
     </head>
@@ -105,7 +76,7 @@
 
         <%@ include file="/views/includes/header.jsp" %>
 
-        <div class="layout" style="display: flex; align-items: stretch; min-height: 80vh;">
+        <div style="display: flex; align-items: stretch; min-height: 80vh;">
 
             <%@ include file="/views/includes/dashboard.jsp" %>
 
@@ -113,7 +84,7 @@
 
                 <h2 class="vian-title">
                     Chi tiết Chứng từ
-                    <a href="${pageContext.request.contextPath}/admin/invoices" style="font-size: 14px; color: #8B4513; text-decoration: none;">← Quay lại danh sách</a>
+                    <a href="${pageContext.request.contextPath}/owner/invoices" style="font-size: 14px; color: #8B4513; text-decoration: none;">← Quay lại danh sách</a>
                 </h2>
 
                 <div class="invoice-card" id="printableInvoice">

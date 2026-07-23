@@ -111,7 +111,7 @@
                     </div>
                 </div>
                 <br>
-                <a href="${pageContext.request.contextPath}/manage-table" class="btn-cancel" style="margin-left: 0;">← Quay lại danh sách</a>
+                <a href="${pageContext.request.contextPath}/owner/manage-table" class="btn-cancel" style="margin-left: 0;">← Quay lại danh sách</a>
             </c:when>
 
             <%-- ========================================== --%>
@@ -126,7 +126,7 @@
                         </div>
                     </c:if>
 
-                    <form action="${pageContext.request.contextPath}/manage-table" method="POST">
+                    <form action="${pageContext.request.contextPath}/owner/manage-table" method="POST">
                         <input type="hidden" name="action" value="${mode}">
                         <input type="hidden" name="tableID" value="${table.tableID}">
 
@@ -164,7 +164,7 @@
                         </div>
 
                         <button type="submit" class="btn-submit">${mode == 'edit' ? 'Lưu cập nhật' : 'Tạo bàn mới'}</button>
-                        <a href="${pageContext.request.contextPath}/manage-table" class="btn-cancel">Hủy bỏ</a>
+                        <a href="${pageContext.request.contextPath}/owner/manage-table" class="btn-cancel">Hủy bỏ</a>
                     </form>
                 </div>
             </c:otherwise>

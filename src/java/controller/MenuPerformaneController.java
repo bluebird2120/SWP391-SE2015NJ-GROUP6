@@ -16,7 +16,7 @@ import model.CookingMethod;
 import model.MenuCategory;
 import model.MenuItem;
 
-@WebServlet(name = "MenuPerformaneController", urlPatterns = {"/menu-performance"})
+@WebServlet(name = "MenuPerformaneController", urlPatterns = {"/owner/menu-performance"})
 public class MenuPerformaneController extends HttpServlet {
 
     private MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
@@ -98,7 +98,7 @@ public class MenuPerformaneController extends HttpServlet {
         List<MenuItem> menuItemList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, offSet, PAGE_SIZE);
 
         // List B: Chỉ lấy đúng 5 item cao nhất để vẽ biểu đồ
-        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, 0, CHART_SIZE);
+        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish("", categoryId, methodID, startDate, endDate, 0, CHART_SIZE);
 
         // List C: Lấy toàn bộ item để tính toán các món
         List<MenuItem> allItemsForCalc = menuItemDAO.getPerformanceDish("", 0, 0, startDate, endDate, 0, menuItemDAO.totalMenuItem());
@@ -169,7 +169,7 @@ public class MenuPerformaneController extends HttpServlet {
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
 
-        request.getRequestDispatcher("views/admin/top-selling.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/owner/top-selling.jsp").forward(request, response);
     }
 
     // Hàm tiện ích bẫy lỗi gộp 

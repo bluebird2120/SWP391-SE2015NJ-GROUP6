@@ -33,21 +33,7 @@ public class OrderDAO {
                 ps.setNull(1, Types.INTEGER);
             }
 
-            // 🌟 BẮT ĐẦU ĐOẠN LOGIC TỰ ĐỘNG GÁN NHÂN VIÊN
             Integer employeeID = order.getEmployeeID();
-            
-            if (employeeID == null) {
-                try {
-                    StaffTableDAO staffTableDAO = new StaffTableDAO();
-                    employeeID = staffTableDAO.findLeastLoadedServingEmployee(conn);
-                    
-                    if (employeeID == null) {
-                        employeeID = staffTableDAO.findLeastLoadedActiveServingEmployee(conn);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[OrderDAO] Tự động gán nhân viên lỗi: " + e.getMessage());
-                }
-            }
 
             if (employeeID != null) {
                 ps.setInt(2, employeeID);
@@ -151,7 +137,8 @@ public class OrderDAO {
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
                 + "WHERE ot.tableID = ? "
-                + "  AND o.orderStatus NOT IN ('completed', 'cancelled') "
+                // [HUY PHUC VU LE TAN] Cho phep lay cancelled + cleaning de QR biet ban dang cho don.
+                + "  AND (o.orderStatus NOT IN ('completed', 'cancelled') OR o.tableStatus = 'cleaning') "
                 + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
                 + "  AND DATE(o.orderTime) = CURRENT_DATE "
                 + "ORDER BY o.createdAt DESC LIMIT 1";
