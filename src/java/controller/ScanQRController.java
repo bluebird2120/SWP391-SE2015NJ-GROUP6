@@ -1,5 +1,7 @@
 package controller;
 
+import dal.EmployeeShiftDAO;
+import dal.NotificationDAO;
 import dal.OrderDAO;
 import dal.TableDAO;
 import java.io.IOException;
@@ -227,9 +229,8 @@ public class ScanQRController extends HttpServlet {
 
                         // Gửi thông báo cho TẤT CẢ Lễ tân đang trực để mở bàn
                         // (Staff sẽ nhận thông báo riêng sau khi Lễ tân bấm mở bàn)
-                        try {
-                            dal.NotificationDAO notifDAO = new dal.NotificationDAO();
-                            dal.EmployeeShiftDAO shiftDAO = new dal.EmployeeShiftDAO();
+                        try (NotificationDAO notifDAO = new NotificationDAO();
+                                EmployeeShiftDAO shiftDAO = new EmployeeShiftDAO()) {
                             java.util.List<Integer> receptionistIDs = shiftDAO.getOnDutyReceptionistIDs();
 
                             if (receptionistIDs.isEmpty()) {

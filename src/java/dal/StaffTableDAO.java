@@ -384,7 +384,9 @@ public class StaffTableDAO extends DBContext {
                 n.setMessage("Bạn được phân công phục vụ bàn " + tableName
                         + " (Đơn #" + orderID + ").");
                 n.setIsRead(0);
-                new NotificationDAO().insert(n);
+                try (NotificationDAO notifDAO = new NotificationDAO()) {
+                    notifDAO.insert(n);
+                }
             } catch (Exception e) {
                 System.err.println("[StaffTableDAO] Gửi thông báo cho nhân viên thất bại: " + e.getMessage());
             }
@@ -479,7 +481,9 @@ public class StaffTableDAO extends DBContext {
                     n.setMessage("Bạn được phân công phục vụ bàn "
                             + tableName + " (Đơn #" + orderID + ").");
                     n.setIsRead(0);
-                    new NotificationDAO().insert(n);
+                    try (NotificationDAO notifDAO = new NotificationDAO()) {
+                        notifDAO.insert(n);
+                    }
                 } catch (Exception ignored) {
                     // Thông báo thất bại không rollback transaction chính
                 }
