@@ -76,18 +76,46 @@ public class TableManageController extends HttpServlet {
                 String searchName = request.getParameter("searchName");
                 searchName = (searchName != null) ? searchName.trim() : "";
 
+                // Validate sức chứa từ URL vì người dùng có thể sửa query string thủ công.
                 String capParam = request.getParameter("searchCapacity");
-                Integer searchCapacity = (capParam != null && !capParam.isEmpty() && !"all".equals(capParam)) 
-                        ? Integer.parseInt(capParam) : null;
+                Integer searchCapacity = null;
+                if (capParam != null && !capParam.trim().isEmpty() && !"all".equals(capParam)) {
+                    try {
+                        int parsedCapacity = Integer.parseInt(capParam.trim());
+                        if (parsedCapacity >= 1 && parsedCapacity <= 50) {
+                            searchCapacity = parsedCapacity;
+                        } else {
+                            request.setAttribute("errorMessage", "Sức chứa tìm kiếm phải từ 1 đến 50 người.");
+                        }
+                    } catch (NumberFormatException e) {
+                        request.setAttribute("errorMessage", "Sức chứa tìm kiếm không hợp lệ.");
+                    }
+                }
 
                 String searchArea = request.getParameter("searchArea");
-                if ("all".equals(searchArea)) {
+                // Khu vực là danh mục nghiệp vụ cố định, chỉ chấp nhận public/private.
+                if (searchArea == null || searchArea.trim().isEmpty() || "all".equals(searchArea)) {
+                    searchArea = null;
+                } else if (!"public".equals(searchArea) && !"private".equals(searchArea)) {
+                    request.setAttribute("errorMessage", "Khu vực tìm kiếm không hợp lệ.");
                     searchArea = null;
                 }
 
+                // Trạng thái chỉ có hai giá trị hợp lệ: 0 (tạm ngưng) và 1 (hoạt động).
                 String statusParam = request.getParameter("searchStatus");
-                Integer searchStatus = (statusParam != null && !statusParam.isEmpty() && !"all".equals(statusParam)) 
-                        ? Integer.parseInt(statusParam) : null;
+                Integer searchStatus = null;
+                if (statusParam != null && !statusParam.trim().isEmpty() && !"all".equals(statusParam)) {
+                    try {
+                        int parsedStatus = Integer.parseInt(statusParam.trim());
+                        if (parsedStatus == 0 || parsedStatus == 1) {
+                            searchStatus = parsedStatus;
+                        } else {
+                            request.setAttribute("errorMessage", "Trạng thái tìm kiếm không hợp lệ.");
+                        }
+                    } catch (NumberFormatException e) {
+                        request.setAttribute("errorMessage", "Trạng thái tìm kiếm không hợp lệ.");
+                    }
+                }
 
                 // 2. BACKEND VALIDATION: Chặn tìm kiếm chuỗi quá dài hoặc chứa ký tự độc hại
                 if (searchName.length() > 30) {
@@ -120,7 +148,9 @@ public class TableManageController extends HttpServlet {
                 
                 // 4. Đẩy ngược các giá trị đã chọn ra Request để giữ trạng thái Form sau khi F5
                 request.setAttribute("searchName", searchName);
-                request.setAttribute("searchCapacity", request.getParameter("searchCapacity"));
+                // Truyền Integer đã validate (hoặc null khi chọn "Tất cả") sang JSP.
+                // Không truyền chuỗi "all" vì JSP sẽ lỗi ép kiểu khi so sánh với capacity Integer.
+                request.setAttribute("searchCapacity", searchCapacity);
                 request.setAttribute("searchArea", request.getParameter("searchArea"));
                 request.setAttribute("searchStatus", request.getParameter("searchStatus"));
                 
@@ -129,6 +159,9 @@ public class TableManageController extends HttpServlet {
                 request.setAttribute("totalPage", totalPage);
                 request.setAttribute("currentPage", page);
                 request.setAttribute("userRole", roleID); 
+
+                // Danh sách sức chứa được lấy động từ DB thay vì fix cứng 2, 4, 6, 8, 10.
+                request.setAttribute("capacityOptions", tableDAO.getDistinctCapacities());
                 
                 request.getRequestDispatcher("/views/table/table_list.jsp").forward(request, response);
                 break;
@@ -157,15 +190,39 @@ public class TableManageController extends HttpServlet {
         String tableName = request.getParameter("tableName");
         tableName = (tableName != null) ? tableName.trim() : "";
 
-        int capacity = 2; // Giá trị mặc định
+        // Không tự đổi dữ liệu sai thành 2; mọi giá trị ngoài 1-50 phải báo lỗi.
+        int capacity = 0;
+        boolean capacityInvalid = false;
         try {
-            capacity = Integer.parseInt(request.getParameter("capacity"));
+            String capacityParam = request.getParameter("capacity");
+            if (capacityParam == null || capacityParam.trim().isEmpty()) {
+                capacityInvalid = true;
+            } else {
+                capacity = Integer.parseInt(capacityParam.trim());
+                capacityInvalid = capacity < 1 || capacity > 50;
+            }
         } catch (NumberFormatException e) {
-            capacity = 2;
+            capacityInvalid = true;
         }
 
         String areaType = request.getParameter("areaType");
-        int isActive = Integer.parseInt(request.getParameter("isActive"));
+        areaType = areaType != null ? areaType.trim() : "";
+        boolean areaInvalid = !"public".equals(areaType) && !"private".equals(areaType);
+
+        // Validate trạng thái ở backend để chặn request giả mạo ngoài form HTML.
+        int isActive = -1;
+        boolean statusInvalid = false;
+        try {
+            String activeParam = request.getParameter("isActive");
+            if (activeParam == null || activeParam.trim().isEmpty()) {
+                statusInvalid = true;
+            } else {
+                isActive = Integer.parseInt(activeParam.trim());
+                statusInvalid = isActive != 0 && isActive != 1;
+            }
+        } catch (NumberFormatException e) {
+            statusInvalid = true;
+        }
 
         int tableID = 0;
         String tableIdStr = request.getParameter("tableID");
@@ -180,9 +237,15 @@ public class TableManageController extends HttpServlet {
         if (tableName.isEmpty() || tableName.length() > 30) {
             hasError = true;
             errorMessage = "Tên bàn không được để trống và tối đa chỉ 30 ký tự.";
-        } else if (capacity != 2 && capacity != 4 && capacity != 6 && capacity != 8 && capacity != 10) {
+        } else if (capacityInvalid) {
             hasError = true;
-            errorMessage = "Sức chứa không hợp lệ! Chỉ được chọn 2, 4, 6, 8, hoặc 10 người.";
+            errorMessage = "Sức chứa phải là số nguyên từ 1 đến 50 người.";
+        } else if (areaInvalid) {
+            hasError = true;
+            errorMessage = "Khu vực không hợp lệ.";
+        } else if (statusInvalid) {
+            hasError = true;
+            errorMessage = "Trạng thái bàn không hợp lệ.";
         }
 
         // 3. NẾU CÓ LỖI: TRẢ VỀ FORM CŨ KÈM DỮ LIỆU ĐÃ NHẬP
