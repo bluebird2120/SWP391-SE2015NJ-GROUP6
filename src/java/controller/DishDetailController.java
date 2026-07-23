@@ -52,7 +52,7 @@ public class DishDetailController extends HttpServlet {
         String backUrl = (String) session.getAttribute("lastDishListUrl");
         System.out.println(backUrl);
         if (backUrl == null || backUrl.trim().isEmpty()) {
-            backUrl = "menu"; // Thay "menu" bằng URL mặc định trang danh sách món ăn của bạn
+            backUrl = "home"; // Thay "menu" bằng URL mặc định trang danh sách món ăn của bạn
         }
 
         // 2. Validate URL ID an toàn
