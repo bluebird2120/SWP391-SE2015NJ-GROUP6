@@ -331,7 +331,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
                 session.setAttribute("updateFail", "Cập nhật món ăn thất bại hoặc không có thay đổi nào được thực hiện!");
             }
         }
-        response.sendRedirect(request.getContextPath() + "/update-menu?id=" + itemId);
+        response.sendRedirect(request.getContextPath() + "/owner/update-menu?id=" + itemId);
     }
 
     private String isValidString(String data, int length, String ms1, String ms2) {
