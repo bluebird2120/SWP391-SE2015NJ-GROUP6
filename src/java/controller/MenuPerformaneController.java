@@ -98,7 +98,7 @@ public class MenuPerformaneController extends HttpServlet {
         List<MenuItem> menuItemList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, offSet, PAGE_SIZE);
 
         // List B: Chỉ lấy đúng 5 item cao nhất để vẽ biểu đồ
-        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish(search, categoryId, methodID, startDate, endDate, 0, CHART_SIZE);
+        List<MenuItem> topChartList = menuItemDAO.getPerformanceDish("", categoryId, methodID, startDate, endDate, 0, CHART_SIZE);
 
         // List C: Lấy toàn bộ item để tính toán các món
         List<MenuItem> allItemsForCalc = menuItemDAO.getPerformanceDish("", 0, 0, startDate, endDate, 0, menuItemDAO.totalMenuItem());
