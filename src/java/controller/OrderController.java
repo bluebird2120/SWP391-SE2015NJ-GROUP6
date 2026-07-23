@@ -189,7 +189,20 @@ public class OrderController extends HttpServlet {
             }
             
             session.setAttribute("sessionCart", sessionCart);
-            response.sendRedirect(request.getContextPath() + "/menu?success=added");
+            // [GIU TRANG MENU] Quay lai dung trang/filter da gui mon.
+            // Chi chap nhan URL /menu noi bo de tranh open redirect.
+            String returnUrl = request.getParameter("returnUrl");
+            String menuUrl = request.getContextPath() + "/menu";
+            boolean validReturnUrl = returnUrl != null
+                    && (returnUrl.equals(menuUrl)
+                    || returnUrl.startsWith(menuUrl + "?"))
+                    && !returnUrl.contains("\r")
+                    && !returnUrl.contains("\n");
+            if (!validReturnUrl) {
+                returnUrl = menuUrl;
+            }
+            session.setAttribute("successMsg", "Đã thêm món vào giỏ hàng.");
+            response.sendRedirect(returnUrl);
             return;
 
         // --- CẬP NHẬT SỐ LƯỢNG (SESSION) ---
@@ -284,11 +297,43 @@ public class OrderController extends HttpServlet {
         // =========================================================
         // THANH TOÁN TỔNG
         // =========================================================
+        } else if ("checkPaymentStatus".equals(action)) {
+            // [CHO THANH TOAN] Khach chi kiem tra ket qua do staff xu ly,
+            // khong tu cap nhat trang thai thanh toan.
+            if (currentOrderID == null) {
+                clearTableSession(session);
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+
+            Order currentOrder = orderDAO.getOrderById(currentOrderID);
+            boolean paid = currentOrder != null
+                    && "completed".equalsIgnoreCase(
+                            currentOrder.getOrderStatus());
+
+            if (paid) {
+                clearTableSession(session);
+                response.sendRedirect(request.getContextPath()
+                        + "/home?payment=success");
+            } else {
+                // Chua thanh toan: dong popup de HOST co the xem lai gio
+                // va gui lai yeu cau neu can.
+                session.removeAttribute("checkoutWaiting");
+                session.setAttribute("errorMsg",
+                        "Đơn hàng chưa được thanh toán. "
+                        + "Vui lòng chờ nhân viên hoặc gửi lại yêu cầu nếu cần.");
+                response.sendRedirect(request.getContextPath()
+                        + "/order?action=cart");
+            }
+            return;
+
         } else if ("checkoutTotal".equals(action)) {
             // [YEU CAU THANH TOAN] Khach chi gui yeu cau tinh tien.
             // Hoa don cuoi cung se do nhan vien phuc vu kiem tra va tao.
             if (currentOrderID != null && orderDAO.requestCheckout(currentOrderID)) {
                 session.setAttribute("successMsg", "Đã gửi yêu cầu tính tiền. Vui lòng chờ nhân viên kiểm tra và chốt hóa đơn.");
+                // [CHO THANH TOAN] Bat popup cho HOST sau khi gui yeu cau.
+                session.setAttribute("checkoutWaiting", true);
 
                 // Thông báo ngay cho nhân viên đang phụ trách bàn/đơn này để họ qua chốt hóa đơn.
                 try {
@@ -327,6 +372,23 @@ public class OrderController extends HttpServlet {
     @Override
     public String getServletInfo() {
         return "Order Controller Handles Session Cart and DB sync";
+    }
+
+    /**
+     * [CHO THANH TOAN] Xoa trang thai tham gia ban tren dung thiet bi khach
+     * sau khi staff da thanh toan. Khong xoa tai khoan dang nhap customer.
+     */
+    private void clearTableSession(HttpSession session) {
+        session.removeAttribute("orderID");
+        session.removeAttribute("tableID");
+        session.removeAttribute("currentTableID");
+        session.removeAttribute("areaType");
+        session.removeAttribute("roleInTable");
+        session.removeAttribute("pendingOrderID");
+        session.removeAttribute("pendingTableID");
+        session.removeAttribute("pendingAreaType");
+        session.removeAttribute("sessionCart");
+        session.removeAttribute("checkoutWaiting");
     }
     
     // Hàm phụ trợ: Lấy thông tin chi tiết của 1 món ăn dựa vào mã itemID

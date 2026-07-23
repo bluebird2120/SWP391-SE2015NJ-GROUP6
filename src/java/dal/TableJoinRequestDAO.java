@@ -110,20 +110,54 @@ public class TableJoinRequestDAO extends DBContext {
     }
     
     /**
-     * 5. UPDATE RECLAIM STATUS BY ORDER ID (For Staff Approval)
-     * Updates the status from 'pending_reclaim' to the new status to prevent accidental updates to normal join requests.
+     * 5. UPDATE RECLAIM STATUS BY ORDER ID (Chống trùng lặp 2 máy cùng xin Host)
      */
     public boolean updateReclaimStatusByOrder(int orderID, String newStatus) {
-        String sql = "UPDATE TableJoinRequest SET status = ? WHERE orderID = ? AND status = 'pending_reclaim'";
-        try (java.sql.PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, newStatus); 
-            ps.setInt(2, orderID);
-            
-            return ps.executeUpdate() > 0;
+        int targetRequestID = -1;
+        
+        // BƯỚC 1: Tìm ra yêu cầu xin khôi phục MỚI NHẤT của bàn này
+        String getSql = "SELECT requestID FROM TableJoinRequest WHERE orderID = ? AND status = 'pending_reclaim' ORDER BY createdAt DESC LIMIT 1";
+        try (java.sql.PreparedStatement psGet = connection.prepareStatement(getSql)) {
+            psGet.setInt(1, orderID);
+            try (java.sql.ResultSet rs = psGet.executeQuery()) {
+                if (rs.next()) {
+                    targetRequestID = rs.getInt("requestID");
+                }
+            }
         } catch (java.sql.SQLException e) {
-            System.err.println("[TableJoinRequestDAO] updateReclaimStatusByOrder error: " + e.getMessage());
+            System.err.println("[TableJoinRequestDAO] Lỗi lấy RequestID: " + e.getMessage());
         }
-        return false;
+
+        // Nếu tìm thấy ít nhất 1 người đang xin quyền
+        if (targetRequestID != -1) {
+            try {
+                connection.setAutoCommit(false); // Bật Transaction để đảm bảo an toàn tuyệt đối
+                
+                // BƯỚC 2: Chỉ cấp quyền (Approve) cho đúng 1 máy đó
+                String approveSql = "UPDATE TableJoinRequest SET status = ? WHERE requestID = ?";
+                try (java.sql.PreparedStatement psApprove = connection.prepareStatement(approveSql)) {
+                    psApprove.setString(1, newStatus); // Sẽ là 'approved_reclaim'
+                    psApprove.setInt(2, targetRequestID);
+                    psApprove.executeUpdate();
+                }
+
+                // BƯỚC 3: Đánh trượt (Reject) TẤT CẢ các máy khác đang cắn theo xin quyền của bàn này
+                String rejectSql = "UPDATE TableJoinRequest SET status = 'rejected' WHERE orderID = ? AND status = 'pending_reclaim'";
+                try (java.sql.PreparedStatement psReject = connection.prepareStatement(rejectSql)) {
+                    psReject.setInt(1, orderID);
+                    psReject.executeUpdate();
+                }
+                
+                connection.commit(); // Lưu thay đổi
+                connection.setAutoCommit(true);
+                return true;
+                
+            } catch (java.sql.SQLException e) {
+                try { connection.rollback(); } catch (java.sql.SQLException ex) {}
+                System.err.println("[TableJoinRequestDAO] Lỗi cập nhật quyền Host: " + e.getMessage());
+            }
+        }
+        return false; // Trả về false nếu không có ai xin quyền
     }
     
     /**
