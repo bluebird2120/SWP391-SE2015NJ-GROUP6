@@ -468,9 +468,11 @@
                     <c:forEach var="item" items="${listItem}">
                         <div class="card">
                             <img src="${item.image}" alt="${item.itemName}">
-                            <span class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
-                                ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
-                            </span>
+                            <c:if test="${sessionScope.employee.roleID != null}">
+                                <span class="status ${item.isAvailable == 1 ? 'active' : 'inactive'}">
+                                    ${item.isAvailable == 1 ? 'Đang Bán' : 'Tạm Ngưng'}
+                                </span>
+                            </c:if>
                             <h3 class="item-name">${item.itemName}</h3>
                             <p class="category">🏷️ ${item.categoryName}</p>
                             <div class="price-container">
@@ -500,6 +502,7 @@
                                     </c:when>
                                     <c:when test="${sessionScope.employee.roleID == 1}">
                                         <a href="${pageContext.request.contextPath}/owner/update-menu?id=${item.itemID}" class="btn">Chỉnh sửa</a>
+                                        <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>
                                     </c:when>
                                     <c:otherwise>
                                         <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="btn">Xem chi tiết</a>
