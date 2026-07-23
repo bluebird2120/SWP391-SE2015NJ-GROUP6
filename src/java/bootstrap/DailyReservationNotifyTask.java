@@ -24,7 +24,6 @@ public class DailyReservationNotifyTask implements Runnable {
     }
 
     private void process() {
-        NotificationDAO notifDAO = new NotificationDAO();
 
         // 1. Lấy tất cả lễ tân đang hoạt động
         List<Integer> receptionistIDs = getReceptionistIDs();
@@ -53,14 +52,16 @@ public class DailyReservationNotifyTask implements Runnable {
         String message = sb.toString();
 
         // 4. Gửi thông báo cho từng lễ tân
-        for (int recID : receptionistIDs) {
-            Notifications n = new Notifications();
-            n.setRecipientID(recID);
-            n.setRecipientType("staff");
-            n.setType("reservation_needs_table");
-            n.setMessage(message);
-            n.setIsRead(0);
-            notifDAO.insert(n);
+        try (NotificationDAO notifDAO = new NotificationDAO()) {
+            for (int recID : receptionistIDs) {
+                Notifications n = new Notifications();
+                n.setRecipientID(recID);
+                n.setRecipientType("staff");
+                n.setType("reservation_needs_table");
+                n.setMessage(message);
+                n.setIsRead(0);
+                notifDAO.insert(n);
+            }
         }
 
         System.out.println("[DailyReservationNotifyTask] Đã gửi thông báo cho "
@@ -84,9 +85,6 @@ public class DailyReservationNotifyTask implements Runnable {
                    + "  ) "
                    + "ORDER BY o.orderTime ASC";
 
-        // [FIX RÒ RỈ CONNECTION] DBContext giờ nằm trong try-with-resources
-        // để luôn được đóng, dù trước đây task này chỉ chạy 1 lần/ngày nên
-        // rò rỉ chậm, vẫn là 1 kết nối MySQL mất vĩnh viễn mỗi lần chạy.
         try (dal.DBContext db = new dal.DBContext();
              PreparedStatement ps = db.getConnection().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -101,7 +99,7 @@ public class DailyReservationNotifyTask implements Runnable {
     }
 
     private List<Integer> getReceptionistIDs() {
-        // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy TẤT CẢ
+        // CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy TẤT CẢ
         // Employee roleID=3 isActive=1, kể cả người không có lịch làm hôm
         // nay. Giờ lọc đúng theo EmployeeShifts của hôm nay.
         try (dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO()) {

@@ -26,33 +26,35 @@ public class ShiftPlanTask implements Runnable {
 
     private void process() {
         LocalDate today = LocalDate.now();
-        MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO(); //lấy kế hoạch ca tháng.
-        NotificationDAO notifDao    = new NotificationDAO(); //Tạo thông báo
-        EmployeeShiftDAO shiftDao   = new EmployeeShiftDAO(); //kiểm tra và tạo ca làm thật.
 
-        List<MonthlyShiftPlan> pending = planDao.listPending(); //lấy danh sách kế hoạch ca tháng đang chờ xử lý.
-        for (MonthlyShiftPlan p : pending) {
-            LocalDate firstOfMonth = LocalDate.of(p.getEffectiveYear(), p.getEffectiveMonth(), 1);
-            LocalDate notifyDate   = firstOfMonth.minusDays(3);
+        try (MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO(); //lấy kế hoạch ca tháng.
+                NotificationDAO notifDao = new NotificationDAO(); //Tạo thông báo
+                EmployeeShiftDAO shiftDao = new EmployeeShiftDAO()) { //kiểm tra và tạo ca làm thật.
 
-            if (MonthlyShiftPlan.DRAFT.equals(p.getStatus()) && !today.isBefore(notifyDate)) {
-                if (insertNotification(notifDao, p)) {
-                    planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.NOTIFIED);
-                    p.setStatus(MonthlyShiftPlan.NOTIFIED);
+            List<MonthlyShiftPlan> pending = planDao.listPending(); //lấy danh sách kế hoạch ca tháng đang chờ xử lý.
+            for (MonthlyShiftPlan p : pending) {
+                LocalDate firstOfMonth = LocalDate.of(p.getEffectiveYear(), p.getEffectiveMonth(), 1);
+                LocalDate notifyDate = firstOfMonth.minusDays(3);
+
+                if (MonthlyShiftPlan.DRAFT.equals(p.getStatus()) && !today.isBefore(notifyDate)) {
+                    if (insertNotification(notifDao, p)) {
+                        planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.NOTIFIED);
+                        p.setStatus(MonthlyShiftPlan.NOTIFIED);
+                    }
                 }
-            }
 
-            if (MonthlyShiftPlan.NOTIFIED.equals(p.getStatus()) && !today.isBefore(firstOfMonth)) {
-                //nhân viên đã có bất kỳ ca nào trong cả tháng chưa.
-                if (shiftDao.hasAnyShiftInMonth(p.getEmployeeID(), p.getEffectiveYear(), p.getEffectiveMonth())) {
-                    System.out.println("[ShiftPlanTask] Already has shifts — mark as APPLIED for planID=" + p.getPlanID());
-                    planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
-                    continue;
-                }
-                int rows = shiftDao.assignMonth(p.getEmployeeID(), p.getTemplateID(),
-                        p.getEffectiveYear(), p.getEffectiveMonth());
-                if (rows > 0) {
-                    planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
+                if (MonthlyShiftPlan.NOTIFIED.equals(p.getStatus()) && !today.isBefore(firstOfMonth)) {
+                    //nhân viên đã có bất kỳ ca nào trong cả tháng chưa.
+                    if (shiftDao.hasAnyShiftInMonth(p.getEmployeeID(), p.getEffectiveYear(), p.getEffectiveMonth())) {
+                        System.out.println("[ShiftPlanTask] Already has shifts — mark as APPLIED for planID=" + p.getPlanID());
+                        planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
+                        continue;
+                    }
+                    int rows = shiftDao.assignMonth(p.getEmployeeID(), p.getTemplateID(),
+                            p.getEffectiveYear(), p.getEffectiveMonth());
+                    if (rows > 0) {
+                        planDao.updateStatus(p.getPlanID(), MonthlyShiftPlan.APPLIED);
+                    }
                 }
             }
         }

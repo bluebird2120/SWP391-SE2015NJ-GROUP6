@@ -25,9 +25,6 @@ public class CustomerReviewController extends HttpServlet {
     private static final String VIEW = "/views/customer/reviews.jsp";
     private static final String CSRF_TOKEN_SESSION_KEY = "reviewCsrfToken";
 
-    private final ReviewDAO reviewDAO = new ReviewDAO();
-    private final EmployeeDAO employeeDAO = new EmployeeDAO();
-    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -97,12 +94,12 @@ public class CustomerReviewController extends HttpServlet {
             return;
         }
 
-        if (!reviewDAO.canCustomerReviewOrder(orderID, customer.getCustomerID())) {
+        if (!new ReviewDAO().canCustomerReviewOrder(orderID, customer.getCustomerID())) {
             redirectError(request, response, "Chỉ có thể đánh giá đơn đã hoàn tất của bạn.");
             return;
         }
 
-        if (reviewDAO.hasReviewedOrder(orderID, customer.getCustomerID())) {
+        if (new ReviewDAO().hasReviewedOrder(orderID, customer.getCustomerID())) {
             redirectError(request, response, "Bạn đã đánh giá đơn này.");
             return;
         }
@@ -116,7 +113,7 @@ public class CustomerReviewController extends HttpServlet {
             throws ServletException, IOException {
 
         int reviewID = toInt(request.getParameter("reviewID"), -1);
-        Reviews review = reviewDAO.getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
+        Reviews review = new ReviewDAO().getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
         if (review == null) {
             redirectError(request, response, "Không tìm thấy đánh giá của bạn.");
             return;
@@ -143,7 +140,7 @@ public class CustomerReviewController extends HttpServlet {
 
         int rating = toInt(request.getParameter("rating"), -1);
         String comment = normalizeComment(request.getParameter("comment"));
-        boolean created = reviewDAO.createReview(customer.getCustomerID(), orderID, rating, comment);
+        boolean created = new ReviewDAO().createReview(customer.getCustomerID(), orderID, rating, comment);
         if (!created) {
             request.setAttribute("formMode", "create");
             request.setAttribute("orderID", orderID);
@@ -161,7 +158,7 @@ public class CustomerReviewController extends HttpServlet {
             throws ServletException, IOException {
 
         int reviewID = toInt(request.getParameter("reviewID"), -1);
-        Reviews existing = reviewDAO.getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
+        Reviews existing = new ReviewDAO().getReviewByIdAndCustomer(reviewID, customer.getCustomerID());
         if (existing == null) {
             redirectError(request, response, "Không tìm thấy đánh giá của bạn.");
             return;
@@ -179,7 +176,7 @@ public class CustomerReviewController extends HttpServlet {
 
         int rating = toInt(request.getParameter("rating"), -1);
         String comment = normalizeComment(request.getParameter("comment"));
-        boolean updated = reviewDAO.updateReview(reviewID, customer.getCustomerID(), rating, comment);
+        boolean updated = new ReviewDAO().updateReview(reviewID, customer.getCustomerID(), rating, comment);
         if (!updated) {
             request.setAttribute("formMode", "edit");
             request.setAttribute("editingReview", existing);
@@ -194,7 +191,7 @@ public class CustomerReviewController extends HttpServlet {
             throws IOException {
 
         int reviewID = toInt(request.getParameter("reviewID"), -1);
-        boolean deleted = reviewDAO.deleteReview(reviewID, customer.getCustomerID());
+        boolean deleted = new ReviewDAO().deleteReview(reviewID, customer.getCustomerID());
         String result = deleted ? "deleted" : "delete_failed";
         response.sendRedirect(request.getContextPath() + "/customer/reviews?success=" + result);
     }
@@ -202,7 +199,7 @@ public class CustomerReviewController extends HttpServlet {
     private void showList(HttpServletRequest request, HttpServletResponse response, Customer customer, String error)
             throws ServletException, IOException {
 
-        List<Reviews> reviews = reviewDAO.getReviewsByCustomer(customer.getCustomerID());
+        List<Reviews> reviews = new ReviewDAO().getReviewsByCustomer(customer.getCustomerID());
         request.setAttribute("reviews", reviews);
         request.setAttribute("error", error);
         request.setAttribute("csrfToken", getOrCreateCsrfToken(request));
@@ -217,10 +214,10 @@ public class CustomerReviewController extends HttpServlet {
         if (orderID <= 0) {
             return "Đơn đặt bàn không hợp lệ.";
         }
-        if (!reviewDAO.canCustomerReviewOrder(orderID, customerID)) {
+        if (!new ReviewDAO().canCustomerReviewOrder(orderID, customerID)) {
             return "Chỉ có thể đánh giá đơn đã hoàn tất của bạn.";
         }
-        if (checkDuplicate && reviewDAO.hasReviewedOrder(orderID, customerID)) {
+        if (checkDuplicate && new ReviewDAO().hasReviewedOrder(orderID, customerID)) {
             return "Bạn đã đánh giá đơn này.";
         }
         return null;
@@ -245,7 +242,9 @@ public class CustomerReviewController extends HttpServlet {
     }
 
     private void notifyOwnersAboutNewReview(Customer customer, int orderID, int rating, String comment) {
-        try {
+        // Dùng try-with-resources để tự đóng connection sau khi xong
+        try (EmployeeDAO employeeDAO = new EmployeeDAO();
+             NotificationDAO notificationDAO = new NotificationDAO()) {
 
             List<Integer> ownerIDs = employeeDAO.getActiveOwnerIDs();
             if (ownerIDs.isEmpty()) {

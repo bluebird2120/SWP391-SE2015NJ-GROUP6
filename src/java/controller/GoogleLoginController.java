@@ -127,7 +127,7 @@ public class GoogleLoginController extends HttpServlet {
                 request.getRequestDispatcher("/views/login.jsp").forward(request, response);
                 return;
             }
-
+            
             // Tìm hoặc tạo Customer trong DB
             CustomerDAO customerDAO = new CustomerDAO();
             Customer customer = customerDAO.findOrCreateByGoogle(email, name);

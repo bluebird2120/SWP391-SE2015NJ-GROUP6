@@ -348,7 +348,8 @@ public class ReservationDAO extends DBContext {
             //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
             //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
             if (confirmed > 0 && !newlyConfirmedIDs.isEmpty()) {
-                NotificationDAO notifDAO = new NotificationDAO();
+                // try-with-resources: tự đóng connection của NotificationDAO sau khi dùng xong
+                try (NotificationDAO notifDAO = new NotificationDAO()) {
 
                 // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
                 //    Áp dụng cho TẤT CẢ đơn mới confirm, không phân biệt hôm nay hay
@@ -402,6 +403,7 @@ public class ReservationDAO extends DBContext {
                         }
                     }
                 }
+                } 
             }
 
             List<Integer> orderIDs = new ArrayList<>();
