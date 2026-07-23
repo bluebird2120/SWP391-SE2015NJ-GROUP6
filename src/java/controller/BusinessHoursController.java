@@ -130,15 +130,15 @@ public class BusinessHoursController extends HttpServlet {
          * Sau khi Owner lưu ngày đặc biệt, đồng bộ trạng thái ca và thông báo
          * cho nhân viên có ca bị ảnh hưởng.
          */
-        if (saved) {
-            try (BusinessClosureDAO closureDAO = new BusinessClosureDAO()) {
-                if (isClosed == 1) {
-                    closureDAO.closeSpecialDate(specificDate, reason);
-                } else {
-                    closureDAO.reopenSpecialDate(specificDate);
-                }
-            }
-        }
+//        if (saved) {
+//            try (BusinessClosureDAO closureDAO = new BusinessClosureDAO()) {
+//                if (isClosed == 1) {
+//                    closureDAO.closeSpecialDate(specificDate, reason);
+//                } else {
+//                    closureDAO.reopenSpecialDate(specificDate);
+//                }
+//            }
+//        }
         return saved;
     }
 
