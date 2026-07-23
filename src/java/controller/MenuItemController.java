@@ -266,6 +266,15 @@ public class MenuItemController extends HttpServlet {
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
 
+        // [GIU TRANG MENU] Gui URL hien tai sang form them mon de sau khi
+        // xu ly gio hang, khach quay lai dung trang va bo loc dang xem.
+        String currentMenuUrl = request.getRequestURI();
+        if (request.getQueryString() != null
+                && !request.getQueryString().isBlank()) {
+            currentMenuUrl += "?" + request.getQueryString();
+        }
+        request.setAttribute("returnUrl", currentMenuUrl);
+
         // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
         if (sessionTableID == null) {
             String currentUrl = request.getRequestURI();

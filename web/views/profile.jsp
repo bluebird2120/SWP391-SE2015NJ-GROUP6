@@ -566,7 +566,7 @@
                                                     <c:otherwise><span style="color:#bbb;font-style:italic;">Chưa cập nhật</span></c:otherwise>
                                                 </c:choose>
                                             </div>
-                                            <span class="readonly-note"><i class="fas fa-lock"></i> Liên hệ quản trị để thay đổi số điện thoại</span>
+                                            <span class="readonly-note"><i class="fas fa-lock"></i> Số điện thoại không thể thay đổi tại đây</span>
                                         </div>
 
                                         <%-- Ngày sinh — CÓ THỂ SỬA, KHÔNG BẮT BUỘC --%>

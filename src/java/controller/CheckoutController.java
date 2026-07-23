@@ -3,6 +3,7 @@ package controller;
 import dal.InvoicesDAO;
 import dal.OrderDAO;
 import dal.StaffTableDAO;
+import dal.TableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,6 +18,7 @@ import model.Invoices;
 import model.MenuItem;
 import model.Order;
 import model.OrderItem;
+import model.Table;
 
 @WebServlet(name = "CheckoutController", urlPatterns = {"/checkout"})
 public class CheckoutController extends HttpServlet {
@@ -69,6 +71,10 @@ public class CheckoutController extends HttpServlet {
         }
 
         Order order = orderDAO.getOrderById(orderID);
+        // [FIX VI TRI PHUC VU] Session hien tai la cua nhan vien nen khong co
+        // tableID cua khach. Lay ban truc tiep theo orderID de hien thi dung
+        // ca don an tai cho mot ban va don gop nhieu ban.
+        List<Table> assignedTables = new TableDAO().getTablesByOrderId(orderID);
         Invoices invoice = createOrGetMealInvoice(order, orderItems, menuItems);
         if (invoice == null) {
             session.setAttribute("staffTableMessage", "Không thể tạo hóa đơn thanh toán.");
@@ -78,6 +84,7 @@ public class CheckoutController extends HttpServlet {
 
         session.setAttribute("invoiceID", invoice.getInvoiceID());
         request.setAttribute("invoice", invoice);
+        request.setAttribute("assignedTables", assignedTables);
         request.setAttribute("orderItems", orderItems);
         request.setAttribute("menuItems", menuItems);
         request.setAttribute("orderID", orderID);

@@ -129,13 +129,61 @@
             .btn-home:hover { background: #eadecf; }
             .btn-pay { background: #1c4332; color: #ffffff; border: none; margin-bottom: 12px;}
             .btn-pay:hover { background: #275d46; }
+            .btn-print {
+                background: #76493b;
+                color: #ffffff;
+                border: none;
+                cursor: pointer;
+            }
+            .btn-print:hover { background: #5f3a30; }
+
+            /* [IN HOA DON] Khi in, an toan bo giao dien va chi hien thi
+               noi dung nam trong printable-invoice. */
+            @media print {
+                @page {
+                    margin: 12mm;
+                }
+                body {
+                    background: #ffffff;
+                    padding-top: 0 !important;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .header,
+                .footer {
+                    display: none !important;
+                }
+                .receipt-wrapper {
+                    max-width: none;
+                    margin: 0;
+                    padding: 0;
+                }
+                body * {
+                    visibility: hidden !important;
+                }
+                #printable-invoice,
+                #printable-invoice * {
+                    visibility: visible !important;
+                }
+                #printable-invoice {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    border-radius: 0;
+                    box-shadow: none;
+                }
+                #printable-invoice .print-hidden {
+                    display: none !important;
+                }
+            }
         </style>
     </head>
     <body>
         <%@ include file="/views/includes/header.jsp" %>
 
         <div class="receipt-wrapper">
-            <div class="receipt-card">
+            <div class="receipt-card" id="printable-invoice">
                 <div class="receipt-header">
                     <h2>VỊ AN RESTAURANT</h2>
                     <p>Chi Tiết Giao Dịch</p>
@@ -220,7 +268,8 @@
                     </div>
 
                     <c:if test="${invoice.status == 'unpaid' || invoice.status == 'failed'}">
-                        <form action="${pageContext.request.contextPath}/checkout" method="get">
+                        <form action="${pageContext.request.contextPath}/checkout" method="get"
+                              class="print-hidden">
                             <button type="submit" class="btn-action btn-pay">Thử Thanh Toán Lại</button>
                         </form>
                     </c:if>
@@ -230,12 +279,23 @@
                                   && not empty order
                                   && order.orderStatus == 'reserved'}">
                         <a href="${pageContext.request.contextPath}/reservation?action=preorder&orderID=${order.orderID}"
-                           class="btn-action btn-pay">
+                           class="btn-action btn-pay print-hidden">
                             🍲 Đặt món trước
                         </a>
                     </c:if>
-                    
-                    <a href="${pageContext.request.contextPath}/home" class="btn-action btn-home">Về Trang Chủ</a>
+
+                    <%-- [IN HOA DON] Chi nhan vien thay nut in; CSS print-hidden
+                         dam bao ban in khong chua cac nut thao tac. --%>
+                    <c:if test="${not empty sessionScope.employee}">
+                        <button type="button"
+                                class="btn-action btn-print print-hidden"
+                                onclick="window.print()">
+                            🖨 In Hóa Đơn
+                        </button>
+                    </c:if>
+
+                    <a href="${pageContext.request.contextPath}/home"
+                       class="btn-action btn-home print-hidden">Về Trang Chủ</a>
                 </div>
             </div>
         </div>

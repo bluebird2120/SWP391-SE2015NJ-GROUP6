@@ -56,6 +56,11 @@ public class LoginController extends HttpServlet {
                 session.removeAttribute("registeredPassword");
             }
         }
+        
+        String logoutParam = request.getParameter("logout");
+        if ("1".equals(logoutParam)) {
+            request.setAttribute("successMessage", "Bạn đã đăng xuất thành công!");
+        }
 
         request.getRequestDispatcher("/views/login.jsp").forward(request, response);
     }
@@ -137,7 +142,7 @@ public class LoginController extends HttpServlet {
         session.setMaxInactiveInterval(30 * 60);
 
         if (employee.getMustChangePassword() == 1) {
-            response.sendRedirect(request.getContextPath() + "/staff/change-password?first=true");
+            response.sendRedirect(request.getContextPath() + "/change-password?first=true");
             return;
         }
 

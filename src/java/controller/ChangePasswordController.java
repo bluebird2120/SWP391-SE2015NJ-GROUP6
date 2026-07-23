@@ -17,7 +17,7 @@ import model.Customer;
 import model.Employee;
 import java.sql.SQLException;
 
-@WebServlet(name = "ChangePasswordController", urlPatterns = {"/change-password", "/staff/change-password"})
+@WebServlet(name = "ChangePasswordController", urlPatterns = {"/change-password"})
 public class ChangePasswordController extends HttpServlet {
 
     private final CustomerDAO customerDAO = new CustomerDAO();
@@ -26,11 +26,16 @@ public class ChangePasswordController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        HttpSession session = request.getSession(false);
+        boolean loggedIn = session != null
+                && (session.getAttribute("customer") != null
+                    || session.getAttribute("employee") != null);
+        if (!loggedIn) {
+            response.sendRedirect(request.getContextPath() + "/login?msg=required");
+            return;
+        }
         
-        String uri = request.getRequestURI();
-        
-        //Nếu vào từ thằng /staff/change-password thì truyền param xuống jsp
-        if (uri.contains("/staff/change-password")) {
             String first = request.getParameter("first");
             String expired = request.getParameter("expired");
             if ("true".equals(first)) {
@@ -38,7 +43,7 @@ public class ChangePasswordController extends HttpServlet {
             } else if ("true".equals(expired)) {
                 request.setAttribute("forceReason", "Mật khẩu đã quá hạn 90 ngày, vui lòng đổi mật khẩu mới.");
             }
-        }
+        
         request.getRequestDispatcher("/views/change-password.jsp").forward(request, response);
     }
 

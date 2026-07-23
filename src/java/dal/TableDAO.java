@@ -11,6 +11,29 @@ import model.Table;
 
 public class TableDAO extends DBContext {
 
+    /**
+     * Lấy các mức sức chứa đang thực sự tồn tại để tạo bộ lọc động.
+     * DISTINCT giúp mỗi mức sức chứa chỉ xuất hiện một lần trong combobox.
+     */
+    public List<Integer> getDistinctCapacities() {
+        List<Integer> capacities = new ArrayList<>();
+        String sql = "SELECT DISTINCT capacity "
+                + "FROM `Table` "
+                + "WHERE capacity BETWEEN 1 AND 50 "
+                + "ORDER BY capacity ASC";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                capacities.add(rs.getInt("capacity"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return capacities;
+    }
+
     public List<String> getAllAreaTypes() {
 
         List<String> list = new ArrayList<>();

@@ -138,13 +138,11 @@
 
                         <div class="vian-form-group">
                             <label>Sức chứa (Số người):</label>
-                            <select class="vian-input" name="capacity" required>
-                                <option value="2" ${table.capacity == 2 ? 'selected' : ''}>2 người</option>
-                                <option value="4" ${table.capacity == 4 ? 'selected' : (table == null ? 'selected' : '')}>4 người</option>
-                                <option value="6" ${table.capacity == 6 ? 'selected' : ''}>6 người</option>
-                                <option value="8" ${table.capacity == 8 ? 'selected' : ''}>8 người</option>
-                                <option value="10" ${table.capacity == 10 ? 'selected' : ''}>10 người (Phòng VIP)</option>
-                            </select>
+                            <%-- Frontend chỉ cho nhập số nguyên từ 1 đến 50; backend vẫn kiểm tra lại. --%>
+                            <input type="number" class="vian-input" name="capacity"
+                                   value="${table.capacity > 0 ? table.capacity : 2}"
+                                   min="1" max="50" step="1" required
+                                   placeholder="Nhập sức chứa từ 1 đến 50">
                         </div>
 
                         <div class="vian-form-group">
