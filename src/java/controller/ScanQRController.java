@@ -100,6 +100,12 @@ public class ScanQRController extends HttpServlet {
                         session.setAttribute("orderID", activeOrder.getOrderID());
                         session.setAttribute("roleInTable", "HOST");
                         
+                        // 🌟 THÊM 3 DÒNG NÀY ĐỂ MENU BIẾT BẠN ĐANG NGỒI Ở ĐÂU
+                        session.setAttribute("tableID", tableID);
+                        session.setAttribute("currentTableID", tableID);
+                        session.setAttribute("areaType", currentTable.getAreaType());
+                        // ----------------------------------------------------
+                        
                         if ("pending".equals(activeOrder.getTableStatus())) {
                             session.setAttribute("pendingOrderID", activeOrder.getOrderID());
                             request.getRequestDispatcher("/views/user/waiting_staff.jsp").forward(request, response);
@@ -140,6 +146,12 @@ public class ScanQRController extends HttpServlet {
                         // Cấp quyền HOST vào Session
                         session.setAttribute("orderID", activeOrder.getOrderID());
                         session.setAttribute("roleInTable", "HOST");
+                        
+                        // 🌟 THÊM 3 DÒNG NÀY CHO KHÁCH ĐẶT TRƯỚC
+                        session.setAttribute("tableID", tableID);
+                        session.setAttribute("currentTableID", tableID);
+                        session.setAttribute("areaType", currentTable.getAreaType());
+                        // ---------------------------------------------
 
                         // Đưa khách vào Menu để tiến hành gọi thêm món hoặc thanh toán
                         response.sendRedirect(request.getContextPath() + "/menu");
