@@ -233,12 +233,13 @@
                 <div class="filter-group">
                     <label>Sức chứa:</label>
                     <select name="searchCapacity" class="filter-input">
-                        <option value="all" ${searchCapacity == 'all' || empty searchCapacity ? 'selected' : ''}>-- Tất cả số ghế --</option>
-                        <option value="2" ${searchCapacity == '2' ? 'selected' : ''}>2 người</option>
-                        <option value="4" ${searchCapacity == '4' ? 'selected' : ''}>4 người</option>
-                        <option value="6" ${searchCapacity == '6' ? 'selected' : ''}>6 người</option>
-                        <option value="8" ${searchCapacity == '8' ? 'selected' : ''}>8 người</option>
-                        <option value="10" ${searchCapacity == '10' ? 'selected' : ''}>10 người</option>
+                        <option value="all" ${empty searchCapacity ? 'selected' : ''}>-- Tất cả số ghế --</option>
+                        <%-- Các mức sức chứa được lấy DISTINCT từ database. --%>
+                        <c:forEach var="capacity" items="${capacityOptions}">
+                            <option value="${capacity}" ${searchCapacity == capacity ? 'selected' : ''}>
+                                ${capacity} người
+                            </option>
+                        </c:forEach>
                     </select>
                 </div>
 

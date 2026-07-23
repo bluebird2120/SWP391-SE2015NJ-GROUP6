@@ -5,6 +5,7 @@
 /build/
 /out/
 /target/
+/.codex-tmp/
 
 # Class files
 *.class

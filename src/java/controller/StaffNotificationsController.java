@@ -129,6 +129,8 @@ public class StaffNotificationsController extends HttpServlet {
                 return ctx + "/reception/tables";
 
             // ── CA LÀM VIỆC (tất cả loại shift notification) ────────────
+            // Owner vừa gán ca mới (theo ngày hoặc theo tháng)
+            case "shift_assigned":
             // Lịch ca tháng mới được phát hành
             case "shift_plan":
             // Có yêu cầu đổi ca từ đồng nghiệp
