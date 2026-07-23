@@ -343,6 +343,58 @@
                 text-decoration: none;
                 font-weight: bold;
             }
+
+            /* [CHO THANH TOAN] Popup khoa thao tac tren Cart trong luc
+               HOST cho staff kiem tra va thanh toan don. */
+            .checkout-waiting-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+                background: rgba(28, 24, 21, 0.62);
+                backdrop-filter: blur(3px);
+            }
+            .checkout-waiting-dialog {
+                width: 100%;
+                max-width: 430px;
+                padding: 32px;
+                border: 1px solid #eae5da;
+                border-radius: 16px;
+                background: #ffffff;
+                text-align: center;
+                box-shadow: 0 20px 55px rgba(0, 0, 0, 0.28);
+            }
+            .checkout-waiting-icon {
+                margin-bottom: 12px;
+                font-size: 48px;
+            }
+            .checkout-waiting-dialog h2 {
+                margin-bottom: 12px;
+                color: #1c4332;
+                font-size: 24px;
+            }
+            .checkout-waiting-dialog p {
+                margin-bottom: 22px;
+                color: #6e655f;
+                line-height: 1.6;
+            }
+            .btn-check-payment {
+                width: 100%;
+                padding: 13px 18px;
+                border: 0;
+                border-radius: 8px;
+                background: #76493b;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .btn-check-payment:hover {
+                background: #5f3a30;
+            }
         </style>
     </head>
     <body>        
@@ -366,6 +418,31 @@
             <c:if test="${not empty param.error && param.error == 'invalid_quantity'}">
                 <div style="color:#D9534F;background:#FDE8E8;padding:12px 20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #D9534F;font-weight:bold;">
                     ⚠ Hệ thống cảnh báo: Số lượng món ăn không hợp lệ! Vui lòng chỉ nhập số lượng trong khoảng từ 1 đến 99 phần.
+                </div>
+            </c:if>
+
+            <%-- [CHO THANH TOAN] Chi HOST vua gui yeu cau moi co co session nay.
+                 Nut ben duoi chi hoi lai trang thai don, khong tu xac nhan thanh toan. --%>
+            <c:if test="${sessionScope.checkoutWaiting}">
+                <div class="checkout-waiting-overlay">
+                    <div class="checkout-waiting-dialog">
+                        <div class="checkout-waiting-icon">⏳</div>
+                        <h2>Đang chờ thanh toán</h2>
+                        <p>
+                            Yêu cầu tính tiền đã được gửi đến nhân viên.
+                            Vui lòng chờ nhân viên kiểm tra và hoàn tất thanh toán.
+                        </p>
+                        <form method="post"
+                              action="${pageContext.request.contextPath}/order">
+                            <input type="hidden"
+                                   name="action"
+                                   value="checkPaymentStatus">
+                            <button type="submit"
+                                    class="btn-check-payment">
+                                KIỂM TRA ĐÃ THANH TOÁN
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </c:if>
 

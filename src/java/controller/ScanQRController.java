@@ -101,12 +101,18 @@ public class ScanQRController extends HttpServlet {
                         // KHOAN HÔ! CHỦ BÀN ĐÃ TRỞ LẠI -> Khôi phục quyền HOST
                         session.setAttribute("orderID", activeOrder.getOrderID());
                         session.setAttribute("roleInTable", "HOST");
-                        
-                        // Khach dat truoc da duoc le tan gan ban, nen lan quet QR dau tien
+
+                                                // Khach dat truoc da duoc le tan gan ban, nen lan quet QR dau tien
                         // phai luu ban vao session de /menu di dung trang user/menu.jsp.
                         session.setAttribute("tableID", tableID);
                         session.setAttribute("currentTableID", tableID);
                         session.setAttribute("areaType", currentTable.getAreaType());
+       
+                        // 🌟 THÊM 3 DÒNG NÀY ĐỂ MENU BIẾT BẠN ĐANG NGỒI Ở ĐÂU
+                        session.setAttribute("tableID", tableID);
+                        session.setAttribute("currentTableID", tableID);
+                        session.setAttribute("areaType", currentTable.getAreaType());
+                        // ----------------------------------------------------
                         
                         if ("pending".equals(activeOrder.getTableStatus())) {
                             session.setAttribute("pendingOrderID", activeOrder.getOrderID());
@@ -138,13 +144,14 @@ public class ScanQRController extends HttpServlet {
                         
                         // 2. Lưu token này xuống CSDL để sau này nhận diện
                         orderDAO.updateHostToken(activeOrder.getOrderID(), newHostToken);
-                        
+
+                                                
                         // Khach dat truoc da duoc le tan gan ban, nen lan quet QR dau tien
                         // phai luu ban vao session de /menu di dung trang user/menu.jsp.
                         session.setAttribute("tableID", tableID);
                         session.setAttribute("currentTableID", tableID);
                         session.setAttribute("areaType", currentTable.getAreaType());
-
+                        
                         // 3. Gửi Cookie xuống điện thoại khách (Sống 24 tiếng)
                         Cookie hostCookie = new Cookie("HOST_OF_TABLE_" + tableID, newHostToken);
                         hostCookie.setMaxAge(24 * 60 * 60); 
@@ -154,6 +161,12 @@ public class ScanQRController extends HttpServlet {
                         // Cấp quyền HOST vào Session
                         session.setAttribute("orderID", activeOrder.getOrderID());
                         session.setAttribute("roleInTable", "HOST");
+                        
+                        // 🌟 THÊM 3 DÒNG NÀY CHO KHÁCH ĐẶT TRƯỚC
+                        session.setAttribute("tableID", tableID);
+                        session.setAttribute("currentTableID", tableID);
+                        session.setAttribute("areaType", currentTable.getAreaType());
+                        // ---------------------------------------------
 
                         // Đưa khách vào Menu để tiến hành gọi thêm món hoặc thanh toán
                         response.sendRedirect(request.getContextPath() + "/menu");
