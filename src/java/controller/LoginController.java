@@ -142,7 +142,7 @@ public class LoginController extends HttpServlet {
         session.setMaxInactiveInterval(30 * 60);
 
         if (employee.getMustChangePassword() == 1) {
-            response.sendRedirect(request.getContextPath() + "/staff/change-password?first=true");
+            response.sendRedirect(request.getContextPath() + "/change-password?first=true");
             return;
         }
 
