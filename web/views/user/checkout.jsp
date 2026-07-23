@@ -291,15 +291,21 @@
                             <div class="form-group">
                                 <label>Vị trí phục vụ</label>
                                 <div class="form-control-static">
+                                    <%-- [FIX VI TRI PHUC VU] Checkout chạy trong session của nhân viên,
+                                         vì vậy phải dùng danh sách bàn lấy theo orderID thay vì sessionScope.tableID. --%>
                                     <c:choose>
-                                        <c:when test="${not empty sessionScope.tableID && sessionScope.tableID > 0}">
-                                            Bàn số ${sessionScope.tableID} (Phục vụ tại chỗ) 
-                                            <c:if test="${not empty sessionScope.areaType}">
-                                                - Khu vực: ${sessionScope.areaType}
-                                            </c:if>
-                                            <c:if test="${not empty sessionScope.capacity && sessionScope.capacity > 0}">
-                                                (${sessionScope.capacity} chỗ)
-                                            </c:if>
+                                        <c:when test="${not empty assignedTables}">
+                                            Phục vụ tại chỗ -
+                                            <c:forEach var="table" items="${assignedTables}" varStatus="status">
+                                                ${table.tableName}
+                                                <c:if test="${not empty table.areaType}">
+                                                    - Khu vực: ${table.areaType}
+                                                </c:if>
+                                                <c:if test="${table.capacity > 0}">
+                                                    (${table.capacity} chỗ)
+                                                </c:if>
+                                                <c:if test="${not status.last}">; </c:if>
+                                            </c:forEach>
                                         </c:when>
                                         <c:otherwise>
                                             Đơn hàng mang về (Take-away)

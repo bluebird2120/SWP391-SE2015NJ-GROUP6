@@ -56,6 +56,11 @@ public class LoginController extends HttpServlet {
                 session.removeAttribute("registeredPassword");
             }
         }
+        
+        String logoutParam = request.getParameter("logout");
+        if ("1".equals(logoutParam)) {
+            request.setAttribute("successMessage", "Bạn đã đăng xuất thành công!");
+        }
 
         request.getRequestDispatcher("/views/login.jsp").forward(request, response);
     }

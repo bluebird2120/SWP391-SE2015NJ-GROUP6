@@ -490,6 +490,8 @@
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
                                     <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
+                                    <%-- [GIU TRANG MENU] Bao toan trang hien tai va toan bo bo loc sau khi them mon. --%>
+                                    <input type="hidden" name="returnUrl" value="<c:out value='${returnUrl}'/>">
 
                                     <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white; margin-top: 0;">
                                         Thêm vào giỏ
@@ -516,8 +518,8 @@
             <div class="pagination">
                 <c:choose>
                     <c:when test="${currentPage > 1}">
-                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Về trang đầu">Đầu</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang trước">Trước</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=1&search=${param.search}&category=${param.category}&cookingMethod=${param.cookingMethod}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Về trang đầu">Đầu</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage - 1}&search=${param.search}&category=${param.category}&cookingMethod=${param.cookingMethod}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang trước">Trước</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Đầu</span>
@@ -529,8 +531,8 @@
 
                 <c:choose>
                     <c:when test="${currentPage < totalPage}">
-                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang sau">Sau</a>
-                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Đến trang cuối">Cuối</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${currentPage + 1}&search=${param.search}&category=${param.category}&cookingMethod=${param.cookingMethod}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Trang sau">Sau</a>
+                        <a href="${pageContext.request.contextPath}/menu?page=${totalPage}&search=${param.search}&category=${param.category}&cookingMethod=${param.cookingMethod}&status=${empty param.status ? -1 : param.status}&minPrice=${param.minPrice}&maxPrice=${param.maxPrice}&price=${param.price}&sort=${param.sort}" title="Đến trang cuối">Cuối</a>
                     </c:when>
                     <c:otherwise>
                         <span class="disabled">Sau</span>
