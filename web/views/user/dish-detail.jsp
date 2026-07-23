@@ -86,6 +86,33 @@
                 margin-top: 60px !important;
             }
 
+            /* STYLE CHO NÚT QUAY LẠI CHUNG TRONG MAIN CONTENT */
+            .back-action-container {
+                margin-bottom: 20px;
+            }
+
+            .btn-back-action {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                text-decoration: none;
+                color: #4b5563;
+                font-weight: 600;
+                font-size: 15px;
+                padding: 8px 16px;
+                background-color: #ffffff;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            }
+
+            .btn-back-action:hover {
+                color: #76493b;
+                border-color: #76493b;
+                background-color: #fef8f5;
+            }
+
             /* KHỐI CHI TIẾT MÓN ĂN CHIA ĐÔI 2 BÊN TRÊN DESKTOP */
             .dish-detail-card-box {
                 background: #ffffff;
@@ -246,8 +273,8 @@
         <c:choose>
             <c:when test="${currentTableID > 0}">
                 <div class="top-navigation-bar">
-                    <a href="${pageContext.request.contextPath}/menu" class="back-link">
-                        <%-- Thay icon fa-chevron-left bằng ký tự Unicode mũi tên --%>
+                    <%-- Sử dụng backUrl lấy từ Controller để bảo toàn bộ lọc --%>
+                    <a href="${backUrl}" class="back-link">
                         <span>❮ Quay lại Menu</span>
                     </a>
                     <div class="restaurant-name">Vị An Restaurant</div>
@@ -270,6 +297,15 @@
             </c:if>
 
             <div class="main-content ${currentTableID > 0 ? 'dine-in-padding' : ''}">
+
+                <%-- NÚT BACK CỦA GIAO DIỆN CHUNG BÊN NGOÀI (DÀNH CHO ADMIN / USER CHƯA CÓ BÀN) --%>
+                <c:if test="${currentTableID == 0 || empty currentTableID}">
+                    <div class="back-action-container">
+                        <a href="${backUrl}" class="btn-back-action">
+                            ❮ Quay lại trang trước
+                        </a>
+                    </div>
+                </c:if>
 
                 <div class="dish-detail-card-box">
 
