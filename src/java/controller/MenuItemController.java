@@ -341,7 +341,7 @@ public class MenuItemController extends HttpServlet {
         String trimmedValue = value.trim().toLowerCase();
         for (String allowed : allowedValues) {
             if (trimmedValue.equals(allowed.toLowerCase())) {
-                return trimmedValue;
+                return allowed;
             }
         }
         return defaultValue;
