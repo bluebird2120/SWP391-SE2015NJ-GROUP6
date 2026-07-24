@@ -24,20 +24,12 @@ import model.MenuItemImages;
 @WebServlet(name = "DishDetailController", urlPatterns = {"/dish-detail"})
 public class DishDetailController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
+    private MenuItemDAO menuItemDao = new MenuItemDAO();
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
@@ -50,57 +42,72 @@ public class DishDetailController extends HttpServlet {
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String id_raw = request.getParameter("id");
-        int itemID = (id_raw != null && !id_raw.isEmpty()) ? Integer.parseInt(id_raw) : 0;
-        MenuItem mi = menuItemDao.getMenuItemById(itemID);
-        List<MenuItemImages> subImageList = menuItemDao.getImagesByMenuItemId(itemID);
-        
+
         HttpSession session = request.getSession();
+
+        // 1. Lấy backUrl từ session, nếu null thì set mặc định về trang chủ hoặc menu
+        String backUrl = (String) session.getAttribute("lastDishListUrl");
+        System.out.println(backUrl);
+        if (backUrl == null || backUrl.trim().isEmpty()) {
+            backUrl = "home"; // Thay "menu" bằng URL mặc định trang danh sách món ăn của bạn
+        }
+
+        // 2. Validate URL ID an toàn
+        String id_raw = request.getParameter("id");
+        int itemID = parseIntSafe(id_raw, 0);
+
+        // Nếu người dùng cố tình nhập ?id=abc hoặc không truyền id, tự động đá về trang trước
+        if (itemID == 0) {
+            response.sendRedirect(backUrl);
+            return;
+        }
+
+        // 3. Truy vấn DB
+        MenuItem mi = menuItemDao.getMenuItemById(itemID);
+
+        // Nếu cố tình nhập ID không tồn tại (vd: ?id=9999), đá về trang trước để tránh lỗi Null
+        if (mi == null) {
+            response.sendRedirect(backUrl);
+            return;
+        }
+
+        List<MenuItemImages> subImageList = menuItemDao.getImagesByMenuItemId(itemID);
+
         Object tableObj = session.getAttribute("currentTableID");
         int tableID = (tableObj != null) ? (Integer) tableObj : 0;
-        
+
+        // 4. Đẩy dữ liệu sang JSP
         request.setAttribute("currentTableID", tableID);
         request.setAttribute("dish", mi);
         request.setAttribute("imageList", subImageList);
+        request.setAttribute("backUrl", backUrl); // Đẩy backUrl sang để nút Back trên JSP dùng
+
         request.getRequestDispatcher("/views/user/dish-detail.jsp").forward(request, response);
     }
 
-    private MenuItemDAO menuItemDao = new MenuItemDAO();
-
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         processRequest(request, response);
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
     @Override
     public String getServletInfo() {
         return "Short description";
-    }// </editor-fold>
+    }
 
+    // Hàm tiện ích bẫy lỗi URL (Ép kiểu an toàn)
+    private int parseIntSafe(String value, int defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
 }

@@ -58,28 +58,7 @@ public class ShiftSwapRequestDAO extends DBContext {
                 + "ORDER BY ssr.createdAt DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
-                d.setSwapID(rs.getInt("swapID"));
-                d.setRequesterShiftID(rs.getInt("requesterShiftID"));
-
-                d.setStatus(rs.getString("status"));
-                d.setReason(rs.getString("reason"));
-                d.setCreatedAt(rs.getTimestamp("createdAt"));
-                d.setRequestType(rs.getString("requestType"));
-
-                d.setReqEmployeeID(rs.getInt("reqEmpID"));
-                d.setReqEmployeeName(rs.getString("reqEmpName"));
-                d.setReqShiftName(rs.getString("reqShiftName"));
-                d.setReqWorkDate(rs.getString("reqWorkDate") != null ? java.sql.Date.valueOf(rs.getString("reqWorkDate")) : null);
-                d.setReqStartTime(rs.getTime("reqStartTime"));
-                d.setReqEndTime(rs.getTime("reqEndTime"));
-
-                int coverEmpID = rs.getInt("approvedByID");
-                if (!rs.wasNull()) {
-                    d.setTargetEmployeeID(coverEmpID);
-                    d.setTargetEmployeeName(rs.getString("coverEmpName"));
-                }
-                list.add(d);
+                list.add(mapDetail(rs));
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -105,32 +84,7 @@ public class ShiftSwapRequestDAO extends DBContext {
             ps.setInt(1, swapID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-
-                    ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
-
-                    d.setSwapID(rs.getInt("swapID"));
-                    d.setRequesterShiftID(rs.getInt("requesterShiftID"));
-
-                    d.setStatus(rs.getString("status"));
-                    d.setReason(rs.getString("reason"));
-                    d.setCreatedAt(rs.getTimestamp("createdAt"));
-                    d.setRequestType(rs.getString("requestType"));
-
-
-                    d.setReqEmployeeID(rs.getInt("reqEmpID"));
-                    d.setReqEmployeeName(rs.getString("reqEmpName"));
-                    d.setReqShiftName(rs.getString("reqShiftName"));
-                    d.setReqWorkDate(rs.getString("reqWorkDate") != null ? java.sql.Date.valueOf(rs.getString("reqWorkDate")) : null);
-                    d.setReqStartTime(rs.getTime("reqStartTime"));
-                    d.setReqEndTime(rs.getTime("reqEndTime"));
-
-                    int coverEmpID = rs.getInt("approvedByID");
-                    if (!rs.wasNull()) {
-
-                        d.setTargetEmployeeID(coverEmpID);
-                        d.setTargetEmployeeName(rs.getString("coverEmpName"));
-                    }
-                    return d;
+                    return mapDetail(rs);
                 }
             }
         } catch (SQLException ex) {
@@ -158,8 +112,13 @@ public class ShiftSwapRequestDAO extends DBContext {
                 storedApprovedByID = detail.getTargetEmployeeID();
             }
 
+            String expectedStatus = "pending";
+            if (detail != null && "cover".equals(detail.getRequestType())) {
+                expectedStatus = "pending_colleague";
+            }
 
-            String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? WHERE swapID = ?";
+            String updateRequestSql = "UPDATE ShiftSwapRequests SET status = ?, approvedByID = ? "
+                    + "WHERE swapID = ? AND status = ?";
             try (PreparedStatement ps = conn.prepareStatement(updateRequestSql)) {
 
 
@@ -176,7 +135,12 @@ public class ShiftSwapRequestDAO extends DBContext {
 
                 ps.setInt(3, swapID);
 
-                ps.executeUpdate();
+                ps.setString(4, expectedStatus);
+
+                int affected = ps.executeUpdate();
+                if (affected == 0) {
+                    throw new SQLException("Yêu cầu đã được xử lý bởi người khác.");
+                }
             }
 
 
@@ -187,7 +151,7 @@ public class ShiftSwapRequestDAO extends DBContext {
                     if ("leave".equals(detail.getRequestType())) {
 
 
-                        String updateShiftSql = "UPDATE EmployeeShifts SET status = 'absent' WHERE shiftID = ?";
+                        String updateShiftSql = "UPDATE EmployeeShifts SET status = 'leave_approved' WHERE shiftID = ?";
                         try (PreparedStatement ps = conn.prepareStatement(updateShiftSql)) {
 
                             ps.setInt(1, detail.getRequesterShiftID());
@@ -251,16 +215,7 @@ public class ShiftSwapRequestDAO extends DBContext {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
 
-                    ShiftSwapRequests r = new ShiftSwapRequests();
-                    r.setSwapID(rs.getInt("swapID"));
-                    r.setRequesterShiftID(rs.getInt("requesterShiftID"));
-
-                    r.setStatus(rs.getString("status"));
-                    r.setReason(rs.getString("reason"));
-                    r.setCreatedAt(rs.getTimestamp("createdAt"));
-                    r.setRequestType(rs.getString("requestType"));
-                    int approved = rs.getInt("approvedByID");
-                    r.setApprovedByID(rs.wasNull() ? null : approved);
+                    ShiftSwapRequests r = mapRequest(rs);
 
 
                     map.put(r.getRequesterShiftID(), r);
@@ -279,7 +234,7 @@ public class ShiftSwapRequestDAO extends DBContext {
 
         String sql = "SELECT "
                 + "    ssr.swapID, ssr.requesterShiftID, ssr.approvedByID, ssr.status, ssr.reason, ssr.createdAt, ssr.requestType, "
-                + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_es.workDate AS reqWorkDate_2, req_st.endTime AS reqEndTime, "
+                + "    req_es.employeeID AS reqEmpID, req_e.fullName AS reqEmpName, req_st.shiftName AS reqShiftName, req_es.workDate AS reqWorkDate, req_st.startTime AS reqStartTime, req_st.endTime AS reqEndTime, "
                 + "    cover_e.fullName AS coverEmpName "
                 + "FROM ShiftSwapRequests ssr "
                 + "JOIN EmployeeShifts req_es ON ssr.requesterShiftID = req_es.shiftID "
@@ -297,28 +252,7 @@ public class ShiftSwapRequestDAO extends DBContext {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
 
-                    ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
-                    d.setSwapID(rs.getInt("swapID"));
-                    d.setRequesterShiftID(rs.getInt("requesterShiftID"));
-                    d.setStatus(rs.getString("status"));
-                    d.setReason(rs.getString("reason"));
-                    d.setCreatedAt(rs.getTimestamp("createdAt"));
-                    d.setRequestType(rs.getString("requestType"));
-
-                    d.setReqEmployeeID(rs.getInt("reqEmpID"));
-                    d.setReqEmployeeName(rs.getString("reqEmpName"));
-                    d.setReqShiftName(rs.getString("reqShiftName"));
-                    d.setReqWorkDate(rs.getString("reqWorkDate") != null ? java.sql.Date.valueOf(rs.getString("reqWorkDate")) : null);
-                    d.setReqStartTime(rs.getTime("reqStartTime"));
-                    d.setReqEndTime(rs.getTime("reqEndTime"));
-
-                    int coverEmpID = rs.getInt("approvedByID");
-                    if (!rs.wasNull()) {
-                        d.setTargetEmployeeID(coverEmpID);
-                        d.setTargetEmployeeName(rs.getString("coverEmpName"));
-                    }
-
-                    list.add(d);
+                    list.add(mapDetail(rs));
                 }
             }
         } catch (SQLException ex) {
@@ -342,5 +276,49 @@ public class ShiftSwapRequestDAO extends DBContext {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    private ShiftSwapRequestDetail mapDetail(ResultSet rs) throws SQLException {
+
+        ShiftSwapRequestDetail d = new ShiftSwapRequestDetail();
+
+        d.setSwapID(rs.getInt("swapID"));
+        d.setRequesterShiftID(rs.getInt("requesterShiftID"));
+        d.setStatus(rs.getString("status"));
+        d.setReason(rs.getString("reason"));
+        d.setCreatedAt(rs.getTimestamp("createdAt"));
+        d.setRequestType(rs.getString("requestType"));
+
+        d.setReqEmployeeID(rs.getInt("reqEmpID"));
+        d.setReqEmployeeName(rs.getString("reqEmpName"));
+        d.setReqShiftName(rs.getString("reqShiftName"));
+        d.setReqWorkDate(rs.getDate("reqWorkDate"));
+        d.setReqStartTime(rs.getTime("reqStartTime"));
+        d.setReqEndTime(rs.getTime("reqEndTime"));
+
+        int coverEmpID = rs.getInt("approvedByID");
+        if (!rs.wasNull()) {
+            d.setTargetEmployeeID(coverEmpID);
+            d.setTargetEmployeeName(rs.getString("coverEmpName"));
+        }
+
+        return d;
+    }
+
+    private ShiftSwapRequests mapRequest(ResultSet rs) throws SQLException {
+
+        ShiftSwapRequests r = new ShiftSwapRequests();
+
+        r.setSwapID(rs.getInt("swapID"));
+        r.setRequesterShiftID(rs.getInt("requesterShiftID"));
+        r.setStatus(rs.getString("status"));
+        r.setReason(rs.getString("reason"));
+        r.setCreatedAt(rs.getTimestamp("createdAt"));
+        r.setRequestType(rs.getString("requestType"));
+
+        int approved = rs.getInt("approvedByID");
+        r.setApprovedByID(rs.wasNull() ? null : approved);
+
+        return r;
     }
 }

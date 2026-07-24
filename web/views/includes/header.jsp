@@ -14,16 +14,23 @@
         employeeInitial = String.valueOf(emp.getFullName().charAt(0)).toUpperCase();
 
     int custUnreadCount = 0;
-    if (cust != null) {
-        custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");
-    }
     int empUnreadCount = 0;
-    if (emp != null) {
-        empUnreadCount = new dal.NotificationDAO().countUnread(emp.getEmployeeID(), "staff");
-        session.setAttribute("unreadCount", empUnreadCount);
+
+    // BỌC TRY-CATCH AN TOÀN TRÁNH DÍNH LỖI 500 KHI DB KẾT NỐI CHẬP CHỜN
+    try {
+        if (cust != null) {
+            custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");
+        }
+        if (emp != null) {
+            empUnreadCount = new dal.NotificationDAO().countUnread(emp.getEmployeeID(), "staff");
+            session.setAttribute("unreadCount", empUnreadCount);
+        }
+    } catch (Exception e) {
+        custUnreadCount = 0;
+        empUnreadCount = 0;
+        session.setAttribute("unreadCount", 0);
     }
 %>
-
 
 <style>
     *, *::before, *::after {
@@ -34,11 +41,9 @@
 
     body {
         font-family: 'Inter', sans-serif;
-        /* padding-top đúng bằng chiều cao header fixed */
         padding-top: 78px;
     }
 
-    /* ── HEADER fixed ── */
     .header {
         position: fixed;
         top: 0;
@@ -54,13 +59,11 @@
         z-index: 9999;
     }
 
-    /* ── LOGO ── */
     .logo img {
         height: 58px;
         object-fit: contain;
     }
 
-    /* ── NAV ── */
     .navbar {
         flex: 1;
         display: flex;
@@ -83,14 +86,12 @@
         margin-right: 5px;
     }
 
-    /* ── RIGHT ── */
     .right-header {
         display: flex;
         align-items: center;
         gap: 16px;
     }
 
-    /* ── AUTH BUTTONS ── */
     .auth-buttons {
         display: flex;
         gap: 10px;
@@ -117,7 +118,6 @@
         background: #f0dcc2;
     }
 
-    /* ── USER MENU ── */
     .user-menu {
         position: relative;
     }
@@ -190,7 +190,6 @@
         transform: rotate(180deg);
     }
 
-    /* ── DROPDOWN ── */
     .dropdown {
         position: absolute;
         top: calc(100% + 8px);
@@ -266,7 +265,6 @@
         background: #fff5f5;
     }
 
-    /* ── BELL ── */
     .notif-btn {
         position: relative;
         width: 38px;
@@ -302,14 +300,12 @@
         justify-content: center;
     }
 
-    /* Wrapper nằm ngang: sidebar | content */
     .admin-body-wrapper {
         display: flex;
         min-height: calc(100vh - 78px);
         background: #f8f4f2;
     }
 
-    /* Sidebar cố định bên trái */
     .admin-sidebar {
         width: 220px;
         flex-shrink: 0;
@@ -318,7 +314,6 @@
         overflow-y: auto;
     }
 
-    /* Vùng nội dung bên phải sidebar */
     .admin-main-content {
         flex: 1;
         padding: 2rem;
@@ -373,7 +368,6 @@
             <div class="user-menu" id="menuCustomer">
                 <div class="user-trigger" onclick="toggleMenu('dropCustomer', 'menuCustomer')">
                     <div class="user-avatar">
-                        <!-- ĐOẠN SỬA ĐỔI: Check hiển thị ảnh đại diện cho Customer -->
                         <c:choose>
                             <c:when test="${not empty sessionScope.customer.image}">
                                 <img src="${pageContext.request.contextPath}/${sessionScope.customer.image}" alt="avatar">

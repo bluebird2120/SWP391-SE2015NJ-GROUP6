@@ -54,9 +54,10 @@ public class StaffMyScheduleController extends HttpServlet {
         int month = ym.getMonthValue();
         req.setAttribute("scheduleFilterError", scheduleFilterError);
 
-        EmployeeShiftDAO shiftDAO = new EmployeeShiftDAO();
-        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
-        EmployeeDAO employeeDAO = new EmployeeDAO();
+        // try-with-resources: tự đóng tất cả connection sau khi doGet xong
+        try (EmployeeShiftDAO shiftDAO    = new EmployeeShiftDAO();
+             ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
+             EmployeeDAO employeeDAO      = new EmployeeDAO()) {
 
         if (shiftDAO.getConnection() == null || requestDAO.getConnection() == null || employeeDAO.getConnection() == null) {
             setEmptyScheduleAttributes(req, year, month, ym, "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
@@ -124,6 +125,13 @@ public class StaffMyScheduleController extends HttpServlet {
         req.setAttribute("colleagueRequests", colleagueRequests);
 
         req.getRequestDispatcher(VIEW).forward(req, resp);
+
+        } // end try-with-resources (EmployeeShiftDAO, ShiftSwapRequestDAO, EmployeeDAO)
+        catch (Exception ex) {
+            ex.printStackTrace();
+            setEmptyScheduleAttributes(req, year, month, ym, "Lỗi hệ thống. Vui lòng thử lại.");
+            req.getRequestDispatcher(VIEW).forward(req, resp);
+        }
     }
 
     private void setEmptyScheduleAttributes(HttpServletRequest req, int year, int month, YearMonth ym, String errorMessage) {
@@ -170,271 +178,275 @@ public class StaffMyScheduleController extends HttpServlet {
             return;
         }
 
-        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
-        if (requestDAO.getConnection() == null) {
-            session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-            return;
-        }
-
-        if ("acceptCoverRequest".equals(action) || "rejectCoverRequest".equals(action)) {
-            try {
-
-                int requestID = Integer.parseInt(req.getParameter("requestID"));
-
-                ShiftSwapRequestDetail detail = requestDAO.getDetailById(requestID);
-
-                if (detail == null || detail.getTargetEmployeeID() == null || detail.getTargetEmployeeID() != emp.getEmployeeID()) {
-                    session.setAttribute("errorMsg", "Không tìm thấy yêu cầu làm thay phù hợp!");
-                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                    return;
-                }
-
-                NotificationDAO notifDAO = new NotificationDAO();
-
-                if ("acceptCoverRequest".equals(action)) {
-
-                    EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-                    EmployeeDAO employeeDAO = new EmployeeDAO();
-                    if (esDAO.getConnection() == null || employeeDAO.getConnection() == null) {
-                        session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
-                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                        return;
-                    }
-                    if (!"cover".equals(detail.getRequestType())) {
-                        session.setAttribute("errorMsg", "Yêu cầu này không phải yêu cầu làm thay.");
-                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                        return;
-                    }
-                    Employee requester = employeeDAO.findById(detail.getReqEmployeeID());
-                    if (requester == null || requester.getRoleID() != emp.getRoleID()) {
-                        session.setAttribute("errorMsg", "Chỉ được nhận làm thay ca của nhân viên cùng vai trò.");
-                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                        return;
-                    }
-                    if (esDAO.hasConflictingShift(emp.getEmployeeID(), detail.getReqWorkDate(), 0)) {
-                        session.setAttribute("errorMsg", "Không thể nhận làm thay: Bạn đã có ca khác vào ngày " + detail.getReqWorkDate() + "!");
-                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                        return;
-                    }
-
-                    boolean success = requestDAO.updateStatus(requestID, "approved", null);
-                    if (success) {
-
-                        session.setAttribute("successMsg", "Đã nhận làm thay thành công! Ca làm việc đã được chuyển sang lịch của bạn.");
-
-                        Notifications n1 = new Notifications();
-                        n1.setRecipientID(detail.getReqEmployeeID());
-                        n1.setRecipientType("staff");
-                        n1.setType("shift_request_approved");
-                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý làm thay ca ngày "
-                                + detail.getReqWorkDate() + " của bạn. Ca này đã được chuyển sang lịch của đồng nghiệp.");
-                        n1.setIsRead(0);
-                        notifDAO.insert(n1);
-
-                        Notifications n2 = new Notifications();
-                        n2.setRecipientID(emp.getEmployeeID());
-                        n2.setRecipientType("staff");
-                        n2.setType("shift_request_approved");
-                        n2.setMessage("Bạn đã đồng ý làm thay ca ngày " + detail.getReqWorkDate()
-                                + " của " + detail.getReqEmployeeName() + ".");
-                        n2.setIsRead(0);
-                        notifDAO.insert(n2);
-                    } else {
-                        session.setAttribute("errorMsg", "Lỗi khi nhận làm thay. Vui lòng thử lại!");
-                    }
-                } else {
-
-                    boolean success = requestDAO.updateColleagueStatus(requestID, "colleague_rejected");
-                    if (success) {
-                        session.setAttribute("successMsg", "Đã từ chối yêu cầu làm thay từ đồng nghiệp.");
-
-                        Notifications n1 = new Notifications();
-                        n1.setRecipientID(detail.getReqEmployeeID());
-                        n1.setRecipientType("staff");
-                        n1.setType("shift_request_colleague_rejected");
-                        n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã từ chối yêu cầu làm thay ca ngày " + detail.getReqWorkDate() + " của bạn.");
-                        n1.setIsRead(0);
-                        notifDAO.insert(n1);
-                    } else {
-                        session.setAttribute("errorMsg", "Lỗi khi cập nhật trạng thái yêu cầu!");
-                    }
-                }
-            } catch (Exception e) {
-                session.setAttribute("errorMsg", "Có lỗi xảy ra: " + e.getMessage());
-            }
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-            return;
-        }
-
-        if (!"requestCover".equals(action) && !"requestLeave".equals(action)) {
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-            return;
-        }
-
-        String requesterShiftStr = req.getParameter("requesterShiftID");
-
-        String reason = req.getParameter("reason");
-
-        if (requesterShiftStr == null || requesterShiftStr.trim().isEmpty() || reason == null || reason.trim().isEmpty()) {
-            session.setAttribute("errorMsg", "Dữ liệu yêu cầu không hợp lệ hoặc bị thiếu!");
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-            return;
-        }
-
-        if (reason.trim().length() > 500) {
-            session.setAttribute("errorMsg", "Lý do không được vượt quá 500 ký tự!");
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-            return;
-        }
-
-        try {
-
-            int requesterShiftID = Integer.parseInt(requesterShiftStr);
-
-            EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
-
-            if (esDAO.getConnection() == null) {
+        try (ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO()) {
+            if (requestDAO.getConnection() == null) {
                 session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                 resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                 return;
             }
 
-            ShiftRow reqShift = esDAO.getShiftByID(requesterShiftID);
+            if ("acceptCoverRequest".equals(action) || "rejectCoverRequest".equals(action)) {
+                try {
 
-            if (reqShift == null) {
-                session.setAttribute("errorMsg", "Không tìm thấy ca làm việc cần đổi!");
-                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                return;
-            }
+                    int requestID = Integer.parseInt(req.getParameter("requestID"));
 
-            if (reqShift.getEmployeeID() != emp.getEmployeeID()) {
-                session.setAttribute("errorMsg", "Ca làm việc này không thuộc về bạn!");
-                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                return;
-            }
+                    ShiftSwapRequestDetail detail = requestDAO.getDetailById(requestID);
 
-            if (!"scheduled".equals(reqShift.getStatus())) {
-                session.setAttribute("errorMsg", "Chỉ có thể gửi yêu cầu cho ca ở trạng thái scheduled!");
-                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                return;
-            }
+                    if (detail == null || detail.getTargetEmployeeID() == null || detail.getTargetEmployeeID() != emp.getEmployeeID()) {
+                        session.setAttribute("errorMsg", "Không tìm thấy yêu cầu làm thay phù hợp!");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
+                    }
 
-            Map<Integer, ShiftSwapRequests> pendingMap = requestDAO.getPendingRequestsMap(emp.getEmployeeID());
+                    try (NotificationDAO notifDAO = new NotificationDAO()) {
 
-            if (pendingMap.containsKey(requesterShiftID)) {
-                session.setAttribute("errorMsg", "Ca làm việc này đang có yêu cầu chờ duyệt!");
-                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                return;
-            }
+                        if ("acceptCoverRequest".equals(action)) {
 
-            Integer coverEmployeeID = null;
+                            try (EmployeeShiftDAO esDAO = new EmployeeShiftDAO();
+                                    EmployeeDAO employeeDAO = new EmployeeDAO()) {
+                                if (esDAO.getConnection() == null || employeeDAO.getConnection() == null) {
+                                    session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+                                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                                    return;
+                                }
+                                if (!"cover".equals(detail.getRequestType())) {
+                                    session.setAttribute("errorMsg", "Yêu cầu này không phải yêu cầu làm thay.");
+                                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                                    return;
+                                }
+                                Employee requester = employeeDAO.findById(detail.getReqEmployeeID());
+                                if (requester == null || requester.getRoleID() != emp.getRoleID()) {
+                                    session.setAttribute("errorMsg", "Chỉ được nhận làm thay ca của nhân viên cùng vai trò.");
+                                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                                    return;
+                                }
+                                if (esDAO.hasConflictingShift(emp.getEmployeeID(), detail.getReqWorkDate(), 0)) {
+                                    session.setAttribute("errorMsg", "Không thể nhận làm thay: Bạn đã có ca khác vào ngày " + detail.getReqWorkDate() + "!");
+                                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                                    return;
+                                }
 
-            Employee coverEmployee = null;
+                                boolean success = requestDAO.updateStatus(requestID, "approved", null);
+                                if (success) {
 
-            if ("requestCover".equals(action)) {
+                                    session.setAttribute("successMsg", "Đã nhận làm thay thành công! Ca làm việc đã được chuyển sang lịch của bạn.");
 
-                String targetEmployeeStr = req.getParameter("targetEmployeeID");
+                                    Notifications n1 = new Notifications();
+                                    n1.setRecipientID(detail.getReqEmployeeID());
+                                    n1.setRecipientType("staff");
+                                    n1.setType("shift_request_approved");
+                                    n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã đồng ý làm thay ca ngày "
+                                            + detail.getReqWorkDate() + " của bạn. Ca này đã được chuyển sang lịch của đồng nghiệp.");
+                                    n1.setIsRead(0);
+                                    notifDAO.insert(n1);
 
-                if (targetEmployeeStr == null || targetEmployeeStr.trim().isEmpty()) {
-                    session.setAttribute("errorMsg", "Vui lòng chọn nhân viên làm thay!");
-                    resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
-                    return;
+                                    Notifications n2 = new Notifications();
+                                    n2.setRecipientID(emp.getEmployeeID());
+                                    n2.setRecipientType("staff");
+                                    n2.setType("shift_request_approved");
+                                    n2.setMessage("Bạn đã đồng ý làm thay ca ngày " + detail.getReqWorkDate()
+                                            + " của " + detail.getReqEmployeeName() + ".");
+                                    n2.setIsRead(0);
+                                    notifDAO.insert(n2);
+                                } else {
+                                    session.setAttribute("errorMsg", "Lỗi khi nhận làm thay. Vui lòng thử lại!");
+                                }
+                            }
+                        } else {
+
+                            boolean success = requestDAO.updateColleagueStatus(requestID, "colleague_rejected");
+                            if (success) {
+                                session.setAttribute("successMsg", "Đã từ chối yêu cầu làm thay từ đồng nghiệp.");
+
+                                Notifications n1 = new Notifications();
+                                n1.setRecipientID(detail.getReqEmployeeID());
+                                n1.setRecipientType("staff");
+                                n1.setType("shift_request_colleague_rejected");
+                                n1.setMessage("Đồng nghiệp " + emp.getFullName() + " đã từ chối yêu cầu làm thay ca ngày " + detail.getReqWorkDate() + " của bạn.");
+                                n1.setIsRead(0);
+                                notifDAO.insert(n1);
+                            } else {
+                                session.setAttribute("errorMsg", "Lỗi khi cập nhật trạng thái yêu cầu!");
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    session.setAttribute("errorMsg", "Có lỗi xảy ra: " + e.getMessage());
                 }
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                return;
+            }
 
-                int targetEmployeeID = Integer.parseInt(targetEmployeeStr);
+            if (!"requestCover".equals(action) && !"requestLeave".equals(action)) {
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                return;
+            }
 
-                EmployeeDAO employeeDAO = new EmployeeDAO();
+            String requesterShiftStr = req.getParameter("requesterShiftID");
 
-                if (employeeDAO.getConnection() == null) {
+            String reason = req.getParameter("reason");
+
+            if (requesterShiftStr == null || requesterShiftStr.trim().isEmpty() || reason == null || reason.trim().isEmpty()) {
+                session.setAttribute("errorMsg", "Dữ liệu yêu cầu không hợp lệ hoặc bị thiếu!");
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                return;
+            }
+
+            if (reason.trim().length() > 500) {
+                session.setAttribute("errorMsg", "Lý do không được vượt quá 500 ký tự!");
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                return;
+            }
+
+            try (EmployeeShiftDAO esDAO = new EmployeeShiftDAO()) {
+
+                int requesterShiftID = Integer.parseInt(requesterShiftStr);
+
+                if (esDAO.getConnection() == null) {
                     session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                coverEmployee = employeeDAO.findById(targetEmployeeID);
+                ShiftRow reqShift = esDAO.getShiftByID(requesterShiftID);
 
-                if (coverEmployee == null || coverEmployee.getIsActive() != 1) {
-                    session.setAttribute("errorMsg", "Không tìm thấy nhân viên làm thay phù hợp!");
+                if (reqShift == null) {
+                    session.setAttribute("errorMsg", "Không tìm thấy ca làm việc cần đổi!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                if (coverEmployee.getRoleID() != emp.getRoleID()) {
-                    session.setAttribute("errorMsg", "Chỉ được nhờ làm thay với nhân viên cùng vai trò.");
+                if (reqShift.getEmployeeID() != emp.getEmployeeID()) {
+                    session.setAttribute("errorMsg", "Ca làm việc này không thuộc về bạn!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                if (targetEmployeeID == emp.getEmployeeID()) {
-                    session.setAttribute("errorMsg", "Không thể tự chọn chính mình làm thay!");
+                if (!"scheduled".equals(reqShift.getStatus())) {
+                    session.setAttribute("errorMsg", "Chỉ có thể gửi yêu cầu cho ca ở trạng thái scheduled!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                if (esDAO.hasConflictingShift(targetEmployeeID, reqShift.getWorkDate(), 0)) {
-                    session.setAttribute("errorMsg", "Nhân viên " + coverEmployee.getFullName() + " đã có ca làm việc vào ngày " + reqShift.getWorkDate() + "!");
+                Map<Integer, ShiftSwapRequests> pendingMap = requestDAO.getPendingRequestsMap(emp.getEmployeeID());
+
+                if (pendingMap.containsKey(requesterShiftID)) {
+                    session.setAttribute("errorMsg", "Ca làm việc này đang có yêu cầu chờ duyệt!");
                     resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
                     return;
                 }
 
-                coverEmployeeID = targetEmployeeID;
-            }
+                Integer coverEmployeeID = null;
 
-            ShiftSwapRequests reqObj = new ShiftSwapRequests();
+                Employee coverEmployee = null;
 
-            reqObj.setRequesterShiftID(requesterShiftID);
+                if ("requestCover".equals(action)) {
 
-            reqObj.setApprovedByID(coverEmployeeID);
+                    String targetEmployeeStr = req.getParameter("targetEmployeeID");
 
-            reqObj.setStatus("requestCover".equals(action) ? "pending_colleague" : "pending");
+                    if (targetEmployeeStr == null || targetEmployeeStr.trim().isEmpty()) {
+                        session.setAttribute("errorMsg", "Vui lòng chọn nhân viên làm thay!");
+                        resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                        return;
+                    }
 
-            reqObj.setReason(reason.trim());
+                    int targetEmployeeID = Integer.parseInt(targetEmployeeStr);
 
-            reqObj.setRequestType("requestCover".equals(action) ? "cover" : "leave");
+                    try (EmployeeDAO employeeDAO = new EmployeeDAO()) {
 
-            boolean success = requestDAO.insert(reqObj);
+                        if (employeeDAO.getConnection() == null) {
+                            session.setAttribute("errorMsg", "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
 
-            if (success) {
-                session.setAttribute("successMsg", "Gửi yêu cầu thành công!");
+                        coverEmployee = employeeDAO.findById(targetEmployeeID);
 
-                NotificationDAO notifDAO = new NotificationDAO();
-                if ("requestCover".equals(action) && coverEmployee != null) {
+                        if (coverEmployee == null || coverEmployee.getIsActive() != 1) {
+                            session.setAttribute("errorMsg", "Không tìm thấy nhân viên làm thay phù hợp!");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
 
-                    Notifications n = new Notifications();
-                    n.setRecipientID(coverEmployee.getEmployeeID());
-                    n.setRecipientType("staff");
-                    n.setType("shift_request_colleague_pending");
-                    n.setMessage("Đồng nghiệp " + emp.getFullName() + " muốn nhờ bạn làm thay ca ngày "
-                            + reqShift.getWorkDate() + " (" + reqShift.getShiftName() + "). Vui lòng xác nhận.");
-                    n.setIsRead(0);
-                    notifDAO.insert(n);
-                } else {
+                        if (coverEmployee.getRoleID() != emp.getRoleID()) {
+                            session.setAttribute("errorMsg", "Chỉ được nhờ làm thay với nhân viên cùng vai trò.");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
 
-                    EmployeeDAO empDAO = new EmployeeDAO();
-                    List<Integer> ownerIDs = empDAO.getActiveOwnerIDs();
-                    String msgText = String.format("Nhân viên %s vừa gửi yêu cầu xin nghỉ cho ca ngày %s (%s).",
-                                                    emp.getFullName(), reqShift.getWorkDate().toString(), reqShift.getShiftName());
-                    for (int ownerID : ownerIDs) {
-                        Notifications n = new Notifications();
-                        n.setRecipientID(ownerID);
-                        n.setRecipientType("staff");
-                        n.setType("shift_request");
-                        n.setMessage(msgText);
-                        n.setIsRead(0);
-                        notifDAO.insert(n);
+                        if (targetEmployeeID == emp.getEmployeeID()) {
+                            session.setAttribute("errorMsg", "Không thể tự chọn chính mình làm thay!");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
+
+                        if (esDAO.hasConflictingShift(targetEmployeeID, reqShift.getWorkDate(), 0)) {
+                            session.setAttribute("errorMsg", "Nhân viên " + coverEmployee.getFullName() + " đã có ca làm việc vào ngày " + reqShift.getWorkDate() + "!");
+                            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
+                            return;
+                        }
+
+                        coverEmployeeID = targetEmployeeID;
                     }
                 }
-            } else {
-                session.setAttribute("errorMsg", "Lỗi khi lưu yêu cầu vào cơ sở dữ liệu!");
+
+                ShiftSwapRequests reqObj = new ShiftSwapRequests();
+
+                reqObj.setRequesterShiftID(requesterShiftID);
+
+                reqObj.setApprovedByID(coverEmployeeID);
+
+                reqObj.setStatus("requestCover".equals(action) ? "pending_colleague" : "pending");
+
+                reqObj.setReason(reason.trim());
+
+                reqObj.setRequestType("requestCover".equals(action) ? "cover" : "leave");
+
+                boolean success = requestDAO.insert(reqObj);
+
+                if (success) {
+                    session.setAttribute("successMsg", "Gửi yêu cầu thành công!");
+
+                    try (NotificationDAO notifDAO = new NotificationDAO()) {
+                        if ("requestCover".equals(action) && coverEmployee != null) {
+
+                            Notifications n = new Notifications();
+                            n.setRecipientID(coverEmployee.getEmployeeID());
+                            n.setRecipientType("staff");
+                            n.setType("shift_request_colleague_pending");
+                            n.setMessage("Đồng nghiệp " + emp.getFullName() + " muốn nhờ bạn làm thay ca ngày "
+                                    + reqShift.getWorkDate() + " (" + reqShift.getShiftName() + "). Vui lòng xác nhận.");
+                            n.setIsRead(0);
+                            notifDAO.insert(n);
+                        } else {
+
+                            try (EmployeeDAO empDAO = new EmployeeDAO()) {
+                                List<Integer> ownerIDs = empDAO.getActiveOwnerIDs();
+                                String msgText = String.format("Nhân viên %s vừa gửi yêu cầu xin nghỉ cho ca ngày %s (%s).",
+                                                                emp.getFullName(), reqShift.getWorkDate().toString(), reqShift.getShiftName());
+                                for (int ownerID : ownerIDs) {
+                                    Notifications n = new Notifications();
+                                    n.setRecipientID(ownerID);
+                                    n.setRecipientType("staff");
+                                    n.setType("shift_request");
+                                    n.setMessage(msgText);
+                                    n.setIsRead(0);
+                                    notifDAO.insert(n);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    session.setAttribute("errorMsg", "Lỗi khi lưu yêu cầu vào cơ sở dữ liệu!");
+                }
+
+                LocalDate d = reqShift.getWorkDate().toLocalDate();
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule?year=" + d.getYear() + "&month=" + d.getMonthValue());
+
+            } catch (NumberFormatException e) {
+                session.setAttribute("errorMsg", "Tham số định dạng mã ca không hợp lệ!");
+                resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
             }
-
-            LocalDate d = reqShift.getWorkDate().toLocalDate();
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule?year=" + d.getYear() + "&month=" + d.getMonthValue());
-
-        } catch (NumberFormatException e) {
-            session.setAttribute("errorMsg", "Tham số định dạng mã ca không hợp lệ!");
-            resp.sendRedirect(req.getContextPath() + "/staff/my-schedule");
         }
     }
 

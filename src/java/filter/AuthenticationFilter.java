@@ -66,10 +66,15 @@ public class AuthenticationFilter implements Filter {
                 return;
             }
 
-            // /owner/* chỉ dành cho Owner (roleID = 1)
+            // /owner/* chỉ dành cho Owner (roleID = 1), trừ trang Giờ hoạt động
             if (uri.startsWith(ctx + "/owner/") && employee.getRoleID() != OWNER_ROLE_ID) {
-                response.sendRedirect(ctx + "/unauthorized");
-                return;
+                boolean allowed = (employee.getRoleID() == STAFF_ROLE_ID
+                        || employee.getRoleID() == RECEPTIONIST_ROLE_ID)
+                        && uri.startsWith(ctx + "/owner/business-hours");
+                if (!allowed) {
+                    response.sendRedirect(ctx + "/unauthorized");
+                    return;
+                }
             }
 
             // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
@@ -78,8 +83,7 @@ public class AuthenticationFilter implements Filter {
                 if (employee.getRoleID() == RECEPTIONIST_ROLE_ID) {
                     allowed = uri.startsWith(ctx + "/staff/dashboard")
                             || uri.startsWith(ctx + "/staff/my-schedule")
-                            || uri.startsWith(ctx + "/staff/notifications")
-                            || uri.startsWith(ctx + "/staff/change-password");
+                            || uri.startsWith(ctx + "/staff/notifications");
                 }
 
                 // Owner không cần vào /staff/* vì có /owner/* riêng
@@ -101,24 +105,20 @@ public class AuthenticationFilter implements Filter {
             if (employee.getRoleID() == STAFF_ROLE_ID
                     || employee.getRoleID() == RECEPTIONIST_ROLE_ID) {
 
-                boolean isChangePasswordPage = uri.contains("/staff/change-password");
-
                 // Check đổi mật khẩu lần đầu
-                if (employee.getMustChangePassword() == 1 && !isChangePasswordPage) {
-                    response.sendRedirect(ctx + "/staff/change-password?first=true");
+                if (employee.getMustChangePassword() == 1) {
+                    response.sendRedirect(ctx + "/change-password?first=true");
                     return;
                 }
 
                 // Check quá hạn 90 ngày
-                if (!isChangePasswordPage) {
-                    java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
-                    if (lastChanged != null) {
-                        long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
-                                / (1000L * 60 * 60 * 24);
-                        if (daysSince >= 90) {
-                            response.sendRedirect(ctx + "/staff/change-password?expired=true");
-                            return;
-                        }
+                java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
+                if (lastChanged != null) {
+                    long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
+                            / (1000L * 60 * 60 * 24);
+                    if (daysSince >= 90) {
+                        response.sendRedirect(ctx + "/change-password?expired=true");
+                        return;
                     }
                 }
             }

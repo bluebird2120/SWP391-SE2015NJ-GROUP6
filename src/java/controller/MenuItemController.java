@@ -190,6 +190,11 @@ public class MenuItemController extends HttpServlet {
         String priceType = validateStringWhitelist(price_raw, "discountedPrice", "price", "discountedPrice");
 
         int status = parseIntSafe(status_raw, -1, -1);
+        // Lấy tài khoản nhân viên trước khi truy vấn dữ liệu
+        Employee loginUser = (Employee) session.getAttribute("employee");
+        if (loginUser == null) {
+            status = 1;
+        }
         int categoryId = parseIntSafe(category_raw, 0, 0);
         int methodID = parseIntSafe(method_raw, 0, 0);
 
@@ -226,11 +231,11 @@ public class MenuItemController extends HttpServlet {
 
         int offSet = (page - 1) * PAGE_SIZE;
         List<CookingMethod> listMethod = cm.getAllCookingMethod();
-        List<MenuCategory> list = md.getAllMenuCategory();
+        List<MenuCategory> Categorylist = md.getAllMenuCategory();
         List<MenuItem> listItem = mi.searchMenuItemPaging(search, categoryId, methodID, status, minPrice, maxPrice, sort, priceType, offSet, PAGE_SIZE);
 
         request.setAttribute("listMethod", listMethod);
-        request.setAttribute("list", list);
+        request.setAttribute("list", Categorylist);
         request.setAttribute("listItem", listItem);
         request.setAttribute("totalPage", totalPage);
         request.setAttribute("currentPage", page);
@@ -259,8 +264,16 @@ public class MenuItemController extends HttpServlet {
         // === KẾT THÚC CHÈN THÊM ===
 
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
-       Employee loginUser = (Employee) session.getAttribute("employee");
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
+
+        // [GIU TRANG MENU] Gui URL hien tai sang form them mon de sau khi
+        // xu ly gio hang, khach quay lai dung trang va bo loc dang xem.
+        String currentMenuUrl = request.getRequestURI();
+        if (request.getQueryString() != null
+                && !request.getQueryString().isBlank()) {
+            currentMenuUrl += "?" + request.getQueryString();
+        }
+        request.setAttribute("returnUrl", currentMenuUrl);
 
         // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
         if (sessionTableID == null) {
@@ -274,7 +287,7 @@ public class MenuItemController extends HttpServlet {
             // Còn lại (Khách vãng lai, Khách quét QR) -> Trỏ vào trang Menu User
             request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
         }
-       
+
     }
 
     private int parseIntSafe(String value, int defaultValue, int minValue) {

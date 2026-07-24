@@ -18,7 +18,9 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import model.Employee;
 import model.MonthlyShiftPlan;
@@ -218,12 +220,21 @@ public class ShiftRosterController extends HttpServlet {
 
         int failedCount = 0;
 
-        try (EmployeeShiftDAO dao = new EmployeeShiftDAO()) {
+        Set<Integer> assignedEmployeeIDs = new LinkedHashSet<>();
+
+        try (EmployeeShiftDAO dao = new EmployeeShiftDAO();
+             ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
+             NotificationDAO notifDao = new NotificationDAO()) {
+
+            ShiftTemplates template = tplDao.findById(templateID);
+            String shiftLabel = (template != null) ? template.getShiftName() : "ca làm việc";
+
             for (String empIdStr : empIDsStr) {
                 int employeeID = parseInt(empIdStr, 0);
                 if (employeeID <= 0) {
                     continue;
                 }
+                boolean assignedForThisEmployee = false;
                 LocalDate current = date;
                 while (!current.isAfter(toDate)) {
                     Date sqlDate = Date.valueOf(current);
@@ -237,9 +248,27 @@ public class ShiftRosterController extends HttpServlet {
                         failedCount++;
                     } else {
                         successCount++;
+                        assignedForThisEmployee = true;
                     }
                     current = current.plusDays(1);
                 }
+                if (assignedForThisEmployee) {
+                    assignedEmployeeIDs.add(employeeID);
+                }
+            }
+
+            // Gửi thông báo "có lịch làm mới" cho từng nhân viên vừa được gán ít nhất 1 ca
+            String dateRangeText = date.equals(toDate)
+                    ? "ngày " + date
+                    : "từ ngày " + date + " đến ngày " + toDate;
+            for (Integer employeeID : assignedEmployeeIDs) {
+                Notifications n = new Notifications();
+                n.setRecipientID(employeeID);
+                n.setRecipientType("staff");
+                n.setType("shift_assigned");
+                n.setMessage("Bạn có lịch làm mới: " + shiftLabel + " " + dateRangeText + ".");
+                n.setIsRead(0);
+                notifDao.insert(n);
             }
         }
 
@@ -335,7 +364,13 @@ public class ShiftRosterController extends HttpServlet {
         int failedEmployees = 0;
 
         try (EmployeeShiftDAO shiftDao = new EmployeeShiftDAO();
-             MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO()) {
+             MonthlyShiftPlanDAO planDao = new MonthlyShiftPlanDAO();
+             ShiftTemplateDAO tplDao = new ShiftTemplateDAO();
+             NotificationDAO notifDao = new NotificationDAO()) {
+
+            ShiftTemplates template = tplDao.findById(templateID);
+            String shiftLabel = (template != null) ? template.getShiftName() : "ca làm việc";
+
             for (String empIdStr : empIDsStr) {
 
                 int employeeID = parseInt(empIdStr, 0);
@@ -382,6 +417,15 @@ public class ShiftRosterController extends HttpServlet {
                     } catch (Exception ignore) {
 
                     }
+
+                    // Gửi thông báo "có lịch làm mới" cho nhân viên vừa được phân ca cả tháng
+                    Notifications n = new Notifications();
+                    n.setRecipientID(employeeID);
+                    n.setRecipientType("staff");
+                    n.setType("shift_assigned");
+                    n.setMessage("Bạn có lịch làm mới: " + shiftLabel + " cho tháng " + month + "/" + year + ".");
+                    n.setIsRead(0);
+                    notifDao.insert(n);
                 }
             }
         }

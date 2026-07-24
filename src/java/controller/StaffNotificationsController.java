@@ -16,7 +16,6 @@ import model.Notifications;
 public class StaffNotificationsController extends HttpServlet {
 
     private static final int LIST_LIMIT = 50;
-    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -24,20 +23,40 @@ public class StaffNotificationsController extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
+
         if (emp == null) {
             response.sendRedirect(request.getContextPath() + "/login?msg=required");
             return;
         }
 
-        List<Notifications> list = notificationDAO.listByRecipient(
-                emp.getEmployeeID(), "staff", LIST_LIMIT);
-        int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+        // ── 1. Lấy tham số Filter ──
+        String keyword = trim(request.getParameter("keyword"));
+        String readStatus = request.getParameter("readStatus");
 
-        //Nuôi header
-        session.setAttribute("unreadCount", unread);
-        request.setAttribute("notifications", list);
-        //Nuôi trang notification
-        request.setAttribute("unreadCount", unread);
+        // ── 2. Validate Backend ──
+        if (keyword != null && keyword.length() > 100) {
+            keyword = keyword.substring(0, 100); // Giới hạn tối đa 100 ký tự
+        }
+        if (readStatus == null || (!readStatus.equals("unread") && !readStatus.equals("read"))) {
+            readStatus = "all"; // Mặc định hiển thị tất cả nếu truyền sai
+        }
+
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            // ── 3. Gọi DAO đã có Filter ──
+            List<Notifications> list = notificationDAO.listByRecipientFiltered(
+                    emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
+            int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+
+            //Nuôi header
+            session.setAttribute("unreadCount", unread);
+            request.setAttribute("notifications", list);
+            //Nuôi trang notification
+            request.setAttribute("unreadCount", unread);
+            request.setAttribute("keyword", keyword);
+            request.setAttribute("readStatus", readStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
@@ -53,34 +72,38 @@ public class StaffNotificationsController extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        if ("markRead".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
-            }
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            if ("markRead".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+                }
 
-        } else if ("readAndRedirect".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+            } else if ("readAndRedirect".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
 
-                // Lấy notification để biết type → redirect đúng trang
-                List<Notifications> list = notificationDAO.listByRecipient(
-                        emp.getEmployeeID(), "staff", LIST_LIMIT);
+                    // Lấy notification để biết type → redirect đúng trang
+                    List<Notifications> list = notificationDAO.listByRecipient(
+                            emp.getEmployeeID(), "staff", LIST_LIMIT);
 
-                for (Notifications noti : list) {
-                    if (noti.getNotificationID() == notifID) {
-                        String url = resolveRedirectUrl(noti.getType(),
-                                request.getContextPath());
-                        updateUnread(session, emp);
-                        response.sendRedirect(url);
-                        return;
+                    for (Notifications noti : list) {
+                        if (noti.getNotificationID() == notifID) {
+                            String url = resolveRedirectUrl(noti.getType(),
+                                    request.getContextPath());
+                            updateUnread(session, emp, notificationDAO);
+                            response.sendRedirect(url);
+                            return;
+                        }
                     }
                 }
             }
-        }
 
-        updateUnread(session, emp);
+            updateUnread(session, emp, notificationDAO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         response.sendRedirect(request.getContextPath() + "/staff/notifications");
     }
 
@@ -110,9 +133,13 @@ public class StaffNotificationsController extends HttpServlet {
             case "table_open_request":
             // đơn online cần gán bàn ─────────────────────────
             case "reservation_needs_table":
+            // đơn online đã đặt trước (hôm nay) bị khách hủy ---
+            case "reservation_cancelled":
                 return ctx + "/reception/tables";
 
             // ── CA LÀM VIỆC (tất cả loại shift notification) ────────────
+            // Owner vừa gán ca mới (theo ngày hoặc theo tháng)
+            case "shift_assigned":
             // Lịch ca tháng mới được phát hành
             case "shift_plan":
             // Có yêu cầu đổi ca từ đồng nghiệp
@@ -125,7 +152,17 @@ public class StaffNotificationsController extends HttpServlet {
             case "shift_request_colleague_pending":
             // Đồng nghiệp từ chối đổi ca với mình
             case "shift_request_colleague_rejected":
-                return ctx + "/staff/my-schedule";
+//            /**
+//             * [RESTAURANT CLOSED]
+//             * Thông báo nhà hàng đóng cửa sẽ mở lịch làm việc cá nhân.
+//             */
+//            case "restaurant_closed":
+//            /**
+//             * [RESTAURANT REOPENED]
+//             * Thông báo nhà hàng mở lại cũng mở lịch làm việc cá nhân.
+//             */
+//            case "restaurant_reopened":
+//                return ctx + "/staff/my-schedule";
 
             // ── MẶC ĐỊNH: ở lại trang thông báo ─────────────────────────
             default:
@@ -133,7 +170,7 @@ public class StaffNotificationsController extends HttpServlet {
         }
     }
 
-    private void updateUnread(HttpSession session, Employee emp) {
+    private void updateUnread(HttpSession session, Employee emp, NotificationDAO notificationDAO) {
         int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
         session.setAttribute("unreadCount", unread);
     }
@@ -147,5 +184,9 @@ public class StaffNotificationsController extends HttpServlet {
         } catch (NumberFormatException e) {
             return def;
         }
+    }
+
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }

@@ -18,7 +18,6 @@ import model.Notifications;
 public class OwnerNotificationsController extends HttpServlet {
 
     private static final int LIST_LIMIT = 50;
-    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -30,14 +29,34 @@ public class OwnerNotificationsController extends HttpServlet {
             return;
         }
 
-        List<Notifications> list = notificationDAO.listByRecipient(emp.getEmployeeID(), "staff", LIST_LIMIT);
-        int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+        // ── 1. Lấy tham số Filter ──
+        String keyword = trim(request.getParameter("keyword"));
+        String readStatus = request.getParameter("readStatus");
 
-        //Nuôi header
-        session.setAttribute("unreadCount", unread);
-        request.setAttribute("notifications", list);
-        //Nuôi trang notification
-        request.setAttribute("unreadCount", unread);
+        // ── 2. Validate Backend ──
+        if (keyword != null && keyword.length() > 100) {
+            keyword = keyword.substring(0, 100);
+        }
+        if (readStatus == null || (!readStatus.equals("unread") && !readStatus.equals("read"))) {
+            readStatus = "all";
+        }
+
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            // ── 3. Gọi DAO đã có Filter ──
+            List<Notifications> list = notificationDAO.listByRecipientFiltered(
+                    emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
+            int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+
+            //Nuôi header
+            session.setAttribute("unreadCount", unread);
+            request.setAttribute("notifications", list);
+            //Nuôi trang notification
+            request.setAttribute("unreadCount", unread);
+            request.setAttribute("keyword", keyword);
+            request.setAttribute("readStatus", readStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
@@ -53,34 +72,38 @@ public class OwnerNotificationsController extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        if ("markRead".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
-            }
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            if ("markRead".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+                }
 
-        } else if ("readAndRedirect".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+            } else if ("readAndRedirect".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
 
-                // Lấy notification để biết type → redirect đúng trang
-                List<Notifications> list = notificationDAO.listByRecipient(
-                        emp.getEmployeeID(), "staff", LIST_LIMIT);
+                    // Lấy notification để biết type → redirect đúng trang
+                    List<Notifications> list = notificationDAO.listByRecipient(
+                            emp.getEmployeeID(), "staff", LIST_LIMIT);
 
-                for (Notifications noti : list) {
-                    if (noti.getNotificationID() == notifID) {
-                        String url = resolveRedirectUrl(noti.getType(), request.getContextPath());
-                        session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
-                        response.sendRedirect(url);
-                        return;
+                    for (Notifications noti : list) {
+                        if (noti.getNotificationID() == notifID) {
+                            String url = resolveRedirectUrl(noti.getType(), request.getContextPath());
+                            session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+                            response.sendRedirect(url);
+                            return;
+                        }
                     }
                 }
             }
-        }
 
-        // Cập nhật lại unreadCount vào session
-        session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+            // Cập nhật lại unreadCount vào session
+            session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         response.sendRedirect(request.getContextPath() + "/owner/notifications");
     }
 
@@ -115,5 +138,9 @@ public class OwnerNotificationsController extends HttpServlet {
         } catch (NumberFormatException e) {
             return def;
         }
+    }
+
+    private String trim(String str) {
+        return str == null ? "" : str.trim();
     }
 }

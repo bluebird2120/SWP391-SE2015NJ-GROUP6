@@ -12,14 +12,12 @@
         <style>
             body {
                 margin: 0;
-                font-family: 'Nunito', sans-serif;
+                font-family: 'Nunito', sans-serif !important;
                 background: #fdf6f0;
                 display: flex;
                 flex-direction: column;
                 min-height: 100vh;
-                font-family: 'Nunito', sans-serif !important;
             }
-
 
             .navbar a {
                 color: #d7bfa4;
@@ -70,6 +68,7 @@
                 flex: 1.2;
                 background: white;
                 padding: 50px;
+                box-sizing: border-box;
             }
 
             .right h2 {
@@ -78,14 +77,32 @@
 
             .field {
                 margin-top: 18px;
+                position: relative;
             }
 
             .field input {
                 width: 100%;
-                padding: 12px;
+                padding: 12px 40px 12px 12px;
                 border: 1px solid #ddd;
                 border-radius: 10px;
+                font-family: 'Nunito', sans-serif;
+                font-size: 14px;
+                outline: none;
+                box-sizing: border-box;
             }
+
+            /* CSS Icon con mắt dùng chung từ trang Đổi mật khẩu */
+            /* CSS chỉnh lại vị trí con mắt chính xác giữa ô input */
+.toggle-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #9a7060;
+    font-size: 14px;
+    z-index: 2; /* Đảm bảo con mắt nổi lên trên */
+}
 
             .btn {
                 width: 100%;
@@ -97,6 +114,7 @@
                 border-radius: 10px;
                 cursor: pointer;
                 font-weight: 700;
+                font-size: 15px;
             }
 
             .btn:hover {
@@ -114,7 +132,6 @@
                 font-weight: 700;
                 text-decoration: none;
             }
-
 
             .error {
                 color: red;
@@ -162,21 +179,19 @@
                     <h2>Đăng nhập</h2>
                     <p>Nhập số điện thoại và mật khẩu</p>
 
-                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
+                    <!-- Thông báo lỗi Google -->
                     <c:if test="${param.error == 'google_denied'}">
                         <div class="error" style="margin-bottom:15px;">
                             Bạn đã từ chối đăng nhập bằng Google.
                         </div>
                     </c:if>
 
-                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
                     <c:if test="${param.error == 'state_mismatch'}">
                         <div class="error" style="margin-bottom:15px;">
                             Phiên đăng nhập Google không hợp lệ.
                         </div>
                     </c:if>
 
-                    <!--param là đối tượng có sẵn của JSP EL, dùng để lấy request parameter từ URL.-->
                     <c:if test="${param.error == 'no_code'}">
                         <div class="error" style="margin-bottom:15px;">
                             Không nhận được mã xác thực từ Google.
@@ -189,7 +204,7 @@
                             ${loginError}
                         </div>
                     </c:if>
-                    
+
                     <c:if test="${not empty successMessage}">
                         <div style="color: green; font-size: 14px; margin-bottom: 15px; font-weight: 600;">
                             <i class="fas fa-circle-check"></i> ${successMessage}
@@ -200,7 +215,6 @@
                         <!-- SĐT -->
                         <div class="field">
                             <input
-
                                 type="tel"
                                 name="identifier"
                                 placeholder="Số điện thoại"
@@ -208,27 +222,32 @@
                             <div class="error">${phoneError}</div>
                         </div>
 
-                        <!-- Password -->
+                        <!-- Password (Đồng bộ nút mắt với Change Password) -->
                         <div class="field">
-                            <input
-                                type="password"
-                                name="password"
-                                placeholder="Mật khẩu"
-                                value="${prefillPassword}" required>
-                            <div class="error">${passwordError}</div>
+    <div style="position: relative; width: 100%;">
+        <input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Mật khẩu"
+            value="${prefillPassword}" required>
+        <i class="fas fa-eye toggle-eye" onclick="togglePassword('password', this)"></i>
+    </div>
+    <div class="error">${passwordError}</div>
 
-                            <!-- Quên mật khẩu -->
-                            <div style="text-align:right; margin-top:8px;">
-                                <a href="${pageContext.request.contextPath}/forgot-password"
-                                   style="
-                                   color:#76493b;
-                                   font-size:13px;
-                                   font-weight:600;
-                                   text-decoration:none;">
-                                    Quên mật khẩu?
-                                </a>
-                            </div>
-                        </div>
+    <!-- Quên mật khẩu -->
+    <div style="text-align:right; margin-top:8px;">
+        <a href="${pageContext.request.contextPath}/forgot-password"
+           style="
+           color:#76493b;
+           font-size:13px;
+           font-weight:600;
+           text-decoration:none;">
+            Quên mật khẩu?
+        </a>
+    </div>
+</div>
+
                         <!-- Button Login -->
                         <button class="btn" type="submit">
                             Đăng nhập
@@ -264,12 +283,14 @@
                        text-decoration:none;
                        color:#333;
                        font-weight:600;
+                       font-size:14px;
                        box-sizing:border-box;">
 
                         <img
                             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                             width="18"
-                            height="18">
+                            height="18" alt="Google Logo">
+                        <span>Tiếp tục với Google</span>
                     </a>
 
                     <!-- Register -->
@@ -282,9 +303,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- Script togglePassword giống hệt trang Đổi mật khẩu -->
+        <script>
+            function togglePassword(inputId, icon) {
+                const input = document.getElementById(inputId);
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                }
+            }
+        </script>
     </body>
 </html>
-
-
-
-
