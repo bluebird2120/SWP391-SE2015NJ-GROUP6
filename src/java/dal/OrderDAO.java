@@ -219,6 +219,67 @@ public class OrderDAO {
         return -1;
     }
 
+    /**
+     * [TRANSACTION FIX] Trừ tồn kho và ghi món gửi bếp cùng connection.
+     * INSERT lỗi sẽ rollback lượng tồn kho.
+     */
+    public boolean sendItemToKitchen(int orderID, int itemID, Integer tableID,
+            int quantity, int price, String note) {
+        if (quantity < 1 || quantity > 99) {
+            return false;
+        }
+
+        String stockSql = "UPDATE DailyInventory "
+                + "SET quantityInStock = quantityInStock - ? "
+                + "WHERE itemID = ? AND workingDate = CURDATE() "
+                + "AND quantityInStock >= ?";
+        String itemSql = "INSERT INTO OrderItem "
+                + "(orderID, itemID, tableID, quantity, price, note) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(stockSql)) {
+                    ps.setInt(1, quantity);
+                    ps.setInt(2, itemID);
+                    ps.setInt(3, quantity);
+                    if (ps.executeUpdate() == 0) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(itemSql)) {
+                    ps.setInt(1, orderID);
+                    ps.setInt(2, itemID);
+                    if (tableID == null) {
+                        ps.setNull(3, Types.INTEGER);
+                    } else {
+                        ps.setInt(3, tableID);
+                    }
+                    ps.setInt(4, quantity);
+                    ps.setInt(5, price);
+                    ps.setString(6, note);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("[OrderDAO] sendItemToKitchen rollback: "
+                        + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] sendItemToKitchen lỗi: " + e.getMessage());
+            return false;
+        }
+    }
+
     // =========================================================
     // 4. CẬP NHẬT SỐ LƯỢNG
     // =========================================================
@@ -239,7 +300,12 @@ public class OrderDAO {
      * yeu cau, khong tao hoa don va khong cho khach tu chot tien.
      */
     public boolean requestCheckout(int orderID) {
-        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), o.invoiceID = NULL "
+        // [INVOICE LINK FIX] Chỉ bỏ liên kết hóa đơn cọc DEP-*; giữ lại hóa
+        // đơn bữa ăn unpaid/failed để khách gửi lại yêu cầu không tạo invoice mồ côi.
+        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), "
+                + "o.invoiceID = CASE WHEN EXISTS ("
+                + "SELECT 1 FROM Invoices dep WHERE dep.invoiceID=o.invoiceID "
+                + "AND dep.invoiceNumber LIKE 'DEP-%') THEN NULL ELSE o.invoiceID END "
                 + "WHERE o.orderID = ? "
                 + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "AND EXISTS (SELECT 1 FROM OrderItem oi WHERE oi.orderID = o.orderID) "

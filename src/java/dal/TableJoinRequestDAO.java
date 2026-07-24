@@ -72,6 +72,42 @@ public class TableJoinRequestDAO extends DBContext {
     }
 
     /**
+     * [SECURITY FIX] Không update chỉ bằng requestID vì HOST bàn khác có thể
+     * đoán ID. Request phải thuộc đúng order trong session của HOST.
+     */
+    public boolean updateRequestStatusForOrder(
+            int requestID, int orderID, String newStatus) {
+        String sql = "UPDATE TableJoinRequest SET status = ? "
+                + "WHERE requestID = ? AND orderID = ? AND status = 'pending'";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, requestID);
+            ps.setInt(3, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[TableJoinRequestDAO] updateRequestStatusForOrder lỗi: "
+                    + e.getMessage());
+            return false;
+        }
+    }
+
+    /** [SECURITY FIX] Chỉ cấp lại HOST nếu có reclaim đang chờ thật. */
+    public boolean hasPendingReclaim(int orderID) {
+        String sql = "SELECT 1 FROM TableJoinRequest "
+                + "WHERE orderID = ? AND status = 'pending_reclaim' LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            System.err.println("[TableJoinRequestDAO] hasPendingReclaim lỗi: "
+                    + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 4. KIỂM TRA TRẠNG THÁI HIỆN TẠI (Cho màn hình GUEST chạy ngầm kiểm tra xem mình được duyệt chưa)
      * Trả về: 'pending', 'approved', 'rejected' hoặc null nếu không tìm thấy đơn
      */

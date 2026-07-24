@@ -311,7 +311,10 @@ public class StaffTableDAO extends DBContext {
      * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
      */
     public boolean checkinArrivedReservation(int orderID) {
-        String sql = "UPDATE `Order` SET tableStatus='arrived' WHERE orderID=?";
+        // [QR OPEN TABLE FIX] Đồng bộ cờ xác nhận để rào chắn /menu biết
+        // khách đặt trước đã được nhân viên check-in và được phép gọi món.
+        String sql = "UPDATE `Order` SET tableStatus='arrived', "
+                + "isStaffConfirmed=1 WHERE orderID=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, orderID);
             return ps.executeUpdate() > 0;
@@ -342,7 +345,10 @@ public class StaffTableDAO extends DBContext {
                 }
 
                 try (PreparedStatement ps = connection.prepareStatement(
-                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied' WHERE orderID=?")) {
+                        // [QR OPEN TABLE FIX] Trước đây chỉ đổi occupied nhưng
+                        // isStaffConfirmed vẫn bằng 0 nên khách bị kẹt ở trang chờ.
+                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied', "
+                        + "isStaffConfirmed=1 WHERE orderID=?")) {
                     ps.setInt(1, staffID);
                     ps.setInt(2, orderID);
                     if (ps.executeUpdate() == 0) {

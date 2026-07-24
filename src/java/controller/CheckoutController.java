@@ -46,6 +46,7 @@ public class CheckoutController extends HttpServlet {
     private void processCheckoutDisplay(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
+        util.CsrfUtil.ensureToken(session);
         Integer orderID = (Integer) session.getAttribute("orderID");
         Employee employee = (Employee) session.getAttribute("employee");
 
@@ -143,19 +144,66 @@ public class CheckoutController extends HttpServlet {
 
     private void processPaymentConfirm(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
+        // [CSRF FIX] Xác nhận tiền mặt/VNPay là thao tác tài chính quan trọng.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
         HttpSession session = request.getSession();
         String paymentGateway = request.getParameter("paymentGateway");
         String orderIDParam = request.getParameter("orderID");
         Integer invoiceID = (Integer) session.getAttribute("invoiceID");
+        Employee employee = (Employee) session.getAttribute("employee");
 
-        if (orderIDParam == null || invoiceID == null) {
+        if (orderIDParam == null || invoiceID == null || employee == null) {
             response.sendRedirect(request.getContextPath() + "/staff/tables");
             return;
         }
 
-        int orderID = Integer.parseInt(orderIDParam);
+        int orderID;
+        try {
+            orderID = Integer.parseInt(orderIDParam);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Mã đơn hàng không hợp lệ.");
+            return;
+        }
+
+        // [SECURITY FIX - PAYMENT] POST phải kiểm tra lại quyền; không chỉ
+        // dựa vào lần GET mở trang checkout.
+        StaffTableDAO staffTableDAO = new StaffTableDAO();
+        if (!staffTableDAO.isOrderAssignedToEmployee(
+                orderID, employee.getEmployeeID())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không được thanh toán đơn hàng này.");
+            return;
+        }
+
         Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
-        if (invoice == null) {
+        Order order = orderDAO.getOrderById(orderID);
+        // [SECURITY FIX - PAYMENT] Hidden orderID có thể bị sửa; invoice trong
+        // session bắt buộc phải là invoice đang gắn với đúng order.
+        if (invoice == null || order == null || order.getInvoiceID() == null
+                || !order.getInvoiceID().equals(invoiceID)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Hóa đơn không thuộc đơn hàng này.");
+            return;
+        }
+
+        if ("paid".equalsIgnoreCase(invoice.getStatus())) {
+            response.sendRedirect(request.getContextPath()
+                    + "/payment-info?invoiceID=" + invoiceID);
+            return;
+        }
+
+        if (!"cash".equals(paymentGateway) && !"vnpay".equals(paymentGateway)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Phương thức thanh toán không hợp lệ.");
+            return;
+        }
+
+        if (invoice.getFinalAmount() < 0) {
             response.sendRedirect(request.getContextPath() + "/staff/tables");
             return;
         }
@@ -171,6 +219,8 @@ public class CheckoutController extends HttpServlet {
                 invoiceID, orderID, "cash", invoice.getFinalAmount(), transactionCode);
 
         if (ok) {
+            // [SECURITY FIX - INVOICE IDOR] Chỉ cấp quyền xem hóa đơn vừa trả.
+            session.setAttribute("paymentInfoInvoiceID", invoiceID);
             clearDiningSession(session);
             response.sendRedirect(request.getContextPath()
                     + "/payment-info?invoiceID=" + invoiceID);

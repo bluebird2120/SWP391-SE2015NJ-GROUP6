@@ -24,6 +24,8 @@ public class ScanQRController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
+        // [CSRF FIX] Chuẩn bị token cho các AJAX/form sau khi quét QR.
+        util.CsrfUtil.ensureToken(session);
         String token = request.getParameter("token");
 
         // Logic xử lý quét QR
@@ -156,6 +158,10 @@ public class ScanQRController extends HttpServlet {
                         Cookie hostCookie = new Cookie("HOST_OF_TABLE_" + tableID, newHostToken);
                         hostCookie.setMaxAge(24 * 60 * 60); 
                         hostCookie.setPath("/"); 
+                        // [COOKIE SECURITY] JavaScript không cần đọc host token;
+                        // Secure chỉ bật khi ứng dụng đang chạy HTTPS.
+                        hostCookie.setHttpOnly(true);
+                        hostCookie.setSecure(request.isSecure());
                         response.addCookie(hostCookie);
 
                         // Cấp quyền HOST vào Session
@@ -234,6 +240,9 @@ public class ScanQRController extends HttpServlet {
                         Cookie hostCookie = new Cookie("HOST_OF_TABLE_" + tableID, hostToken);
                         hostCookie.setMaxAge(24 * 60 * 60); 
                         hostCookie.setPath("/"); 
+                        // [COOKIE SECURITY] Giảm nguy cơ lộ quyền HOST qua XSS.
+                        hostCookie.setHttpOnly(true);
+                        hostCookie.setSecure(request.isSecure());
                         response.addCookie(hostCookie);
                         
                         // Cấp phiên làm việc tạm (Session)
@@ -274,7 +283,8 @@ public class ScanQRController extends HttpServlet {
                 }
             } else {
                 // Bàn không hoạt động hoặc không tồn tại
-                response.sendRedirect(request.getContextPath() + "/error.jsp");
+                // [ERROR ROUTING FIX] Dự án không có /error.jsp, chuyển về route tồn tại.
+                response.sendRedirect(request.getContextPath() + "/home?error=invalid_qr");
                 return;
             }
         } else {
