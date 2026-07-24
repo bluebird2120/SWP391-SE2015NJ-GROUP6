@@ -1,6 +1,7 @@
 package controller;
 
 import dal.BusinessScheduleDAO;
+import dal.BusinessClosureDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -86,8 +87,25 @@ public class BusinessHoursController extends HttpServlet {
             return false;
         }
 
-        return dao.saveWeeklySchedule(dayOfWeek, openTime, closeTime,
-                isClosed, trimToNull(request.getParameter("reason")));
+        String reason = trimToNull(request.getParameter("reason"));
+        boolean saved = dao.saveWeeklySchedule(dayOfWeek, openTime, closeTime,
+                isClosed, reason);
+
+        /**
+         * [BUSINESS SCHEDULE]
+         * Sau khi Owner lưu lịch tuần, đồng bộ trạng thái ca và chỉ thông báo
+         * cho nhân viên có ca bị ảnh hưởng.
+         */
+//        if (saved) {
+//            try (BusinessClosureDAO closureDAO = new BusinessClosureDAO()) {
+//                if (isClosed == 1) {
+//                    closureDAO.closeWeeklyDay(dayOfWeek, reason);
+//                } else {
+//                    closureDAO.reopenWeeklyDay(dayOfWeek);
+//                }
+//            }
+//        }
+        return saved;
     }
 
     private boolean saveSpecial(HttpServletRequest request) {
@@ -103,8 +121,25 @@ public class BusinessHoursController extends HttpServlet {
             return false;
         }
 
-        return dao.saveSpecialDate(specificDate, openTime, closeTime,
-                isClosed, trimToNull(request.getParameter("reason")));
+        String reason = trimToNull(request.getParameter("reason"));
+        boolean saved = dao.saveSpecialDate(specificDate, openTime, closeTime,
+                isClosed, reason);
+
+        /**
+         * [BUSINESS SCHEDULE]
+         * Sau khi Owner lưu ngày đặc biệt, đồng bộ trạng thái ca và thông báo
+         * cho nhân viên có ca bị ảnh hưởng.
+         */
+        if (saved) {
+            try (BusinessClosureDAO closureDAO = new BusinessClosureDAO()) {
+                if (isClosed == 1) {
+                    closureDAO.closeSpecialDate(specificDate, reason);
+                } else {
+                    closureDAO.reopenSpecialDate(specificDate);
+                }
+            }
+        }
+        return saved;
     }
 
     private void loadPageData(HttpServletRequest request, Employee employee) {

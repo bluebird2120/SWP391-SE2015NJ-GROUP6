@@ -368,16 +368,174 @@
                 color: #b89c8a;
             }
 
-            /* Hiệu ứng mờ nhẹ trong lúc dữ liệu đang tải ngầm (AJAX) */
-            .ajax-loading {
-                opacity: 0.4;
-                pointer-events: none;
-                transition: opacity 0.2s ease;
+            /* ════════════════════════════
+               MODAL POPUP CHI TIẾT MÓN ĂN (SẠCH SẼ - AN TOÀN - KHÔNG TRẮNG MÀN)
+            ════════════════════════════ */
+            .dish-modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.65);
+                display: none; /* Mặc định ẩn hoàn toàn để không chắn chuột scroll */
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                visibility: hidden;
+            }
+
+            .dish-modal-overlay.active {
+                display: flex !important;
+                visibility: visible !important;
+            }
+
+            .dish-modal-container {
+                background: #fff;
+                width: 90%;
+                max-width: 750px;
+                border-radius: 20px;
+                overflow: hidden;
+                position: relative;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+                display: flex;
+            }
+
+            .modal-close-btn {
+                position: absolute;
+                top: 15px;
+                right: 20px;
+                width: 36px;
+                height: 36px;
+                background: rgba(0, 0, 0, 0.5);
+                color: #fff;
+                border: none;
+                border-radius: 50%;
+                font-size: 18px;
+                cursor: pointer;
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            }
+
+            .modal-close-btn:hover {
+                background: #dc3545;
+            }
+
+            .modal-img-wrap {
+                width: 45%;
+                background: #f0e4d6;
+                min-height: 320px;
+            }
+
+            .modal-img-wrap img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .modal-info-wrap {
+                width: 55%;
+                padding: 35px 30px;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-category {
+                font-size: 0.85rem;
+                color: #8b4513;
+                font-weight: 600;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+            }
+
+            .modal-title {
+                font-family: 'Playfair Display', serif;
+                font-size: 1.6rem;
+                color: #5a2d0c;
+                margin-bottom: 15px;
+                line-height: 1.3;
+            }
+
+            .modal-price-box {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 15px;
+                padding-bottom: 12px;
+                border-bottom: 1px dashed #e5d8cc;
+            }
+
+            .modal-price-current {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #de6b48;
+            }
+
+            .modal-price-original {
+                font-size: 1rem;
+                color: #9ca3af;
+                text-decoration: line-through;
+            }
+
+            .modal-price-badge {
+                background: #ffebe6;
+                color: #dc3545;
+                font-size: 0.8rem;
+                font-weight: 700;
+                padding: 3px 8px;
+                border-radius: 6px;
+            }
+
+            .modal-description {
+                font-size: 0.95rem;
+                color: #665244;
+                line-height: 1.6;
+                margin-bottom: 15px;
+                flex: 1;
+            }
+
+            /* Khung Cảnh Báo Dị Ứng (Chuẩn theo dish-detail.jsp) */
+            .modal-allergy-box {
+                background-color: #fff5f5;
+                border: 1px solid #fed7d7;
+                color: #c53030;
+                padding: 12px 16px;
+                border-radius: 12px;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: auto;
+                font-family: 'Be Vietnam Pro', system-ui, sans-serif !important;
+            }
+
+            .modal-allergy-box b,
+            .modal-allergy-box span {
+                font-family: 'Be Vietnam Pro', system-ui, sans-serif !important;
+                font-weight: 600;
             }
 
             @media (max-width: 980px) {
                 .menu-grid {
                     grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (max-width: 650px) {
+                .dish-modal-container {
+                    flex-direction: column;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                }
+                .modal-img-wrap, .modal-info-wrap {
+                    width: 100%;
+                }
+                .modal-img-wrap {
+                    height: 220px;
+                    min-height: auto;
                 }
             }
             @media (max-width: 560px) {
@@ -548,7 +706,16 @@
                         <c:otherwise>
                             <div class="menu-grid">
                                 <c:forEach var="item" items="${menuItems}">
-                                    <a href="${pageContext.request.contextPath}/dish-detail?id=${item.itemID}" class="menu-card" style="text-decoration: none;">
+                                    <div class="menu-card dish-card-trigger" style="cursor: pointer;"
+                                         data-name="${item.itemName}"
+                                         data-category="🏷️ ${item.categoryName}"
+                                         data-image="${item.image}"
+                                         data-current-price="<fmt:formatNumber value='${item.discountedPrice}' type='number' groupingUsed='true'/>đ"
+                                         data-original-price="<fmt:formatNumber value='${item.price}' type='number' groupingUsed='true'/>đ"
+                                         data-discount="${item.discountPercent}"
+                                         data-description="${empty item.description ? 'Món ăn đặc sắc được chế biến tỉ mỉ từ nguyên liệu tươi ngon nhất của nhà hàng Vị An.' : item.description}"
+                                         data-allergy="${item.allergyNotes}">
+
                                         <div class="menu-card-img">
                                             <img src="${item.image}" alt="${item.itemName}">
                                         </div>
@@ -568,7 +735,7 @@
                                                 </span>
                                             </div>
                                         </div>
-                                    </a>
+                                    </div>
                                 </c:forEach>
                             </div>
 
@@ -681,10 +848,40 @@
                 </div>
             </section>
 
+            <!-- ══════════════════════════════
+                 MODAL POPUP CHI TIẾT MÓN ĂN
+            ══════════════════════════════ -->
+            <div id="dishDetailModal" class="dish-modal-overlay">
+                <div class="dish-modal-container">
+                    <button type="button" class="modal-close-btn" id="closeDishModal"><i class="fas fa-times"></i></button>
+                    <div class="modal-img-wrap">
+                        <img id="modalDishImg" src="" alt="Món ăn">
+                    </div>
+                    <div class="modal-info-wrap">
+                        <div class="modal-category" id="modalDishCategory"></div>
+                        <h2 class="modal-title" id="modalDishTitle"></h2>
+                        <div class="modal-price-box">
+                            <span class="modal-price-current" id="modalDishCurrentPrice"></span>
+                            <span class="modal-price-original" id="modalDishOriginalPrice"></span>
+                            <span class="modal-price-badge" id="modalDishDiscount"></span>
+                        </div>
+                        <div class="modal-description" id="modalDishDescription"></div>
+
+                        <!-- Cảnh báo dị ứng -->
+                        <div class="modal-allergy-box" id="modalDishAllergyBox" style="display: none;">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <div>
+                                <b>Thành phần cần lưu ý dị ứng:</b> <span id="modalDishAllergyText"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <script>
-            /* ── 1. CORE HERO SLIDER CONTROL ── */
+            /* ── 1. HERO SLIDER ── */
             (function () {
                 let current = 0;
                 const slides = document.getElementById('slides');
@@ -718,57 +915,70 @@
                 startAuto();
             })();
 
-            /* ── 2. CORE AJAX FETCH SYSTEM (NO RELOAD TRANG) ── */
+            /* ── 2. MODAL POPUP (MƯỢT MÀ - AN TOÀN TUYỆT ĐỐI) ── */
             document.addEventListener("DOMContentLoaded", function () {
-                const filterForm = document.getElementById('filterForm');
-                const menuContainerView = document.getElementById('menuContainerView');
+                const modal = document.getElementById('dishDetailModal');
+                const closeBtn = document.getElementById('closeDishModal');
 
-                if (!filterForm || !menuContainerView)
-                    return;
+                function openDishModal(card) {
+                    document.getElementById('modalDishTitle').innerText = card.dataset.name || '';
+                    document.getElementById('modalDishCategory').innerText = card.dataset.category || '';
+                    document.getElementById('modalDishImg').src = card.dataset.image || '';
+                    document.getElementById('modalDishCurrentPrice').innerText = card.dataset.currentPrice || '';
+                    document.getElementById('modalDishOriginalPrice').innerText = card.dataset.originalPrice || '';
 
-                function fetchMenuDataAjax(url) {
-                    menuContainerView.classList.add('ajax-loading');
+                    const discountVal = card.dataset.discount;
+                    const discountBadge = document.getElementById('modalDishDiscount');
+                    if (discountVal && parseInt(discountVal) > 0) {
+                        discountBadge.innerText = '-' + discountVal + '%';
+                        discountBadge.style.display = 'inline-block';
+                    } else {
+                        discountBadge.style.display = 'none';
+                    }
 
-                    fetch(url)
-                        .then(response => {
-                            if (!response.ok) throw new Error("Mạng lỗi");
-                            return response.text();
-                        })
-                        .then(htmlText => {
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(htmlText, 'text/html');
-                            const incomingContent = doc.getElementById('menuContainerView');
+                    document.getElementById('modalDishDescription').innerText = card.dataset.description || '';
 
-                            if (incomingContent) {
-                                menuContainerView.innerHTML = incomingContent.innerHTML;
-                                window.history.pushState({}, '', url);
-                            }
-                            menuContainerView.classList.remove('ajax-loading');
-                        })
-                        .catch(error => {
-                            console.error("Lỗi đồng bộ AJAX:", error);
-                            menuContainerView.classList.remove('ajax-loading');
-                        });
+                    // Dị ứng (Đã gán đúng biến allergyNotes)
+                    const allergyVal = card.dataset.allergy;
+                    const allergyBox = document.getElementById('modalDishAllergyBox');
+                    const allergyText = document.getElementById('modalDishAllergyText');
+
+                    if (allergyVal && allergyVal.trim() !== '' && allergyVal !== 'null') {
+                        allergyText.innerText = allergyVal;
+                        allergyBox.style.display = 'flex';
+                    } else {
+                        allergyBox.style.display = 'none';
+                    }
+
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 }
 
-                filterForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    
-                    const formAction = filterForm.getAttribute('action') || window.location.pathname;
-                    const urlSearchParams = new URLSearchParams(new FormData(filterForm)).toString();
-                    const targetUrl = formAction + '?' + urlSearchParams;
+                function closeDishModal() {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
 
-                    fetchMenuDataAjax(targetUrl);
+                document.addEventListener('click', function (e) {
+                    const card = e.target.closest('.dish-card-trigger');
+                    if (card) {
+                        openDishModal(card);
+                    }
                 });
 
-                menuContainerView.addEventListener('click', function (e) {
-                    const paginationLink = e.target.closest('.menu-pagination a');
-                    if (paginationLink) {
-                        e.preventDefault();
-                        
-                        const targetUrl = paginationLink.getAttribute('href');
-                        fetchMenuDataAjax(targetUrl);
-                    }
+                if (closeBtn)
+                    closeBtn.addEventListener('click', closeDishModal);
+
+                if (modal) {
+                    modal.addEventListener('click', function (e) {
+                        if (e.target === modal)
+                            closeDishModal();
+                    });
+                }
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape')
+                        closeDishModal();
                 });
             });
         </script>

@@ -54,9 +54,10 @@ public class StaffMyScheduleController extends HttpServlet {
         int month = ym.getMonthValue();
         req.setAttribute("scheduleFilterError", scheduleFilterError);
 
-        EmployeeShiftDAO shiftDAO = new EmployeeShiftDAO();
-        ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
-        EmployeeDAO employeeDAO = new EmployeeDAO();
+        // try-with-resources: tự đóng tất cả connection sau khi doGet xong
+        try (EmployeeShiftDAO shiftDAO    = new EmployeeShiftDAO();
+             ShiftSwapRequestDAO requestDAO = new ShiftSwapRequestDAO();
+             EmployeeDAO employeeDAO      = new EmployeeDAO()) {
 
         if (shiftDAO.getConnection() == null || requestDAO.getConnection() == null || employeeDAO.getConnection() == null) {
             setEmptyScheduleAttributes(req, year, month, ym, "Không thể kết nối database. Vui lòng kiểm tra MySQL và cấu hình DBContext.");
@@ -124,6 +125,13 @@ public class StaffMyScheduleController extends HttpServlet {
         req.setAttribute("colleagueRequests", colleagueRequests);
 
         req.getRequestDispatcher(VIEW).forward(req, resp);
+
+        } // end try-with-resources (EmployeeShiftDAO, ShiftSwapRequestDAO, EmployeeDAO)
+        catch (Exception ex) {
+            ex.printStackTrace();
+            setEmptyScheduleAttributes(req, year, month, ym, "Lỗi hệ thống. Vui lòng thử lại.");
+            req.getRequestDispatcher(VIEW).forward(req, resp);
+        }
     }
 
     private void setEmptyScheduleAttributes(HttpServletRequest req, int year, int month, YearMonth ym, String errorMessage) {
