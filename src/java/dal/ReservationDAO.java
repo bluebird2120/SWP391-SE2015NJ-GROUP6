@@ -105,7 +105,7 @@ public class ReservationDAO extends DBContext {
         // Chưa cọc: xóa dữ liệu giữ chỗ tạm. Đã cọc: giữ lịch sử và chỉ
         // chuyển cancelled để phục vụ đối soát/hoàn tiền khi cần.
         String stateSql
-                = "SELECT o.invoiceID, o.employeeID, "
+                = "SELECT o.invoiceID, o.employeeID, o.orderTime, "
                 + "CASE WHEN LOWER(COALESCE(i.status,''))='paid' "
                 + " OR EXISTS (SELECT 1 FROM Payments p "
                 + "            WHERE p.invoiceID=o.invoiceID "
@@ -126,6 +126,7 @@ public class ReservationDAO extends DBContext {
             connection.setAutoCommit(false);
             Integer invoiceID;
             Integer assignedEmployeeID;
+            Timestamp orderTime;
             boolean paid;
             try (PreparedStatement ps = connection.prepareStatement(stateSql)) {
                 ps.setInt(1, orderID);
@@ -137,6 +138,7 @@ public class ReservationDAO extends DBContext {
                     }
                     invoiceID = (Integer) rs.getObject("invoiceID");
                     assignedEmployeeID = (Integer) rs.getObject("employeeID");
+                    orderTime = rs.getTimestamp("orderTime");
                     paid = rs.getInt("isPaid") == 1;
                 }
             }
@@ -167,6 +169,10 @@ public class ReservationDAO extends DBContext {
                 connection.rollback();
             }
 
+            if (changed && paid && isToday(orderTime)) {
+                notifyReceptionistAboutCancellation(orderID);
+            }
+
             return changed;
         } catch (Exception e) {
             rollbackQuietly();
@@ -174,6 +180,34 @@ public class ReservationDAO extends DBContext {
             return false;
         } finally {
             restoreAutoCommit();
+        }
+    }
+
+    private boolean isToday(Timestamp orderTime) {
+        if (orderTime == null) {
+            return false;
+        }
+        java.time.LocalDate orderDate = orderTime.toLocalDateTime().toLocalDate();
+        return orderDate.isEqual(java.time.LocalDate.now());
+    }
+
+    private void notifyReceptionistAboutCancellation(int orderID) {
+        try {
+            List<Integer> receptionistIDs = new EmployeeDAO().getActiveReceptionistIDs();
+            NotificationDAO notifDAO = new NotificationDAO();
+            for (int recID : receptionistIDs) {
+                Notifications noti = new Notifications();
+                noti.setRecipientID(recID);
+                noti.setRecipientType("staff");
+                noti.setType("reservation_cancelled");
+                noti.setMessage("Đơn đặt bàn online #" + orderID
+                        + " vừa bị khách hủy.");
+                noti.setIsRead(0);
+                notifDAO.insert(noti);
+            }
+        } catch (Exception e) {
+            System.err.println("[ReservationDAO] Gửi thông báo hủy đơn cho lễ tân thất bại: "
+                    + e.getMessage());
         }
     }
 
@@ -351,59 +385,59 @@ public class ReservationDAO extends DBContext {
                 // try-with-resources: tự đóng connection của NotificationDAO sau khi dùng xong
                 try (NotificationDAO notifDAO = new NotificationDAO()) {
 
-                // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
-                //    Áp dụng cho TẤT CẢ đơn mới confirm, không phân biệt hôm nay hay
-                //    ngày tương lai — khách luôn cần biết đơn của mình đã được xác nhận.
-                for (int oID : newlyConfirmedIDs) {
-                    Integer customerID = orderCustomerMap.get(oID);
-                    if (customerID != null) {
-                        Notifications nc = new Notifications();
-                        nc.setRecipientID(customerID);
-                        nc.setRecipientType("customer");
-                        nc.setType("reservation_confirmed");
-                        nc.setMessage("Đặt bàn thành công! Đơn đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
-                        nc.setIsRead(0);
-                        notifDAO.insert(nc);
-                    }
-                }
-
-                // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn của HÔM NAY.
-                //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
-                //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
-                if (!newlyConfirmedTodayIDs.isEmpty()) {
-                    // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy
-                    // TẤT CẢ Employee roleID=3 isActive=1, kể cả người không
-                    // có lịch làm hôm nay. Giờ join thêm EmployeeShifts để
-                    // chỉ lấy đúng lễ tân có ca hôm nay
-                    String receptionistSql
-                            = "SELECT DISTINCT es.employeeID "
-                            + "FROM EmployeeShifts es "
-                            + "JOIN Employee e ON e.employeeID = es.employeeID "
-                            + "WHERE es.workDate = CURDATE() "
-                            + "AND e.roleID = 3 AND e.isActive = 1";
-                    List<Integer> receptionistIDs = new ArrayList<>();
-                    try (PreparedStatement rps
-                            = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
-                        while (rrs.next()) {
-                            receptionistIDs.add(rrs.getInt("employeeID"));
+                    // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
+                    //    Áp dụng cho TẤT CẢ đơn mới confirm, không phân biệt hôm nay hay
+                    //    ngày tương lai — khách luôn cần biết đơn của mình đã được xác nhận.
+                    for (int oID : newlyConfirmedIDs) {
+                        Integer customerID = orderCustomerMap.get(oID);
+                        if (customerID != null) {
+                            Notifications nc = new Notifications();
+                            nc.setRecipientID(customerID);
+                            nc.setRecipientType("customer");
+                            nc.setType("reservation_confirmed");
+                            nc.setMessage("Đặt bàn thành công! Đơn đã được xác nhận. Vui lòng đến đúng giờ đã đặt.");
+                            nc.setIsRead(0);
+                            notifDAO.insert(nc);
                         }
                     }
 
-                    for (int oID : newlyConfirmedTodayIDs) {
-                        // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
-                        for (int recID : receptionistIDs) {
-                            Notifications n = new Notifications();
-                            n.setRecipientID(recID);
-                            n.setRecipientType("staff");
-                            n.setType("reservation_needs_table");
-                            n.setMessage("Đơn đặt bàn online #" + oID
-                                    + " vừa thanh toán cọc thành công, cần gán bàn hôm nay.");
-                            n.setIsRead(0);
-                            notifDAO.insert(n);
+                    // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn của HÔM NAY.
+                    //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
+                    //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
+                    if (!newlyConfirmedTodayIDs.isEmpty()) {
+                        // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy
+                        // TẤT CẢ Employee roleID=3 isActive=1, kể cả người không
+                        // có lịch làm hôm nay. Giờ join thêm EmployeeShifts để
+                        // chỉ lấy đúng lễ tân có ca hôm nay
+                        String receptionistSql
+                                = "SELECT DISTINCT es.employeeID "
+                                + "FROM EmployeeShifts es "
+                                + "JOIN Employee e ON e.employeeID = es.employeeID "
+                                + "WHERE es.workDate = CURDATE() "
+                                + "AND e.roleID = 3 AND e.isActive = 1";
+                        List<Integer> receptionistIDs = new ArrayList<>();
+                        try (PreparedStatement rps
+                                = connection.prepareStatement(receptionistSql); ResultSet rrs = rps.executeQuery()) {
+                            while (rrs.next()) {
+                                receptionistIDs.add(rrs.getInt("employeeID"));
+                            }
+                        }
+
+                        for (int oID : newlyConfirmedTodayIDs) {
+                            // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
+                            for (int recID : receptionistIDs) {
+                                Notifications n = new Notifications();
+                                n.setRecipientID(recID);
+                                n.setRecipientType("staff");
+                                n.setType("reservation_needs_table");
+                                n.setMessage("Đơn đặt bàn online #" + oID
+                                        + " vừa thanh toán cọc thành công, cần gán bàn hôm nay.");
+                                n.setIsRead(0);
+                                notifDAO.insert(n);
+                            }
                         }
                     }
                 }
-                } 
             }
 
             List<Integer> orderIDs = new ArrayList<>();
