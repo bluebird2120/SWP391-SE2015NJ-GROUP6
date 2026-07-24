@@ -20,7 +20,7 @@ public class ReservationDAO extends DBContext {
     public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
 
     /**
-     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. * tại
+     * Tạo một đơn đặt bàn và các dòng chi tiết trong cùng transaction. 
      * OrderReservationDetail.
      */
     public int createReservation(int customerID, Timestamp orderTime,
@@ -511,6 +511,38 @@ public class ReservationDAO extends DBContext {
         }
 
         return null;
+    }
+
+    public boolean hasActivePendingReservation(int customerID) {
+        // [ANTI SPAM GIU BAN]
+        // Mot customer chi duoc co 1 don dat ban pending chua thanh toan coc
+        // trong thoi gian giu cho. Don het han se duoc synchronizeDepositStatus()
+        // don/xoa truoc khi controller goi ham nay.
+        String sql
+                = "SELECT 1 "
+                + "FROM `Order` o "
+                + "LEFT JOIN Invoices i ON i.invoiceID = o.invoiceID "
+                + "WHERE o.customerID = ? "
+                + "  AND o.orderType = 1 "
+                + "  AND o.orderStatus = 'pending' "
+                + "  AND o.checkoutRequestAt IS NOT NULL "
+                + "  AND o.checkoutRequestAt > NOW() "
+                + "  AND LOWER(COALESCE(i.status, 'unpaid')) <> 'paid' "
+                + "  AND NOT EXISTS (SELECT 1 FROM Payments p "
+                + "                  WHERE p.invoiceID = o.invoiceID "
+                + "                    AND p.status = 'success') "
+                + "LIMIT 1";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, customerID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     public List<Order> getReservationsByCustomer(int customerID) {
