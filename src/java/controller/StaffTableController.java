@@ -1,6 +1,5 @@
 package controller;
 
-import dal.DBContext;
 import dal.OrderDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
@@ -10,9 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.util.List;
 import model.Employee;
@@ -31,6 +28,7 @@ public class StaffTableController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        util.CsrfUtil.ensureToken(request.getSession());
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -66,6 +64,12 @@ public class StaffTableController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+        // [CSRF FIX] Bảo vệ checkout/cập nhật món/dọn bàn của nhân viên.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -115,28 +119,11 @@ public class StaffTableController extends HttpServlet {
                         ? "clean_success" : "Không thể hoàn tất dọn bàn này.";
 
             } else if ("checkin".equals(action) || "open_table".equals(action)) {
-                // Khach dat truoc den -> arrived. Khach vang lai duoc xac nhan -> occupied.
-                String newStatus = "checkin".equals(action) ? "arrived" : "occupied";
-                String sql = "UPDATE `Order` SET tableStatus = ? WHERE orderID = ?";
-
-                try (Connection conn = new DBContext().getConnection();
-                     PreparedStatement ps = conn.prepareStatement(sql)) {
-
-                    ps.setString(1, newStatus);
-                    ps.setInt(2, orderID);
-                    int rowsAffected = ps.executeUpdate();
-
-                    if (rowsAffected > 0) {
-                        message = "checkin".equals(action)
-                                ? "checkin_success"
-                                : "Đã mở bàn thành công. Khách có thể xem menu và gọi món.";
-                    } else {
-                        message = "Không tìm thấy đơn hàng để thao tác.";
-                    }
-                } catch (Exception e) {
-                    System.err.println("Loi khi mo ban/checkin: " + e.getMessage());
-                    message = "Lỗi hệ thống: Không thể kết nối cơ sở dữ liệu.";
-                }
+                // [AUTHORIZATION FIX] Mở/check-in bàn thuộc nghiệp vụ lễ tân.
+                // Không cho staff tự gửi POST để đổi trạng thái một order bất kỳ.
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Chỉ lễ tân mới được mở hoặc check-in bàn.");
+                return;
             }
         } catch (NumberFormatException e) {
             message = "Mã đơn không hợp lệ.";
