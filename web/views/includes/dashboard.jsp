@@ -164,14 +164,12 @@
             </li>
         </c:if>
 
-        <c:if test="${!isReceptionist}">
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/business-hours') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/business-hours?action=list">
-                    <i class="fas fa-clock"></i> Giờ hoạt động
-                </a>
-            </li>
-        </c:if>
+        <li>
+            <a class="nav-link ${pageContext.request.requestURI.contains('owner/business-hours') ? 'active' : ''}"
+               href="${pageContext.request.contextPath}/owner/business-hours?action=list">
+                <i class="fas fa-clock"></i> Giờ hoạt động
+            </a>
+        </li>
 
         <%-- [PHAN QUYEN PHUC VU] Giu nguyen cac menu rieng cua Staff. --%>
         <c:if test="${isStaff}">

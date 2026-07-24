@@ -66,10 +66,15 @@ public class AuthenticationFilter implements Filter {
                 return;
             }
 
-            // /owner/* chỉ dành cho Owner (roleID = 1)
+            // /owner/* chỉ dành cho Owner (roleID = 1), trừ trang Giờ hoạt động
             if (uri.startsWith(ctx + "/owner/") && employee.getRoleID() != OWNER_ROLE_ID) {
-                response.sendRedirect(ctx + "/unauthorized");
-                return;
+                boolean allowed = (employee.getRoleID() == STAFF_ROLE_ID
+                        || employee.getRoleID() == RECEPTIONIST_ROLE_ID)
+                        && uri.startsWith(ctx + "/owner/business-hours");
+                if (!allowed) {
+                    response.sendRedirect(ctx + "/unauthorized");
+                    return;
+                }
             }
 
             // /staff/* chỉ dành cho Staff (roleID = 2) hoặc Owner truy cập chức năng staff
