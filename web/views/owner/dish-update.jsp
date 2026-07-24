@@ -252,7 +252,7 @@
                             <div class="configuration-block">
                                 <div class="form-image">
                                     <label class="form-label">Ảnh chính hiện tại:</label>
-                                    <img src="${dish.image}"/>
+                                    <img src="${pageContext.request.contextPath}/${dish.image}"/>
                                     <input type="hidden" value="${dish.image}" name="oldImage"/>  
                                 </div>
                                 <div class="form-changeImage">
@@ -265,7 +265,7 @@
                                 <div class="form-image">
                                     <label class="form-label">Ảnh phụ hiện tại:</label>
                                     <c:forEach var="subImg" items="${subImages}">
-                                        <img src="${subImg.imagePath}"/>
+                                        <img src="${pageContext.request.contextPath}/${subImg.imagePath}"/>
                                     </c:forEach>
                                 </div>
                                 <div class="form-changeImage">

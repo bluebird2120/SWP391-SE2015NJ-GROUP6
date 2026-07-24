@@ -359,7 +359,7 @@
                                         <td style="text-align: center;">
                                             <input type="hidden" name="itemID" value="${item.itemID}"/>
                                             <input type="number" name="initialQuantity" 
-                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : (item.initialQuantity > 0 ? item.initialQuantity : '')}" 
+                                                   value="${not empty saveInputData ? saveInputData[item.itemID] : (item.initialQuantity >= 0 ? item.initialQuantity : '')}" 
                                                    class="input-item-qty field-stock-input"/>
                                             <c:if test="${item.initialQuantity > 0 && item.quantityInStock < item.initialQuantity * 20/100}">
                                                 <br/><small style="color: #dc3545; font-weight: bold;">🚨 Sắp hết (&lt; 20%)</small>

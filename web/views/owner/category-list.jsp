@@ -318,9 +318,6 @@
                     <c:if test="${not empty updateFail}">
                         <div class="error-message">❌ <b>Thất bại:</b> ${updateFail}</div>
                     </c:if>
-                    <c:if test="${not empty errorName}">
-                        <div class="error-message">⚠️ <b>Lỗi nhập liệu:</b> ${errorName}</div>
-                    </c:if>
                     <c:if test="${not empty errorSearch}">
                         <div class="error-message">⚠️ <b>Lỗi tìm kiếm:</b> ${errorSearch}</div>
                     </c:if>
@@ -403,7 +400,10 @@
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
                 <h3>Chỉnh sửa tên loại món</h3>
                 <form id="editForm" action="${pageContext.request.contextPath}/owner/category-management" method="post">
-                    <input type="hidden" id="modalCategoryID" name="categoryID"/>
+                    <input type="hidden"
+                           id="modalCategoryID"
+                           name="categoryID"
+                           value="${modalErrorID}"/>
                     <!-- Phục hồi bộ lọc ẩn để tránh mất trang khi submit lỗi -->
                     <input type="hidden" value="${currentPage}" name="page"/>
                     <input type="hidden" value="${currentSearch}" name="search"/>
@@ -412,7 +412,13 @@
                     <label class="form-label">Tên loại:</label>
                     <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
                     <input type="text" id="modalCategoryName" name="categoryName" value="${not empty errorName and modalErrorID > 0 ? modalErrorName : ''}"/>
-                    <span class="modal-error-text" id="editErrorName"></span>
+                    <span class="modal-error-text" id="editErrorName">
+                        <c:if test="${not empty errorName and modalErrorID > 0}">
+                            <span class="modal-error-text">
+                                <c:out value="${errorName}"/>
+                            </span>
+                        </c:if>
+                    </span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -433,7 +439,13 @@
                     <label class="form-label">Nhập loại mới:</label>
                     <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
                     <input type="text" id="createCategoryName" name="categoryName" value="${not empty errorName and modalErrorID == 0 ? modalErrorName : ''}"/>
-                    <span class="modal-error-text" id="createErrorName"></span>
+                    <span class="modal-error-text" id="createErrorName">
+                        <c:if test="${not empty errorName and modalErrorID == 0}">
+                            <span class="modal-error-text">
+                                <c:out value="${errorName}"/>
+                            </span>
+                        </c:if>
+                    </span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
