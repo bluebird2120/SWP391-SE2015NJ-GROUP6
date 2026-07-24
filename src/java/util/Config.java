@@ -16,8 +16,8 @@ import javax.crypto.spec.SecretKeySpec;
 public class Config {
 
     // KHI CÓ TÀI KHOẢN, BẠN THAY 2 DÒNG NÀY BẰNG MÃ CỦA BẠN NHÉ
-    public static String vnp_TmnCode = "KHBHOA1R";
-    public static String vnp_HashSecret = "W5RIAI7GZL1UOOJC1M74DLKUKEFIW3HM";
+    public static String vnp_TmnCode = "HSR78TR6";
+    public static String vnp_HashSecret = "ZREDGNUUAPJKKZRKGBMWEZFZZCCDHMZG";
     
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     
