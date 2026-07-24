@@ -74,7 +74,7 @@
                             </select>
                             <span class="time-sep">:</span>
                             <select id="startMin" onchange="syncTime('start')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
-                                <c:forEach var="m" begin="0" end="59" step="5">
+                                <c:forEach var="m" begin="0" end="59" step="1">
                                     <option value="${m}"><fmt:formatNumber value="${m}" minIntegerDigits="2"/></option>
                                 </c:forEach>
                             </select>
@@ -94,7 +94,7 @@
                             </select>
                             <span class="time-sep">:</span>
                             <select id="endMin" onchange="syncTime('end')" <c:if test="${mode == 'edit' && usedCount > 0}">disabled</c:if>>
-                                <c:forEach var="m" begin="0" end="59" step="5">
+                                <c:forEach var="m" begin="0" end="59" step="1">
                                     <option value="${m}"><fmt:formatNumber value="${m}" minIntegerDigits="2"/></option>
                                 </c:forEach>
                             </select>
@@ -129,12 +129,10 @@
             if (parts.length < 2) return;
             var h = parseInt(parts[0], 10);
             var m = parseInt(parts[1], 10);
-            var mRound = Math.round(m / 5) * 5;
-            if (mRound === 60) mRound = 55;
             var hSel = document.getElementById(prefix + 'Hour');
             var mSel = document.getElementById(prefix + 'Min');
             if (hSel) hSel.value = h;
-            if (mSel) mSel.value = mRound;
+            if (mSel) mSel.value = m;
         }
 
         function validateShiftForm(e) {

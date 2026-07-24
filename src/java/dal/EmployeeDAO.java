@@ -344,12 +344,19 @@ public class EmployeeDAO extends DBContext {
 
     public boolean isEmailExists(String email, int excludeID) {
 
-        String sql = "SELECT 1 FROM Employee WHERE email = ? AND employeeID <> ?";
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM Employee WHERE email = ? AND employeeID <> ? "
+                + "UNION "
+                + "SELECT 1 FROM Customer WHERE email = ? "
+                + "LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setString(1, email);
 
             ps.setInt(2, excludeID);
+            ps.setString(3, email);
             try (ResultSet rs = ps.executeQuery()) {
 
                 return rs.next();

@@ -152,7 +152,17 @@ public class StaffNotificationsController extends HttpServlet {
             case "shift_request_colleague_pending":
             // Đồng nghiệp từ chối đổi ca với mình
             case "shift_request_colleague_rejected":
-                return ctx + "/staff/my-schedule";
+//            /**
+//             * [RESTAURANT CLOSED]
+//             * Thông báo nhà hàng đóng cửa sẽ mở lịch làm việc cá nhân.
+//             */
+//            case "restaurant_closed":
+//            /**
+//             * [RESTAURANT REOPENED]
+//             * Thông báo nhà hàng mở lại cũng mở lịch làm việc cá nhân.
+//             */
+//            case "restaurant_reopened":
+//                return ctx + "/staff/my-schedule";
 
             // ── MẶC ĐỊNH: ở lại trang thông báo ─────────────────────────
             default:

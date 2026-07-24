@@ -224,9 +224,9 @@ public class ShiftTemplateController extends HttpServlet {
 
           
 
-            LocalTime DAY_START = LocalTime.of(7, 0);
-
-            LocalTime NIGHT_START = LocalTime.of(22, 0);
+//            LocalTime DAY_START = LocalTime.of(7, 0);
+//
+//            LocalTime NIGHT_START = LocalTime.of(22, 0);
 
             if (start == null) {
                 errors.put("startTime", "Giờ bắt đầu không hợp lệ (HH:mm).");
