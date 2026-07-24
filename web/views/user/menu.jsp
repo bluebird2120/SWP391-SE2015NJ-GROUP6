@@ -394,10 +394,7 @@
                         <h2>Khám phá ẩm thực</h2>
                     </div>
                     
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <a class="cart-btn" href="${pageContext.request.contextPath}/payment-info">
-                            <i class="fas fa-file-invoice-dollar"></i> HÓA ĐƠN
-                        </a>
+                    <div style="display: flex; gap: 12px; align-items: center;">                       
                         <a class="cart-btn" href="${pageContext.request.contextPath}/order">
                             <i class="fas fa-shopping-cart"></i> GIỎ HÀNG
                         </a>
