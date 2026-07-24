@@ -16,6 +16,8 @@ public class Customer {
     private Date dob;
     private String address;
     private String image;
+    private String resetToken;
+    private Timestamp resetTokenExpiry;
 
     public Customer() {
     }
@@ -119,5 +121,21 @@ public class Customer {
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public String getResetToken() {
+        return resetToken;
+    }
+
+    public void setResetToken(String resetToken) {
+        this.resetToken = resetToken;
+    }
+
+    public Timestamp getResetTokenExpiry() {
+        return resetTokenExpiry;
+    }
+
+    public void setResetTokenExpiry(Timestamp resetTokenExpiry) {
+        this.resetTokenExpiry = resetTokenExpiry;
     }
 }

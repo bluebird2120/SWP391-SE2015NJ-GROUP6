@@ -27,6 +27,10 @@ import model.Employee;
         fileSizeThreshold = 1024 * 1024, //Ngưỡng phân loại < lưu vào RAM, > lưu vào ổ cứng
         maxFileSize = 5L * 1024 * 1024, //Kích thước tối đa ảnh
         maxRequestSize = 6L * 1024 * 1024 //Kích thước tối đa bao gồm ảnh, tên, địa chỉ của 1 request
+        
+//        fileSizeThreshold = 1024 * 1024, // > 1MB mới ghi ra file tạm trên đĩa
+//        maxFileSize = 500L * 1024, // Tối đa 500 KB cho 1 file ảnh
+//        maxRequestSize = 600L * 1024 // Tối đa 600 KB cho toàn bộ request (ảnh + text/form data)
 )
 public class ProfileController extends HttpServlet {
 
