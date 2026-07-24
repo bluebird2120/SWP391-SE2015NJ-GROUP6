@@ -63,12 +63,40 @@
             .badge-paid { background: #e6f4ea; color: #1e8e3e; border: 1px solid #cce8d6; }
             .badge-unpaid { background: #fce8e6; color: #d93025; border: 1px solid #fad2cf; }
 
-            /* Khi in hóa đơn ra giấy thì ẩn các phần thừa */
+            /* [PRINT FIX] Khi in, chỉ cho phép vùng hóa đơn xuất hiện.
+               Cách dùng visibility giúp ẩn cả header/footer từ các file include,
+               không phụ thuộc vào tên class của từng thành phần giao diện. */
             @media print {
-                body { background: #fff; }
-                .vian-title, .btn-group, .dashboard-sidebar, .header-navbar { display: none !important; }
-                .vian-container { padding: 0; width: 100%; display: block; }
-                .invoice-card { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+                @page {
+                    margin: 12mm;
+                }
+
+                body {
+                    margin: 0 !important;
+                    background: #fff !important;
+                }
+
+                body * {
+                    visibility: hidden !important;
+                }
+
+                #printableInvoice,
+                #printableInvoice * {
+                    visibility: visible !important;
+                }
+
+                #printableInvoice {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100% !important;
+                    max-width: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    border-radius: 0 !important;
+                    box-shadow: none !important;
+                }
             }
         </style>
     </head>

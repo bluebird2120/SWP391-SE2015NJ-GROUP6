@@ -214,6 +214,7 @@
                                             <c:when test="${r.remainingQuantity > 0}">
                                                 <%-- [PHAN QUYEN LE TAN] Chỉ lễ tân/owner có form gán bàn ở màn này. --%>
                                                 <form method="post" action="${pageContext.request.contextPath}/reception/tables" class="inline">
+                                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                     <input type="hidden" name="action" value="assign">
                                                     <input type="hidden" name="orderID" value="${r.orderID}">
                                                     <select name="tableID" required>
@@ -268,6 +269,7 @@
                                         <%-- [PHAN QUYEN LE TAN] Lễ tân không xác nhận dọn bàn ở màn này. --%>
                                         <c:if test="${false}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="cleaned">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="clean" type="submit"
@@ -279,6 +281,7 @@
 
                                         <c:if test="${t.physicalStatus == 'reserved'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="checkin">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="checkin" type="submit"
@@ -290,6 +293,7 @@
 
                                         <c:if test="${t.physicalStatus == 'pending'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="open_table">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit" style="background: #e67e22; font-weight: bold;"
@@ -304,6 +308,7 @@
                                         <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
                                             <%-- [HUY PHUC VU LE TAN] Chi cho huy khi don chua co mon gui bep; backend se kiem tra lai. --%>
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables" style="display:inline-block;">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="cancel_service">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit"
@@ -341,7 +346,9 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         // Truyền requestID = 0 (Hoặc bạn có thể tối ưu Backend để chỉ cần duyệt theo orderID)
+                        // [CSRF FIX] Bảo vệ thao tác cấp lại quyền HOST.
                         body: 'action=staffApproveReclaim&requestID=0&orderID=' + orderID
+                                + '&csrfToken=' + encodeURIComponent('${sessionScope.csrfToken}')
                     })
                     .then(response => response.text())
                     .then(res => {

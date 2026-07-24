@@ -11,6 +11,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.Set;
 
 @WebServlet(name = "AdminInvoiceController", urlPatterns = {"/owner/invoices"})
 public class AdminInvoiceController extends HttpServlet {
@@ -35,6 +38,29 @@ public class AdminInvoiceController extends HttpServlet {
         String endDate = request.getParameter("endDate");
         String status = request.getParameter("status");
 
+        // [INVOICE FILTER VALIDATION] Chỉ nhận ngày ISO và trạng thái có trong UI.
+        if (status == null || status.isBlank()) {
+            status = "all";
+        }
+        if (!Set.of("all", "paid", "unpaid").contains(status)) {
+            request.setAttribute("errorMessage", "Trạng thái hóa đơn không hợp lệ.");
+            status = "all";
+        }
+        LocalDate parsedStart = parseDate(startDate);
+        LocalDate parsedEnd = parseDate(endDate);
+        if ((startDate != null && !startDate.isBlank() && parsedStart == null)
+                || (endDate != null && !endDate.isBlank() && parsedEnd == null)) {
+            request.setAttribute("errorMessage", "Ngày lọc hóa đơn không hợp lệ.");
+            startDate = null;
+            endDate = null;
+        } else if (parsedStart != null && parsedEnd != null
+                && parsedStart.isAfter(parsedEnd)) {
+            request.setAttribute("errorMessage",
+                    "Ngày bắt đầu không được sau ngày kết thúc.");
+            startDate = null;
+            endDate = null;
+        }
+
         // 3. XỬ LÝ LOGIC PHÂN TRANG
         int page = 1;
         int recordsPerPage = 10; // Quy định hiển thị tối đa 10 hóa đơn trên một trang
@@ -46,12 +72,19 @@ public class AdminInvoiceController extends HttpServlet {
                 page = 1;
             }
         }
-        int offset = (page - 1) * recordsPerPage;
+        if (page < 1) {
+            page = 1;
+        }
 
         // 4. TRUY VẤN DỮ LIỆU QUA DAO
         InvoicesDAO invoicesDAO = new InvoicesDAO();
         int totalRecords = invoicesDAO.getTotalFilteredInvoices(startDate, endDate, status);
         int totalPages = (int) Math.ceil((double) totalRecords / recordsPerPage);
+        // [PAGINATION FIX] Không tạo offset âm hoặc trang vượt quá kết quả.
+        if (totalPages > 0 && page > totalPages) {
+            page = totalPages;
+        }
+        int offset = (page - 1) * recordsPerPage;
         
         List<Invoices> listInvoices = invoicesDAO.getFilteredInvoices(startDate, endDate, status, offset, recordsPerPage);
 
@@ -72,5 +105,16 @@ public class AdminInvoiceController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
+    }
+
+    private LocalDate parseDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 }

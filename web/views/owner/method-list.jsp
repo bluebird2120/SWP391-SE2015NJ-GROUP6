@@ -321,7 +321,7 @@
                     <c:if test="${not empty updateFail}">
                         <div class="error-message">❌ <b>Thất bại:</b> ${updateFail}</div>
                     </c:if>
-                    <c:if test="${not empty errorName}">
+                    <c:if test="${not empty errorName and empty modalErrorID}">
                         <div class="error-message">⚠️ <b>Lỗi nhập liệu:</b> ${errorName}</div>
                     </c:if>
                     <c:if test="${not empty errorSearch}">
@@ -407,10 +407,17 @@
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
                 <h3>Chỉnh sửa tên chế biến</h3>
                 <form id="editForm" action="${pageContext.request.contextPath}/owner/method-management" method="post">
-                    <input type="hidden" id="modalMethodID" name="methodID"/>
+                    <input type="hidden" id="modalMethodID" name="methodID" value="${modalErrorID}"/>
+                    <input type="hidden" value="${currentPage}" name="page"/>
+                    <input type="hidden" value="${currentSearch}" name="search"/>
+                    <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
                     <label class="form-label">Tên cách chế biến:</label>
-                    <input type="text" id="modalMethodName" name="methodName"/>
-                    <span class="modal-error-text" id="editErrorName"></span>
+                    <input type="text" id="modalMethodName" name="methodName" value="${not empty errorName and modalErrorID > 0 ? modalErrorName : ''}"/>
+                    <span class="modal-error-text" id="editMethodError">
+                        <c:if test="${not empty errorName and modalErrorID > 0}">
+                            <c:out value="${errorName}"/>
+                        </c:if>
+                    </span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -423,9 +430,16 @@
                 <h3>Thêm mới cách chế biến</h3>
                 <form id="createForm" action="${pageContext.request.contextPath}/owner/method-management" method="post">
                     <input type="hidden" name="methodID" value="0"/>
+                    <input type="hidden" value="${currentPage}" name="page"/>
+                    <input type="hidden" value="${currentSearch}" name="search"/>
+                    <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
                     <label class="form-label">Nhập cách chế biến mới:</label>
-                    <input type="text" id="createMethodName" name="methodName"/>
-                    <span class="modal-error-text" id="createErrorName"></span>
+                    <input type="text" id="createMethodName" name="methodName" value="${not empty errorName and modalErrorID == 0 ? modalErrorName : ''}"/>
+                    <span class="modal-error-text" id="createMethodError">
+                        <c:if test="${not empty errorName and modalErrorID == 0}">
+                            <c:out value="${errorName}"/>
+                        </c:if>
+                    </span>
                     <input class="btn-submit" type="submit" value="LƯU THAY ĐỔI"/>
                 </form>
             </div>
@@ -445,13 +459,13 @@
             function openEditModal(id, name) {
                 document.getElementById('modalMethodID').value = id;
                 document.getElementById('modalMethodName').value = name;
-                document.getElementById('editErrorName').innerHTML = "";
+                document.getElementById('editMethodError').innerHTML = "";
                 document.getElementById('editModal').style.display = "block";
             }
 
             function openCreateModal() {
                 document.getElementById('createMethodName').value = "";
-                document.getElementById('createErrorName').innerHTML = "";
+                document.getElementById('createMethodError').innerHTML = "";
                 document.getElementById('createModal').style.display = "block";
             }
 
@@ -506,6 +520,48 @@
 //                    errorBox.style.display = "none";
 //                }
 //            };
+
+            function validateMethodModal(inputElement, errorElement) {
+                const value = inputElement.value.trim();
+                if (value === "") {
+                    errorElement.innerHTML = "Tên cách chế biến không được để trống";
+                    return false;
+                }
+                if (value.length > 100) {
+                    errorElement.innerHTML = "Tên cách chế biến phải ít hơn 100 kí tự";
+                    return false;
+                }
+                errorElement.innerHTML = "";
+                return true;
+            }
+
+            document.getElementById("createForm").onsubmit = function (event) {
+                if (!validateMethodModal(
+                        document.getElementById("createMethodName"),
+                        document.getElementById("createMethodError"))) {
+                    event.preventDefault();
+                }
+            };
+
+            document.getElementById("editForm").onsubmit = function (event) {
+                if (!validateMethodModal(
+                        document.getElementById("modalMethodName"),
+                        document.getElementById("editMethodError"))) {
+                    event.preventDefault();
+                }
+            };
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const hasError = "${not empty errorName}";
+                const errorID = "${modalErrorID}";
+                if (hasError === "true") {
+                    if (errorID !== "" && parseInt(errorID) > 0) {
+                        document.getElementById("editModal").style.display = "block";
+                    } else if (errorID !== "" && parseInt(errorID) === 0) {
+                        document.getElementById("createModal").style.display = "block";
+                    }
+                }
+            });
         </script>
         <%@ include file="/views/includes/footer.jsp" %>
     </body>

@@ -34,7 +34,7 @@ import model.MenuItemImages;
 @MultipartConfig(
         fileSizeThreshold = 2 * 1024 * 1024,
         maxFileSize = 10 * 1024 * 1024,
-        maxRequestSize = 15 * 1024 * 1024)
+        maxRequestSize = 25 * 1024 * 1024)
 
 public class UpdateMenuItemServlet extends HttpServlet {
 
@@ -88,7 +88,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         }
         String id_raw = request.getParameter("id");
         String backUrl = (String) session.getAttribute("lastDishListUrl");
-        int id = ((id_raw != null) && (!id_raw.isEmpty())) ? Integer.parseInt(id_raw) : 0;
+        int id = parseIntSafe(id_raw, 0);
         MenuItem mi;
         if (id == 0) {
             //Tạo mới
@@ -158,12 +158,12 @@ public class UpdateMenuItemServlet extends HttpServlet {
         //validate dữ liệu số và chữ
         String errorName = isValidString(itemName, 150, "Tên món ăn không được để trống", "Tên món ăn không được vượt quá 150 ký tự");
         String errorDescription = isValidString(description_raw, 500, "Mô tả món ăn không được để trống", "Mô tả món ăn không được vượt quá 500 ký tự");
-        String errorPrice = isValidPositive(price_raw, "Giá món ăn không được để trống", "Giá món ăn từ 0-1000000000");
-        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-100");
+        String errorPrice = isValidPositive(price_raw, "Giá món ăn không được để trống", "Giá món ăn từ 0-1000000000", Integer.MAX_VALUE);
+        String errorDiscountPercent = isValidPositive(discountPercent_raw, "Giảm giá món ăn không được để trống", "Giảm giá món ăn phải từ 0-100", 100);
         String errorAllergyNotes = isValidString(allergyNotes_raw, 500, "Mô tả dị ứng ăn không được để trống", "Mô tả dị ứng không được vượt quá 500 ký tự");
 
         //kiểm tra trùng tên khi update
-        int itemId = checkEmpty(menuItemId_raw) ? Integer.parseInt(menuItemId_raw) : 0;
+        int itemId = parseIntSafe(menuItemId_raw, 0);
         if (!checkEmpty(errorName)) {
             if (menuItemDAO.checkDuplicateMenuItem(itemName, itemId)) {
                 errorName = "Tên món ăn đã tồn tại";
@@ -180,7 +180,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
                     errorMainImage = "Tệp ảnh bị hỏng, vui lòng kiểm tra lại";
                 } else {
                     if (mainImage.getSize() > MAX_FILE_SIZE) {
-                    errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
+                        errorMainImage = "Dung lượng ảnh chính vượt quá " + MAX_FILE_SIZE + "MB!";
                     }
                 }
             }
@@ -334,6 +334,17 @@ public class UpdateMenuItemServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/owner/update-menu?id=" + itemId);
     }
 
+    private int parseIntSafe(String value, int defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
     private String isValidString(String data, int length, String ms1, String ms2) {
         if (data == null || data.trim().isEmpty()) {
             return ms1;
@@ -361,10 +372,10 @@ public class UpdateMenuItemServlet extends HttpServlet {
         }
     }
 
-    private String isValidPositive(String data, String ms1, String ms2) {
+    private String isValidPositive(String data, String ms1, String ms2, int value) {
         try {
             if (data != null && !data.trim().isEmpty()) {
-                if (Integer.parseInt(data) < 0 || Integer.parseInt(data) > Integer.MAX_VALUE) {
+                if (Integer.parseInt(data) < 0 || Integer.parseInt(data) > value) {
                     return ms2;
                 }
             } else {
