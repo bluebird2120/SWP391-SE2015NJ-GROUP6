@@ -76,18 +76,18 @@ public class EmailService {
         }
     }
 
-    public static String generateRandomPassword(int length) {
-        String chars = "abcdefghijklmnopqrstuvwxyz";
-        String charsUpper = chars.toUpperCase();
-        String digit = "0123456789";
-        String all = digit + chars + charsUpper;
-        StringBuilder sb = new StringBuilder(length);
-
-        for (int i = 0; i < length; i++) {
-            sb.append(all.charAt(RANDOM.nextInt(all.length())));
-        }
-        return sb.toString();
-    }
+//    public static String generateRandomPassword(int length) {
+//        String chars = "abcdefghijklmnopqrstuvwxyz";
+//        String charsUpper = chars.toUpperCase();
+//        String digit = "0123456789";
+//        String all = digit + chars + charsUpper;
+//        StringBuilder sb = new StringBuilder(length);
+//
+//        for (int i = 0; i < length; i++) {
+//            sb.append(all.charAt(RANDOM.nextInt(all.length())));
+//        }
+//        return sb.toString();
+//    }
 
     public static void sendNewPasswordEmail(String toEmail, String newPassword)
             throws MessagingException {
@@ -118,6 +118,48 @@ public class EmailService {
                     + newPassword + "</p>"
                     + "<p>Vui lòng đăng nhập bằng mật khẩu này. Nếu bạn không thực hiện yêu cầu này, "
                     + "vui lòng liên hệ với chúng tôi ngay.</p>"
+                    + "</div>";
+
+            message.setContent(htmlContent, "text/html; charset=utf-8");
+            Transport.send(message);
+        } catch (java.io.UnsupportedEncodingException ex) {
+            throw new MessagingException("Lỗi encode email người gửi", ex);
+        }
+    }
+
+    public static void sendResetLinkEmail(String toEmail, String resetLink)
+            throws MessagingException {
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(SENDER_EMAIL, SENDER_APP_PASSWORD);
+            }
+        });
+
+        try {
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(SENDER_EMAIL, SENDER_DISPLAY_NAME, "UTF-8"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject("Đặt lại mật khẩu của bạn", "UTF-8");
+
+            String htmlContent = "<div style='font-family:Arial,sans-serif;max-width:480px;margin:auto'>"
+                    + "<h2>Yêu cầu đặt lại mật khẩu</h2>"
+                    + "<p>Nhấn vào nút bên dưới để đặt mật khẩu mới. Liên kết này chỉ có hiệu lực "
+                    + "trong <b>15 phút</b> và chỉ dùng được 1 lần.</p>"
+                    + "<p style='text-align:center;margin:24px 0'>"
+                    + "<a href='" + resetLink + "' "
+                    + "style='background:#76493b;color:#fff;padding:12px 24px;border-radius:8px;"
+                    + "text-decoration:none;font-weight:bold;display:inline-block'>Đặt lại mật khẩu</a>"
+                    + "</p>"
+                    + "<p style='color:#888;font-size:13px'>Nếu bạn không thực hiện yêu cầu này, "
+                    + "vui lòng bỏ qua email này, mật khẩu của bạn sẽ không thay đổi.</p>"
                     + "</div>";
 
             message.setContent(htmlContent, "text/html; charset=utf-8");

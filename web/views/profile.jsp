@@ -1032,7 +1032,7 @@
                         if (!allowedExt.test(file.name)) {
                             showProfileError(imageInput, 'Chỉ chấp nhận ảnh jpg, jpeg, png, webp.');
                             hasError = true;
-                        } else if (file.size > 2 * 1024 * 1024) {
+                        } else if (file.size > 2 * 1024 * 1024) {    //500 * 1024 500kb sửa cả backend
                             showProfileError(imageInput, 'Ảnh không vượt quá 2MB.');
                             hasError = true;
                         }

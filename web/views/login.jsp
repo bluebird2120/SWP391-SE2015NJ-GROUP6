@@ -93,16 +93,16 @@
 
             /* CSS Icon con mắt dùng chung từ trang Đổi mật khẩu */
             /* CSS chỉnh lại vị trí con mắt chính xác giữa ô input */
-.toggle-eye {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: #9a7060;
-    font-size: 14px;
-    z-index: 2; /* Đảm bảo con mắt nổi lên trên */
-}
+            .toggle-eye {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: pointer;
+                color: #9a7060;
+                font-size: 14px;
+                z-index: 2; /* Đảm bảo con mắt nổi lên trên */
+            }
 
             .btn {
                 width: 100%;
@@ -224,29 +224,29 @@
 
                         <!-- Password (Đồng bộ nút mắt với Change Password) -->
                         <div class="field">
-    <div style="position: relative; width: 100%;">
-        <input
-            id="password"
-            type="password"
-            name="password"
-            placeholder="Mật khẩu"
-            value="${prefillPassword}" required>
-        <i class="fas fa-eye toggle-eye" onclick="togglePassword('password', this)"></i>
-    </div>
-    <div class="error">${passwordError}</div>
+                            <div style="position: relative; width: 100%;">
+                                <input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    placeholder="Mật khẩu"
+                                    value="${prefillPassword}" required>
+                                <i class="fas fa-eye toggle-eye" onclick="togglePassword('password', this)"></i>
+                            </div>
+                            <div class="error">${passwordError}</div>
 
-    <!-- Quên mật khẩu -->
-    <div style="text-align:right; margin-top:8px;">
-        <a href="${pageContext.request.contextPath}/forgot-password"
-           style="
-           color:#76493b;
-           font-size:13px;
-           font-weight:600;
-           text-decoration:none;">
-            Quên mật khẩu?
-        </a>
-    </div>
-</div>
+                            <!-- Quên mật khẩu -->
+                            <div style="text-align:right; margin-top:8px;">
+                                <a href="${pageContext.request.contextPath}/forgot-password"
+                                   style="
+                                   color:#76493b;
+                                   font-size:13px;
+                                   font-weight:600;
+                                   text-decoration:none;">
+                                    Quên mật khẩu?
+                                </a>
+                            </div>
+                        </div>
 
                         <!-- Button Login -->
                         <button class="btn" type="submit">
