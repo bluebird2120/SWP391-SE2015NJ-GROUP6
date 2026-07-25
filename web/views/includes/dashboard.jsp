@@ -123,7 +123,7 @@
             </li>
         </c:if>
 
-        <%-- Owner: lịch sử đơn + bàn nhà hàng --%>
+        <%-- Receptionist: trang tổng quan + Tiếp nhận và gán bàn--%>
         <c:if test="${isReceptionist}">
             <%-- [PHAN QUYEN LE TAN] Dashboard giong nhan vien nhung menu gon hon. --%>
             <li>
@@ -136,21 +136,6 @@
                 <a class="nav-link ${pageContext.request.requestURI.contains('reception/tables') ? 'active' : ''}"
                    href="${pageContext.request.contextPath}/reception/tables">
                     <i class="fas fa-concierge-bell"></i> Tiếp nhận và gán bàn
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/staff/my-schedule">
-                    <i class="fas fa-calendar-week"></i> Lịch làm việc
-                </a>
-            </li>
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/staff/notifications">
-                    <i class="fas fa-bell"></i> Thông báo
-                    <c:if test="${sessionScope.unreadCount > 0}">
-                        <span style="background:#dc3545;color:#fff;font-size:.65rem;padding:1px 7px;border-radius:10px;margin-left:auto;">${sessionScope.unreadCount}</span>
-                    </c:if>
                 </a>
             </li>
         </c:if>
@@ -170,6 +155,34 @@
                 <i class="fas fa-clock"></i> Giờ hoạt động
             </a>
         </li>
+        <%-- Receptionist: Lchj làm việc và Thông báo--%>
+        <c:if test="${isReceptionist}">
+            <li>
+                <div class="nav-section-title"><i class="fas fa-user-clock"></i> Không gian làm việc</div>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/my-schedule">
+                    <i class="fas fa-calendar-week"></i> Lịch làm việc
+                </a>
+            </li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('staff/notifications') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/staff/notifications">
+                    <i class="fas fa-bell"></i> Thông báo
+                    <c:if test="${sessionScope.unreadCount > 0}">
+                        <span style="background:#dc3545;color:#fff;font-size:.65rem;padding:1px 7px;border-radius:10px;margin-left:auto;">${sessionScope.unreadCount}</span>
+                    </c:if>
+                </a>
+            </li>
+            <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/menu">
+                    <i class="fas fa-hamburger"></i> Món ăn
+                </a>
+            </li>
+        </c:if>
 
         <%-- [PHAN QUYEN PHUC VU] Giu nguyen cac menu rieng cua Staff. --%>
         <c:if test="${isStaff}">
