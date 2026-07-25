@@ -96,6 +96,11 @@ public class PaymentController extends HttpServlet {
         // VNPay quy định số tiền phải nhân thêm 100 (VD: 100,000 VNĐ -> 10000000)
         long amount = invoice.getFinalAmount() * 100;
 
+        // [SECURITY FIX - VNPAY] Gắn callback với đúng giao dịch đã tạo.
+        session.setAttribute("vnpPendingTxnRef", vnp_TxnRef);
+        session.setAttribute("vnpPendingInvoiceID", invoiceID);
+        session.setAttribute("vnpPendingAmount", invoice.getFinalAmount());
+
         // Cài đặt múi giờ Việt Nam và định dạng thời gian
         // [FIX VNPAY] Dùng đúng múi giờ Việt Nam; Etc/GMT+7 thực tế là UTC-7.
         Calendar cld = Calendar.getInstance(

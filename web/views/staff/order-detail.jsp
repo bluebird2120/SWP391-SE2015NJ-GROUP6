@@ -60,6 +60,7 @@
                                     <td><fmt:formatNumber value="${unitPrice}" type="number"/> VNĐ</td>
                                     <td>
                                         <form method="post" action="${pageContext.request.contextPath}/staff/tables" style="display:flex;gap:8px;align-items:center;">
+                                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                             <input type="hidden" name="action" value="updateItem">
                                             <input type="hidden" name="orderID" value="${order.orderID}">
                                             <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
@@ -92,6 +93,7 @@
 
                 <div style="margin-top:18px;display:flex;gap:10px;">
                     <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                         <input type="hidden" name="action" value="checkout">
                         <input type="hidden" name="orderID" value="${order.orderID}">
                         <button class="btn-green" type="submit" onclick="return confirm('Xác nhận số lượng đã đúng và chuyển sang thanh toán?')">

@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Employee;
 
 @WebServlet(name = "TableJoinController", urlPatterns = {"/api/table-join"})
 public class TableJoinController extends HttpServlet {
@@ -23,6 +24,7 @@ public class TableJoinController extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
         HttpSession session = request.getSession();
+        util.CsrfUtil.ensureToken(session);
 
         if ("checkStatus".equals(action)) {
             Integer orderID = (Integer) session.getAttribute("pendingOrderID");
@@ -48,6 +50,9 @@ public class TableJoinController extends HttpServlet {
                         jakarta.servlet.http.Cookie hostCookie = new jakarta.servlet.http.Cookie("HOST_OF_TABLE_" + session.getAttribute("pendingTableID"), o.getHostToken());
                         hostCookie.setMaxAge(24 * 60 * 60);
                         hostCookie.setPath("/");
+                        // [COOKIE SECURITY] Host token không được phép đọc bằng JavaScript.
+                        hostCookie.setHttpOnly(true);
+                        hostCookie.setSecure(request.isSecure());
                         response.addCookie(hostCookie);
                         
                         // Phục hồi quyền HOST
@@ -88,7 +93,8 @@ public class TableJoinController extends HttpServlet {
                 for (int i = 0; i < list.size(); i++) {
                     TableJoinRequest r = list.get(i);
                     json.append("{\"id\":").append(r.getRequestID())
-                            .append(",\"name\":\"").append(r.getGuestName()).append("\"}");
+                            // [JSON FIX] Escape tên khách trước khi ghép JSON.
+                            .append(",\"name\":\"").append(escapeJson(r.getGuestName())).append("\"}");
                     if (i < list.size() - 1) json.append(",");
                 }
                 json.append("]");
@@ -105,13 +111,21 @@ public class TableJoinController extends HttpServlet {
         response.setContentType("text/plain;charset=UTF-8");
         PrintWriter out = response.getWriter();
         HttpSession session = request.getSession();
+        // [CSRF FIX] Bảo vệ request join/approve/reclaim làm thay đổi DB.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            out.print("csrf_invalid");
+            return;
+        }
 
         if ("requestJoin".equals(action)) {
             Integer orderID = (Integer) session.getAttribute("pendingOrderID");
             String guestName = request.getParameter("guestName");
             String sessionID = session.getId();
 
-            if (orderID != null && guestName != null && !guestName.trim().isEmpty()) {
+            if (orderID != null && guestName != null
+                    && !guestName.trim().isEmpty()
+                    && guestName.trim().length() <= 100) {
                 TableJoinRequest req = new TableJoinRequest();
                 req.setOrderID(orderID);
                 req.setGuestSessionID(sessionID);
@@ -123,12 +137,21 @@ public class TableJoinController extends HttpServlet {
             }
 
         } else if ("approve".equals(action) || "reject".equals(action)) {
-            if ("HOST".equals(session.getAttribute("roleInTable"))) {
-                int requestID = Integer.parseInt(request.getParameter("requestID"));
-                String newStatus = "approve".equals(action) ? "approved" : "rejected";
-                boolean success = requestDAO.updateRequestStatus(requestID, newStatus);
-                out.print(success ? "success" : "fail");
+            Integer hostOrderID = (Integer) session.getAttribute("orderID");
+            if ("HOST".equals(session.getAttribute("roleInTable")) && hostOrderID != null) {
+                try {
+                    int requestID = Integer.parseInt(request.getParameter("requestID"));
+                    String newStatus = "approve".equals(action) ? "approved" : "rejected";
+                    // [SECURITY FIX] HOST chỉ được duyệt request thuộc đúng order của mình.
+                    boolean success = requestDAO.updateRequestStatusForOrder(
+                            requestID, hostOrderID, newStatus);
+                    out.print(success ? "success" : "fail");
+                } catch (NumberFormatException e) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print("invalid");
+                }
             } else {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 out.print("unauthorized");
             }
             
@@ -145,15 +168,47 @@ public class TableJoinController extends HttpServlet {
             }
 
         } else if ("staffApproveReclaim".equals(action)) {
-            // Nhân viên xác nhận cấp lại quyền -> Gọi qua DAO để đảm bảo chuẩn kiến trúc
-            int orderID = Integer.parseInt(request.getParameter("orderID"));
-            
-            String newHostToken = java.util.UUID.randomUUID().toString();
-            dal.OrderDAO orderDAO = new dal.OrderDAO();
-            orderDAO.updateHostToken(orderID, newHostToken);
-            
-            boolean success = requestDAO.updateReclaimStatusByOrder(orderID, "approved_reclaim");
-            out.print(success ? "success" : "fail");
+            // [SECURITY FIX] Endpoint /api không đi qua AuthenticationFilter:
+            // chỉ Owner(1) hoặc Receptionist(3) được cấp lại quyền HOST.
+            Employee employee = (Employee) session.getAttribute("employee");
+            if (employee == null
+                    || (employee.getRoleID() != 1 && employee.getRoleID() != 3)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                out.print("unauthorized");
+                return;
+            }
+
+            try {
+                int orderID = Integer.parseInt(request.getParameter("orderID"));
+                if (!requestDAO.hasPendingReclaim(orderID)) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print("invalid");
+                    return;
+                }
+
+                String newHostToken = java.util.UUID.randomUUID().toString();
+                dal.OrderDAO orderDAO = new dal.OrderDAO();
+                boolean tokenUpdated = orderDAO.updateHostToken(orderID, newHostToken);
+                boolean success = tokenUpdated
+                        && requestDAO.updateReclaimStatusByOrder(
+                                orderID, "approved_reclaim");
+                out.print(success ? "success" : "fail");
+            } catch (NumberFormatException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("invalid");
+            }
         }
+    }
+
+    // [JSON FIX] Không cho dấu nháy/xuống dòng trong tên khách phá cấu trúc JSON.
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
     }
 }

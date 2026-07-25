@@ -26,7 +26,7 @@ public class DailyStockController extends HttpServlet {
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private DailyInventoryDAO dailyInventoryDAO = new DailyInventoryDAO();
     private CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
-    private static final int PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 1000;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -258,7 +258,7 @@ public class DailyStockController extends HttpServlet {
         int flag = 0;
         if (list != null) {
             for (MenuItem mi : list) {
-                if (mi.getQuantityInStock() > 0 && mi.getInitialQuantity() > 0) {
+                if (mi.getInitialQuantity() > 0) {
                     if (mi.getQuantityInStock() * 100 / mi.getInitialQuantity() < 20) {
                         flag++;
                     }
@@ -291,7 +291,7 @@ public class DailyStockController extends HttpServlet {
                 return "Số lượng món ăn phải là số nguyên lớn hơn hoặc bằng 0!";
             }
         } catch (Exception e) {
-            return "Số lượng nhập vào phải là số nguyên hợp lệ!";
+            return "Số lượng nhập vào phải là số nguyên hợp lệ! (Dưới " + Integer.MAX_VALUE + " )";
         }
         return "";
     }

@@ -174,6 +174,8 @@
                                         </c:if>
                                         <c:if test="${t.physicalStatus == 'cleaning'}">
                                             <form method="post" action="${pageContext.request.contextPath}/staff/tables">
+                                                <%-- [CSRF FIX] Bảo vệ thao tác đổi trạng thái bàn. --%>
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="cleaned">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit" onclick="return confirm('Xác nhận đã dọn xong bàn này?')">

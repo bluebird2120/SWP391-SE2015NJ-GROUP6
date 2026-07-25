@@ -341,6 +341,72 @@ public class CustomerDAO extends DBContext {
         }
     }
 
+    /**
+     * Lưu token reset mật khẩu + thời hạn hiệu lực cho khách hàng.
+     *
+     * @param customerID ID khách hàng
+     * @param token token ngẫu nhiên (UUID) gửi qua link email
+     * @param expiry thời điểm token hết hạn
+     * @return true nếu lưu thành công
+     */
+    public boolean saveResetToken(int customerID, String token, java.sql.Timestamp expiry)
+            throws SQLException {
+        String sql = "UPDATE Customer SET resetToken = ?, resetTokenExpiry = ? WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, token);
+            ps.setTimestamp(2, expiry);
+            ps.setInt(3, customerID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Tìm khách hàng theo resetToken (dùng khi user bấm vào link reset trong
+     * email). Không tự kiểm tra hết hạn ở đây - controller phải tự so sánh
+     * resetTokenExpiry với thời điểm hiện tại sau khi lấy được Customer.
+     *
+     * @param token token lấy từ query string ?token=...
+     * @return Customer tương ứng, hoặc null nếu không tìm thấy
+     */
+    public Customer findByResetToken(String token) throws SQLException {
+        String sql = "SELECT customerID, userName, password, phoneNumber, email, createdAt, loginProvider, isActive, "
+                + "dob, address, image, resetToken, resetTokenExpiry "
+                + "FROM Customer WHERE resetToken = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, token);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Customer c = mapRow(rs);
+                    c.setResetToken(rs.getString("resetToken"));
+                    c.setResetTokenExpiry(rs.getTimestamp("resetTokenExpiry"));
+                    return c;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Xóa token sau khi đã dùng (hoặc khi hủy yêu cầu) để đảm bảo token chỉ
+     * dùng được đúng 1 lần.
+     *
+     * @param customerID ID khách hàng
+     * @return true nếu xóa thành công
+     */
+    public boolean clearResetToken(int customerID) throws SQLException {
+        String sql = "UPDATE Customer SET resetToken = NULL, resetTokenExpiry = NULL WHERE customerID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, customerID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean updateProfile(Customer customer) {
         String sql = "UPDATE Customer SET userName = ?, dob = ?, address = ?, image = ? "
                 + "WHERE customerID = ?";

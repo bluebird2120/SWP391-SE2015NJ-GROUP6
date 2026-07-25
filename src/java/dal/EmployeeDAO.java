@@ -63,6 +63,74 @@ public class EmployeeDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Lưu token reset mật khẩu + thời hạn hiệu lực cho nhân viên.
+     *
+     * @param employeeID ID nhân viên
+     * @param token token ngẫu nhiên (UUID) gửi qua link email
+     * @param expiry thời điểm token hết hạn
+     * @return true nếu lưu thành công
+     */
+    public boolean saveResetToken(int employeeID, String token, Timestamp expiry) {
+        String sql = "UPDATE Employee SET resetToken = ?, resetTokenExpiry = ? WHERE employeeID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, token);
+            ps.setTimestamp(2, expiry);
+            ps.setInt(3, employeeID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Tìm nhân viên theo resetToken (dùng khi user bấm vào link reset trong
+     * email). Không tự kiểm tra hết hạn ở đây - controller phải tự so sánh
+     * resetTokenExpiry với thời điểm hiện tại sau khi lấy được Employee.
+     *
+     * @param token token lấy từ query string ?token=...
+     * @return Employee tương ứng, hoặc null nếu không tìm thấy
+     */
+    public Employee findByResetToken(String token) {
+        String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "
+                + "isActive, address, image, createdAt, lastPasswordChangedAt, mustChangePassword, "
+                + "resetToken, resetTokenExpiry "
+                + "FROM Employee WHERE resetToken = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, token);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Employee e = mapRow(rs);
+                    e.setResetToken(rs.getString("resetToken"));
+                    e.setResetTokenExpiry(rs.getTimestamp("resetTokenExpiry"));
+                    return e;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Xóa token sau khi đã dùng (hoặc khi hủy yêu cầu) để đảm bảo token chỉ
+     * dùng được đúng 1 lần.
+     *
+     * @param employeeID ID nhân viên
+     * @return true nếu xóa thành công
+     */
+    public boolean clearResetToken(int employeeID) {
+        String sql = "UPDATE Employee SET resetToken = NULL, resetTokenExpiry = NULL WHERE employeeID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, employeeID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
     public Employee findById(int id) {
 
         String sql = "SELECT employeeID, roleID, password, fullName, dob, phoneNumber, email, "

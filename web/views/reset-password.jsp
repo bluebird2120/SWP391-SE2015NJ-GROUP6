@@ -5,7 +5,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quên mật khẩu – Vị An Restaurant</title>
+        <title>Đặt lại mật khẩu – Vị An Restaurant</title>
 
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -73,6 +73,7 @@
                 flex: 1.2;
                 background: white;
                 padding: 50px;
+                box-sizing: border-box;
             }
 
             .right h2 {
@@ -88,17 +89,28 @@
 
             .field {
                 margin-top: 18px;
+                position: relative;
+            }
+
+            .field label {
+                display: block;
+                font-size: 13px;
+                font-weight: 700;
+                color: #5a3329;
+                margin-bottom: 6px;
             }
 
             .field input {
                 width: 100%;
-                padding: 12px;
+                padding: 12px 40px 12px 12px;
                 border: 1px solid #ddd;
                 border-radius: 10px;
                 font-family: 'Nunito', sans-serif;
                 font-size: 14px;
                 outline: none;
                 box-sizing: border-box;
+                overflow: hidden;
+                text-overflow: ellipsis;
                 transition: border-color 0.2s;
             }
 
@@ -110,9 +122,18 @@
                 border-color: #e74c3c;
             }
 
+            .toggle-eye {
+                position: absolute;
+                right: 12px;
+                top: 38px;
+                cursor: pointer;
+                color: #9a7060;
+                font-size: 14px;
+            }
+
             .btn {
                 width: 100%;
-                margin-top: 20px;
+                margin-top: 22px;
                 padding: 12px;
                 background: #76493b;
                 color: white;
@@ -127,6 +148,11 @@
 
             .btn:hover {
                 background: #5a3329;
+            }
+
+            .btn:disabled {
+                background: #c9b3a8;
+                cursor: not-allowed;
             }
 
             .error {
@@ -186,15 +212,15 @@
                     <a href="${pageContext.request.contextPath}/" class="logo-left">
                         <img src="${pageContext.request.contextPath}/images/logo.png" alt="Logo">
                     </a>
-                    <h2 class="welcome-text">Khôi phục mật khẩu</h2>
+                    <h2 class="welcome-text">Đặt lại mật khẩu</h2>
                     <h3 class="brand-text">Vị An Restaurant</h3>
                 </div>
 
                 <!-- RIGHT -->
                 <div class="right">
 
-                    <h2>Quên mật khẩu</h2>
-                    <p>Nhập email đã đăng ký, hệ thống sẽ gửi mật khẩu mới về email của bạn.</p>
+                    <h2>Đặt lại mật khẩu</h2>
+                    <p>Nhập mật khẩu mới bạn muốn sử dụng.</p>
 
                     <c:if test="${not empty generalError}">
                         <div class="error-box">
@@ -202,29 +228,54 @@
                         </div>
                     </c:if>
 
-                    <c:if test="${not empty successMessage}">
-                        <div class="success-box">
-                            <i class="fas fa-circle-check"></i> ${successMessage}
+                    <c:if test="${tokenInvalid}">
+                        <div class="back-link">
+                            <a href="${pageContext.request.contextPath}/forgot-password">
+                                <i class="fas fa-arrow-left"></i> Yêu cầu link đặt lại mật khẩu mới
+                            </a>
                         </div>
                     </c:if>
 
-                    <form action="${pageContext.request.contextPath}/forgot-password" method="post">
+                    <c:if test="${not tokenInvalid}">
+                        <form id="resetPasswordForm"
+                              action="${pageContext.request.contextPath}/reset-password"
+                              method="post"
+                              onsubmit="return validateForm();">
 
-                        <div class="field">
-                            <input type="email"
-                                   id="email"
-                                   name="email"
-                                   placeholder="example@gmail.com"
-                                   class="${not empty emailError ? 'input-error' : ''}"
-                                   required>
-                            <div id="emailError" class="error">${emailError}</div>
-                        </div>
+                            <input type="hidden" name="token" value="${token}">
 
-                        <button class="btn" type="submit">
-                            Gửi mật khẩu mới
-                        </button>
+                            <div class="field">
+                                <label for="newPassword">Mật khẩu mới</label>
+                                <input type="password"
+                                       id="newPassword"
+                                       name="newPassword"
+                                       maxlength="50"
+                                       placeholder="Tối thiểu 6 đến 50 ký tự"
+                                       class="${not empty newPasswordError ? 'input-error' : ''}"
+                                       required>
+                                <i class="fas fa-eye toggle-eye" onclick="togglePassword('newPassword', this)"></i>
+                                <div class="error">${newPasswordError}</div>
+                            </div>
 
-                    </form>
+                            <div class="field">
+                                <label for="confirmNewPassword">Xác nhận mật khẩu mới</label>
+                                <input type="password"
+                                       id="confirmNewPassword"
+                                       name="confirmNewPassword"
+                                       maxlength="50"
+                                       placeholder="Nhập lại mật khẩu mới"
+                                       class="${not empty confirmNewPasswordError ? 'input-error' : ''}"
+                                       required>
+                                <i class="fas fa-eye toggle-eye" onclick="togglePassword('confirmNewPassword', this)"></i>
+                                <div class="error">${confirmNewPasswordError}</div>
+                            </div>
+
+                            <button class="btn" type="submit">
+                                Xác nhận đặt lại mật khẩu
+                            </button>
+
+                        </form>
+                    </c:if>
 
                     <div class="back-link">
                         <a href="${pageContext.request.contextPath}/login">
@@ -236,5 +287,55 @@
             </div>
         </div>
 
+        <script>
+            function togglePassword(inputId, icon) {
+                const input = document.getElementById(inputId);
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                }
+            }
+
+            function validateForm() {
+                const newPassword = document.getElementById("newPassword").value.trim();
+                const confirmNewPassword = document.getElementById("confirmNewPassword").value.trim();
+                let valid = true;
+
+                clearErrors();
+
+                if (newPassword === "") {
+                    showError("newPassword", "Vui lòng nhập mật khẩu mới.");
+                    valid = false;
+                } else if (newPassword.length < 6 || newPassword.length > 50) {
+                    showError("newPassword", "Mật khẩu mới phải từ 6 đến 50 ký tự.");
+                    valid = false;
+                }
+
+                if (confirmNewPassword === "") {
+                    showError("confirmNewPassword", "Vui lòng xác nhận mật khẩu mới.");
+                    valid = false;
+                } else if (newPassword !== "" && newPassword !== confirmNewPassword) {
+                    showError("confirmNewPassword", "Mật khẩu xác nhận không khớp.");
+                    valid = false;
+                }
+
+                return valid;
+            }
+
+            function showError(inputId, message) {
+                const input = document.getElementById(inputId);
+                input.classList.add("input-error");
+                const errorDiv = input.closest(".field").querySelector(".error");
+                errorDiv.textContent = message;
+            }
+
+            function clearErrors() {
+                document.querySelectorAll(".field input").forEach(el => el.classList.remove("input-error"));
+                document.querySelectorAll(".field .error").forEach(el => el.textContent = "");
+            }
+        </script>
     </body>
 </html>
