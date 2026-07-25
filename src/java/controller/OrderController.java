@@ -193,6 +193,18 @@ public class OrderController extends HttpServlet {
                 return;
             }
 
+            // [QR/PREORDER SAFETY] Luong goi mon tai ban phai co ban trong session.
+            // Uu tien tableID cu, fallback currentTableID vi ScanQRController set ca 2 key.
+            // Neu luong dat mon truoc bi redirect nham vao /order, khong cho crash 500.
+            if (tableID == null) {
+                tableID = (Integer) session.getAttribute("currentTableID");
+            }
+            if (tableID == null) {
+                session.setAttribute("errorMsg", "Vui lòng quét mã QR của bàn trước khi gọi món.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
             // [ORDER VALIDATION] Order tại bàn phải do luồng quét QR tạo;
             // client không được tự gửi tableID để liên kết một bàn bất kỳ.
             if (currentOrderID == null && tableID != null) {
