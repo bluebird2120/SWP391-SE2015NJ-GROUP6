@@ -284,6 +284,8 @@ public class MenuItemController extends HttpServlet {
 
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
+        boolean isReservationPreorder = "true".equals(request.getParameter("reservation"))
+                || Boolean.TRUE.equals(session.getAttribute("reservationFlow"));
 
         // [GIU TRANG MENU] Gui URL hien tai sang form them mon de sau khi
         // xu ly gio hang, khach quay lai dung trang va bo loc dang xem.
@@ -294,8 +296,10 @@ public class MenuItemController extends HttpServlet {
         }
         request.setAttribute("returnUrl", currentMenuUrl);
 
-        // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
-        if (sessionTableID == null && loginUser != null) {
+        // [PREORDER ROUTING FIX] Luong dat mon truoc sau khi coc ban phai dung
+        // owner/dish-list.jsp vi form o trang nay submit ve /reservation?action=addPreorderItem.
+        // Khach quet QR tai ban van co currentTableID nen tiep tuc di vao user/menu.jsp nhu cu.
+        if (sessionTableID == null && (loginUser != null || isReservationPreorder)) {
             String currentUrl = request.getRequestURI();
             if (request.getQueryString() != null) {
                 currentUrl += "?" + request.getQueryString();
