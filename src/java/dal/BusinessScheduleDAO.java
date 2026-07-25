@@ -184,7 +184,7 @@ public class BusinessScheduleDAO extends DBContext {
         LocalTime selected = dateTime.toLocalTime();
         LocalTime open = schedule.getOpenTime().toLocalTime();
         LocalTime close = schedule.getCloseTime().toLocalTime();
-        // [OPERATING HOURS] Khach phai dat ban truoc gio dong cua toi thieu 1 gio 30 phut.
+        // [OPERATING HOURS] Khach phai dat ban truoc gio dong cua toi thieu 1 gio 
         LocalTime latestReservationTime = close.minusMinutes(60);
         if (selected.isBefore(open) || selected.isAfter(close)) {
             return "Thời gian đặt bàn phải nằm trong giờ hoạt động: "
