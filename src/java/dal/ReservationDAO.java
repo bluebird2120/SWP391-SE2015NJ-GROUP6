@@ -287,7 +287,7 @@ public class ReservationDAO extends DBContext {
                 + "WHERE orderType = 1 "
                 + "  AND orderStatus = 'reserved' "
                 + "  AND tableStatus = 'reserved' "
-                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
+                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 2 MINUTE)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             return changed + ps.executeUpdate();

@@ -3,6 +3,7 @@ package controller;
 
 import dal.DBContext;
 import dal.EmployeeShiftDAO;
+import dal.ReservationDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -29,6 +30,10 @@ public class ReceptionTableController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
             return;
         }
+
+        // [AUTO EXPIRE RESERVATION] Truoc khi le tan xem danh sach,
+        // tu huy cac don dat ban da qua gio hen 30 phut ma van chua duoc gan ban.
+        new ReservationDAO().autoExpireReservations();
 
         // [PHAN QUYEN LE TAN] Le tan xem tong quan va cac don cho gan ban.
         StaffTableDAO dao = new StaffTableDAO();
