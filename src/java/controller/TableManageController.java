@@ -24,6 +24,7 @@ public class TableManageController extends HttpServlet {
 
         // 1. KIỂM TRA ĐĂNG NHẬP (Authentication)
         HttpSession session = request.getSession();
+        util.CsrfUtil.ensureToken(session);
         Employee loginUser = (Employee) session.getAttribute("employee");
 
         if (loginUser == null) {
@@ -54,16 +55,37 @@ public class TableManageController extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
                     return;
                 }
-                int editId = Integer.parseInt(request.getParameter("id"));
+                // [INPUT VALIDATION] URL id sai không được làm servlet ném lỗi 500.
+                Integer editId = parsePositiveInt(request.getParameter("id"));
+                if (editId == null) {
+                    response.sendRedirect(request.getContextPath()
+                            + "/owner/manage-table?error=invalid_id");
+                    return;
+                }
                 Table tableToEdit = tableDAO.getTableByTableID(editId);
+                if (tableToEdit == null) {
+                    response.sendRedirect(request.getContextPath()
+                            + "/owner/manage-table?error=not_found");
+                    return;
+                }
                 request.setAttribute("table", tableToEdit);
                 request.setAttribute("mode", "edit"); // Truyền cờ trạng thái "Sửa"
                 request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
                 break;
 
             case "detail":
-                int detailId = Integer.parseInt(request.getParameter("id"));
+                Integer detailId = parsePositiveInt(request.getParameter("id"));
+                if (detailId == null) {
+                    response.sendRedirect(request.getContextPath()
+                            + "/owner/manage-table?error=invalid_id");
+                    return;
+                }
                 Table tableDetail = tableDAO.getTableByTableID(detailId);
+                if (tableDetail == null) {
+                    response.sendRedirect(request.getContextPath()
+                            + "/owner/manage-table?error=not_found");
+                    return;
+                }
                 request.setAttribute("table", tableDetail);
                 request.setAttribute("mode", "detail"); // Truyền cờ trạng thái "Chi tiết"
 
@@ -128,7 +150,9 @@ public class TableManageController extends HttpServlet {
                 // =========================================================
                 final int PAGE_SIZE = 10; // Bạn có thể đổi thành 10 bàn trên 1 trang tùy ý
                 String page_raw = request.getParameter("page");
-                int page = (page_raw != null && !page_raw.trim().isEmpty()) ? Integer.parseInt(page_raw) : 1;
+                // [PAGINATION FIX] Chặn page không phải số hoặc nhỏ hơn 1.
+                Integer parsedPage = parsePositiveInt(page_raw);
+                int page = parsedPage != null ? parsedPage : 1;
 
                 // 3.1. Đếm tổng số bàn thỏa mãn điều kiện lọc
                 int totalItem = tableDAO.countSearchTables(searchName, searchCapacity, searchArea, searchStatus);
@@ -174,6 +198,12 @@ public class TableManageController extends HttpServlet {
 
         // Thiết lập tiếng Việt cho form nhập liệu
         request.setCharacterEncoding("UTF-8");
+        // [CSRF FIX] Bảo vệ thao tác thêm/sửa bàn của Owner.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
 
         HttpSession session = request.getSession();
         Employee loginUser = (Employee) session.getAttribute("employee");
@@ -227,7 +257,8 @@ public class TableManageController extends HttpServlet {
         int tableID = 0;
         String tableIdStr = request.getParameter("tableID");
         if (tableIdStr != null && !tableIdStr.isEmpty()) {
-            tableID = Integer.parseInt(tableIdStr);
+            Integer parsedTableID = parsePositiveInt(tableIdStr);
+            tableID = parsedTableID != null ? parsedTableID : 0;
         }
 
         // 2. VALIDATE DỮ LIỆU (BACKEND VALIDATION)
@@ -246,6 +277,10 @@ public class TableManageController extends HttpServlet {
         } else if (statusInvalid) {
             hasError = true;
             errorMessage = "Trạng thái bàn không hợp lệ.";
+        } else if (("edit".equals(action) || "update".equals(action))
+                && tableID <= 0) {
+            hasError = true;
+            errorMessage = "Mã bàn cần cập nhật không hợp lệ.";
         }
 
         // 3. NẾU CÓ LỖI: TRẢ VỀ FORM CŨ KÈM DỮ LIỆU ĐÃ NHẬP
@@ -278,18 +313,34 @@ public class TableManageController extends HttpServlet {
 
         // BẮT ĐẦU SỬA TỪ ĐÂY
         if ("add".equals(action)) {
-            tableDAO.addTable(t);
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table?msg=add_success");
+            // [DAO RESULT FIX] Chỉ báo thành công khi database thật sự ghi được dữ liệu.
+            boolean saved = tableDAO.addTable(t);
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table?"
+                    + (saved ? "msg=add_success" : "error=save_failed"));
             
         } else if ("edit".equals(action) || "update".equals(action)) { 
             // ĐÃ SỬA: Chấp nhận cả "edit" và "update"
-            tableDAO.updateTable(t);
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table?msg=update_success");
+            boolean saved = tableDAO.updateTable(t);
+            response.sendRedirect(request.getContextPath() + "/owner/manage-table?"
+                    + (saved ? "msg=update_success" : "error=save_failed"));
             
         } else {
             // BỔ SUNG: Cứu cánh cuối cùng. Nếu vì lý do nào đó action bị sai, 
             // nó sẽ tự động đá về trang danh sách thay vì hiện trang trắng
             response.sendRedirect(request.getContextPath() + "/owner/manage-table");
+        }
+    }
+
+    // [INPUT VALIDATION] Dùng chung cho id/page nhận từ query string hoặc form.
+    private Integer parsePositiveInt(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

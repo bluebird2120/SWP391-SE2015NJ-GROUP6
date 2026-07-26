@@ -607,4 +607,21 @@ public class TableDAO extends DBContext {
         }
         return list;
     }
+
+    /** [ORDER VALIDATION] Xác nhận tableID thuộc đúng order hiện tại. */
+    public boolean isTableAssignedToOrder(int orderID, int tableID) {
+        String sql = "SELECT 1 FROM Order_Table "
+                + "WHERE orderID = ? AND tableID = ? LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, tableID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] isTableAssignedToOrder lỗi: "
+                    + e.getMessage());
+            return false;
+        }
+    }
 }

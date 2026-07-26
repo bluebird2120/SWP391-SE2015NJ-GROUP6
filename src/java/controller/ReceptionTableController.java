@@ -23,6 +23,7 @@ public class ReceptionTableController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        util.CsrfUtil.ensureToken(request.getSession());
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -46,6 +47,12 @@ public class ReceptionTableController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+        // [CSRF FIX] Bảo vệ assign/open/check-in/cancel bàn.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");

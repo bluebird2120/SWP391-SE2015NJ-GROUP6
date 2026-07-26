@@ -394,10 +394,7 @@
                         <h2>Khám phá ẩm thực</h2>
                     </div>
                     
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <a class="cart-btn" href="${pageContext.request.contextPath}/payment-info">
-                            <i class="fas fa-file-invoice-dollar"></i> HÓA ĐƠN
-                        </a>
+                    <div style="display: flex; gap: 12px; align-items: center;">                       
                         <a class="cart-btn" href="${pageContext.request.contextPath}/order">
                             <i class="fas fa-shopping-cart"></i> GIỎ HÀNG
                         </a>
@@ -486,6 +483,8 @@
                             <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
                                 <%-- 🌟 ĐẢM BẢO DÙNG CONTEXT PATH CHUẨN --%>
                                 <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                                    <%-- [CSRF FIX] Bảo vệ yêu cầu thêm món vào giỏ. --%>
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
@@ -764,7 +763,9 @@
                     fetch(apiPath, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        // [CSRF FIX] Gửi token cho thao tác duyệt/từ chối yêu cầu vào bàn.
                         body: 'action=' + actionType + '&requestID=' + reqID
+                                + '&csrfToken=' + encodeURIComponent('${sessionScope.csrfToken}')
                     })
                             .then(response => response.text())
                             .then(res => {

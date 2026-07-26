@@ -2,6 +2,7 @@ package controller;
 
 import dal.InvoicesDAO;
 import dal.ReservationDAO;
+import dal.OrderDAO;
 import dal.DBContext; // Thêm import DBContext để dùng cho hàm logPayment
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -79,6 +80,24 @@ public class PaymentReturnController extends HttpServlet {
             HttpSession session = request.getSession();
             Integer invoiceID = (Integer) session.getAttribute("invoiceID");
             Integer orderID = (Integer) session.getAttribute("orderID");
+            String expectedTxnRef =
+                    (String) session.getAttribute("vnpPendingTxnRef");
+            Integer expectedInvoiceID =
+                    (Integer) session.getAttribute("vnpPendingInvoiceID");
+            Long expectedAmount =
+                    (Long) session.getAttribute("vnpPendingAmount");
+
+            // [SECURITY FIX - VNPAY] Transaction, invoice và số tiền callback
+            // phải khớp dữ liệu đã lưu trước khi chuyển sang VNPay.
+            if (expectedTxnRef == null || !expectedTxnRef.equals(txnRef)
+                    || expectedInvoiceID == null
+                    || !expectedInvoiceID.equals(invoiceID)
+                    || expectedAmount == null
+                    || expectedAmount.longValue() != vnpAmount) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Thông tin giao dịch VNPay không khớp.");
+                return;
+            }
 
             // Chữ ký hợp lệ -> Kiểm tra trạng thái giao dịch
             if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
@@ -97,12 +116,34 @@ public class PaymentReturnController extends HttpServlet {
                         reservationDAO.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {
                         // Nhánh 2: Thanh toán bữa ăn (Transaction gộp)
-                        invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "vnpay", vnpAmount, txnRef);
+                        model.Order linkedOrder =
+                                new OrderDAO().getOrderByInvoiceId(invoiceID);
+                        if (linkedOrder == null
+                                || linkedOrder.getOrderID() != orderID
+                                || invoice.getFinalAmount() != vnpAmount) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                                    "Hóa đơn không khớp đơn hàng.");
+                            return;
+                        }
+                        boolean updated =
+                                invoicesDAO.updatePaymentSuccessAndCleaningTable(
+                                        invoiceID, orderID, "vnpay",
+                                        vnpAmount, txnRef);
+                        if (!updated) {
+                            response.sendError(HttpServletResponse.SC_CONFLICT,
+                                    "Giao dịch đã được xử lý hoặc không còn hợp lệ.");
+                            return;
+                        }
                     }
                 }
 
                 // 1. Sao lưu ID hóa đơn ra một biến final để đẩy lên URL (Cực kỳ quan trọng)
                 final Integer finalInvoiceID = invoiceID;
+                if (finalInvoiceID != null) {
+                    // [SECURITY FIX - INVOICE IDOR] Cho session hiện tại xem
+                    // đúng hóa đơn vừa được VNPay trả kết quả, không mở IDOR.
+                    session.setAttribute("paymentInfoInvoiceID", finalInvoiceID);
+                }
 
                 // 2. Dọn dẹp sạch sẽ Session (giải phóng bàn)
                 session.removeAttribute("orderID");
@@ -112,6 +153,9 @@ public class PaymentReturnController extends HttpServlet {
                 session.removeAttribute("reservationFlow");
                 session.removeAttribute("depositAmount");
                 session.removeAttribute("reservationHoldExpiresAt");
+                session.removeAttribute("vnpPendingTxnRef");
+                session.removeAttribute("vnpPendingInvoiceID");
+                session.removeAttribute("vnpPendingAmount");
 
                 // 3. Thực hiện chuyển hướng (Bắt buộc dùng finalInvoiceID để tránh mất dấu)
                 if (finalInvoiceID != null) {

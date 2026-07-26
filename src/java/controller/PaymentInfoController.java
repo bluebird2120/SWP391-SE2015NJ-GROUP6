@@ -6,6 +6,7 @@ import model.Invoices;
 import model.MenuItem;
 import model.Order;
 import model.OrderItem;
+import model.Employee;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -36,10 +37,16 @@ public class PaymentInfoController extends HttpServlet {
         String invoiceIDParam = request.getParameter("invoiceID");
         Integer invoiceID = null;
 
-        if (invoiceIDParam != null && !invoiceIDParam.isEmpty()) {
-            invoiceID = Integer.parseInt(invoiceIDParam);
-        } else {
-            invoiceID = (Integer) session.getAttribute("invoiceID");
+        try {
+            if (invoiceIDParam != null && !invoiceIDParam.isEmpty()) {
+                invoiceID = Integer.parseInt(invoiceIDParam);
+            } else {
+                invoiceID = (Integer) session.getAttribute("invoiceID");
+            }
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Mã hóa đơn không hợp lệ.");
+            return;
         }
 
         // 2. Chốt chặn an toàn: Nếu cả URL và Session đều không có ID -> Đẩy về giỏ hàng
@@ -57,6 +64,28 @@ public class PaymentInfoController extends HttpServlet {
 
         // 4. Tìm kiếm Đơn hàng tương ứng bằng cách dò ngược invoiceID dưới DB
         Order order = getOrderByInvoiceIdFromDB(invoiceID);
+
+        // [SECURITY FIX - INVOICE IDOR] Không cho phép đổi invoiceID trên URL
+        // để xem hóa đơn của người khác. Callback chỉ cấp quyền xem đúng invoice
+        // vừa thanh toán qua paymentInfoInvoiceID.
+        Employee employee = (Employee) session.getAttribute("employee");
+        Integer sessionOrderID = (Integer) session.getAttribute("orderID");
+        Integer allowedInvoiceID =
+                (Integer) session.getAttribute("paymentInfoInvoiceID");
+        boolean employeeCanView = employee != null && order != null
+                && (employee.getRoleID() == 1
+                || (order.getEmployeeID() != null
+                && order.getEmployeeID().equals(employee.getEmployeeID())));
+        boolean customerCanView = order != null && sessionOrderID != null
+                && sessionOrderID == order.getOrderID();
+        boolean callbackCanView = allowedInvoiceID != null
+                && allowedInvoiceID.equals(invoiceID);
+
+        if (!employeeCanView && !customerCanView && !callbackCanView) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không có quyền xem hóa đơn này.");
+            return;
+        }
 
         // 5. Tải danh sách món ăn đã dùng dựa trên đơn hàng tìm được
         List<OrderItem> orderItems = new ArrayList<>();

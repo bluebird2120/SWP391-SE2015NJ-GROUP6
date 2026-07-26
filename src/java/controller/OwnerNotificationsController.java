@@ -18,7 +18,6 @@ import model.Notifications;
 public class OwnerNotificationsController extends HttpServlet {
 
     private static final int LIST_LIMIT = 50;
-    private final NotificationDAO notificationDAO = new NotificationDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -42,18 +41,22 @@ public class OwnerNotificationsController extends HttpServlet {
             readStatus = "all";
         }
 
-        // ── 3. Gọi DAO đã có Filter ──
-        List<Notifications> list = notificationDAO.listByRecipientFiltered(
-                emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
-        int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            // ── 3. Gọi DAO đã có Filter ──
+            List<Notifications> list = notificationDAO.listByRecipientFiltered(
+                    emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
+            int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
 
-        //Nuôi header
-        session.setAttribute("unreadCount", unread);
-        request.setAttribute("notifications", list);
-        //Nuôi trang notification
-        request.setAttribute("unreadCount", unread);
-        request.setAttribute("keyword", keyword);
-        request.setAttribute("readStatus", readStatus);
+            //Nuôi header
+            session.setAttribute("unreadCount", unread);
+            request.setAttribute("notifications", list);
+            //Nuôi trang notification
+            request.setAttribute("unreadCount", unread);
+            request.setAttribute("keyword", keyword);
+            request.setAttribute("readStatus", readStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
@@ -69,34 +72,38 @@ public class OwnerNotificationsController extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        if ("markRead".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
-            }
+        try (NotificationDAO notificationDAO = new NotificationDAO()) {
+            if ("markRead".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+                }
 
-        } else if ("readAndRedirect".equals(action)) {
-            int notifID = parseInt(request.getParameter("notificationID"), 0);
-            if (notifID > 0) {
-                notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
+            } else if ("readAndRedirect".equals(action)) {
+                int notifID = parseInt(request.getParameter("notificationID"), 0);
+                if (notifID > 0) {
+                    notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
 
-                // Lấy notification để biết type → redirect đúng trang
-                List<Notifications> list = notificationDAO.listByRecipient(
-                        emp.getEmployeeID(), "staff", LIST_LIMIT);
+                    // Lấy notification để biết type → redirect đúng trang
+                    List<Notifications> list = notificationDAO.listByRecipient(
+                            emp.getEmployeeID(), "staff", LIST_LIMIT);
 
-                for (Notifications noti : list) {
-                    if (noti.getNotificationID() == notifID) {
-                        String url = resolveRedirectUrl(noti.getType(), request.getContextPath());
-                        session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
-                        response.sendRedirect(url);
-                        return;
+                    for (Notifications noti : list) {
+                        if (noti.getNotificationID() == notifID) {
+                            String url = resolveRedirectUrl(noti.getType(), request.getContextPath());
+                            session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+                            response.sendRedirect(url);
+                            return;
+                        }
                     }
                 }
             }
-        }
 
-        // Cập nhật lại unreadCount vào session
-        session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+            // Cập nhật lại unreadCount vào session
+            session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         response.sendRedirect(request.getContextPath() + "/owner/notifications");
     }
 

@@ -44,6 +44,8 @@ public class MenuItemController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
+        // [CSRF FIX] Token dùng cho form thêm món và duyệt guest trên menu.
+        util.CsrfUtil.ensureToken(session);
 
         // === BẮT ĐẦU PHẦN THÊM MỚI: XỬ LÝ QUÉT MÃ QR BẰNG TOKEN (HOST/GUEST) ===
         String token = request.getParameter("token");
@@ -52,6 +54,23 @@ public class MenuItemController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/scan?token="
                     + URLEncoder.encode(token, "UTF-8"));
             return;
+        }
+
+        // [SECURITY FIX - QR FLOW] Khách đã quét QR nhưng bàn còn pending
+        // không được tự gõ /menu để bỏ qua màn hình chờ nhân viên mở bàn.
+        Integer waitingOrderID = (Integer) session.getAttribute("orderID");
+        Employee sessionEmployee = (Employee) session.getAttribute("employee");
+        if (sessionEmployee == null && waitingOrderID != null
+                && session.getAttribute("currentTableID") != null) {
+            Order waitingOrder = new OrderDAO().getOrderById(waitingOrderID);
+            if (waitingOrder != null
+                    && ("pending".equals(waitingOrder.getTableStatus())
+                    || waitingOrder.getIsStaffConfirmed() != 1)) {
+                session.setAttribute("pendingOrderID", waitingOrderID);
+                request.getRequestDispatcher("/views/user/waiting_staff.jsp")
+                        .forward(request, response);
+                return;
+            }
         }
         int tableIdFromToken = 0;
 
@@ -265,6 +284,8 @@ public class MenuItemController extends HttpServlet {
 
         // === BẮT ĐẦU PHẦN CHỈNH SỬA: ĐIỀU HƯỚNG MÀN HÌNH ===
         Integer sessionTableID = (Integer) session.getAttribute("currentTableID");
+        boolean isReservationPreorder = "true".equals(request.getParameter("reservation"))
+                || Boolean.TRUE.equals(session.getAttribute("reservationFlow"));
 
         // [GIU TRANG MENU] Gui URL hien tai sang form them mon de sau khi
         // xu ly gio hang, khach quay lai dung trang va bo loc dang xem.
@@ -275,8 +296,10 @@ public class MenuItemController extends HttpServlet {
         }
         request.setAttribute("returnUrl", currentMenuUrl);
 
-        // Nếu là Quản lý/Nhân viên VÀ không đang xem với tư cách Khách bàn nào -> Trỏ vào trang Admin
-        if (sessionTableID == null) {
+        // [PREORDER ROUTING FIX] Luong dat mon truoc sau khi coc ban phai dung
+        // owner/dish-list.jsp vi form o trang nay submit ve /reservation?action=addPreorderItem.
+        // Khach quet QR tai ban van co currentTableID nen tiep tuc di vao user/menu.jsp nhu cu.
+        if (sessionTableID == null && (loginUser != null || isReservationPreorder)) {
             String currentUrl = request.getRequestURI();
             if (request.getQueryString() != null) {
                 currentUrl += "?" + request.getQueryString();
@@ -284,6 +307,8 @@ public class MenuItemController extends HttpServlet {
             request.getSession().setAttribute("lastDishListUrl", currentUrl);
             request.getRequestDispatcher("/views/owner/dish-list.jsp").forward(request, response);
         } else {
+            // [MENU ROUTING FIX] Khách chưa quét QR vẫn phải thấy menu công khai,
+            // không được forward nhầm sang màn quản lý món của Owner.
             // Còn lại (Khách vãng lai, Khách quét QR) -> Trỏ vào trang Menu User
             request.getRequestDispatcher("/views/user/menu.jsp").forward(request, response);
         }
@@ -341,7 +366,7 @@ public class MenuItemController extends HttpServlet {
         String trimmedValue = value.trim().toLowerCase();
         for (String allowed : allowedValues) {
             if (trimmedValue.equals(allowed.toLowerCase())) {
-                return trimmedValue;
+                return allowed;
             }
         }
         return defaultValue;

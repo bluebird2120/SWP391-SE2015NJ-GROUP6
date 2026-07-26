@@ -9,7 +9,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NotificationDAO extends DBContext {
+public class NotificationDAO extends DBContext implements AutoCloseable {
+
+    @Override
+    public void close() {
+        if (this.connection != null) {
+            try {
+                this.connection.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
 
     /**
      * Thêm mới một bản ghi thông báo vào cơ sở dữ liệu.
@@ -155,17 +166,18 @@ public class NotificationDAO extends DBContext {
         return 0;
     }
 
-    
     /**
      * Lấy danh sách thông báo có lọc theo từ khóa và trạng thái đọc/chưa đọc.
-     * Sử dụng PreparedStatement để phòng chống SQL Injection.
-     * Filter thông báo */
+     * Sử dụng PreparedStatement để phòng chống SQL Injection. Filter thông báo
+     */
     public List<Notifications> listByRecipientFiltered(
             int recipientID, String recipientType,
             int limit, String keyword, String readStatus) {
 
         List<Notifications> list = new ArrayList<>();
-        if (this.connection == null) return list;
+        if (this.connection == null) {
+            return list;
+        }
 
         StringBuilder sql = new StringBuilder(
                 "SELECT notificationID, recipientID, recipientType, type, message, isRead, createdAt "

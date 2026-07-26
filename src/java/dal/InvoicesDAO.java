@@ -131,10 +131,13 @@ public class InvoicesDAO {
         String sqlPayment = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, 'success', NOW())";
 
         // 2. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
-        String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? WHERE invoiceID = ?";
+        String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? "
+                + "WHERE invoiceID = ? AND status <> 'paid'";
 
         // 3. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
-        String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', tableStatus = 'cleaning' WHERE orderID = ?";
+        String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', "
+                + "tableStatus = 'cleaning' WHERE orderID = ? AND invoiceID = ? "
+                + "AND orderStatus NOT IN ('completed','cancelled')";
 
         // 4. Lấy employeeID phụ trách đơn này để gửi thông báo
         String sqlGetEmployee = "SELECT employeeID FROM `Order` WHERE orderID = ?";
@@ -161,11 +164,18 @@ public class InvoicesDAO {
                 // Update Invoice
                 ps1.setString(1, paymentMethod);
                 ps1.setInt(2, invoiceID);
-                ps1.executeUpdate();
+                // [SECURITY FIX - PAYMENT] Callback/submit lặp không được paid lần hai.
+                if (ps1.executeUpdate() != 1) {
+                    throw new SQLException("Invoice đã paid hoặc không tồn tại");
+                }
 
                 // Update Order
                 ps2.setInt(1, orderID);
-                ps2.executeUpdate();
+                ps2.setInt(2, invoiceID);
+                // [SECURITY FIX - PAYMENT] Order bắt buộc liên kết đúng invoice.
+                if (ps2.executeUpdate() != 1) {
+                    throw new SQLException("Order không khớp invoice");
+                }
 
                 // Gửi thông báo cho nhân viên phụ trách bàn (nếu có)
                 psGetEmp.setInt(1, orderID);

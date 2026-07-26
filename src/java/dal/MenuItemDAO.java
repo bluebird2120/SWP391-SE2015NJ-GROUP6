@@ -420,7 +420,7 @@ public class MenuItemDAO extends DBContext {
                 + "LEFT JOIN OrderItem oi ON oi.itemID = mi.itemID "
                 + "LEFT JOIN `Order` o ON o.orderID = oi.orderID "
                 + "AND o.orderStatus = 'completed' "
-                + "AND o.createdAt BETWEEN ? AND ? "
+                + "AND COALESCE(o.orderTime, o.createdAt) BETWEEN ? AND ?"
                 + "WHERE 1=1 ");
 
         if (search != null && !search.trim().isEmpty()) {
@@ -494,7 +494,7 @@ public class MenuItemDAO extends DBContext {
                 + "LEFT JOIN OrderItem oi ON oi.itemID = mi.itemID "
                 + "LEFT JOIN `Order` o ON o.orderID = oi.orderID "
                 + "AND o.orderStatus = 'completed' "
-                + "AND o.createdAt BETWEEN ? AND ? "
+                + "AND COALESCE(o.orderTime, o.createdAt) BETWEEN ? AND ? "
                 + "WHERE 1=1 "
         );
         if (search != null && !search.trim().isEmpty()) {
@@ -546,12 +546,12 @@ public class MenuItemDAO extends DBContext {
     
     public List<MenuItem> getSaleHistoryByItem(int itemID, String startDate, String endDate){
         List<MenuItem> historyList = new ArrayList<>();
-        String sql = "select mi.itemName, date(o.createdAt) as saleDate, sum(oi.quantity) as dailyQuantity from MenuItem mi "
+        String sql = "select mi.itemName, DATE(COALESCE(o.orderTime, o.createdAt)) AS saleDate, sum(oi.quantity) as dailyQuantity from MenuItem mi "
                 + "join OrderItem oi on mi.itemID = oi.itemID "
                 + "join `Order` o on oi.orderID = o.orderID "
                 + "where o.orderStatus = 'completed' and oi.itemID = ? "
-                + "and o.createdAt between ? and ? "
-                + "group by mi.itemName, date(o.createdAt) "
+                + "AND COALESCE(o.orderTime, o.createdAt) BETWEEN ? AND ? "
+                + "group by mi.itemName, DATE(COALESCE(o.orderTime, o.createdAt)) "
                 + "order by saleDate desc";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);

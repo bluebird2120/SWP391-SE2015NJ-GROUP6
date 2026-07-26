@@ -91,9 +91,9 @@ public class MethodCookingController extends HttpServlet {
         //Validate
         int id = parseIntSafe(methodID, 0, 0);
         int status = parseIntSafe(status_raw, -1, -1);
-        String currentPage = String.valueOf(parseIntSafe(page_raw, 1, 1));
+        int currentPage = parseIntSafe(page_raw, 1, 1);
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
-        String currentAvailable = String.valueOf(parseIntSafe(isAvailable_raw, -1, -1));
+        int currentAvailable = parseIntSafe(isAvailable_raw, -1, -1);
         String errorName = isValidString(methodName, 100, "Tên cách chế biến không được để trống", "Tên cách chế biến phải ít hơn 100 kí tự");
         
         // Logic đổi trạng thái danh mục chính và món ăn ăn theo
@@ -120,8 +120,34 @@ public class MethodCookingController extends HttpServlet {
 
         // Nếu có lỗi thì gửi sang jsp
         if (checkEmpty(errorName)) {
+            int totalMethod = cookingMethodDAO.countSearchMethod(currentSearch, currentAvailable);
+            int totalPage = (int) Math.ceil((double) totalMethod / PAGE_SIZE);
+            if (currentPage > totalPage && totalPage > 0) {
+                currentPage = totalPage;
+            }
+
+            int offset = (currentPage - 1) * PAGE_SIZE;
+            List<CookingMethod> methodList = cookingMethodDAO.searchMethodPaging(
+                    currentSearch, currentAvailable, offset, PAGE_SIZE);
+
+            for (CookingMethod cookingMethod : methodList) {
+                int activeDish = cookingMethodDAO.countMethodByStatus(cookingMethod.getMethodID(), 1);
+                int inactiveDish = cookingMethodDAO.countMethodByStatus(cookingMethod.getMethodID(), 0);
+                int totalDish = cookingMethodDAO.countDishByMethod(cookingMethod.getMethodID());
+                cookingMethod.setActiveMenuItem(activeDish);
+                cookingMethod.setInactiveMenuItem(inactiveDish);
+                cookingMethod.setTotalDish(totalDish);
+            }
+
             request.setAttribute("errorName", errorName);
-            doGet(request, response);
+            request.setAttribute("currentSearch", currentSearch);
+            request.setAttribute("currentAvailable", currentAvailable);
+            request.setAttribute("methodList", methodList);
+            request.setAttribute("totalPage", totalPage);
+            request.setAttribute("currentPage", currentPage);
+            request.setAttribute("modalErrorID", id);
+            request.setAttribute("modalErrorName", methodName);
+            request.getRequestDispatcher("/views/owner/method-list.jsp").forward(request, response);
             return;
         }
 

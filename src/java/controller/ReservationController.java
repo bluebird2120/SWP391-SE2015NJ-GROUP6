@@ -293,6 +293,17 @@ public class ReservationController extends HttpServlet {
             }
         }
 
+        if (orderDAO.hasActivePendingReservation(customer.getCustomerID())) {
+            // [ANTI SPAM GIU BAN]
+            // Neu customer dang co don pending chua thanh toan coc va con han giu cho,
+            // khong cho tao them don moi de tranh spam giu ban ao.
+            showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
+                    selectedQuantities,
+                    "Bạn đang có một đơn đặt bàn chưa thanh toán "
+                    + "Vui lòng thanh toán hoặc chờ hết hạn trước khi đặt bàn mới.");
+            return;
+        }
+
         int orderID = orderDAO.createReservation(
                 customer.getCustomerID(), orderTime, details,
                 Integer.valueOf(ReservationDAO.DEFAULT_DEPOSIT_AMOUNT));

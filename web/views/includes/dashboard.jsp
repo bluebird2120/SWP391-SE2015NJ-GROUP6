@@ -123,7 +123,7 @@
             </li>
         </c:if>
 
-        <%-- Owner: lịch sử đơn + bàn nhà hàng --%>
+        <%-- Receptionist: trang tổng quan + Tiếp nhận và gán bàn--%>
         <c:if test="${isReceptionist}">
             <%-- [PHAN QUYEN LE TAN] Dashboard giong nhan vien nhung menu gon hon. --%>
             <li>
@@ -137,6 +137,28 @@
                    href="${pageContext.request.contextPath}/reception/tables">
                     <i class="fas fa-concierge-bell"></i> Tiếp nhận và gán bàn
                 </a>
+            </li>
+        </c:if>
+
+        <c:if test="${isOwner}">
+            <li>
+                <a class="nav-link ${pageContext.request.requestURI.contains('owner/manage-table') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/owner/manage-table">
+                    <i class="fas fa-chair"></i> Bàn nhà hàng
+                </a>
+            </li>
+        </c:if>
+
+        <li>
+            <a class="nav-link ${pageContext.request.requestURI.contains('owner/business-hours') ? 'active' : ''}"
+               href="${pageContext.request.contextPath}/owner/business-hours?action=list">
+                <i class="fas fa-clock"></i> Giờ hoạt động
+            </a>
+        </li>
+        <%-- Receptionist: Lchj làm việc và Thông báo--%>
+        <c:if test="${isReceptionist}">
+            <li>
+                <div class="nav-section-title"><i class="fas fa-user-clock"></i> Không gian làm việc</div>
             </li>
             <li>
                 <a class="nav-link ${pageContext.request.requestURI.contains('my-schedule') ? 'active' : ''}"
@@ -153,22 +175,11 @@
                     </c:if>
                 </a>
             </li>
-        </c:if>
-
-        <c:if test="${isOwner}">
+            <li><div class="nav-section-title"><i class="fas fa-utensils"></i> Thực đơn</div></li>
             <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/manage-table') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/manage-table">
-                    <i class="fas fa-chair"></i> Bàn nhà hàng
-                </a>
-            </li>
-        </c:if>
-
-        <c:if test="${!isReceptionist}">
-            <li>
-                <a class="nav-link ${pageContext.request.requestURI.contains('owner/business-hours') ? 'active' : ''}"
-                   href="${pageContext.request.contextPath}/owner/business-hours?action=list">
-                    <i class="fas fa-clock"></i> Giờ hoạt động
+                <a class="nav-link ${pageContext.request.requestURI.contains('items') ? 'active' : ''}"
+                   href="${pageContext.request.contextPath}/menu">
+                    <i class="fas fa-hamburger"></i> Món ăn
                 </a>
             </li>
         </c:if>
