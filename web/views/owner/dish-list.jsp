@@ -409,7 +409,7 @@
                         </select>
                     </div>
 
-                    <c:if test="${sessionScope.employee.roleID == 1}">
+                    <c:if test="${sessionScope.employee != null}">
                         <div class="filter-group group-select">
 
                             <select name="status" class="filter-select">

@@ -137,7 +137,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             return;
         }
         MenuItem mi;
-        double MAX_FILE_SIZE = 5 * 1024 * 1024;
+        double MAX_FILE_SIZE = 0.5 * 1024 * 1024;
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
         String categoryId_raw = request.getParameter("category");
