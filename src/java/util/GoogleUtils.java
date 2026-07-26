@@ -19,11 +19,8 @@ import org.json.simple.parser.JSONParser;
  */
 public class GoogleUtils {
 
-    // ========================================================
-    // ĐỔI 3 GIÁ TRỊ NÀY THEO THÔNG TIN GOOGLE CONSOLE CỦA BẠN
-    // ========================================================
     private static final String CLIENT_ID = "1096276853074-s0bkcjnl6fdica04ie5mot0cuiifbllf.apps.googleusercontent.com";
-    private static final String CLIENT_SECRET = ""; // ← điền secret thật vào đây 
+    private static final String CLIENT_SECRET = "";
     private static final String REDIRECT_URI = "http://localhost:8080/Restaurant-Reservation-And-Table-Service-System/login/google/callback";
     // ========================================================
 
@@ -47,7 +44,11 @@ public class GoogleUtils {
         }
     }
 
-    // ── Đổi authorization code lấy access_token ──────────────────────────
+    /* 
+    Đổi authorization code lấy access_token
+    Đổi body lấy data dạng JSON dạng String lưu vào responseBody
+    Chuyển chuỗi JSON Google trả về thành object Java 
+     */
     public static String exchangeCodeForToken(String code) {
         try {
             String body = "code=" + encode(code)
@@ -56,13 +57,11 @@ public class GoogleUtils {
                     + "&redirect_uri=" + encode(REDIRECT_URI)
                     + "&grant_type=authorization_code";
 
-            //Đổi body lấy data dạng JSON dạng String lưu vào responseBody
             String responseBody = postRequest(TOKEN_URL, body);
             if (responseBody == null) {
                 return null;
             }
 
-            //Chuyển chuỗi JSON Google trả về thành object Java
             JSONObject json = (JSONObject) new JSONParser().parse(responseBody);
             return (String) json.get("access_token");
 
@@ -72,27 +71,29 @@ public class GoogleUtils {
         }
     }
 
-    // ── HTTP POST helper ──────────────────────────────────────────────────
+    /* 
+    Tạo một đối tượng kết nối HTTP tới URL
+    Khai báo để được gửi dữ liệu đi
+    Thông báo cho Google biết định dạng dữ liệu mà server sắp gửi trong body
+    Đọc toàn bộ dữ liệu bytes từ InputStream và chuyển thành String theo chuẩn UTF-8
+     */
     private static String postRequest(String urlStr, String body) {
         try {
             URL url = new URL(urlStr);
-            //Tạo một đối tượng kết nối HTTP tới URL
+
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            //Khai báo để được gửi dữ liệu đi
+
             conn.setDoOutput(true);
-            //Thông báo cho Google biết định dạng dữ liệu mà server sắp gửi trong body
+
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
 
-            //                          Luồng để ghi dữ liệu đi
             try (OutputStream os = conn.getOutputStream()) {
-                //Ghi dữ liệu vào luồng đó và chuyển body(String) thành mảng byte theo chuẩn UTF-8
                 os.write(body.getBytes(StandardCharsets.UTF_8));
             }
 
-            //Luồng trả dữ liệu về
             InputStream is;
             if (conn.getResponseCode() < 400) {
                 is = conn.getInputStream();
@@ -100,7 +101,6 @@ public class GoogleUtils {
                 is = conn.getErrorStream();
             }
 
-            // Đọc toàn bộ dữ liệu bytes từ InputStream và chuyển thành String theo chuẩn UTF-8
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
 
         } catch (Exception e) {
@@ -109,14 +109,18 @@ public class GoogleUtils {
         }
     }
 
-    // ── Lấy thông tin user từ Google ──────────────────────────────────────
+    /*
+    Lấy thông tin user từ Google
+    Tạo một đối tượng kết nối HTTP tới URL
+    Thông báo cho Google biết định dạng dữ liệu mà server sắp gửi trong body
+    */
     public static JSONObject getUserInfo(String accessToken) {
         try {
             URL url = new URL(USER_INFO_URL);
-            //Tạo một đối tượng kết nối HTTP tới URL
+            
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            //Thông báo cho Google biết định dạng dữ liệu mà server sắp gửi trong body
+            
             conn.setRequestProperty("Authorization", "Bearer " + accessToken);
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);

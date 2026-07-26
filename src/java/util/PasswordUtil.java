@@ -25,6 +25,7 @@ public final class PasswordUtil {
             byte[] bytes = md.digest((rawPassword + SALT).getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder(bytes.length * 2);
             for (byte b : bytes) {
+                //Chuyển đổi mảng byte sau khi hash thành dạng HEXADECIMAL
                 sb.append(String.format("%02x", b));
             }
             return sb.toString();

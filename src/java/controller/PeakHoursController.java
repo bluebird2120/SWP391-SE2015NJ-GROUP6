@@ -28,7 +28,6 @@ public class PeakHoursController extends HttpServlet {
             filterType = "today";
         }
 
-        // Validate date range
         if ("custom".equals(filterType)) {
             if (startDate != null && endDate != null
                     && !startDate.isBlank() && !endDate.isBlank()

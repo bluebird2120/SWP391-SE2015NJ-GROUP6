@@ -574,10 +574,19 @@
                                             <label class="form-label" for="dob">
                                                 <i class="fas fa-birthday-cake"></i> Ngày sinh
                                             </label>
+                                            <%
+                                                // Tự động tính ngày tối đa (đủ 13 tuổi) và ngày tối thiểu (tối đa 100 tuổi)
+                                                java.time.LocalDate today = java.time.LocalDate.now();
+                                                String maxDob = today.minusYears(13).toString();
+                                                String minDob = today.minusYears(100).toString();
+                                                request.setAttribute("maxDob", maxDob);
+                                                request.setAttribute("minDob", minDob);
+                                            %>
                                             <input type="date" id="dob" name="dob"
                                                    class="form-control ${not empty errors['dob'] ? 'error-field' : ''}"
                                                    value="${not empty param.dob ? param.dob : sessionScope.customer.dob}"
-                                                   max="<fmt:formatDate value='<%= new java.util.Date() %>' pattern='yyyy-MM-dd'/>">
+                                                   min="${minDob}"
+                                                   max="${maxDob}">
                                             <c:if test="${not empty errors['dob']}">
                                                 <span class="error-msg"><i class="fas fa-triangle-exclamation"></i> ${errors['dob']}</span>
                                             </c:if>
@@ -973,23 +982,47 @@
             });
 
             // ── VALIDATE FORM CUSTOMER ──────────────────────────────
-            const customerForm = document.querySelector('form[action*="/profile"]:not([enctype])');
+            const customerForm = document.querySelector('form[action*="/profile"]');
             if (customerForm) {
                 customerForm.addEventListener('submit', function (e) {
                     let hasError = false;
                     clearErrors(this);
 
                     const userName = document.getElementById('userName');
-                    if (!userName)
-                        return;
+                    if (userName) {
+                        const val = userName.value.trim();
+                        if (val === '') {
+                            showProfileError(userName, 'Vui lòng nhập tên hiển thị.');
+                            hasError = true;
+                        } else if (val.length < 2 || val.length > 50) {
+                            showProfileError(userName, 'Tên hiển thị phải từ 2 đến 50 ký tự.');
+                            hasError = true;
+                        }
+                    }
 
-                    const val = userName.value.trim();
-                    if (val === '') {
-                        showProfileError(userName, 'Vui lòng nhập tên hiển thị.');
-                        hasError = true;
-                    } else if (val.length < 2 || val.length > 50) {
-                        showProfileError(userName, 'Tên hiển thị phải từ 2 đến 50 ký tự.');
-                        hasError = true;
+                    // VALIDATE NGÀY SINH (DOB)
+                    const dobInput = document.getElementById('dob');
+                    if (dobInput && dobInput.value.trim() !== '') {
+                        const dobValue = new Date(dobInput.value);
+                        const today = new Date();
+
+                        // Tính tuổi
+                        let age = today.getFullYear() - dobValue.getFullYear();
+                        const monthDiff = today.getMonth() - dobValue.getMonth();
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobValue.getDate())) {
+                            age--;
+                        }
+
+                        if (dobValue > today) {
+                            showProfileError(dobInput, 'Ngày sinh không được ở tương lai.');
+                            hasError = true;
+                        } else if (age < 13) {
+                            showProfileError(dobInput, 'Bạn phải từ 13 tuổi trở lên.');
+                            hasError = true;
+                        } else if (age > 100) {
+                            showProfileError(dobInput, 'Ngày sinh không hợp lệ.');
+                            hasError = true;
+                        }
                     }
 
                     if (hasError)

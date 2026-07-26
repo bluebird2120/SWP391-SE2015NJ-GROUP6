@@ -32,6 +32,19 @@ public class EmailService {
         return String.format("%06d", number);
     }
 
+//    public static String generateRandomPassword(int length) {
+//        String chars = "abcdefghijklmnopqrstuvwxyz";
+//        String charsUpper = chars.toUpperCase();
+//        String digit = "0123456789";
+//        String all = digit + chars + charsUpper;
+//        StringBuilder sb = new StringBuilder(length);
+//
+//        for (int i = 0; i < length; i++) {
+//            sb.append(all.charAt(RANDOM.nextInt(all.length())));
+//        }
+//        return sb.toString();
+//    }
+    
     public static void sendOtpEmail(String toEmail, String otpCode, int expireMinutes)
             throws MessagingException {
 
@@ -75,19 +88,6 @@ public class EmailService {
             throw new MessagingException("Lỗi encode email người gửi", ex);
         }
     }
-
-//    public static String generateRandomPassword(int length) {
-//        String chars = "abcdefghijklmnopqrstuvwxyz";
-//        String charsUpper = chars.toUpperCase();
-//        String digit = "0123456789";
-//        String all = digit + chars + charsUpper;
-//        StringBuilder sb = new StringBuilder(length);
-//
-//        for (int i = 0; i < length; i++) {
-//            sb.append(all.charAt(RANDOM.nextInt(all.length())));
-//        }
-//        return sb.toString();
-//    }
 
     public static void sendNewPasswordEmail(String toEmail, String newPassword)
             throws MessagingException {
@@ -152,7 +152,7 @@ public class EmailService {
             String htmlContent = "<div style='font-family:Arial,sans-serif;max-width:480px;margin:auto'>"
                     + "<h2>Yêu cầu đặt lại mật khẩu</h2>"
                     + "<p>Nhấn vào nút bên dưới để đặt mật khẩu mới. Liên kết này chỉ có hiệu lực "
-                    + "trong <b>15 phút</b> và chỉ dùng được 1 lần.</p>"
+                    + "trong <b>5 phút</b> và chỉ dùng được 1 lần.</p>"
                     + "<p style='text-align:center;margin:24px 0'>"
                     + "<a href='" + resetLink + "' "
                     + "style='background:#76493b;color:#fff;padding:12px 24px;border-radius:8px;"

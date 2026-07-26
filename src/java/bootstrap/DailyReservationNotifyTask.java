@@ -68,7 +68,7 @@ public class DailyReservationNotifyTask implements Runnable {
                 + receptionistIDs.size() + " lễ tân. Nội dung: " + message);
     }
 
-    //Lấy ra những đơn đã thanh toán cọc xong trong quá khứ của ngày hôm nay
+    //Lấy ra những đơn đã thanh toán cọc xong trong quá khứ đặt bàn của ngày hôm nay
     private List<int[]> getTodayPendingOrders() {
         List<int[]> list = new ArrayList<>();
 

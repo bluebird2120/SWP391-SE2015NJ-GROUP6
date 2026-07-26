@@ -29,28 +29,25 @@ public class StaffNotificationsController extends HttpServlet {
             return;
         }
 
-        // ── 1. Lấy tham số Filter ──
         String keyword = trim(request.getParameter("keyword"));
         String readStatus = request.getParameter("readStatus");
 
-        // ── 2. Validate Backend ──
         if (keyword != null && keyword.length() > 100) {
-            keyword = keyword.substring(0, 100); // Giới hạn tối đa 100 ký tự
+            keyword = keyword.substring(0, 100);
         }
         if (readStatus == null || (!readStatus.equals("unread") && !readStatus.equals("read"))) {
-            readStatus = "all"; // Mặc định hiển thị tất cả nếu truyền sai
+            readStatus = "all";
         }
 
         try (NotificationDAO notificationDAO = new NotificationDAO()) {
-            // ── 3. Gọi DAO đã có Filter ──
+
             List<Notifications> list = notificationDAO.listByRecipientFiltered(
                     emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
             int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
 
-            //Nuôi header
             session.setAttribute("unreadCount", unread);
             request.setAttribute("notifications", list);
-            //Nuôi trang notification
+
             request.setAttribute("unreadCount", unread);
             request.setAttribute("keyword", keyword);
             request.setAttribute("readStatus", readStatus);
@@ -63,6 +60,7 @@ public class StaffNotificationsController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         HttpSession session = request.getSession(false);
         Employee emp = session == null ? null : (Employee) session.getAttribute("employee");
         if (emp == null) {
@@ -84,7 +82,6 @@ public class StaffNotificationsController extends HttpServlet {
                 if (notifID > 0) {
                     notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
 
-                    // Lấy notification để biết type → redirect đúng trang
                     List<Notifications> list = notificationDAO.listByRecipient(
                             emp.getEmployeeID(), "staff", LIST_LIMIT);
 
@@ -116,7 +113,7 @@ public class StaffNotificationsController extends HttpServlet {
         }
 
         switch (type) {
-            // ── BÀN & ĐƠN HÀNG (Staff phục vụ) ──────────────────────────
+            //BÀN & ĐƠN HÀNG (Staff phục vụ)-----------------------------------------------
             // Bàn được giao cho nhân viên
             case "table_assigned":
             // Khách thanh toán thành công → cần dọn bàn
@@ -125,19 +122,18 @@ public class StaffNotificationsController extends HttpServlet {
             case "checkout_requested":
                 return ctx + "/staff/tables";
 
-            // ── LỄ TÂN: khách vãng lai quét QR, cần ra mở bàn ──────────
-            // (new_order chỉ gửi cho lễ tân — họ mở bàn xong hệ thống mới
-            //  gán nhân viên ít việc nhất, lúc đó nhân viên mới nhận table_assigned)
+            //LỄ TÂN: khách vãng lai quét QR, cần ra mở bàn ──────────----------------------
+            // new_order chỉ gửi cho lễ tân — họ mở bàn xong hệ thống mới
             case "new_order":
             // khách vãng lai quét QR cần mở bàn
             case "table_open_request":
-            // đơn online cần gán bàn ─────────────────────────
+            // đơn online cần gán bàn 
             case "reservation_needs_table":
-            // đơn online đã đặt trước (hôm nay) bị khách hủy ---
+            // đơn online đã đặt trước (hôm nay) bị khách hủy
             case "reservation_cancelled":
                 return ctx + "/reception/tables";
 
-            // ── CA LÀM VIỆC (tất cả loại shift notification) ────────────
+            //CA LÀM VIỆC (tất cả loại shift notification) ────────────----------------------
             // Owner vừa gán ca mới (theo ngày hoặc theo tháng)
             case "shift_assigned":
             // Lịch ca tháng mới được phát hành
@@ -152,8 +148,9 @@ public class StaffNotificationsController extends HttpServlet {
             case "shift_request_colleague_pending":
             // Đồng nghiệp từ chối đổi ca với mình
             case "shift_request_colleague_rejected":
+                return ctx + "/staff/my-schedule";
 
-            // ── MẶC ĐỊNH: ở lại trang thông báo ─────────────────────────
+            // MẶC ĐỊNH: ở lại trang thông báo
             default:
                 return ctx + "/staff/notifications";
         }

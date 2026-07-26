@@ -9,6 +9,9 @@ import model.Customer;
 
 public class CustomerDAO extends DBContext {
 
+    /**
+     * Tìm tài khoản theo số điện thoại và mật khẩu
+     */
     public Customer findByPhoneAndPassword(String phoneNumber, String rawPassword)
             throws SQLException {
 

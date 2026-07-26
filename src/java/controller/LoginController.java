@@ -26,7 +26,6 @@ public class LoginController extends HttpServlet {
         HttpSession session = request.getSession(false);
 
         if (session != null) {
-            //Đã đăng nhập thì đẩy về trang phù hợp
             if (session.getAttribute("employee") != null) {
                 redirectEmployee(request, response, (Employee) session.getAttribute("employee"));
                 return;
@@ -51,7 +50,6 @@ public class LoginController extends HttpServlet {
                 request.setAttribute("identifier", session.getAttribute("registeredPhone"));
                 request.setAttribute("prefillPassword", session.getAttribute("registeredPassword"));
 
-                // dùng 1 lần rồi xóa
                 session.removeAttribute("registeredPhone");
                 session.removeAttribute("registeredPassword");
             }
@@ -99,11 +97,9 @@ public class LoginController extends HttpServlet {
                 return;
             }
 
-            //nếu cả 2 null -> sai thông tin
             request.setAttribute("loginError", "Số điện thoại hoặc mật khẩu không đúng!");
             request.setAttribute("identifier", phone);
 
-            //Xóa successMessage khi login thất bại
             HttpSession session = request.getSession(false);
             if (session != null) {
                 session.removeAttribute("successMessage");
@@ -116,7 +112,6 @@ public class LoginController extends HttpServlet {
             request.setAttribute("loginError", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau");
             request.setAttribute("identifier", phone);
 
-            //Xóa successMessage khi login thất bại
             HttpSession session = request.getSession(false);
             if (session != null) {
                 session.removeAttribute("successMessage");
@@ -178,11 +173,10 @@ public class LoginController extends HttpServlet {
     private void redirectEmployee(HttpServletRequest request, HttpServletResponse response,
             Employee employee) throws IOException {
         int roleID = employee.getRoleID();
-        // ID 1 for Owner
         if (roleID == 1) {
-            response.sendRedirect(request.getContextPath() + "/owner/dashboard"); // Owner
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard");
         } else {
-            response.sendRedirect(request.getContextPath() + "/staff/dashboard"); // Staff
+            response.sendRedirect(request.getContextPath() + "/staff/dashboard");
         }
     }
 
