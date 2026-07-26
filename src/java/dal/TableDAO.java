@@ -77,7 +77,9 @@ public class TableDAO extends DBContext {
      */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
 
-        autoExpireReservations();
+        // [AUTO EXPIRE RESERVATION] Gom logic het han dat ban ve ReservationDAO.
+        // TableDAO chi phu trach tinh ban trong, khong tu xu ly Order/Invoice nua.
+        new ReservationDAO().autoExpireReservations();
 
         List<Table> resultList = new ArrayList<>();
 
@@ -212,51 +214,6 @@ public class TableDAO extends DBContext {
         resultList.sort((a, b) -> Integer.compare(a.getCapacity(), b.getCapacity()));
 
         return resultList;
-    }
-
-    /*
-     * Lazy expire:
-     *
-     * Nếu khách đặt bàn online,
-     * quá giờ đến 30 phút mà nhân viên chưa chuyển sang serving,
-     * thì đơn tự động bị hủy.
-     *
-     * Chỉ hủy orderType = 1.
-     * Không động vào khách walk-in / đơn đang serving / cleaning.
-     */
-    private void autoExpireReservations() {
-        String confirmPaidSql
-                = "UPDATE `Order` o "
-                + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
-                + "SET o.orderStatus = 'reserved', "
-                + "    o.tableStatus = 'reserved', "
-                + "    o.checkoutRequestAt = NULL "
-                + "WHERE o.orderType = 1 "
-                + "  AND o.orderStatus = 'pending' "
-                + "  AND i.status = 'paid'";
-
-        String lateArrivalSql
-                = "UPDATE `Order` "
-                + "SET orderStatus = 'cancelled', tableStatus = 'available' "
-                + "WHERE orderType = 1 "
-                + "  AND orderStatus = 'reserved' "
-                + "  AND tableStatus = 'reserved' "
-                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
-
-        try (PreparedStatement confirmPs = connection.prepareStatement(confirmPaidSql);
-                PreparedStatement latePs = connection.prepareStatement(lateArrivalSql)) {
-            confirmPs.executeUpdate();
-            // [UNPAID RESERVATION CLEANUP] Don pending chua coc khong doi sang
-            // cancelled o day nua; ReservationDAO.synchronizeDepositStatus() se xoa han.
-            int expired = latePs.executeUpdate();
-
-            if (expired > 0) {
-                System.out.println("[TableDAO] Auto-expired " + expired + " reservation(s).");
-            }
-
-        } catch (Exception e) {
-            System.err.println("[TableDAO] autoExpire error: " + e.getMessage());
-        }
     }
 
     public Table getTableByTableID(int tableID) {
