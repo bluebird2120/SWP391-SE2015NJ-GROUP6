@@ -228,7 +228,6 @@ public class EmployeeDAO extends DBContext {
 
             sql.append(" AND isActive = ?");
         }
-
         if (roleID != null) {
             sql.append(" AND roleID = ?");
         }
@@ -236,7 +235,6 @@ public class EmployeeDAO extends DBContext {
             int idx = 1;
 
             ps.setInt(idx++, UserRole.RESTAURANT_STAFF.getRoleID());
-
             ps.setInt(idx++, UserRole.RECEPTIONIST.getRoleID());
             if (hasKeyword) {
                 String like = "%" + keyword.trim() + "%";
@@ -583,7 +581,7 @@ public class EmployeeDAO extends DBContext {
         e.setLastPasswordChangedAt(rs.getTimestamp("lastPasswordChangedAt"));
 
         e.setMustChangePassword(rs.getInt("mustChangePassword"));
-
+        
         return e;
     }
 }
