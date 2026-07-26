@@ -221,7 +221,7 @@
             <div class="content-grid">
                 <section class="panel">
                     <div class="panel-head">
-                        <h3>Top món bán chạy trong kỳ</h3>
+                        <h3>Top 5 món bán chạy trong kỳ</h3>
                     </div>
                     <c:choose>
                         <c:when test="${not empty topDishes}">

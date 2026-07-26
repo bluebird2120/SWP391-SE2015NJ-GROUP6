@@ -101,8 +101,9 @@
                         <div class="form-group ${not empty errors['roleID'] ? 'has-error' : ''}">
                             <label>Vai trò <span class="required">*</span></label>
 
-                            <select name="roleID">
-                                <option value="2" ${empty staff.roleID || staff.roleID == 2 ? 'selected' : ''}>
+                            <select name="roleID" required>
+                                <option value="" ${staff == null || staff.roleID == 0 ? 'selected' : ''} disabled>-- Chọn vai trò --</option>
+                                <option value="2" ${staff.roleID == 2 ? 'selected' : ''}>
                                     Nhân viên phục vụ
                                 </option>
                                 <option value="3" ${staff.roleID == 3 ? 'selected' : ''}>
