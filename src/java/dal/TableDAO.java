@@ -2,6 +2,7 @@ package dal;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,12 +10,24 @@ import java.util.List;
 import java.util.Map;
 import model.Table;
 
+/**
+ * DAO CHO BẢNG VẬT LÝ.
+ *
+ * <p>Thứ tự nhóm hàm:
+ * 1) dữ liệu filter/đặt bàn;
+ * 2) lấy một bàn hoặc danh sách bàn;
+ * 3) CRUD Owner;
+ * 4) QR và kiểm tra bàn trống;
+ * 5) phân trang;
+ * 6) liên kết bàn với order.</p>
+ */
 public class TableDAO extends DBContext {
 
     /**
      * Lấy các mức sức chứa đang thực sự tồn tại để tạo bộ lọc động.
      * DISTINCT giúp mỗi mức sức chứa chỉ xuất hiện một lần trong combobox.
      */
+    /** Lấy các sức chứa khác nhau từ DB để tạo filter động. */
     public List<Integer> getDistinctCapacities() {
         List<Integer> capacities = new ArrayList<>();
         String sql = "SELECT DISTINCT capacity "
@@ -34,6 +47,7 @@ public class TableDAO extends DBContext {
         return capacities;
     }
 
+    /** Lấy các khu vực bàn khác nhau đang có trong DB. */
     public List<String> getAllAreaTypes() {
 
         List<String> list = new ArrayList<>();
@@ -56,6 +70,150 @@ public class TableDAO extends DBContext {
 
         return list;
     }
+
+    // =========================================================
+    // 1. OWNER - LIST TABLE (FILTER + PAGINATION)
+    // =========================================================
+
+    /** Lấy toàn bộ bàn cho màn quản lý không phân trang. */
+    public List<Table> getAllTablesForManagement() {
+        List<Table> list = new ArrayList<>();
+        String sql = "SELECT * FROM `Table` ORDER BY tableID DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRow(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /** Đếm số bàn thỏa bộ lọc để controller tính tổng số trang. */
+    public int countSearchTables(String searchName, Integer searchCapacity,
+            String searchArea, Integer searchStatus) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM `Table` WHERE 1=1 ");
+
+        appendManagementFilters(sql, searchName, searchCapacity,
+                searchArea, searchStatus);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            bindManagementFilters(ps, searchName, searchCapacity,
+                    searchArea, searchStatus);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] countSearchTables lỗi: "
+                    + e.getMessage());
+            return 0;
+        }
+    }
+
+    /** Lấy một trang danh sách bàn theo filter và offset. */
+    public List<Table> searchTablesPaging(String searchName,
+            Integer searchCapacity, String searchArea, Integer searchStatus,
+            int offset, int pageSize) {
+        List<Table> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT * FROM `Table` WHERE 1=1 ");
+
+        appendManagementFilters(sql, searchName, searchCapacity,
+                searchArea, searchStatus);
+        sql.append(" ORDER BY tableID DESC LIMIT ? OFFSET ?");
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int parameterIndex = bindManagementFilters(ps, searchName,
+                    searchCapacity, searchArea, searchStatus);
+            ps.setInt(parameterIndex++, pageSize);
+            ps.setInt(parameterIndex, offset);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TableDAO] searchTablesPaging lỗi: "
+                    + e.getMessage());
+        }
+        return list;
+    }
+
+    // =========================================================
+    // 2. OWNER - ADD TABLE
+    // =========================================================
+
+    /** Thêm bàn và sinh QRCodeToken UUID duy nhất. */
+    public boolean addTable(Table table) {
+        String sql = "INSERT INTO `Table` "
+                + "(employeeID, tableName, capacity, QRCodeToken, "
+                + "areaType, isActive) VALUES (?, ?, ?, ?, ?, ?)";
+        String qrToken = java.util.UUID.randomUUID().toString();
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (table.getEmployeeID() > 0) {
+                ps.setInt(1, table.getEmployeeID());
+            } else {
+                ps.setNull(1, java.sql.Types.INTEGER);
+            }
+            ps.setString(2, table.getTableName());
+            ps.setInt(3, table.getCapacity());
+            ps.setString(4, qrToken);
+            ps.setString(5, table.getAreaType() != null
+                    ? table.getAreaType() : "public");
+            ps.setInt(6, table.getIsActive());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // =========================================================
+    // 3. OWNER - EDIT TABLE
+    // =========================================================
+
+    /** Sửa thông tin bàn nhưng không cập nhật QRCodeToken. */
+    public boolean updateTable(Table table) {
+        String sql = "UPDATE `Table` SET tableName = ?, capacity = ?, "
+                + "areaType = ?, isActive = ? WHERE tableID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, table.getTableName());
+            ps.setInt(2, table.getCapacity());
+            ps.setString(3, table.getAreaType());
+            ps.setInt(4, table.getIsActive());
+            ps.setInt(5, table.getTableID());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // =========================================================
+    // 4. OWNER - TABLE DETAIL + QR
+    // =========================================================
+
+    /** Lấy đúng một bàn cho màn Edit hoặc Detail. */
+    public Table getTableByTableID(int tableID) {
+        String sql = "SELECT * FROM `Table` WHERE tableID = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, tableID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapRow(rs) : null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // =========================================================
+    // 5. RESERVATION / TABLE AVAILABILITY
+    // =========================================================
 
     /*
      * Tính số bàn còn trống theo từng capacity trong khu vực.
@@ -216,25 +374,6 @@ public class TableDAO extends DBContext {
         return resultList;
     }
 
-    public Table getTableByTableID(int tableID) {
-        String sql = "SELECT * FROM `Table` WHERE tableID = ?";
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, tableID);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapRow(rs);
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
     public List<Table> getAllActiveTables() {
         List<Table> list = new ArrayList<>();
 
@@ -260,6 +399,7 @@ public class TableDAO extends DBContext {
     // =========================================================
     // HÀM MAP DỮ LIỆU DÙNG CHUNG CHO TOÀN BỘ DAO
     // =========================================================
+    /** Chuyển một dòng ResultSet thành model Table, dùng chung cho các query. */
     private Table mapRow(ResultSet rs) throws Exception {
         Table t = new Table();
         t.setTableID(rs.getInt("tableID"));
@@ -272,22 +412,49 @@ public class TableDAO extends DBContext {
         return t;
     }
 
+    /** Dùng chung cho hai query List để tránh lặp điều kiện filter. */
+    private void appendManagementFilters(StringBuilder sql,
+            String name, Integer capacity, String area, Integer status) {
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND tableName LIKE ? ");
+        }
+        if (capacity != null) {
+            sql.append(" AND capacity = ? ");
+        }
+        if (area != null && !area.isEmpty()) {
+            sql.append(" AND areaType = ? ");
+        }
+        if (status != null) {
+            sql.append(" AND isActive = ? ");
+        }
+    }
+
+    /**
+     * Bind filter theo đúng thứ tự appendManagementFilters().
+     * Trả index tiếp theo để searchTablesPaging bind LIMIT/OFFSET.
+     */
+    private int bindManagementFilters(PreparedStatement ps,
+            String name, Integer capacity, String area, Integer status)
+            throws SQLException {
+        int index = 1;
+        if (name != null && !name.isEmpty()) {
+            ps.setString(index++, "%" + name + "%");
+        }
+        if (capacity != null) {
+            ps.setInt(index++, capacity);
+        }
+        if (area != null && !area.isEmpty()) {
+            ps.setString(index++, area);
+        }
+        if (status != null) {
+            ps.setInt(index++, status);
+        }
+        return index;
+    }
+
     // =========================================================
     // CÁC HÀM CHỨC NĂNG QUẢN LÝ BÀN (TABLE MANAGEMENT)
     // =========================================================
-    public List<Table> getAllTablesForManagement() {
-        List<Table> list = new ArrayList<>();
-        String sql = "SELECT * FROM `Table` ORDER BY tableID DESC";
-        try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapRow(rs));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
     public List<Table> searchTables(String name, Integer capacity, String area, Integer status) {
         List<Table> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM `Table` WHERE 1=1");
@@ -332,48 +499,10 @@ public class TableDAO extends DBContext {
         return list;
     }
 
-    public boolean addTable(Table t) {
-        String sql = "INSERT INTO `Table` (employeeID, tableName, capacity, QRCodeToken, areaType, isActive) VALUES (?, ?, ?, ?, ?, ?)";
-        String uniqueQRToken = java.util.UUID.randomUUID().toString();
-
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (t.getEmployeeID() > 0) {
-                ps.setInt(1, t.getEmployeeID());
-            } else {
-                ps.setNull(1, java.sql.Types.INTEGER);
-            }
-            ps.setString(2, t.getTableName());
-            ps.setInt(3, t.getCapacity());
-            ps.setString(4, uniqueQRToken);
-            ps.setString(5, t.getAreaType() != null ? t.getAreaType() : "public");
-            ps.setInt(6, t.getIsActive());
-
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    public boolean updateTable(Table t) {
-        String sql = "UPDATE `Table` SET tableName = ?, capacity = ?, areaType = ?, isActive = ? WHERE tableID = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, t.getTableName());
-            ps.setInt(2, t.getCapacity());
-            ps.setString(3, t.getAreaType());
-            ps.setInt(4, t.getIsActive());
-            ps.setInt(5, t.getTableID());
-
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     // =========================================================
     // CÁC HÀM HỖ TRỢ TÍNH NĂNG QUÉT QR GỘP BÀN
     // =========================================================
+    /** Tìm bàn từ token nằm trong URL của mã QR. */
     public Table getTableByToken(String token) {
         String sql = "SELECT * FROM `Table` WHERE QRCodeToken = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -389,6 +518,7 @@ public class TableDAO extends DBContext {
         return null;
     }
 
+    /** Kiểm tra bàn chưa thuộc order hoạt động nào trước khi mở/gộp bàn. */
     public boolean isTableAvailable(int tableID) {
         String sql = "SELECT COUNT(*) FROM Order_Table ot "
                 + "JOIN `Order` o ON ot.orderID = o.orderID "
@@ -449,103 +579,10 @@ public class TableDAO extends DBContext {
     // PHÂN TRANG & TÌM KIẾM ĐÃ SỬA LỖI ĐÓNG KẾT NỐI (CONNECTION)
     // =========================================================
     
-    // 1. Đếm tổng số bàn theo bộ lọc (Dùng trực tiếp connection kế thừa, KHÔNG TỰ ĐÓNG)
-    public int countSearchTables(String searchName, Integer searchCapacity, String searchArea, Integer searchStatus) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM `Table` WHERE 1=1 ");
-        
-        if (searchName != null && !searchName.isEmpty()) {
-            sql.append(" AND tableName LIKE ? ");
-        }
-        if (searchCapacity != null) {
-            sql.append(" AND capacity = ? ");
-        }
-        if (searchArea != null && !searchArea.isEmpty()) {
-            sql.append(" AND areaType = ? ");
-        }
-        if (searchStatus != null) {
-            sql.append(" AND isActive = ? ");
-        }
-        
-        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-             
-            int paramIndex = 1;
-            if (searchName != null && !searchName.isEmpty()) {
-                ps.setString(paramIndex++, "%" + searchName + "%");
-            }
-            if (searchCapacity != null) {
-                ps.setInt(paramIndex++, searchCapacity);
-            }
-            if (searchArea != null && !searchArea.isEmpty()) {
-                ps.setString(paramIndex++, searchArea);
-            }
-            if (searchStatus != null) {
-                ps.setInt(paramIndex++, searchStatus);
-            }
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[TableDAO] countSearchTables lỗi: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    // 2. Lấy danh sách bàn theo bộ lọc VÀ phân trang (Dùng trực tiếp connection kế thừa, KHÔNG TỰ ĐÓNG)
-    public List<Table> searchTablesPaging(String searchName, Integer searchCapacity, String searchArea, Integer searchStatus, int offset, int pageSize) {
-        List<Table> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM `Table` WHERE 1=1 ");
-        
-        if (searchName != null && !searchName.isEmpty()) {
-            sql.append(" AND tableName LIKE ? ");
-        }
-        if (searchCapacity != null) {
-            sql.append(" AND capacity = ? ");
-        }
-        if (searchArea != null && !searchArea.isEmpty()) {
-            sql.append(" AND areaType = ? ");
-        }
-        if (searchStatus != null) {
-            sql.append(" AND isActive = ? ");
-        }
-        
-        sql.append(" ORDER BY tableID DESC LIMIT ? OFFSET ?");
-        
-        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-             
-            int paramIndex = 1;
-            if (searchName != null && !searchName.isEmpty()) {
-                ps.setString(paramIndex++, "%" + searchName + "%");
-            }
-            if (searchCapacity != null) {
-                ps.setInt(paramIndex++, searchCapacity);
-            }
-            if (searchArea != null && !searchArea.isEmpty()) {
-                ps.setString(paramIndex++, searchArea);
-            }
-            if (searchStatus != null) {
-                ps.setInt(paramIndex++, searchStatus);
-            }
-            
-            ps.setInt(paramIndex++, pageSize);
-            ps.setInt(paramIndex++, offset);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs)); // Gọi hàm mapRow an toàn có sẵn của bạn
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[TableDAO] searchTablesPaging lỗi: " + e.getMessage());
-        }
-        return list;
-    }
-    
     // =========================================================
     // LẤY DANH SÁCH TẤT CẢ CÁC BÀN CỦA MỘT ĐƠN HÀNG (DÙNG CHO GIỎ HÀNG)
     // =========================================================
+    /** Lấy tất cả bàn đang được gắn với một order (hỗ trợ gộp bàn). */
     public List<Table> getTablesByOrderId(int orderID) {
         List<Table> list = new ArrayList<>();
         String sql = "SELECT t.* FROM `Table` t "
@@ -566,6 +603,7 @@ public class TableDAO extends DBContext {
     }
 
     /** [ORDER VALIDATION] Xác nhận tableID thuộc đúng order hiện tại. */
+    /** Xác minh tableID thực sự thuộc orderID trước khi thêm món. */
     public boolean isTableAssignedToOrder(int orderID, int tableID) {
         String sql = "SELECT 1 FROM Order_Table "
                 + "WHERE orderID = ? AND tableID = ? LIMIT 1";

@@ -7,11 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 import model.TableJoinRequest;
 
+/**
+ * DAO YÊU CẦU THAM GIA BÀN VÀ KHÔI PHỤC QUYỀN HOST.
+ *
+ * <p>Tạo request -> HOST duyệt/từ chối -> thiết bị GUEST kiểm tra trạng thái;
+ * nhánh reclaim do Owner/Lễ tân duyệt và cấp hostToken mới.</p>
+ */
 public class TableJoinRequestDAO extends DBContext {
 
     /**
      * 1. THÊM YÊU CẦU MỚI (Khi Guest quét QR và nhập tên xin vào bàn)
      */
+    /** Tạo yêu cầu GUEST xin tham gia order đang hoạt động. */
     public boolean createJoinRequest(TableJoinRequest req) {
         String sql = "INSERT INTO TableJoinRequest (orderID, guestSessionID, guestName, status) VALUES (?, ?, ?, 'pending')";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -29,6 +36,7 @@ public class TableJoinRequestDAO extends DBContext {
     /**
      * 2. LẤY DANH SÁCH ĐANG CHỜ (Cho màn hình của HOST tải về để hiển thị Popup duyệt)
      */
+    /** HOST lấy các yêu cầu pending của đúng order hiện tại. */
     public List<TableJoinRequest> getPendingRequestsByOrderId(int orderID) {
         List<List> list = new ArrayList<>(); // Sử dụng cấu trúc mảng động giống dự án của bạn
         List<TableJoinRequest> requests = new ArrayList<>();
@@ -75,6 +83,7 @@ public class TableJoinRequestDAO extends DBContext {
      * [SECURITY FIX] Không update chỉ bằng requestID vì HOST bàn khác có thể
      * đoán ID. Request phải thuộc đúng order trong session của HOST.
      */
+    /** Cập nhật request khi requestID thực sự thuộc order của HOST. */
     public boolean updateRequestStatusForOrder(
             int requestID, int orderID, String newStatus) {
         String sql = "UPDATE TableJoinRequest SET status = ? "
@@ -111,6 +120,7 @@ public class TableJoinRequestDAO extends DBContext {
      * 4. KIỂM TRA TRẠNG THÁI HIỆN TẠI (Cho màn hình GUEST chạy ngầm kiểm tra xem mình được duyệt chưa)
      * Trả về: 'pending', 'approved', 'rejected' hoặc null nếu không tìm thấy đơn
      */
+    /** Thiết bị khách polling trạng thái yêu cầu bằng sessionID + orderID. */
     public String checkRequestStatus(String guestSessionID, int orderID) {
         String sql = "SELECT status FROM TableJoinRequest WHERE guestSessionID = ? AND orderID = ? ORDER BY createdAt DESC LIMIT 1";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -131,6 +141,7 @@ public class TableJoinRequestDAO extends DBContext {
     /**
      * 5. YÊU CẦU CẤP LẠI QUYỀN CHỦ BÀN (Khách hàng báo mất Session, chờ Nhân viên duyệt)
      */
+    /** Tạo yêu cầu khôi phục HOST khi cookie cũ bị mất. */
     public boolean createReclaimRequest(int orderID, String guestSessionID) {
         // Đánh dấu status là 'pending_reclaim' để phân biệt với xin vào bàn thông thường
         String sql = "INSERT INTO TableJoinRequest (orderID, guestSessionID, guestName, status) VALUES (?, ?, 'YÊU CẦU LẤY LẠI QUYỀN CHỦ BÀN', 'pending_reclaim')";

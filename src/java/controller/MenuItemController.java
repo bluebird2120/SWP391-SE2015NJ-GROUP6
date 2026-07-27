@@ -26,6 +26,12 @@ import model.Employee;
 // === KẾT THÚC PHẦN THÊM MỚI ===
 
 @WebServlet(name = "MenuItemController", urlPatterns = "/menu")
+/**
+ * HIỂN THỊ MENU SAU KHI QUÉT QR.
+ *
+ * <p>doGet kiểm tra trạng thái bàn, đọc bộ lọc/phân trang, lấy danh sách món
+ * và forward user/menu.jsp. Form thêm giỏ POST sang OrderController.</p>
+ */
 public class MenuItemController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -40,6 +46,7 @@ public class MenuItemController extends HttpServlet {
     }
 
     @Override
+    /** Chuẩn bị menu, bộ lọc và URL quay lại để giữ trang sau khi thêm món. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -295,6 +302,9 @@ public class MenuItemController extends HttpServlet {
             currentMenuUrl += "?" + request.getQueryString();
         }
         request.setAttribute("returnUrl", currentMenuUrl);
+        // [DISH DETAIL BACK URL] Ghi nhớ đúng trang menu đang xem, gồm cả
+        // phân trang và bộ lọc, để nút "Quay lại Menu" không rơi về /home.
+        session.setAttribute("lastDishListUrl", currentMenuUrl);
 
         // [PREORDER ROUTING FIX] Luong dat mon truoc sau khi coc ban phai dung
         // owner/dish-list.jsp vi form o trang nay submit ve /reservation?action=addPreorderItem.
@@ -304,7 +314,7 @@ public class MenuItemController extends HttpServlet {
             if (request.getQueryString() != null) {
                 currentUrl += "?" + request.getQueryString();
             }
-            request.getSession().setAttribute("lastDishListUrl", currentUrl);
+            session.setAttribute("lastDishListUrl", currentUrl);
             request.getRequestDispatcher("/views/owner/dish-list.jsp").forward(request, response);
         } else {
             // [MENU ROUTING FIX] Khách chưa quét QR vẫn phải thấy menu công khai,
@@ -315,6 +325,7 @@ public class MenuItemController extends HttpServlet {
 
     }
 
+    /** Parse số nguyên an toàn cho page và các tham số số từ query string. */
     private int parseIntSafe(String value, int defaultValue, int minValue) {
         if (!checkEmpty(value)) {
             return defaultValue;
@@ -333,6 +344,7 @@ public class MenuItemController extends HttpServlet {
     private static final int PAGE_SIZE = 8;
 
     @Override
+    /** Các thao tác quản lý món cũ; khách thêm giỏ đi qua OrderController. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
     }

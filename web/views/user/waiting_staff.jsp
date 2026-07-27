@@ -36,7 +36,7 @@
                 if (data.status === 'approved') {
                     clearInterval(checkInterval);
                     // Nhân viên đã duyệt -> Load lại trang hiện tại (lúc này Controller sẽ cho thẳng vào Menu)
-                    window.location.reload(); 
+                    window.location.reload(); //reload() để load lại trang liên tục
                 }
             })
             .catch(err => console.log(err));

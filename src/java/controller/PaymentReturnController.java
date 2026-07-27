@@ -27,6 +27,13 @@ import model.Invoices;
 import util.Config;
 
 @WebServlet(name = "PaymentReturnController", urlPatterns = {"/vnpay_return"})
+/**
+ * NHẬN KẾT QUẢ TRẢ VỀ TỪ VNPAY.
+ *
+ * <p>Đọc tham số -> kiểm tra chữ ký -> kiểm tra invoice/số tiền/mã giao dịch
+ * -> cập nhật payment, invoice, order và table đúng một lần
+ * -> chuyển tới payment-info.</p>
+ */
 public class PaymentReturnController extends HttpServlet {
 
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
@@ -38,6 +45,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     @Override
+    /** Xác minh callback VNPay và hoàn tất giao dịch hợp lệ. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -192,6 +200,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     @Override
+    /** VNPay có thể callback bằng POST; dùng chung logic xác minh của GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
@@ -205,6 +214,7 @@ public class PaymentReturnController extends HttpServlet {
     // =========================================================================
     // HÀM HELPER: Ghi trực tiếp lịch sử vào bảng Payments (Dành cho Cọc & Lỗi)
     // =========================================================================
+    /** Ghi payment record phục vụ lịch sử giao dịch và đối soát. */
     private void logPaymentRecord(int invoiceID, String transactionCode, String paymentGateway, long amount, String status) {
         String sql = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, ?, NOW())";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -222,6 +232,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     // Hàm hỗ trợ băm lại các tham số nhận được
+    /** Ghép và băm các trường VNPay để so sánh secure hash. */
     private String hashAllFields(Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
         Collections.sort(fieldNames);

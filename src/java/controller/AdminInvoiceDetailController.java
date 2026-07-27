@@ -17,9 +17,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @WebServlet(name = "AdminInvoiceDetailController", urlPatterns = {"/owner/invoice-detail"})
+/**
+ * LUỒNG OWNER XEM CHI TIẾT HÓA ĐƠN.
+ *
+ * <p>Quyền Owner -> validate invoiceID -> lấy invoice -> lấy order liên kết
+ * -> lấy OrderItem/MenuItem -> forward invoice-detail.jsp.</p>
+ */
 public class AdminInvoiceDetailController extends HttpServlet {
 
     @Override
+    /** Tải toàn bộ dữ liệu read-only của một hóa đơn để xem hoặc in. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
             
@@ -75,6 +82,7 @@ public class AdminInvoiceDetailController extends HttpServlet {
     }
 
     @Override
+    /** Màn chi tiết chỉ đọc; POST dùng chung luồng hiển thị GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
