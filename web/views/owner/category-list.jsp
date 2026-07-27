@@ -394,7 +394,6 @@
             </div>
         </div>
 
-        <%-- Modal chỉnh sửa --%>
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
@@ -410,7 +409,7 @@
                     <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
 
                     <label class="form-label">Tên loại:</label>
-                    <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
+                    <!-- Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
                     <input type="text" id="modalCategoryName" name="categoryName" value="${not empty errorName and modalErrorID > 0 ? modalErrorName : ''}"/>
                     <span class="modal-error-text" id="editErrorName">
                         <c:if test="${not empty errorName and modalErrorID > 0}">
@@ -424,7 +423,6 @@
             </div>
         </div>
 
-        <%-- Modal tạo mới --%>
         <div id="createModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
@@ -437,7 +435,7 @@
                     <input type="hidden" value="${currentAvailable}" name="isAvailable"/>
 
                     <label class="form-label">Nhập loại mới:</label>
-                    <!-- 🌟 ĐA SỬA: Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
+                    <!-- Đổ giá trị từ biến modalErrorName nếu lỗi hệ thống trả về -->
                     <input type="text" id="createCategoryName" name="categoryName" value="${not empty errorName and modalErrorID == 0 ? modalErrorName : ''}"/>
                     <span class="modal-error-text" id="createErrorName">
                         <c:if test="${not empty errorName and modalErrorID == 0}">
@@ -526,7 +524,6 @@
                 }
             };
 
-            // 🌟 TỰ ĐỘNG MỞ LẠI MODAL KHI SERVER PHÁT HIỆN LỖI TRÙNG TÊN HOẶC ĐỂ TRỐNG
             document.addEventListener("DOMContentLoaded", function () {
                 const hasError = "${not empty errorName}";
                 const errorID = "${modalErrorID}";

@@ -13,6 +13,13 @@ import dal.NotificationDAO;
 import model.Notifications;
 import model.StaffTableDTO;
 
+/**
+ * DAO VẬN HÀNH BÀN CHO LỄ TÂN VÀ NHÂN VIÊN PHỤC VỤ.
+ *
+ * <p>Nhóm hàm: tải dashboard -> kiểm tra quyền nhân viên
+ * -> check-in/mở/gán bàn -> hủy phục vụ -> hoàn tất dọn bàn
+ * -> helper chọn nhân viên và kiểm tra xung đột.</p>
+ */
 public class StaffTableDAO extends DBContext {
 
     
@@ -144,6 +151,7 @@ public class StaffTableDAO extends DBContext {
     /*
    
      */
+    /** Xác minh order được phân công cho đúng employeeID. */
     public boolean isOrderAssignedToEmployee(int orderID, int employeeID) {
         String sql = "SELECT 1 FROM `Order` o "
                 + "WHERE o.orderID=? AND o.employeeID=? "
@@ -300,6 +308,7 @@ public class StaffTableDAO extends DBContext {
     /*
      Xác nhận khách đã đến 
      */
+    /** Lễ tân check-in khách đặt trước và mở quyền gọi món QR. */
     public boolean checkinArrivedReservation(int orderID) {
         
         
@@ -319,6 +328,7 @@ public class StaffTableDAO extends DBContext {
      * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
      * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
      */
+    /** Lễ tân mở bàn cho khách walk-in và mở quyền gọi món QR. */
     public boolean openTableForWalkIn(int orderID) {
         try {
             connection.setAutoCommit(false);
@@ -391,10 +401,14 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
+
     
     /*
     Nhân viên lễ tân sẽ gán bàn cho khách đặt trước  
     */
+
+    
+
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
@@ -489,8 +503,9 @@ public class StaffTableDAO extends DBContext {
     }
 
     /*
-     Hủy phục vụ bàn 
+     Hủy phiên phục vụ khi order chưa có món gửi bếp.
      */
+    
     public String cancelServiceByReception(int orderID) {
         String hasItemSql = "SELECT 1 FROM OrderItem WHERE orderID=? LIMIT 1";
         String cancelSql = "UPDATE `Order` "
@@ -523,8 +538,9 @@ public class StaffTableDAO extends DBContext {
     }
 
     /*
-     Nhân viên xác nhận dọn dẹp đơn của mình 
+     Nhân viên xác nhận dọn xong để bàn quay lại trạng thái available
      */
+    
     public boolean markCleaningCompleted(int orderID, int employeeID) {
         String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "

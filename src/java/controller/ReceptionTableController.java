@@ -15,6 +15,12 @@ import java.io.IOException;
 import model.Employee;
 
 @WebServlet(name = "ReceptionTableController", urlPatterns = {"/reception/tables"})
+/**
+ * LUỒNG LỄ TÂN GÁN/MỞ/CHECK-IN BÀN.
+ *
+ * <p>GET tải dashboard bàn. POST điều hướng các action assign, checkin,
+ * open_table và cancel_service sang StaffTableDAO.</p>
+ */
 public class ReceptionTableController extends HttpServlet {
 
     private static final String VIEW = "/views/reception/table-dashboard.jsp";
@@ -22,6 +28,7 @@ public class ReceptionTableController extends HttpServlet {
     private static final int RECEPTIONIST_ROLE_ID = 3;
 
     @Override
+    /** Tải bàn vật lý, đơn chờ bàn và số liệu tổng hợp cho dashboard. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         util.CsrfUtil.ensureToken(request.getSession());
@@ -49,6 +56,7 @@ public class ReceptionTableController extends HttpServlet {
     }
 
     @Override
+    /** Kiểm tra CSRF/quyền rồi thực hiện action vận hành bàn. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");

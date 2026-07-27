@@ -14,11 +14,19 @@ import jakarta.servlet.http.HttpSession;
 import model.Employee;
 
 @WebServlet(name = "TableJoinController", urlPatterns = {"/api/table-join"})
+/**
+ * API QUẢN LÝ QUYỀN HOST/GUEST SAU KHI QUÉT QR.
+ *
+ * <p>GET: checkStatus, checkStaffApproval, getPending.
+ * POST: requestJoin, approve/reject, requestReclaimHost,
+ * staffApproveReclaim.</p>
+ */
 public class TableJoinController extends HttpServlet {
 
     private final TableJoinRequestDAO requestDAO = new TableJoinRequestDAO();
 
     @Override
+    /** Trả trạng thái chờ/duyệt và danh sách yêu cầu đang chờ cho HOST. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
         response.setContentType("application/json;charset=UTF-8");
@@ -106,6 +114,7 @@ public class TableJoinController extends HttpServlet {
     }
 
     @Override
+    /** Thay đổi yêu cầu tham gia bàn sau khi kiểm tra CSRF và vai trò. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
         response.setContentType("text/plain;charset=UTF-8");
@@ -200,7 +209,7 @@ public class TableJoinController extends HttpServlet {
         }
     }
 
-    // [JSON FIX] Không cho dấu nháy/xuống dòng trong tên khách phá cấu trúc JSON.
+    /** Escape tên khách trước khi tự ghép chuỗi JSON trả về trình duyệt. */
     private String escapeJson(String value) {
         if (value == null) {
             return "";
