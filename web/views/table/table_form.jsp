@@ -127,6 +127,8 @@
                     </c:if>
 
                     <form action="${pageContext.request.contextPath}/owner/manage-table" method="POST">
+                        <%-- [CSRF FIX] Token xác nhận form được gửi từ phiên đăng nhập hiện tại. --%>
+                        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                         <input type="hidden" name="action" value="${mode}">
                         <input type="hidden" name="tableID" value="${table.tableID}">
 

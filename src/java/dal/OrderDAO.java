@@ -8,7 +8,17 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO TRUNG TÂM CHO ORDER VÀ ORDER ITEM.
+ *
+ * <p>Nhóm hàm theo luồng:
+ * tạo order -> gắn reservation/bàn -> tìm order hoạt động
+ * -> ghi/gửi món -> sửa giỏ DB -> request checkout
+ * -> đọc chi tiết -> mapper/helper.</p>
+ */
 public class OrderDAO {
+
+    // ==================== SHARED CONNECTION ====================
 
     private Connection getConnection() {
         return new DBContext().getConnection();
@@ -17,6 +27,9 @@ public class OrderDAO {
     // =========================================================
     // 1. TẠO ORDER MỚI (ĐÃ TÍCH HỢP TỰ ĐỘNG GÁN NV & HOST TOKEN)
     // =========================================================
+    // ==================== 1. CREATE / FIND ACTIVE ORDER ====================
+
+    /** Tạo order mới và trả về orderID được DB sinh ra. */
     public int createOrder(Order order) {
         // 🌟 ĐÃ SỬA: Thêm cột hostToken và thêm 1 dấu ? ở VALUES
         String sql = "INSERT INTO `Order` "
@@ -118,6 +131,7 @@ public class OrderDAO {
     // =========================================================
     // 1.6 LIÊN KẾT ORDER VÀ TABLE
     // =========================================================
+    /** Gắn một bàn vật lý vào order thông qua bảng OrderTable. */
     public boolean linkOrderAndTable(int orderID, int tableID) {
         String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -133,6 +147,7 @@ public class OrderDAO {
     // =========================================================
     // 2. LẤY ORDER ĐANG MỞ CỦA MỘT BÀN
     // =========================================================
+    /** Tìm phiên order chưa kết thúc đang sử dụng một bàn. */
     public Order getActiveOrderByTableId(int tableID) {
         String sql = "SELECT o.* FROM `Order` o "
                 + "JOIN Order_Table ot ON o.orderID = ot.orderID "
@@ -170,6 +185,7 @@ public class OrderDAO {
     // =========================================================
     // 2.5 LẤY THÔNG TIN ORDER THEO MÃ ORDER
     // =========================================================
+    /** Lấy order theo orderID; được các controller dùng để kiểm tra quyền/trạng thái. */
     public Order getOrderById(int orderID) {
         String sql = "SELECT * FROM `Order` WHERE orderID = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -187,6 +203,9 @@ public class OrderDAO {
     // =========================================================
     // 3. THÊM MÓN VÀO GIỎ
     // =========================================================
+    // ==================== 2. CART -> SEND TO KITCHEN ====================
+
+    /** Ghi một OrderItem mới; luồng QR chính ưu tiên sendItemToKitchen(). */
     public int addOrderItem(int orderID, int itemID, Integer tableID, int quantity, int price, String note) {
         OrderItem existing = getOrderItemByOrderAndItemAndTable(orderID, itemID, tableID);
         if (existing != null) {
@@ -219,9 +238,76 @@ public class OrderDAO {
         return -1;
     }
 
+    /**
+     * [TRANSACTION FIX] Trừ tồn kho và ghi món gửi bếp cùng connection.
+     * INSERT lỗi sẽ rollback lượng tồn kho.
+     */
+    /**
+     * Transaction gửi bếp: khóa tồn kho -> kiểm tra đủ số lượng
+     * -> trừ DailyInventory -> ghi OrderItem -> commit; lỗi thì rollback.
+     */
+    public boolean sendItemToKitchen(int orderID, int itemID, Integer tableID,
+            int quantity, int price, String note) {
+        if (quantity < 1 || quantity > 99) {
+            return false;
+        }
+
+        String stockSql = "UPDATE DailyInventory "
+                + "SET quantityInStock = quantityInStock - ? "
+                + "WHERE itemID = ? AND workingDate = CURDATE() "
+                + "AND quantityInStock >= ?";
+        String itemSql = "INSERT INTO OrderItem "
+                + "(orderID, itemID, tableID, quantity, price, note) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(stockSql)) {
+                    ps.setInt(1, quantity);
+                    ps.setInt(2, itemID);
+                    ps.setInt(3, quantity);
+                    if (ps.executeUpdate() == 0) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(itemSql)) {
+                    ps.setInt(1, orderID);
+                    ps.setInt(2, itemID);
+                    if (tableID == null) {
+                        ps.setNull(3, Types.INTEGER);
+                    } else {
+                        ps.setInt(3, tableID);
+                    }
+                    ps.setInt(4, quantity);
+                    ps.setInt(5, price);
+                    ps.setString(6, note);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("[OrderDAO] sendItemToKitchen rollback: "
+                        + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("[OrderDAO] sendItemToKitchen lỗi: " + e.getMessage());
+            return false;
+        }
+    }
+
     // =========================================================
     // 4. CẬP NHẬT SỐ LƯỢNG
     // =========================================================
+    // ==================== 3. MANAGE SAVED ORDER ITEMS ====================
+
     public boolean updateOrderItemQuantity(int orderItemID, int newQuantity) {
         String sql = "UPDATE OrderItem SET quantity = ? WHERE orderItemID = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -238,8 +324,16 @@ public class OrderDAO {
      * [YEU CAU THANH TOAN] Khach bam nut tinh tien thi chi danh dau thoi diem
      * yeu cau, khong tao hoa don va khong cho khach tu chot tien.
      */
+    // ==================== 4. REQUEST CHECKOUT ====================
+
+    /** Chuyển order sang trạng thái chờ nhân viên thanh toán. */
     public boolean requestCheckout(int orderID) {
-        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), o.invoiceID = NULL "
+        // [INVOICE LINK FIX] Chỉ bỏ liên kết hóa đơn cọc DEP-*; giữ lại hóa
+        // đơn bữa ăn unpaid/failed để khách gửi lại yêu cầu không tạo invoice mồ côi.
+        String sql = "UPDATE `Order` o SET o.checkoutRequestAt = NOW(), "
+                + "o.invoiceID = CASE WHEN EXISTS ("
+                + "SELECT 1 FROM Invoices dep WHERE dep.invoiceID=o.invoiceID "
+                + "AND dep.invoiceNumber LIKE 'DEP-%') THEN NULL ELSE o.invoiceID END "
                 + "WHERE o.orderID = ? "
                 + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "AND EXISTS (SELECT 1 FROM OrderItem oi WHERE oi.orderID = o.orderID) "
@@ -274,6 +368,9 @@ public class OrderDAO {
     // =========================================================
     // 6. LẤY DANH SÁCH ORDER ITEM
     // =========================================================
+    // ==================== 5. READ ORDER / CART DETAIL ====================
+
+    /** Lấy toàn bộ OrderItem đã ghi DB của một order. */
     public List<OrderItem> getOrderItemsByOrderId(int orderID) {
         List<OrderItem> list = new ArrayList<>();
         String sql = "SELECT * FROM OrderItem WHERE orderID = ? ORDER BY orderItemID";
@@ -292,6 +389,7 @@ public class OrderDAO {
     // =========================================================
     // 7. LẤY DANH SÁCH MENU ITEM
     // =========================================================
+    /** Lấy MenuItem song song với OrderItem để JSP hiển thị tên và giá. */
     public List<MenuItem> getMenuItemsByOrderId(int orderID) {
         List<MenuItem> list = new ArrayList<>();
         String sql = "SELECT mi.* FROM OrderItem oi "
@@ -429,6 +527,7 @@ public class OrderDAO {
         return false;
     }
     
+    /** Tìm order đang liên kết với một invoice. */
     public Order getOrderByInvoiceId(int invoiceID) {
         String sql = "SELECT * FROM `Order` WHERE invoiceID = ?";
         try (java.sql.Connection conn = getConnection(); 
@@ -448,6 +547,7 @@ public class OrderDAO {
     // =========================================================
     // CẬP NHẬT HOST TOKEN CHO ĐƠN ĐẶT TRƯỚC KHI KHÁCH CHECK-IN
     // =========================================================
+    /** Đổi hostToken khi nhân viên duyệt yêu cầu khôi phục HOST. */
     public boolean updateHostToken(int orderID, String hostToken) {
         String sql = "UPDATE `Order` SET hostToken = ? WHERE orderID = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -463,6 +563,9 @@ public class OrderDAO {
     // =========================================================
     // HELPER: map ResultSet -> Order (ĐÃ SỬA LỖI CONSTRUCTOR 14 THAM SỐ)
     // =========================================================
+    // ==================== 6. MAPPERS / PRIVATE HELPERS ====================
+
+    /** Mapper dùng chung: ResultSet -> Order. */
     private Order mapToOrder(ResultSet rs) throws SQLException {
         return new Order(
                 rs.getInt("orderID"),
@@ -485,6 +588,7 @@ public class OrderDAO {
     // =========================================================
     // HELPER: map ResultSet -> OrderItem
     // =========================================================
+    /** Mapper dùng chung: ResultSet -> OrderItem. */
     private OrderItem mapToOrderItem(ResultSet rs) throws SQLException {
         return new OrderItem(
                 rs.getInt("orderItemID"),
@@ -500,6 +604,7 @@ public class OrderDAO {
     // =========================================================
     // HELPER: map ResultSet -> MenuItem
     // =========================================================
+    /** Mapper dùng chung: ResultSet -> MenuItem. */
     private MenuItem mapToMenuItem(ResultSet rs) throws SQLException {
         MenuItem mi = new MenuItem();
         mi.setItemID(rs.getInt("itemID"));
@@ -515,6 +620,9 @@ public class OrderDAO {
         return mi;
     }
 
+    // ==================== 7. MERGE TABLE / REPORT HELPERS ====================
+
+    /** Gộp thêm một bàn trống vào order đang hoạt động. */
     public boolean addTableToExistingOrder(int orderID, int tableID) {
         String sql = "INSERT INTO Order_Table (orderID, tableID) VALUES (?, ?)";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

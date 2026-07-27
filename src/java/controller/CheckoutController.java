@@ -21,18 +21,26 @@ import model.OrderItem;
 import model.Table;
 
 @WebServlet(name = "CheckoutController", urlPatterns = {"/checkout"})
+/**
+ * LUỒNG NHÂN VIÊN CHỐT HÓA ĐƠN TRƯỚC KHI THANH TOÁN.
+ *
+ * <p>GET tải order/hóa đơn để kiểm tra. POST action=confirm kiểm tra
+ * quyền nhân viên, nhận cash hoặc VNPay và chuyển sang bước thanh toán.</p>
+ */
 public class CheckoutController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
 
     @Override
+    /** Hiển thị màn xác nhận món và số tiền cho nhân viên phụ trách order. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         processCheckoutDisplay(request, response);
     }
 
     @Override
+    /** Nhận action xác nhận và phương thức thanh toán do nhân viên chọn. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
@@ -43,9 +51,11 @@ public class CheckoutController extends HttpServlet {
         processCheckoutDisplay(request, response);
     }
 
+    /** Tải order, món, bàn phục vụ và hóa đơn rồi forward checkout.jsp. */
     private void processCheckoutDisplay(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
+        util.CsrfUtil.ensureToken(session);
         Integer orderID = (Integer) session.getAttribute("orderID");
         Employee employee = (Employee) session.getAttribute("employee");
 
@@ -91,6 +101,7 @@ public class CheckoutController extends HttpServlet {
         request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
     }
 
+    /** Tạo hóa đơn bữa ăn hoặc dùng lại hóa đơn unpaid đã gắn với order. */
     private Invoices createOrGetMealInvoice(Order order, List<OrderItem> orderItems,
             List<MenuItem> menuItems) {
         if (order == null) {
@@ -141,21 +152,69 @@ public class CheckoutController extends HttpServlet {
         return invoice;
     }
 
+    /** Xác nhận quyền xử lý và điều hướng sang thanh toán tiền mặt/VNPay. */
     private void processPaymentConfirm(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
+        // [CSRF FIX] Xác nhận tiền mặt/VNPay là thao tác tài chính quan trọng.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
         HttpSession session = request.getSession();
         String paymentGateway = request.getParameter("paymentGateway");
         String orderIDParam = request.getParameter("orderID");
         Integer invoiceID = (Integer) session.getAttribute("invoiceID");
+        Employee employee = (Employee) session.getAttribute("employee");
 
-        if (orderIDParam == null || invoiceID == null) {
+        if (orderIDParam == null || invoiceID == null || employee == null) {
             response.sendRedirect(request.getContextPath() + "/staff/tables");
             return;
         }
 
-        int orderID = Integer.parseInt(orderIDParam);
+        int orderID;
+        try {
+            orderID = Integer.parseInt(orderIDParam);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Mã đơn hàng không hợp lệ.");
+            return;
+        }
+
+        // [SECURITY FIX - PAYMENT] POST phải kiểm tra lại quyền; không chỉ
+        // dựa vào lần GET mở trang checkout.
+        StaffTableDAO staffTableDAO = new StaffTableDAO();
+        if (!staffTableDAO.isOrderAssignedToEmployee(
+                orderID, employee.getEmployeeID())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không được thanh toán đơn hàng này.");
+            return;
+        }
+
         Invoices invoice = invoicesDAO.getInvoiceById(invoiceID);
-        if (invoice == null) {
+        Order order = orderDAO.getOrderById(orderID);
+        // [SECURITY FIX - PAYMENT] Hidden orderID có thể bị sửa; invoice trong
+        // session bắt buộc phải là invoice đang gắn với đúng order.
+        if (invoice == null || order == null || order.getInvoiceID() == null
+                || !order.getInvoiceID().equals(invoiceID)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Hóa đơn không thuộc đơn hàng này.");
+            return;
+        }
+
+        if ("paid".equalsIgnoreCase(invoice.getStatus())) {
+            response.sendRedirect(request.getContextPath()
+                    + "/payment-info?invoiceID=" + invoiceID);
+            return;
+        }
+
+        if (!"cash".equals(paymentGateway) && !"vnpay".equals(paymentGateway)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Phương thức thanh toán không hợp lệ.");
+            return;
+        }
+
+        if (invoice.getFinalAmount() < 0) {
             response.sendRedirect(request.getContextPath() + "/staff/tables");
             return;
         }
@@ -171,6 +230,8 @@ public class CheckoutController extends HttpServlet {
                 invoiceID, orderID, "cash", invoice.getFinalAmount(), transactionCode);
 
         if (ok) {
+            // [SECURITY FIX - INVOICE IDOR] Chỉ cấp quyền xem hóa đơn vừa trả.
+            session.setAttribute("paymentInfoInvoiceID", invoiceID);
             clearDiningSession(session);
             response.sendRedirect(request.getContextPath()
                     + "/payment-info?invoiceID=" + invoiceID);
@@ -180,6 +241,7 @@ public class CheckoutController extends HttpServlet {
         }
     }
 
+    /** Xóa trạng thái bàn khỏi session sau khi thanh toán thành công. */
     private void clearDiningSession(HttpSession session) {
         session.removeAttribute("orderID");
         session.removeAttribute("invoiceID");

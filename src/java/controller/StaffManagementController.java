@@ -99,111 +99,77 @@ public class StaffManagementController extends HttpServlet {
 
     private void showList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         String keyword = request.getParameter("keyword");
-
         String statusStr = request.getParameter("status");
-
         String roleStr = request.getParameter("role");
-
         Integer status = null;
-
-        if (statusStr != null && !statusStr.isBlank()) {
+        if (statusStr != null && !statusStr.isBlank() ) {
             try {
-
                 status = Integer.parseInt(statusStr);
             } catch (NumberFormatException ignored) {
-
             }
         }
-
         Integer roleID = null;
-
         if (roleStr != null && !roleStr.isBlank()) {
-
             int parsedRole = parseIntOrDefault(roleStr, 0);
-
             if (isManagedStaffRole(parsedRole)) {
-
                 roleID = parsedRole;
             } else {
-
                 roleStr = "";
             }
         }
-
         int page = parseIntOrDefault(request.getParameter("page"), 1);
-
         if (page < 1) {
             page = 1;
         }
-
         EmployeeDAO dao = new EmployeeDAO();
-
         int total = dao.countStaff(keyword, status, roleID);
-
         int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
-
         if (totalPages == 0) {
             totalPages = 1;
         }
-
         if (page > totalPages) {
             page = totalPages;
         }
-
+        //Lấy danh sách nhân viên cần hiển thị trên 1 trang
         List<Employee> staffList = dao.listStaffPaged(
                 keyword, status, roleID, page, PAGE_SIZE);
-
         request.setAttribute("staffList", staffList);
-
         request.setAttribute("keyword", keyword);
-
         request.setAttribute("status", statusStr);
-
         request.setAttribute("role", roleStr);
-
         request.setAttribute("currentPage", page);
-
         request.setAttribute("pageSize", PAGE_SIZE);
-
         request.setAttribute("totalPages", totalPages);
-
         request.setAttribute("totalRecords", total);
-
         request.getRequestDispatcher(LIST_VIEW).forward(request, response);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         request.setAttribute("mode", "create");
-
         request.getRequestDispatcher(FORM_VIEW).forward(request, response);
     }
 
     private void handleCreate(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         Employee e = new Employee();
-        e.setRoleID(UserRole.RESTAURANT_STAFF.getRoleID());
+//        e.setRoleID(UserRole.RESTAURANT_STAFF.getRoleID());
         e.setIsActive(1);
         e.setMustChangePassword(1);
         Map<String, String> errors = bindAndValidate(request, e, true, 0);
-
         if (!errors.isEmpty()) {
-
             request.setAttribute("errors", errors);
-
             request.setAttribute("staff", e);
-
             request.setAttribute("mode", "create");
-
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
 
         String rawPassword = request.getParameter("password");
+//        if(rawPassword.length()<8 ){
+//            request.getRequestDispatcher(FORM_VIEW).forward(request, response);
+//        }
         e.setPassword(PasswordUtil.hash(rawPassword));
 
         String imagePath = handleImageUpload(request, 0, errors);
@@ -221,7 +187,6 @@ public class StaffManagementController extends HttpServlet {
         }
 
         EmployeeDAO dao = new EmployeeDAO();
-
         int newId = dao.insert(e);
 
         if (newId < 0) {
@@ -239,79 +204,52 @@ public class StaffManagementController extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         int id = parseIntOrDefault(request.getParameter("id"), 0);
-
         if (id <= 0) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
-
         EmployeeDAO dao = new EmployeeDAO();
-
         Employee e = dao.findById(id);
-
         if (e == null || !isManagedStaffRole(e.getRoleID())) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
-
         request.setAttribute("staff", e);
-
         request.setAttribute("mode", "edit");
-
         request.getRequestDispatcher(FORM_VIEW).forward(request, response);
     }
 
     private void handleEdit(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         int id = parseIntOrDefault(request.getParameter("id"), 0);
-
         if (id <= 0) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
-
         EmployeeDAO dao = new EmployeeDAO();
-
         Employee existing = dao.findById(id);
-
         if (existing == null || !isManagedStaffRole(existing.getRoleID())) {
             response.sendRedirect(request.getContextPath() + "/owner/staff?action=list");
             return;
         }
-
         Employee e = new Employee();
-
         e.setEmployeeID(id);
-
         e.setRoleID(existing.getRoleID());
-
         e.setIsActive(existing.getIsActive());
-
         e.setPassword(existing.getPassword());
-
         e.setImage(existing.getImage());
-
         e.setMustChangePassword(existing.getMustChangePassword());
-
         Map<String, String> errors = bindAndValidate(request, e, false, id);
-
         if (!errors.isEmpty()) {
-
             request.setAttribute("errors", errors);
-
             request.setAttribute("staff", e);
-
             request.setAttribute("mode", "edit");
-
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
-
+        //ktra owner có up ảnh mới hay không
         String imagePath = handleImageUpload(request, id, errors);
-
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
             request.setAttribute("staff", e);
@@ -319,11 +257,9 @@ public class StaffManagementController extends HttpServlet {
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
-
         if (imagePath != null) {
             e.setImage(imagePath);
         }
-
         boolean ok = dao.update(e);
 
         if (!ok) {
@@ -334,47 +270,32 @@ public class StaffManagementController extends HttpServlet {
             request.getRequestDispatcher(FORM_VIEW).forward(request, response);
             return;
         }
-
         response.sendRedirect(request.getContextPath() + "/owner/staff?action=list&msg=updated");
     }
 
     private void handleDeactivate(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-
         int id = parseIntOrDefault(request.getParameter("id"), 0);
-
         if (id > 0) {
-
             EmployeeDAO dao = new EmployeeDAO();
-
             Employee target = dao.findById(id);
-
             if (target != null && isManagedStaffRole(target.getRoleID())) {
-
                 dao.softDelete(id);
             }
         }
-
         response.sendRedirect(buildListBackUrl(request, "deactivated"));
     }
 
     private void handleReactivate(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-
         int id = parseIntOrDefault(request.getParameter("id"), 0);
-
         if (id > 0) {
-
             EmployeeDAO dao = new EmployeeDAO();
-
             Employee target = dao.findById(id);
-
             if (target != null && isManagedStaffRole(target.getRoleID())) {
-
                 dao.reactivate(id);
             }
         }
-
         response.sendRedirect(buildListBackUrl(request, "reactivated"));
     }
 
@@ -383,26 +304,16 @@ public class StaffManagementController extends HttpServlet {
             Employee e,
             boolean isCreate,
             int excludeId) {
-
         Map<String, String> errors = new HashMap<>();
-
         String fullName = trim(request.getParameter("fullName"));
-
         String email = trim(request.getParameter("email"));
-
         String phone = trim(request.getParameter("phoneNumber"));
-
         String dobStr = trim(request.getParameter("dob"));
-
         String address = trim(request.getParameter("address"));
-
         String password = request.getParameter("password");
-
         if (isCreate) {
             String roleIDStr = trim(request.getParameter("roleID"));
-
             int selectedRoleID = parseIntOrDefault(roleIDStr, 0);
-
             if (!isManagedStaffRole(selectedRoleID)) {
                 errors.put("roleID", "Vui lòng chọn Nhân viên phục vụ hoặc Lễ tân.");
             } else {
@@ -411,15 +322,10 @@ public class StaffManagementController extends HttpServlet {
         }
 
         request.setAttribute("dobValue", dobStr);
-
         e.setFullName(fullName);
-
         e.setEmail(email);
-
         e.setPhoneNumber(phone);
-
         e.setAddress(address);
-
         EmployeeDAO dao = new EmployeeDAO();
 
         if (fullName == null || fullName.isBlank()) {
@@ -466,10 +372,8 @@ public class StaffManagementController extends HttpServlet {
             try {
 
                 LocalDate dob = LocalDate.parse(dobStr);
-
                 if (!dob.isBefore(LocalDate.now())) {
                     errors.put("dob", "Ngày sinh phải là ngày trong quá khứ.");
-
                 } else if (dob.isAfter(LocalDate.now().minusYears(18))) {
                     errors.put("dob", "Nhân viên phải đủ ít nhất 18 tuổi.");
                 } else {
@@ -624,6 +528,7 @@ public class StaffManagementController extends HttpServlet {
         request.getRequestDispatcher(FORM_VIEW).forward(request, response);
     }
 
+//    dùng để chuyển chuỗi sang số nguyên
     private static int parseIntOrDefault(String s, int def) {
         if (s == null || s.isBlank()) {
             return def;
@@ -677,6 +582,7 @@ public class StaffManagementController extends HttpServlet {
         return url.toString();
     }
 
+    //Mã hóa dữ liệu trên thanh url
     private static void appendQueryParam(StringBuilder url, String name, String value) {
         url.append("&")
                 .append(name)

@@ -33,6 +33,13 @@ import util.Config;
  * @author taduc
  */
 @WebServlet(name = "PaymentController", urlPatterns = {"/payment"})
+/**
+ * KHỞI TẠO THANH TOÁN VNPAY.
+ *
+ * <p>Nhận invoiceID từ CheckoutController, kiểm tra hóa đơn và quyền,
+ * tạo tham số VNPay + chữ ký rồi redirect sang cổng thanh toán.
+ * Kết quả quay về PaymentReturnController.</p>
+ */
 public class PaymentController extends HttpServlet {
    
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
@@ -67,6 +74,7 @@ public class PaymentController extends HttpServlet {
      * @throws IOException if an I/O error occurs
      */
     @Override
+    /** Kiểm tra hóa đơn rồi tạo URL có chữ ký để chuyển sang VNPay. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -95,6 +103,11 @@ public class PaymentController extends HttpServlet {
 
         // VNPay quy định số tiền phải nhân thêm 100 (VD: 100,000 VNĐ -> 10000000)
         long amount = invoice.getFinalAmount() * 100;
+
+        // [SECURITY FIX - VNPAY] Gắn callback với đúng giao dịch đã tạo.
+        session.setAttribute("vnpPendingTxnRef", vnp_TxnRef);
+        session.setAttribute("vnpPendingInvoiceID", invoiceID);
+        session.setAttribute("vnpPendingAmount", invoice.getFinalAmount());
 
         // Cài đặt múi giờ Việt Nam và định dạng thời gian
         // [FIX VNPAY] Dùng đúng múi giờ Việt Nam; Etc/GMT+7 thực tế là UTC-7.
@@ -169,6 +182,7 @@ public class PaymentController extends HttpServlet {
      * @throws IOException if an I/O error occurs
      */
     @Override
+    /** POST sử dụng cùng luồng khởi tạo thanh toán với GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         // ĐÃ SỬA CHỖ NÀY: Thay vì gọi processRequest, gọi doGet để chạy logic VNPay

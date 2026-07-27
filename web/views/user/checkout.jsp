@@ -276,6 +276,8 @@
             </div>
 
             <form id="checkoutForm" method="post">
+                <%-- [CSRF FIX] Không cho trang ngoài giả mạo yêu cầu thanh toán. --%>
+                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="confirm">
                 <input type="hidden" name="orderID" value="${orderID}">
 

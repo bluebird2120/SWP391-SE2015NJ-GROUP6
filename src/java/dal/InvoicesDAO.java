@@ -5,16 +5,93 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO CHO HÓA ĐƠN VÀ HOÀN TẤT THANH TOÁN.
+ *
+ * <p>Nhóm hàm: CRUD invoice -> cập nhật thanh toán transaction
+ * -> danh sách/filter Owner -> thống kê doanh thu.</p>
+ */
 public class InvoicesDAO {
 
     private Connection getConnection() {
         return new DBContext().getConnection();
     }
 
+    // ==================== 1. OWNER - INVOICE LIST ====================
+
+    /** Đếm hóa đơn theo filter để tính phân trang màn Owner. */
+    public int getTotalFilteredInvoices(String startDate, String endDate,
+            String status) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM Invoices WHERE 1=1 ");
+        List<Object> parameters = new ArrayList<>();
+        appendInvoiceFilters(sql, parameters, startDate, endDate, status);
+
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParameters(ps, parameters);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getTotalFilteredInvoices lỗi: "
+                    + e.getMessage());
+            return 0;
+        }
+    }
+
+    /** Lấy một trang hóa đơn theo ngày, trạng thái, offset và limit. */
+    public List<Invoices> getFilteredInvoices(String startDate,
+            String endDate, String status, int offset, int limit) {
+        List<Invoices> invoices = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT * FROM Invoices WHERE 1=1 ");
+        List<Object> parameters = new ArrayList<>();
+        appendInvoiceFilters(sql, parameters, startDate, endDate, status);
+        sql.append(" ORDER BY issuedDate DESC LIMIT ? OFFSET ?");
+        parameters.add(limit);
+        parameters.add(offset);
+
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParameters(ps, parameters);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    invoices.add(mapToInvoice(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getFilteredInvoices lỗi: "
+                    + e.getMessage());
+        }
+        return invoices;
+    }
+
+    // ==================== 2. OWNER - INVOICE DETAIL ====================
+
+    /** Lấy một invoice theo khóa chính cho màn chi tiết/in. */
+    public Invoices getInvoiceById(int invoiceID) {
+        String sql = "SELECT * FROM Invoices WHERE invoiceID = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapToInvoice(rs) : null;
+            }
+        } catch (SQLException e) {
+            System.err.println("[InvoicesDAO] getInvoiceById lỗi: "
+                    + e.getMessage());
+            return null;
+        }
+    }
+
+    // ==================== 3. CHECKOUT - CREATE / LINK INVOICE ====================
+
     // =========================================================
     // 1. TẠO INVOICE MỚI
     // Trả về invoiceID vừa tạo, hoặc -1 nếu thất bại
     // =========================================================
+    /** Tạo invoice và trả về invoiceID được database sinh. */
     public int createInvoice(Invoices invoice) {
         String sql = "INSERT INTO Invoices "
                 + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
@@ -49,28 +126,9 @@ public class InvoicesDAO {
     }
 
     // =========================================================
-    // 2. LẤY INVOICE THEO invoiceID
-    // =========================================================
-    public Invoices getInvoiceById(int invoiceID) {
-        String sql = "SELECT * FROM Invoices WHERE invoiceID = ?";
-
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, invoiceID);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return mapToInvoice(rs);
-            }
-
-        } catch (SQLException e) {
-            System.err.println("[InvoicesDAO] getInvoiceById lỗi: " + e.getMessage());
-        }
-        return null;
-    }
-
-    // =========================================================
     // 3. CẬP NHẬT invoiceID VÀO ORDER sau khi tạo Invoice
     // =========================================================
+    /** Gắn invoice vào order sau khi nhân viên chốt hóa đơn. */
     public boolean linkInvoiceToOrder(int invoiceID, int orderID) {
         String sql = "UPDATE `Order` SET invoiceID = ? WHERE orderID = ?";
 
@@ -89,7 +147,11 @@ public class InvoicesDAO {
     // =========================================================
     // HELPER: map ResultSet -> Invoices
     // =========================================================
+    /** Mapper dùng chung: ResultSet -> Invoices. */
     private Invoices mapToInvoice(ResultSet rs) throws SQLException {
+        Timestamp issuedTimestamp = rs.getTimestamp("issuedDate");
+        Date issuedDate = issuedTimestamp != null
+                ? new Date(issuedTimestamp.getTime()) : null;
         return new Invoices(
                 rs.getInt("invoiceID"),
                 rs.getString("invoiceNumber"),
@@ -98,14 +160,40 @@ public class InvoicesDAO {
                 rs.getLong("taxAmount"),
                 rs.getLong("depositDeducted"),
                 rs.getLong("finalAmount"),
-                rs.getDate("issuedDate"),
+                issuedDate,
                 rs.getString("status")
         );
     }
 
-    // =========================================================
-    // 4. CẬP NHẬT TRẠNG THÁI VÀ PHƯƠNG THỨC THANH TOÁN
-    // =========================================================
+    /** Dùng chung điều kiện ngày và status cho count/list của Owner. */
+    private void appendInvoiceFilters(StringBuilder sql,
+            List<Object> parameters, String startDate, String endDate,
+            String status) {
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) >= ? ");
+            parameters.add(startDate);
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            sql.append(" AND DATE(issuedDate) <= ? ");
+            parameters.add(endDate);
+        }
+        if (status != null && !status.trim().isEmpty()
+                && !"all".equals(status)) {
+            sql.append(" AND status = ? ");
+            parameters.add(status);
+        }
+    }
+
+    /** Bind danh sách tham số theo đúng thứ tự đã thêm vào câu SQL. */
+    private void bindParameters(PreparedStatement ps, List<Object> parameters)
+            throws SQLException {
+        for (int i = 0; i < parameters.size(); i++) {
+            ps.setObject(i + 1, parameters.get(i));
+        }
+    }
+
+    // ==================== 4. PAYMENT - UPDATE STATUS ====================
+    /** Cập nhật trạng thái và phương thức thanh toán của invoice. */
     public boolean updateInvoiceStatus(int invoiceID, String status, String paymentMethod) {
         String sql = "UPDATE Invoices SET status = ?, paymentMethod = ? WHERE invoiceID = ?";
 
@@ -126,15 +214,22 @@ public class InvoicesDAO {
     // 5. CẬP NHẬT THANH TOÁN THÀNH CÔNG VÀ CHUYỂN BÀN SANG CHỜ DỌN
     // Tích hợp: Tự động thêm dòng tiền vào bảng Payments (Giao dịch an toàn ACID)
     // =========================================================
+    /**
+     * Transaction hoàn tất thanh toán: ghi Payments, đổi invoice=paid,
+     * order=completed và tableStatus=cleaning; lỗi ở bước nào rollback bước đó.
+     */
     public boolean updatePaymentSuccessAndCleaningTable(int invoiceID, int orderID, String paymentMethod, long amount, String transactionCode) {
         // 1. Thêm lịch sử giao dịch vào bảng Payments
         String sqlPayment = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, 'success', NOW())";
 
         // 2. Hóa đơn thành 'paid' và ghi nhận phương thức thanh toán
-        String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? WHERE invoiceID = ?";
+        String sqlInvoice = "UPDATE Invoices SET status = 'paid', paymentMethod = ? "
+                + "WHERE invoiceID = ? AND status <> 'paid'";
 
         // 3. Đơn hàng thành 'completed' và Bàn thành 'cleaning' (Chờ dọn dẹp)
-        String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', tableStatus = 'cleaning' WHERE orderID = ?";
+        String sqlOrder = "UPDATE `Order` SET orderStatus = 'completed', "
+                + "tableStatus = 'cleaning' WHERE orderID = ? AND invoiceID = ? "
+                + "AND orderStatus NOT IN ('completed','cancelled')";
 
         // 4. Lấy employeeID phụ trách đơn này để gửi thông báo
         String sqlGetEmployee = "SELECT employeeID FROM `Order` WHERE orderID = ?";
@@ -161,11 +256,18 @@ public class InvoicesDAO {
                 // Update Invoice
                 ps1.setString(1, paymentMethod);
                 ps1.setInt(2, invoiceID);
-                ps1.executeUpdate();
+                // [SECURITY FIX - PAYMENT] Callback/submit lặp không được paid lần hai.
+                if (ps1.executeUpdate() != 1) {
+                    throw new SQLException("Invoice đã paid hoặc không tồn tại");
+                }
 
                 // Update Order
                 ps2.setInt(1, orderID);
-                ps2.executeUpdate();
+                ps2.setInt(2, invoiceID);
+                // [SECURITY FIX - PAYMENT] Order bắt buộc liên kết đúng invoice.
+                if (ps2.executeUpdate() != 1) {
+                    throw new SQLException("Order không khớp invoice");
+                }
 
                 // Gửi thông báo cho nhân viên phụ trách bàn (nếu có)
                 psGetEmp.setInt(1, orderID);
@@ -220,103 +322,6 @@ public class InvoicesDAO {
             }
         } catch (Exception e) {
             System.err.println("[InvoicesDAO] getAllInvoices lỗi: " + e.getMessage());
-        }
-        return list;
-    }
-
-    // =========================================================
-    // 1. ĐẾM TỔNG SỐ HÓA ĐƠN THEO BỘ LỌC (DÙNG ĐỂ TÍNH SỐ TRANG)
-    // =========================================================
-    public int getTotalFilteredInvoices(String startDate, String endDate, String status) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Invoices WHERE 1=1 ");
-        List<Object> params = new ArrayList<>();
-
-        if (startDate != null && !startDate.trim().isEmpty()) {
-            sql.append(" AND DATE(issuedDate) >= ? ");
-            params.add(startDate);
-        }
-        if (endDate != null && !endDate.trim().isEmpty()) {
-            sql.append(" AND DATE(issuedDate) <= ? ");
-            params.add(endDate);
-        }
-        if (status != null && !status.trim().isEmpty() && !status.equals("all")) {
-            sql.append(" AND status = ? ");
-            params.add(status);
-        }
-
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[InvoicesDAO] getTotalFilteredInvoices lỗi: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    // =========================================================
-    // 2. LẤY DANH SÁCH HÓA ĐƠN THEO BỘ LỌC VÀ TRANG (PHÂN TRANG)
-    // =========================================================
-    public List<Invoices> getFilteredInvoices(String startDate, String endDate, String status, int offset, int limit) {
-        List<Invoices> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM Invoices WHERE 1=1 ");
-        List<Object> params = new ArrayList<>();
-
-        if (startDate != null && !startDate.trim().isEmpty()) {
-            sql.append(" AND DATE(issuedDate) >= ? ");
-            params.add(startDate);
-        }
-        if (endDate != null && !endDate.trim().isEmpty()) {
-            sql.append(" AND DATE(issuedDate) <= ? ");
-            params.add(endDate);
-        }
-        if (status != null && !status.trim().isEmpty() && !status.equals("all")) {
-            sql.append(" AND status = ? ");
-            params.add(status);
-        }
-
-        // Sắp xếp hóa đơn mới nhất lên đầu, giới hạn số lượng record của trang hiện tại
-        sql.append(" ORDER BY issuedDate DESC LIMIT ? OFFSET ?");
-        params.add(limit);
-        params.add(offset);
-
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Invoices inv = new Invoices();
-                    inv.setInvoiceID(rs.getInt("invoiceID"));
-                    inv.setInvoiceNumber(rs.getString("invoiceNumber"));
-                    inv.setPaymentMethod(rs.getString("paymentMethod"));
-                    inv.setSubTotal(rs.getLong("subTotal"));
-                    inv.setTaxAmount(rs.getLong("taxAmount"));
-                    inv.setDepositDeducted(rs.getLong("depositDeducted"));
-                    inv.setFinalAmount(rs.getLong("finalAmount"));
-
-                    // 🌟 MẸO QUAN TRỌNG: Lấy dữ liệu dạng Timestamp từ DB nhưng lưu vào vỏ bọc java.sql.Date của Model 
-                    // để không làm thay đổi cấu trúc file Invoices.java của bạn mà trang JSP vẫn hiển thị được Giờ:Phút.
-                    java.sql.Timestamp ts = rs.getTimestamp("issuedDate");
-                    if (ts != null) {
-                        inv.setIssuedDate(new java.sql.Date(ts.getTime()));
-                    }
-
-                    inv.setStatus(rs.getString("status"));
-                    list.add(inv);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[InvoicesDAO] getFilteredInvoices lỗi: " + e.getMessage());
         }
         return list;
     }

@@ -19,6 +19,8 @@ public class Employee {
     private Timestamp createdAt;
     private Timestamp lastPasswordChangedAt;
     private int mustChangePassword;
+    private String resetToken;
+    private Timestamp resetTokenExpiry;
 
     public Employee() {
     }
@@ -79,4 +81,10 @@ public class Employee {
 
     public int getMustChangePassword() { return mustChangePassword; }
     public void setMustChangePassword(int mustChangePassword) { this.mustChangePassword = mustChangePassword; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public Timestamp getResetTokenExpiry() { return resetTokenExpiry; }
+    public void setResetTokenExpiry(Timestamp resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
 }

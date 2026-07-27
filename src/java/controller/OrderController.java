@@ -1,6 +1,5 @@
 package controller;
 
-import dal.DailyInventoryDAO; // Đã thêm import cho hàm trừ kho
 import dal.OrderDAO;
 import dal.TableDAO;
 import dal.NotificationDAO;
@@ -24,14 +23,28 @@ import java.sql.Timestamp;
 import model.Table;
 
 @WebServlet(name = "OrderController", urlPatterns = {"/order"})
+/**
+ * CONTROLLER TRUNG TÂM CỦA GIỎ HÀNG VÀ GỌI MÓN.
+ *
+ * <p>Thứ tự action POST để tìm bằng Ctrl+F:
+ * addTable -> add -> update -> remove -> sendToKitchen
+ * -> checkPaymentStatus -> checkoutTotal.</p>
+ *
+ * <p>Món mới nằm trong sessionCart. Chỉ khi sendToKitchen thành công
+ * hệ thống mới trừ DailyInventory và ghi OrderItem vào database.</p>
+ */
 public class OrderController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
 
+    // ==================== 1. VIEW CART ====================
+
     @Override
+    /** Ghép món trong DB với sessionCart, tính tổng và mở cart.jsp. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        util.CsrfUtil.ensureToken(request.getSession());
         String action = request.getParameter("action");
         if (action == null) { action = "cart"; }
 
@@ -89,16 +102,24 @@ public class OrderController extends HttpServlet {
     }
 
     @Override
+    /** Kiểm tra CSRF rồi điều hướng từng thao tác giỏ hàng theo action. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         request.setCharacterEncoding("UTF-8");
+        // [CSRF FIX] Chặn website khác lợi dụng cookie session để gọi món,
+        // gửi bếp hoặc yêu cầu thanh toán thay người dùng.
+        if (!util.CsrfUtil.isValid(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF token không hợp lệ.");
+            return;
+        }
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
         Integer currentOrderID = (Integer) session.getAttribute("orderID");
 
-        // --- GỘP BÀN TỪ QUÉT QR ---
+        // ==================== 2. MERGE TABLE FROM QR ====================
         if ("addTable".equals(action)) {
             String newTableToken = request.getParameter("tableToken");
             if (currentOrderID != null && newTableToken != null) {
@@ -116,27 +137,93 @@ public class OrderController extends HttpServlet {
             return;
         }
 
-        // =========================================================
-        // THAO TÁC GIỎ HÀNG BỘ NHỚ TẠM (SESSION)
-        // =========================================================
+        // ==================== 3. SESSION CART: ADD/UPDATE/REMOVE ====================
         List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
         if (sessionCart == null) { sessionCart = new ArrayList<>(); }
 
         // --- THÊM MÓN VÀO GIỎ TẠM ---
         if ("add".equals(action)) {
-            int itemID = Integer.parseInt(request.getParameter("itemID"));
-            int quantity = Integer.parseInt(request.getParameter("quantity"));
+            int itemID;
+            int quantity;
+            try {
+                itemID = Integer.parseInt(request.getParameter("itemID"));
+                quantity = Integer.parseInt(request.getParameter("quantity"));
+            } catch (NumberFormatException e) {
+                session.setAttribute("errorMsg", "Thông tin món ăn không hợp lệ.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            // [ORDER VALIDATION] Backend phải chặn số âm/request sửa tay.
+            if (quantity < 1 || quantity > 99) {
+                session.setAttribute("errorMsg", "Số lượng phải từ 1 đến 99.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            MenuItem selectedMenuItem = getMenuItemById(itemID);
+            if (selectedMenuItem == null || selectedMenuItem.getItemID() <= 0) {
+                session.setAttribute("errorMsg", "Món ăn không tồn tại.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            // [SECURITY FIX - QR FLOW] Không cho POST bỏ qua màn hình chờ mở bàn.
+            if (session.getAttribute("currentTableID") != null
+                    && !canModifyOrder(currentOrderID)) {
+                session.setAttribute("errorMsg", "Bàn chưa được nhân viên xác nhận mở.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
             
             // Chống lỗi NullPointerException cho note
             String note = request.getParameter("note");
             if (note == null) {
                 note = "";
             }
+            note = note.trim();
+            if (note.length() > 1000) {
+                session.setAttribute("errorMsg", "Ghi chú không được vượt quá 1000 ký tự.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
             
-            int price = request.getParameter("price") != null ? Integer.parseInt(request.getParameter("price")) : 0;
+            // [ORDER VALIDATION] Giá lấy từ DB, không tin hidden input của client.
+            int price = selectedMenuItem.getDiscountedPrice() > 0
+                    ? selectedMenuItem.getDiscountedPrice()
+                    : selectedMenuItem.getPrice();
 
-            Integer tableID = request.getParameter("tableID") != null && !request.getParameter("tableID").isEmpty() ? 
-                              Integer.parseInt(request.getParameter("tableID")) : (Integer) session.getAttribute("tableID");
+            Integer tableID;
+            try {
+                tableID = request.getParameter("tableID") != null
+                        && !request.getParameter("tableID").isEmpty()
+                        ? Integer.parseInt(request.getParameter("tableID"))
+                        : (Integer) session.getAttribute("tableID");
+            } catch (NumberFormatException e) {
+                session.setAttribute("errorMsg", "Mã bàn không hợp lệ.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            // [QR/PREORDER SAFETY] Luong goi mon tai ban phai co ban trong session.
+            // Uu tien tableID cu, fallback currentTableID vi ScanQRController set ca 2 key.
+            // Neu luong dat mon truoc bi redirect nham vao /order, khong cho crash 500.
+            if (tableID == null) {
+                tableID = (Integer) session.getAttribute("currentTableID");
+            }
+            if (tableID == null) {
+                session.setAttribute("errorMsg", "Vui lòng quét mã QR của bàn trước khi gọi món.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            // [ORDER VALIDATION] Order tại bàn phải do luồng quét QR tạo;
+            // client không được tự gửi tableID để liên kết một bàn bất kỳ.
+            if (currentOrderID == null && tableID != null) {
+                session.setAttribute("errorMsg", "Vui lòng quét lại mã QR của bàn.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
 
             // NẾU CHƯA CÓ ĐƠN HÀNG -> TẠO ĐƠN HÀNG MỚI
             if (currentOrderID == null) {
@@ -159,6 +246,14 @@ public class OrderController extends HttpServlet {
                 if (tableID != null && tableID > 0) orderDAO.linkOrderAndTable(newOrderID, tableID);
                 session.setAttribute("orderID", newOrderID);
                 currentOrderID = newOrderID;
+            }
+
+            // [ORDER VALIDATION] Không cho gắn món vào bàn của order khác.
+            if (tableID != null && !new TableDAO().isTableAssignedToOrder(
+                    currentOrderID, tableID)) {
+                session.setAttribute("errorMsg", "Bàn không thuộc đơn hàng hiện tại.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
             }
 
             // Thêm vào Session thay vì DB
@@ -236,11 +331,16 @@ public class OrderController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
 
-        // =========================================================
-        // GỬI BẾP CÁC MÓN ĐƯỢC CHỌN (TRỪ KHO + GHI DATABASE)
-        // =========================================================
+        // ==================== 4. SEND TO KITCHEN ====================
         } else if ("sendToKitchen".equals(action)) {
             String[] selectedItems = request.getParameterValues("selectedItems");
+
+            // [SECURITY FIX - QR FLOW] Kiểm tra lại trước khi ghi DB.
+            if (!canModifyOrder(currentOrderID)) {
+                session.setAttribute("errorMsg", "Đơn hàng chưa được phép gửi bếp.");
+                response.sendRedirect(request.getContextPath() + "/order?action=cart");
+                return;
+            }
             
             if (currentOrderID != null && !sessionCart.isEmpty() && selectedItems != null) {
                 List<Integer> idsToSend = new java.util.ArrayList<>();
@@ -249,7 +349,6 @@ public class OrderController extends HttpServlet {
                 }
                 
                 // Khởi tạo DAO để thao tác với bảng tồn kho
-                DailyInventoryDAO inventoryDAO = new DailyInventoryDAO();
                 List<String> outOfStockMessages = new ArrayList<>();
                 boolean hasSuccess = false;
                 
@@ -261,11 +360,13 @@ public class OrderController extends HttpServlet {
                     if (idsToSend.contains(oi.getOrderItemID())) {
                         
                         // 1. Cố gắng trừ kho an toàn (Sử dụng hàm đã viết trước đó)
-                        boolean isStockDeducted = inventoryDAO.decreaseQuantityInStock(oi.getItemID(), oi.getQuantity());
+                        // [TRANSACTION FIX] Trừ kho và ghi OrderItem cùng transaction.
+                        boolean isStockDeducted = orderDAO.sendItemToKitchen(
+                                currentOrderID, oi.getItemID(), oi.getTableID(),
+                                oi.getQuantity(), oi.getPrice(), oi.getNote());
                         
                         if (isStockDeducted) {
                             // 2A. Nếu trừ kho thành công -> Ghi vào đơn hàng và xóa khỏi giỏ tạm
-                            orderDAO.addOrderItem(currentOrderID, oi.getItemID(), oi.getTableID(), oi.getQuantity(), oi.getPrice(), oi.getNote());
                             iterator.remove(); 
                             hasSuccess = true;
                         } else {
@@ -294,9 +395,7 @@ public class OrderController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
             
-        // =========================================================
-        // THANH TOÁN TỔNG
-        // =========================================================
+        // ==================== 5. CHECK / REQUEST PAYMENT ====================
         } else if ("checkPaymentStatus".equals(action)) {
             // [CHO THANH TOAN] Khach chi kiem tra ket qua do staff xu ly,
             // khong tu cap nhat trang thai thanh toan.
@@ -374,6 +473,8 @@ public class OrderController extends HttpServlet {
         return "Order Controller Handles Session Cart and DB sync";
     }
 
+    // ==================== 6. SHARED HELPERS ====================
+
     /**
      * [CHO THANH TOAN] Xoa trang thai tham gia ban tren dung thiet bi khach
      * sau khi staff da thanh toan. Khong xoa tai khoan dang nhap customer.
@@ -391,9 +492,12 @@ public class OrderController extends HttpServlet {
         session.removeAttribute("checkoutWaiting");
     }
     
-    // Hàm phụ trợ: Lấy thông tin chi tiết của 1 món ăn dựa vào mã itemID
+    /** Lấy món đang mở bán từ DB; không sử dụng giá do client gửi lên. */
     private MenuItem getMenuItemById(int itemID) {
-        String sql = "SELECT * FROM MenuItem WHERE itemID = ?";
+        // [ORDER VALIDATION] MenuItem dùng cột isAvailable (không phải status).
+        // DailyInventory chỉ lưu tồn kho; món vẫn phải đang ở trạng thái mở bán.
+        String sql = "SELECT * FROM MenuItem "
+                + "WHERE itemID = ? AND isAvailable = 1";
         try (java.sql.Connection conn = new dal.DBContext().getConnection();
              java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, itemID);
@@ -413,6 +517,25 @@ public class OrderController extends HttpServlet {
         } catch (Exception e) {
             System.err.println("Lỗi lấy thông tin món ăn: " + e.getMessage());
         }
-        return new MenuItem(); 
+        return null;
+    }
+
+    /** Kiểm tra order còn được sửa và bàn QR đã được nhân viên xác nhận mở. */
+    private boolean canModifyOrder(Integer orderID) {
+        if (orderID == null) {
+            return false;
+        }
+        Order order = orderDAO.getOrderById(orderID);
+        if (order == null) {
+            return false;
+        }
+        // Đơn mang về không đi qua luồng mở bàn QR.
+        if (order.getOrderType() == 2) {
+            return !"completed".equals(order.getOrderStatus())
+                    && !"cancelled".equals(order.getOrderStatus());
+        }
+        return order.getIsStaffConfirmed() == 1
+                && ("occupied".equals(order.getTableStatus())
+                || "arrived".equals(order.getTableStatus()));
     }
 }

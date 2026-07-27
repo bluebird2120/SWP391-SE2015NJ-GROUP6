@@ -2,6 +2,7 @@ package controller;
 
 import dal.InvoicesDAO;
 import dal.ReservationDAO;
+import dal.OrderDAO;
 import dal.DBContext; // Thêm import DBContext để dùng cho hàm logPayment
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,6 +27,13 @@ import model.Invoices;
 import util.Config;
 
 @WebServlet(name = "PaymentReturnController", urlPatterns = {"/vnpay_return"})
+/**
+ * NHẬN KẾT QUẢ TRẢ VỀ TỪ VNPAY.
+ *
+ * <p>Đọc tham số -> kiểm tra chữ ký -> kiểm tra invoice/số tiền/mã giao dịch
+ * -> cập nhật payment, invoice, order và table đúng một lần
+ * -> chuyển tới payment-info.</p>
+ */
 public class PaymentReturnController extends HttpServlet {
 
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
@@ -37,6 +45,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     @Override
+    /** Xác minh callback VNPay và hoàn tất giao dịch hợp lệ. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -79,6 +88,24 @@ public class PaymentReturnController extends HttpServlet {
             HttpSession session = request.getSession();
             Integer invoiceID = (Integer) session.getAttribute("invoiceID");
             Integer orderID = (Integer) session.getAttribute("orderID");
+            String expectedTxnRef =
+                    (String) session.getAttribute("vnpPendingTxnRef");
+            Integer expectedInvoiceID =
+                    (Integer) session.getAttribute("vnpPendingInvoiceID");
+            Long expectedAmount =
+                    (Long) session.getAttribute("vnpPendingAmount");
+
+            // [SECURITY FIX - VNPAY] Transaction, invoice và số tiền callback
+            // phải khớp dữ liệu đã lưu trước khi chuyển sang VNPay.
+            if (expectedTxnRef == null || !expectedTxnRef.equals(txnRef)
+                    || expectedInvoiceID == null
+                    || !expectedInvoiceID.equals(invoiceID)
+                    || expectedAmount == null
+                    || expectedAmount.longValue() != vnpAmount) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Thông tin giao dịch VNPay không khớp.");
+                return;
+            }
 
             // Chữ ký hợp lệ -> Kiểm tra trạng thái giao dịch
             if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
@@ -97,12 +124,34 @@ public class PaymentReturnController extends HttpServlet {
                         reservationDAO.synchronizeDepositStatus();
                     } else if (invoice != null && orderID != null) {
                         // Nhánh 2: Thanh toán bữa ăn (Transaction gộp)
-                        invoicesDAO.updatePaymentSuccessAndCleaningTable(invoiceID, orderID, "vnpay", vnpAmount, txnRef);
+                        model.Order linkedOrder =
+                                new OrderDAO().getOrderByInvoiceId(invoiceID);
+                        if (linkedOrder == null
+                                || linkedOrder.getOrderID() != orderID
+                                || invoice.getFinalAmount() != vnpAmount) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                                    "Hóa đơn không khớp đơn hàng.");
+                            return;
+                        }
+                        boolean updated =
+                                invoicesDAO.updatePaymentSuccessAndCleaningTable(
+                                        invoiceID, orderID, "vnpay",
+                                        vnpAmount, txnRef);
+                        if (!updated) {
+                            response.sendError(HttpServletResponse.SC_CONFLICT,
+                                    "Giao dịch đã được xử lý hoặc không còn hợp lệ.");
+                            return;
+                        }
                     }
                 }
 
                 // 1. Sao lưu ID hóa đơn ra một biến final để đẩy lên URL (Cực kỳ quan trọng)
                 final Integer finalInvoiceID = invoiceID;
+                if (finalInvoiceID != null) {
+                    // [SECURITY FIX - INVOICE IDOR] Cho session hiện tại xem
+                    // đúng hóa đơn vừa được VNPay trả kết quả, không mở IDOR.
+                    session.setAttribute("paymentInfoInvoiceID", finalInvoiceID);
+                }
 
                 // 2. Dọn dẹp sạch sẽ Session (giải phóng bàn)
                 session.removeAttribute("orderID");
@@ -112,6 +161,9 @@ public class PaymentReturnController extends HttpServlet {
                 session.removeAttribute("reservationFlow");
                 session.removeAttribute("depositAmount");
                 session.removeAttribute("reservationHoldExpiresAt");
+                session.removeAttribute("vnpPendingTxnRef");
+                session.removeAttribute("vnpPendingInvoiceID");
+                session.removeAttribute("vnpPendingAmount");
 
                 // 3. Thực hiện chuyển hướng (Bắt buộc dùng finalInvoiceID để tránh mất dấu)
                 if (finalInvoiceID != null) {
@@ -148,6 +200,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     @Override
+    /** VNPay có thể callback bằng POST; dùng chung logic xác minh của GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
@@ -161,6 +214,7 @@ public class PaymentReturnController extends HttpServlet {
     // =========================================================================
     // HÀM HELPER: Ghi trực tiếp lịch sử vào bảng Payments (Dành cho Cọc & Lỗi)
     // =========================================================================
+    /** Ghi payment record phục vụ lịch sử giao dịch và đối soát. */
     private void logPaymentRecord(int invoiceID, String transactionCode, String paymentGateway, long amount, String status) {
         String sql = "INSERT INTO Payments (invoiceID, transactionCode, paymentGateway, amount, status, paidAt) VALUES (?, ?, ?, ?, ?, NOW())";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -178,6 +232,7 @@ public class PaymentReturnController extends HttpServlet {
     }
 
     // Hàm hỗ trợ băm lại các tham số nhận được
+    /** Ghép và băm các trường VNPay để so sánh secure hash. */
     private String hashAllFields(Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
         Collections.sort(fieldNames);

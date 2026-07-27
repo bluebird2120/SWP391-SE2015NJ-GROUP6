@@ -13,6 +13,13 @@ import dal.NotificationDAO;
 import model.Notifications;
 import model.StaffTableDTO;
 
+/**
+ * DAO VẬN HÀNH BÀN CHO LỄ TÂN VÀ NHÂN VIÊN PHỤC VỤ.
+ *
+ * <p>Nhóm hàm: tải dashboard -> kiểm tra quyền nhân viên
+ * -> check-in/mở/gán bàn -> hủy phục vụ -> hoàn tất dọn bàn
+ * -> helper chọn nhân viên và kiểm tra xung đột.</p>
+ */
 public class StaffTableDAO extends DBContext {
 
     public List<StaffTableDTO> getPhysicalTables() {
@@ -156,6 +163,7 @@ public class StaffTableDAO extends DBContext {
      * [PHAN QUYEN PHUC VU] Kiem tra don co dung la don dang giao cho nhan vien
      * dang dang nhap hay khong. Dung de chan viec sua orderID tren request.
      */
+    /** Xác minh order được phân công cho đúng employeeID. */
     public boolean isOrderAssignedToEmployee(int orderID, int employeeID) {
         String sql = "SELECT 1 FROM `Order` o "
                 + "WHERE o.orderID=? AND o.employeeID=? "
@@ -310,8 +318,12 @@ public class StaffTableDAO extends DBContext {
      * [CHECKIN] Khách đặt trước đã đến quán. Đơn này đã có nhân viên phụ
      * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
      */
+    /** Lễ tân check-in khách đặt trước và mở quyền gọi món QR. */
     public boolean checkinArrivedReservation(int orderID) {
-        String sql = "UPDATE `Order` SET tableStatus='arrived' WHERE orderID=?";
+        // [QR OPEN TABLE FIX] Đồng bộ cờ xác nhận để rào chắn /menu biết
+        // khách đặt trước đã được nhân viên check-in và được phép gọi món.
+        String sql = "UPDATE `Order` SET tableStatus='arrived', "
+                + "isStaffConfirmed=1 WHERE orderID=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, orderID);
             return ps.executeUpdate() > 0;
@@ -326,6 +338,7 @@ public class StaffTableDAO extends DBContext {
      * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
      * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
      */
+    /** Lễ tân mở bàn cho khách walk-in và mở quyền gọi món QR. */
     public boolean openTableForWalkIn(int orderID) {
         try {
             connection.setAutoCommit(false);
@@ -334,15 +347,15 @@ public class StaffTableDAO extends DBContext {
             try {
                 staffID = findLeastLoadedServingEmployee(connection);
                 if (staffID == null) {
-                    staffID = findLeastLoadedActiveServingEmployee(connection);
-                }
-                if (staffID == null) {
                     connection.rollback();
                     return false;
                 }
 
                 try (PreparedStatement ps = connection.prepareStatement(
-                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied' WHERE orderID=?")) {
+                        // [QR OPEN TABLE FIX] Trước đây chỉ đổi occupied nhưng
+                        // isStaffConfirmed vẫn bằng 0 nên khách bị kẹt ở trang chờ.
+                        "UPDATE `Order` SET employeeID=?, tableStatus='occupied', "
+                        + "isStaffConfirmed=1 WHERE orderID=?")) {
                     ps.setInt(1, staffID);
                     ps.setInt(2, orderID);
                     if (ps.executeUpdate() == 0) {
@@ -398,6 +411,7 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
+    /** Gán bàn và nhân viên phục vụ trong một transaction. */
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
@@ -417,11 +431,6 @@ public class StaffTableDAO extends DBContext {
             Integer servingEmployeeID = findAssignedServingEmployee(conn, orderID);
             if (servingEmployeeID == null) {
                 servingEmployeeID = findLeastLoadedServingEmployee(conn);
-            }
-            // [DU PHONG GAN PHUC VU] Neu hien tai ngoai gio ca,
-            // chi chon nhan vien role 2 dang hoat dong VA co lich lam viec hom nay.
-            if (servingEmployeeID == null) {
-                servingEmployeeID = findLeastLoadedActiveServingEmployee(conn);
             }
 
             if (servingEmployeeID == null) {
@@ -504,6 +513,7 @@ public class StaffTableDAO extends DBContext {
      * khach thi khong tra ve available ngay, ma chuyen sang cleaning de nhan
      * vien don dep xong moi mo lai ban.
      */
+    /** Hủy phiên phục vụ khi order chưa có món gửi bếp. */
     public String cancelServiceByReception(int orderID) {
         String hasItemSql = "SELECT 1 FROM OrderItem WHERE orderID=? LIMIT 1";
         String cancelSql = "UPDATE `Order` "
@@ -538,6 +548,7 @@ public class StaffTableDAO extends DBContext {
     /**
      * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
      */
+    /** Nhân viên xác nhận dọn xong để bàn quay lại trạng thái available. */
     public boolean markCleaningCompleted(int orderID, int employeeID) {
         String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "
@@ -555,16 +566,18 @@ public class StaffTableDAO extends DBContext {
 
     /**
      * [TU DONG GAN PHUC VU] Chi chon role 2 dang hoat dong, dang trong ca,
-     * uu tien nguoi co it don chua hoan tat nhat.
+     * uu tien nguoi co it don dang phuc vu nhat, sau do it tong luot
+     * duoc gan trong ngay nhat de tranh mot nhan vien bi gan lien tuc.
      */
     public Integer findLeastLoadedServingEmployee(Connection conn)
             throws SQLException {
-        String sql = "SELECT es.employeeID,COUNT(o.orderID) active_orders "
+        String sql = "SELECT es.employeeID, "
+                + "COUNT(CASE WHEN o.orderStatus NOT IN ('completed','cancelled') THEN 1 END) active_orders, "
+                + "COUNT(CASE WHEN DATE(o.orderTime)=CURDATE() THEN 1 END) assigned_today "
                 + "FROM EmployeeShifts es "
                 + "JOIN ShiftTemplates st ON st.templateID=es.templateID "
                 + "JOIN Employee e ON e.employeeID=es.employeeID "
                 + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
-                + "AND o.orderStatus NOT IN ('completed','cancelled') "
                 + "WHERE es.workDate=CURDATE() AND e.roleID=2 AND e.isActive=1 "
                 // Chi chon nhan vien da check-in ca lam va chua checkout.
                 + "AND es.checkInTime IS NOT NULL "
@@ -575,7 +588,9 @@ public class StaffTableDAO extends DBContext {
                 + "OR (st.startTime>st.endTime "
                 + "AND (CURRENT_TIME()>=st.startTime OR CURRENT_TIME()<=st.endTime))) "
                 + "GROUP BY es.employeeID "
-                + "ORDER BY active_orders ASC,es.employeeID ASC LIMIT 1 FOR UPDATE";
+                // [FAIR STAFF ASSIGN] Neu A vua phuc vu xong 1 don va B chua nhan don nao,
+                // ca hai active_orders = 0 nhung assigned_today cua B thap hon nen uu tien B.
+                + "ORDER BY active_orders ASC, assigned_today ASC, es.employeeID ASC LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt("employeeID") : null;
@@ -607,29 +622,6 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
-   // tìm nhân viên nào ít order nhất 
-    public Integer findLeastLoadedActiveServingEmployee(Connection conn)
-            throws SQLException {
-     
-        String sql = "SELECT e.employeeID,COUNT(o.orderID) active_orders "
-                + "FROM Employee e " 
-                + "LEFT JOIN `Order` o ON o.employeeID=e.employeeID "
-                + "AND o.orderStatus NOT IN ('completed','cancelled') "
-                + "WHERE e.roleID=2 AND e.isActive=1 "
-                + "AND EXISTS (SELECT 1 FROM EmployeeShifts es "
-                + "WHERE es.employeeID=e.employeeID "
-                + "AND es.workDate=CURDATE() "
-                // Du phong cung chi chon nhan vien da check-in va chua checkout.
-                + "AND es.checkInTime IS NOT NULL "
-                + "AND es.status IN ('present','late') "
-                + "AND es.checkOutTime IS NULL) "
-                + "GROUP BY e.employeeID "
-                + "ORDER BY active_orders ASC,e.employeeID ASC LIMIT 1 FOR UPDATE";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getInt("employeeID") : null;
-        }
-    }
 
     private boolean hasMatchingUnfilledRequirement(
             Connection conn, int orderID, int tableID) throws SQLException {

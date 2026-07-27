@@ -111,12 +111,13 @@ public class AuthenticationFilter implements Filter {
                     return;
                 }
 
-                // Check quá hạn 90 ngày
                 java.sql.Timestamp lastChanged = employee.getLastPasswordChangedAt();
                 if (lastChanged != null) {
-                    long daysSince = (System.currentTimeMillis() - lastChanged.getTime())
-                            / (1000L * 60 * 60 * 24);
-                    if (daysSince >= 90) {
+                    // Tính thời gian đã trôi qua theo đơn vị GIÂY (1000ms = 1 giây)
+                    long secondsSince = (System.currentTimeMillis() - lastChanged.getTime()) / 1000L;
+
+                    // Kiểm tra nếu đã quá 30 giây
+                    if (secondsSince >= 30) {
                         response.sendRedirect(ctx + "/change-password?expired=true");
                         return;
                     }
