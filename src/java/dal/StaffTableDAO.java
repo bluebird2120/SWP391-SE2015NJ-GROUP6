@@ -13,6 +13,13 @@ import dal.NotificationDAO;
 import model.Notifications;
 import model.StaffTableDTO;
 
+/**
+ * DAO VẬN HÀNH BÀN CHO LỄ TÂN VÀ NHÂN VIÊN PHỤC VỤ.
+ *
+ * <p>Nhóm hàm: tải dashboard -> kiểm tra quyền nhân viên
+ * -> check-in/mở/gán bàn -> hủy phục vụ -> hoàn tất dọn bàn
+ * -> helper chọn nhân viên và kiểm tra xung đột.</p>
+ */
 public class StaffTableDAO extends DBContext {
 
     public List<StaffTableDTO> getPhysicalTables() {
@@ -156,6 +163,7 @@ public class StaffTableDAO extends DBContext {
      * [PHAN QUYEN PHUC VU] Kiem tra don co dung la don dang giao cho nhan vien
      * dang dang nhap hay khong. Dung de chan viec sua orderID tren request.
      */
+    /** Xác minh order được phân công cho đúng employeeID. */
     public boolean isOrderAssignedToEmployee(int orderID, int employeeID) {
         String sql = "SELECT 1 FROM `Order` o "
                 + "WHERE o.orderID=? AND o.employeeID=? "
@@ -310,6 +318,7 @@ public class StaffTableDAO extends DBContext {
      * [CHECKIN] Khách đặt trước đã đến quán. Đơn này đã có nhân viên phụ
      * trách từ bước "assign" trước đó rồi -> chỉ cần đổi trạng thái bàn.
      */
+    /** Lễ tân check-in khách đặt trước và mở quyền gọi món QR. */
     public boolean checkinArrivedReservation(int orderID) {
         // [QR OPEN TABLE FIX] Đồng bộ cờ xác nhận để rào chắn /menu biết
         // khách đặt trước đã được nhân viên check-in và được phép gọi món.
@@ -329,6 +338,7 @@ public class StaffTableDAO extends DBContext {
      * thực sự gán nhân viên phục vụ ít việc nhất cho đơn này (đơn tạo từ quét
      * QR chưa từng có employeeID). Sau khi gán xong, báo luôn cho nhân viên đó.
      */
+    /** Lễ tân mở bàn cho khách walk-in và mở quyền gọi món QR. */
     public boolean openTableForWalkIn(int orderID) {
         try {
             connection.setAutoCommit(false);
@@ -401,6 +411,7 @@ public class StaffTableDAO extends DBContext {
         }
     }
 
+    /** Gán bàn và nhân viên phục vụ trong một transaction. */
     public String assignTable(int orderID, int tableID) {
         Connection conn = getConnection();
         try {
@@ -502,6 +513,7 @@ public class StaffTableDAO extends DBContext {
      * khach thi khong tra ve available ngay, ma chuyen sang cleaning de nhan
      * vien don dep xong moi mo lai ban.
      */
+    /** Hủy phiên phục vụ khi order chưa có món gửi bếp. */
     public String cancelServiceByReception(int orderID) {
         String hasItemSql = "SELECT 1 FROM OrderItem WHERE orderID=? LIMIT 1";
         String cancelSql = "UPDATE `Order` "
@@ -536,6 +548,7 @@ public class StaffTableDAO extends DBContext {
     /**
      * [PHAN QUYEN PHUC VU] Nhan vien chi duoc xac nhan don cua chinh minh.
      */
+    /** Nhân viên xác nhận dọn xong để bàn quay lại trạng thái available. */
     public boolean markCleaningCompleted(int orderID, int employeeID) {
         String sql = "UPDATE `Order` SET tableStatus='available', checkoutRequestAt=NULL "
                 + "WHERE orderID=? AND employeeID=? "

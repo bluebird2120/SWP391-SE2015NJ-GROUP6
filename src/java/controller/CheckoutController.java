@@ -21,18 +21,26 @@ import model.OrderItem;
 import model.Table;
 
 @WebServlet(name = "CheckoutController", urlPatterns = {"/checkout"})
+/**
+ * LUỒNG NHÂN VIÊN CHỐT HÓA ĐƠN TRƯỚC KHI THANH TOÁN.
+ *
+ * <p>GET tải order/hóa đơn để kiểm tra. POST action=confirm kiểm tra
+ * quyền nhân viên, nhận cash hoặc VNPay và chuyển sang bước thanh toán.</p>
+ */
 public class CheckoutController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
 
     @Override
+    /** Hiển thị màn xác nhận món và số tiền cho nhân viên phụ trách order. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         processCheckoutDisplay(request, response);
     }
 
     @Override
+    /** Nhận action xác nhận và phương thức thanh toán do nhân viên chọn. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
@@ -43,6 +51,7 @@ public class CheckoutController extends HttpServlet {
         processCheckoutDisplay(request, response);
     }
 
+    /** Tải order, món, bàn phục vụ và hóa đơn rồi forward checkout.jsp. */
     private void processCheckoutDisplay(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -92,6 +101,7 @@ public class CheckoutController extends HttpServlet {
         request.getRequestDispatcher("/views/user/checkout.jsp").forward(request, response);
     }
 
+    /** Tạo hóa đơn bữa ăn hoặc dùng lại hóa đơn unpaid đã gắn với order. */
     private Invoices createOrGetMealInvoice(Order order, List<OrderItem> orderItems,
             List<MenuItem> menuItems) {
         if (order == null) {
@@ -142,6 +152,7 @@ public class CheckoutController extends HttpServlet {
         return invoice;
     }
 
+    /** Xác nhận quyền xử lý và điều hướng sang thanh toán tiền mặt/VNPay. */
     private void processPaymentConfirm(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         // [CSRF FIX] Xác nhận tiền mặt/VNPay là thao tác tài chính quan trọng.
@@ -230,6 +241,7 @@ public class CheckoutController extends HttpServlet {
         }
     }
 
+    /** Xóa trạng thái bàn khỏi session sau khi thanh toán thành công. */
     private void clearDiningSession(HttpSession session) {
         session.removeAttribute("orderID");
         session.removeAttribute("invoiceID");

@@ -1,344 +1,410 @@
 package controller;
 
 import dal.TableDAO;
-import model.Employee;
-import model.Table;
-
-import java.io.IOException;
-import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.List;
+import model.Employee;
+import model.Table;
+import util.CsrfUtil;
 
-@WebServlet(name = "TableManageController", urlPatterns = {"/owner/manage-table"})
+/**
+ * LUỒNG TABLE MANAGEMENT CỦA OWNER.
+ *
+ * <p>Thứ tự feature trong file:
+ * 1) List Table; 2) Add Table; 3) Edit Table; 4) Table Detail + QR;
+ * 5) lưu Add/Edit; 6) validation helpers.</p>
+ */
+@WebServlet(name = "TableManageController",
+        urlPatterns = {"/owner/manage-table"})
 public class TableManageController extends HttpServlet {
+
+    private static final int OWNER_ROLE_ID = 1;
+    private static final int PAGE_SIZE = 10;
+    private static final String TABLE_FORM_VIEW
+            = "/views/table/table_form.jsp";
+    private static final String TABLE_LIST_VIEW
+            = "/views/table/table_list.jsp";
 
     private final TableDAO tableDAO = new TableDAO();
 
+    // ==================== 1. ENTRY POINT / ROUTING ====================
+
+    /**
+     * GET điều hướng theo đúng thứ tự: List -> Add -> Edit -> Detail.
+     * @param request
+     * @param response
+     * @throws jakarta.servlet.ServletException
+     * @throws java.io.IOException
+     */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void doGet(HttpServletRequest request,HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. KIỂM TRA ĐĂNG NHẬP (Authentication)
         HttpSession session = request.getSession();
-        util.CsrfUtil.ensureToken(session);
+        CsrfUtil.ensureToken(session);
         Employee loginUser = (Employee) session.getAttribute("employee");
 
         if (loginUser == null) {
-            // Chưa đăng nhập thì đá văng ra trang login
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        int roleID = loginUser.getRoleID(); // 1: Owner, 2: Employee
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "list"; // Mặc định là xem danh sách
+        String action = trimToEmpty(request.getParameter("action"));
+        if (action.isEmpty()) {
+            action = "list";
         }
 
-        // 2. ĐIỀU HƯỚNG THEO ACTION VÀ KIỂM TRA QUYỀN (Authorization)
         switch (action) {
-            case "add":
-                if (roleID != 1) { // KHÔNG PHẢI OWNER
-                    response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
-                    return;
-                }
-                request.setAttribute("mode", "add"); // Truyền cờ trạng thái "Thêm"
-                request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
-                break;
-
-            case "edit":
-                if (roleID != 1) { // KHÔNG PHẢI OWNER
-                    response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
-                    return;
-                }
-                // [INPUT VALIDATION] URL id sai không được làm servlet ném lỗi 500.
-                Integer editId = parsePositiveInt(request.getParameter("id"));
-                if (editId == null) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/owner/manage-table?error=invalid_id");
-                    return;
-                }
-                Table tableToEdit = tableDAO.getTableByTableID(editId);
-                if (tableToEdit == null) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/owner/manage-table?error=not_found");
-                    return;
-                }
-                request.setAttribute("table", tableToEdit);
-                request.setAttribute("mode", "edit"); // Truyền cờ trạng thái "Sửa"
-                request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
-                break;
-
-            case "detail":
-                Integer detailId = parsePositiveInt(request.getParameter("id"));
-                if (detailId == null) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/owner/manage-table?error=invalid_id");
-                    return;
-                }
-                Table tableDetail = tableDAO.getTableByTableID(detailId);
-                if (tableDetail == null) {
-                    response.sendRedirect(request.getContextPath()
-                            + "/owner/manage-table?error=not_found");
-                    return;
-                }
-                request.setAttribute("table", tableDetail);
-                request.setAttribute("mode", "detail"); // Truyền cờ trạng thái "Chi tiết"
-
-                request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
-                break;
-
             case "list":
+                showTableList(request, response, loginUser.getRoleID());
+                break;
+            case "add":
+                showAddForm(request, response, loginUser);
+                break;
+            case "edit":
+                showEditForm(request, response, loginUser);
+                break;
+            case "detail":
+                showTableDetail(request, response);
+                break;
             default:
-                // 1. Đọc các tham số lọc từ URL gửi lên
-                String searchName = request.getParameter("searchName");
-                searchName = (searchName != null) ? searchName.trim() : "";
-
-                // Validate sức chứa từ URL vì người dùng có thể sửa query string thủ công.
-                String capParam = request.getParameter("searchCapacity");
-                Integer searchCapacity = null;
-                if (capParam != null && !capParam.trim().isEmpty() && !"all".equals(capParam)) {
-                    try {
-                        int parsedCapacity = Integer.parseInt(capParam.trim());
-                        if (parsedCapacity >= 1 && parsedCapacity <= 50) {
-                            searchCapacity = parsedCapacity;
-                        } else {
-                            request.setAttribute("errorMessage", "Sức chứa tìm kiếm phải từ 1 đến 50 người.");
-                        }
-                    } catch (NumberFormatException e) {
-                        request.setAttribute("errorMessage", "Sức chứa tìm kiếm không hợp lệ.");
-                    }
-                }
-
-                String searchArea = request.getParameter("searchArea");
-                // Khu vực là danh mục nghiệp vụ cố định, chỉ chấp nhận public/private.
-                if (searchArea == null || searchArea.trim().isEmpty() || "all".equals(searchArea)) {
-                    searchArea = null;
-                } else if (!"public".equals(searchArea) && !"private".equals(searchArea)) {
-                    request.setAttribute("errorMessage", "Khu vực tìm kiếm không hợp lệ.");
-                    searchArea = null;
-                }
-
-                // Trạng thái chỉ có hai giá trị hợp lệ: 0 (tạm ngưng) và 1 (hoạt động).
-                String statusParam = request.getParameter("searchStatus");
-                Integer searchStatus = null;
-                if (statusParam != null && !statusParam.trim().isEmpty() && !"all".equals(statusParam)) {
-                    try {
-                        int parsedStatus = Integer.parseInt(statusParam.trim());
-                        if (parsedStatus == 0 || parsedStatus == 1) {
-                            searchStatus = parsedStatus;
-                        } else {
-                            request.setAttribute("errorMessage", "Trạng thái tìm kiếm không hợp lệ.");
-                        }
-                    } catch (NumberFormatException e) {
-                        request.setAttribute("errorMessage", "Trạng thái tìm kiếm không hợp lệ.");
-                    }
-                }
-
-                // 2. BACKEND VALIDATION: Chặn tìm kiếm chuỗi quá dài hoặc chứa ký tự độc hại
-                if (searchName.length() > 30) {
-                    request.setAttribute("errorMessage", "Từ khóa tìm kiếm không được vượt quá 30 ký tự!");
-                    searchName = ""; // Reset bộ lọc tên nếu vi phạm quy định
-                }
-
-                // =========================================================
-                // --- BẮT ĐẦU: XỬ LÝ PHÂN TRANG (CÓ KÈM THEO BỘ LỌC) ---
-                // =========================================================
-                final int PAGE_SIZE = 10; // Bạn có thể đổi thành 10 bàn trên 1 trang tùy ý
-                String page_raw = request.getParameter("page");
-                // [PAGINATION FIX] Chặn page không phải số hoặc nhỏ hơn 1.
-                Integer parsedPage = parsePositiveInt(page_raw);
-                int page = parsedPage != null ? parsedPage : 1;
-
-                // 3.1. Đếm tổng số bàn thỏa mãn điều kiện lọc
-                int totalItem = tableDAO.countSearchTables(searchName, searchCapacity, searchArea, searchStatus);
-                int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
-
-                if (page > totalPage && totalPage > 0) {
-                    page = totalPage;
-                }
-
-                int offSet = (page - 1) * PAGE_SIZE;
-
-                // 3.2. Gọi hàm DAO để truy vấn dữ liệu đã lọc và cắt trang
-                List<Table> list = tableDAO.searchTablesPaging(searchName, searchCapacity, searchArea, searchStatus, offSet, PAGE_SIZE);
-                // =========================================================
-                // --- KẾT THÚC: XỬ LÝ PHÂN TRANG ---
-                // =========================================================
-                
-                // 4. Đẩy ngược các giá trị đã chọn ra Request để giữ trạng thái Form sau khi F5
-                request.setAttribute("searchName", searchName);
-                // Truyền Integer đã validate (hoặc null khi chọn "Tất cả") sang JSP.
-                // Không truyền chuỗi "all" vì JSP sẽ lỗi ép kiểu khi so sánh với capacity Integer.
-                request.setAttribute("searchCapacity", searchCapacity);
-                request.setAttribute("searchArea", request.getParameter("searchArea"));
-                request.setAttribute("searchStatus", request.getParameter("searchStatus"));
-                
-                // Đẩy thông tin phân trang sang JSP
-                request.setAttribute("tableList", list);
-                request.setAttribute("totalPage", totalPage);
-                request.setAttribute("currentPage", page);
-                request.setAttribute("userRole", roleID); 
-
-                // Danh sách sức chứa được lấy động từ DB thay vì fix cứng 2, 4, 6, 8, 10.
-                request.setAttribute("capacityOptions", tableDAO.getDistinctCapacities());
-                
-                request.getRequestDispatcher("/views/table/table_list.jsp").forward(request, response);
+                response.sendRedirect(
+                        request.getContextPath() + "/owner/manage-table");
                 break;
         }
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    // ==================== 2. LIST TABLE ====================
+
+    /**
+     * Đọc filter, đếm tổng bản ghi, lấy đúng một trang và mở table_list.jsp.
+     */
+    private void showTableList(HttpServletRequest request,
+            HttpServletResponse response, int roleID)
             throws ServletException, IOException {
 
-        // Thiết lập tiếng Việt cho form nhập liệu
+        String searchName = trimToEmpty(request.getParameter("searchName"));
+        if (searchName.length() > 30) {
+            request.setAttribute("errorMessage",
+                    "Từ khóa tìm kiếm không được vượt quá 30 ký tự!");
+            searchName = "";
+        }
+
+        Integer searchCapacity = parseCapacityFilter(
+                request.getParameter("searchCapacity"), request);
+        String searchArea = parseAreaFilter(
+                request.getParameter("searchArea"), request);
+        Integer searchStatus = parseStatusFilter(
+                request.getParameter("searchStatus"), request);
+
+        Integer parsedPage = parsePositiveInt(request.getParameter("page"));
+        int page = parsedPage != null ? parsedPage : 1;
+
+        int totalItem = tableDAO.countSearchTables(
+                searchName, searchCapacity, searchArea, searchStatus);
+        int totalPage = (int) Math.ceil((double) totalItem / PAGE_SIZE);
+        if (totalPage > 0 && page > totalPage) {
+            page = totalPage;
+        }
+
+        int offset = (page - 1) * PAGE_SIZE;
+        List<Table> tables = tableDAO.searchTablesPaging(
+                searchName, searchCapacity, searchArea, searchStatus,
+                offset, PAGE_SIZE);
+
+        request.setAttribute("searchName", searchName);
+        request.setAttribute("searchCapacity", searchCapacity);
+        request.setAttribute("searchArea",
+                request.getParameter("searchArea"));
+        request.setAttribute("searchStatus",
+                request.getParameter("searchStatus"));
+        request.setAttribute("tableList", tables);
+        request.setAttribute("totalPage", totalPage);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("userRole", roleID);
+        request.setAttribute("capacityOptions",
+                tableDAO.getDistinctCapacities());
+
+        request.getRequestDispatcher(TABLE_LIST_VIEW)
+                .forward(request, response);
+    }
+
+    // ==================== 3. ADD TABLE ====================
+
+    /** Mở form thêm bàn; chỉ Owner được phép truy cập. */
+    private void showAddForm(HttpServletRequest request,
+            HttpServletResponse response, Employee loginUser)
+            throws ServletException, IOException {
+
+        if (!isOwner(loginUser)) {
+            redirectUnauthorized(request, response);
+            return;
+        }
+        request.setAttribute("mode", "add");
+        request.getRequestDispatcher(TABLE_FORM_VIEW)
+                .forward(request, response);
+    }
+
+    // ==================== 4. EDIT TABLE ====================
+
+    /** Tải dữ liệu hiện tại và mở form edit; QRCodeToken được giữ nguyên. */
+    private void showEditForm(HttpServletRequest request,
+            HttpServletResponse response, Employee loginUser)
+            throws ServletException, IOException {
+
+        if (!isOwner(loginUser)) {
+            redirectUnauthorized(request, response);
+            return;
+        }
+
+        Table table = loadRequestedTable(request, response);
+        if (table == null) {
+            return;
+        }
+        request.setAttribute("table", table);
+        request.setAttribute("mode", "edit");
+        request.getRequestDispatcher(TABLE_FORM_VIEW)
+                .forward(request, response);
+    }
+
+    // ==================== 5. TABLE DETAIL + QR ====================
+
+    /** Hiển thị thông tin bàn read-only cùng mã QR. */
+    private void showTableDetail(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Table table = loadRequestedTable(request, response);
+        if (table == null) {
+            return;
+        }
+        request.setAttribute("table", table);
+        request.setAttribute("mode", "detail");
+        request.getRequestDispatcher(TABLE_FORM_VIEW)
+                .forward(request, response);
+    }
+
+    // ==================== 6. SAVE ADD / EDIT ====================
+
+    /**
+     * POST: CSRF -> quyền Owner -> đọc/validate form -> addTable/updateTable.
+     */
+    @Override
+    protected void doPost(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
+
         request.setCharacterEncoding("UTF-8");
-        // [CSRF FIX] Bảo vệ thao tác thêm/sửa bàn của Owner.
-        if (!util.CsrfUtil.isValid(request)) {
+        if (!CsrfUtil.isValid(request)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "CSRF token không hợp lệ.");
             return;
         }
 
-        HttpSession session = request.getSession();
-        Employee loginUser = (Employee) session.getAttribute("employee");
-
-        // BẢO MẬT CẤP 2: Chặn ngay nếu nhân viên (Role != 1) cố tình gửi POST request bằng tool
-        if (loginUser == null || loginUser.getRoleID() != 1) {
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table?error=unauthorized");
+        Employee loginUser = (Employee) request.getSession()
+                .getAttribute("employee");
+        if (!isOwner(loginUser)) {
+            redirectUnauthorized(request, response);
             return;
         }
 
-        String action = request.getParameter("action");
+        String action = trimToEmpty(request.getParameter("action"));
+        String tableName = trimToEmpty(request.getParameter("tableName"));
+        Integer capacity = parsePositiveInt(request.getParameter("capacity"));
+        String areaType = trimToEmpty(request.getParameter("areaType"));
+        Integer isActive = parseNonNegativeInt(
+                request.getParameter("isActive"));
+        Integer parsedTableID = parsePositiveInt(
+                request.getParameter("tableID"));
+        int tableID = parsedTableID != null ? parsedTableID : 0;
 
-        // 1. LẤY DỮ LIỆU TỪ FORM VÀ LÀM SẠCH (TRIM)
-        String tableName = request.getParameter("tableName");
-        tableName = (tableName != null) ? tableName.trim() : "";
-
-        // Không tự đổi dữ liệu sai thành 2; mọi giá trị ngoài 1-50 phải báo lỗi.
-        int capacity = 0;
-        boolean capacityInvalid = false;
-        try {
-            String capacityParam = request.getParameter("capacity");
-            if (capacityParam == null || capacityParam.trim().isEmpty()) {
-                capacityInvalid = true;
-            } else {
-                capacity = Integer.parseInt(capacityParam.trim());
-                capacityInvalid = capacity < 1 || capacity > 50;
-            }
-        } catch (NumberFormatException e) {
-            capacityInvalid = true;
+        String errorMessage = validateTableForm(
+                action, tableName, capacity, areaType, isActive, tableID);
+        if (errorMessage != null) {
+            forwardInvalidForm(request, response, action, tableID,
+                    tableName, capacity, areaType, isActive, errorMessage);
+            return;
         }
 
-        String areaType = request.getParameter("areaType");
-        areaType = areaType != null ? areaType.trim() : "";
-        boolean areaInvalid = !"public".equals(areaType) && !"private".equals(areaType);
+        Table table = new Table();
+        table.setTableID(tableID);
+        table.setEmployeeID(0);
+        table.setTableName(tableName);
+        table.setCapacity(capacity);
+        table.setAreaType(areaType);
+        table.setIsActive(isActive);
 
-        // Validate trạng thái ở backend để chặn request giả mạo ngoài form HTML.
-        int isActive = -1;
-        boolean statusInvalid = false;
-        try {
-            String activeParam = request.getParameter("isActive");
-            if (activeParam == null || activeParam.trim().isEmpty()) {
-                statusInvalid = true;
-            } else {
-                isActive = Integer.parseInt(activeParam.trim());
-                statusInvalid = isActive != 0 && isActive != 1;
-            }
-        } catch (NumberFormatException e) {
-            statusInvalid = true;
+        boolean saved;
+        String successMessage;
+        if ("add".equals(action)) {
+            saved = tableDAO.addTable(table);
+            successMessage = "msg=add_success";
+        } else if ("edit".equals(action) || "update".equals(action)) {
+            saved = tableDAO.updateTable(table);
+            successMessage = "msg=update_success";
+        } else {
+            response.sendRedirect(
+                    request.getContextPath() + "/owner/manage-table");
+            return;
         }
 
-        int tableID = 0;
-        String tableIdStr = request.getParameter("tableID");
-        if (tableIdStr != null && !tableIdStr.isEmpty()) {
-            Integer parsedTableID = parsePositiveInt(tableIdStr);
-            tableID = parsedTableID != null ? parsedTableID : 0;
+        response.sendRedirect(request.getContextPath()
+                + "/owner/manage-table?"
+                + (saved ? successMessage : "error=save_failed"));
+    }
+
+    // ==================== 7. VALIDATION / SHARED HELPERS ====================
+
+    /** Dùng chung cho Edit và Detail: validate id rồi lấy bàn từ DAO. */
+    private Table loadRequestedTable(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+
+        Integer tableID = parsePositiveInt(request.getParameter("id"));
+        if (tableID == null) {
+            response.sendRedirect(request.getContextPath()
+                    + "/owner/manage-table?error=invalid_id");
+            return null;
         }
 
-        // 2. VALIDATE DỮ LIỆU (BACKEND VALIDATION)
-        boolean hasError = false;
-        String errorMessage = "";
+        Table table = tableDAO.getTableByTableID(tableID);
+        if (table == null) {
+            response.sendRedirect(request.getContextPath()
+                    + "/owner/manage-table?error=not_found");
+        }
+        return table;
+    }
+
+    /** Trả thông báo lỗi đầu tiên; null nghĩa là form hợp lệ. */
+    private String validateTableForm(String action, String tableName,
+            Integer capacity, String areaType, Integer isActive, int tableID) {
 
         if (tableName.isEmpty() || tableName.length() > 30) {
-            hasError = true;
-            errorMessage = "Tên bàn không được để trống và tối đa chỉ 30 ký tự.";
-        } else if (capacityInvalid) {
-            hasError = true;
-            errorMessage = "Sức chứa phải là số nguyên từ 1 đến 50 người.";
-        } else if (areaInvalid) {
-            hasError = true;
-            errorMessage = "Khu vực không hợp lệ.";
-        } else if (statusInvalid) {
-            hasError = true;
-            errorMessage = "Trạng thái bàn không hợp lệ.";
-        } else if (("edit".equals(action) || "update".equals(action))
+            return "Tên bàn không được để trống và tối đa chỉ 30 ký tự.";
+        }
+        if (capacity == null || capacity > 50) {
+            return "Sức chứa phải là số nguyên từ 1 đến 50 người.";
+        }
+        if (!"public".equals(areaType) && !"private".equals(areaType)) {
+            return "Khu vực không hợp lệ.";
+        }
+        if (isActive == null || (isActive != 0 && isActive != 1)) {
+            return "Trạng thái bàn không hợp lệ.";
+        }
+        if (("edit".equals(action) || "update".equals(action))
                 && tableID <= 0) {
-            hasError = true;
-            errorMessage = "Mã bàn cần cập nhật không hợp lệ.";
+            return "Mã bàn cần cập nhật không hợp lệ.";
         }
+        return null;
+    }
 
-        // 3. NẾU CÓ LỖI: TRẢ VỀ FORM CŨ KÈM DỮ LIỆU ĐÃ NHẬP
-        if (hasError) {
-            // Tạo một object tạm thời chứa đúng những gì user vừa gõ để fill lại vào thẻ input
-            Table tempTable = new Table();
-            tempTable.setTableID(tableID);
-            tempTable.setTableName(tableName);
-            tempTable.setCapacity(capacity);
-            tempTable.setAreaType(areaType);
-            tempTable.setIsActive(isActive);
+    /** Giữ dữ liệu người dùng vừa nhập và hiển thị lại form có lỗi. */
+    private void forwardInvalidForm(HttpServletRequest request,
+            HttpServletResponse response, String action, int tableID,
+            String tableName, Integer capacity, String areaType,
+            Integer isActive, String errorMessage)
+            throws ServletException, IOException {
 
-            request.setAttribute("table", tempTable); // Giữ lại dữ liệu
-            request.setAttribute("errorMessage", errorMessage); // Truyền câu báo lỗi
-            request.setAttribute("mode", action); // Giữ nguyên trạng thái đang là add hay edit
+        Table tempTable = new Table();
+        tempTable.setTableID(tableID);
+        tempTable.setTableName(tableName);
+        tempTable.setCapacity(capacity != null ? capacity : 0);
+        tempTable.setAreaType(areaType);
+        tempTable.setIsActive(isActive != null ? isActive : -1);
 
-            // Forward lại về trang form (không dùng sendRedirect)
-            request.getRequestDispatcher("/views/table/table_form.jsp").forward(request, response);
-            return; // Ngắt luồng không cho chạy xuống code DB bên dưới
+        request.setAttribute("table", tempTable);
+        request.setAttribute("errorMessage", errorMessage);
+        request.setAttribute("mode", action);
+        request.getRequestDispatcher(TABLE_FORM_VIEW)
+                .forward(request, response);
+    }
+
+    /** Filter sức chứa chỉ nhận số nguyên từ 1 đến 50. */
+    private Integer parseCapacityFilter(String value,
+            HttpServletRequest request) {
+
+        if (isEmptyFilter(value)) {
+            return null;
         }
+        Integer capacity = parsePositiveInt(value);
+        if (capacity == null || capacity > 50) {
+            request.setAttribute("errorMessage",
+                    "Sức chứa tìm kiếm phải từ 1 đến 50 người.");
+            return null;
+        }
+        return capacity;
+    }
 
-        // 4. NẾU KHÔNG CÓ LỖI: LƯU VÀO DATABASE
-        Table t = new Table();
-        t.setTableID(tableID);
-        t.setEmployeeID(0);
-        t.setTableName(tableName);
-        t.setCapacity(capacity);
-        t.setAreaType(areaType);
-        t.setIsActive(isActive);
+    /** Filter khu vực chỉ nhận public hoặc private. */
+    private String parseAreaFilter(String value,
+            HttpServletRequest request) {
 
-        // BẮT ĐẦU SỬA TỪ ĐÂY
-        if ("add".equals(action)) {
-            // [DAO RESULT FIX] Chỉ báo thành công khi database thật sự ghi được dữ liệu.
-            boolean saved = tableDAO.addTable(t);
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table?"
-                    + (saved ? "msg=add_success" : "error=save_failed"));
-            
-        } else if ("edit".equals(action) || "update".equals(action)) { 
-            // ĐÃ SỬA: Chấp nhận cả "edit" và "update"
-            boolean saved = tableDAO.updateTable(t);
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table?"
-                    + (saved ? "msg=update_success" : "error=save_failed"));
-            
-        } else {
-            // BỔ SUNG: Cứu cánh cuối cùng. Nếu vì lý do nào đó action bị sai, 
-            // nó sẽ tự động đá về trang danh sách thay vì hiện trang trắng
-            response.sendRedirect(request.getContextPath() + "/owner/manage-table");
+        if (isEmptyFilter(value)) {
+            return null;
+        }
+        if (!"public".equals(value) && !"private".equals(value)) {
+            request.setAttribute("errorMessage",
+                    "Khu vực tìm kiếm không hợp lệ.");
+            return null;
+        }
+        return value;
+    }
+
+    /** Filter trạng thái chỉ nhận 0 hoặc 1. */
+    private Integer parseStatusFilter(String value,
+            HttpServletRequest request) {
+
+        if (isEmptyFilter(value)) {
+            return null;
+        }
+        Integer status = parseNonNegativeInt(value);
+        if (status == null || (status != 0 && status != 1)) {
+            request.setAttribute("errorMessage",
+                    "Trạng thái tìm kiếm không hợp lệ.");
+            return null;
+        }
+        return status;
+    }
+
+    private boolean isOwner(Employee employee) {
+        return employee != null && employee.getRoleID() == OWNER_ROLE_ID;
+    }
+
+    private void redirectUnauthorized(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        response.sendRedirect(request.getContextPath()
+                + "/owner/manage-table?error=unauthorized");
+    }
+
+    private boolean isEmptyFilter(String value) {
+        return value == null || value.trim().isEmpty()
+                || "all".equals(value.trim());
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    /** Chuyển chuỗi thành số nguyên dương; sai trả về null. */
+    private Integer parsePositiveInt(String value) {
+        try {
+            int parsed = Integer.parseInt(trimToEmpty(value));
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
-    // [INPUT VALIDATION] Dùng chung cho id/page nhận từ query string hoặc form.
-    private Integer parsePositiveInt(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
+    /** Chuyển chuỗi thành số nguyên không âm; sai trả về null. */
+    private Integer parseNonNegativeInt(String value) {
         try {
-            int parsed = Integer.parseInt(value.trim());
-            return parsed > 0 ? parsed : null;
+            int parsed = Integer.parseInt(trimToEmpty(value));
+            return parsed >= 0 ? parsed : null;
         } catch (NumberFormatException e) {
             return null;
         }

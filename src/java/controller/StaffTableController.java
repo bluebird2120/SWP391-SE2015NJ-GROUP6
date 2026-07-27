@@ -19,6 +19,12 @@ import model.Order;
 import model.OrderItem;
 
 @WebServlet(name = "StaffTableController", urlPatterns = {"/staff/tables"})
+/**
+ * LUỒNG NHÂN VIÊN PHỤC VỤ CÁC BÀN ĐƯỢC PHÂN CÔNG.
+ *
+ * <p>GET hiển thị danh sách/lịch sử/chi tiết order.
+ * POST cập nhật số lượng món, chuyển checkout và xác nhận dọn bàn.</p>
+ */
 public class StaffTableController extends HttpServlet {
 
     private static final String VIEW = "/views/staff/my-tables.jsp";
@@ -26,6 +32,7 @@ public class StaffTableController extends HttpServlet {
     private static final String DETAIL_VIEW = "/views/staff/order-detail.jsp";
 
     @Override
+    /** Điều hướng màn bàn đang phục vụ, lịch sử hoặc chi tiết order. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         util.CsrfUtil.ensureToken(request.getSession());
@@ -61,6 +68,7 @@ public class StaffTableController extends HttpServlet {
     }
 
     @Override
+    /** Thực hiện action sau khi kiểm tra CSRF và order thuộc đúng nhân viên. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");

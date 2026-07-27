@@ -16,9 +16,19 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 
 @WebServlet(name = "AdminInvoiceController", urlPatterns = {"/owner/invoices"})
+/**
+ * LUỒNG OWNER XEM DANH SÁCH HÓA ĐƠN.
+ *
+ * <p>Quyền Owner -> đọc/validate bộ lọc -> đếm bản ghi -> tính phân trang
+ * -> lấy 10 hóa đơn -> forward invoices.jsp.</p>
+ *
+ * <p>Tên lớp cũ là AdminInvoiceController nhưng actor thực tế của dự án
+ * là Owner (roleID = 1).</p>
+ */
 public class AdminInvoiceController extends HttpServlet {
 
     @Override
+    /** Tải danh sách hóa đơn theo ngày, trạng thái và trang hiện tại. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
             
@@ -102,11 +112,13 @@ public class AdminInvoiceController extends HttpServlet {
     }
 
     @Override
+    /** Danh sách chỉ đọc; POST được chuyển về cùng luồng hiển thị GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);
     }
 
+    /** Parse ngày ISO yyyy-MM-dd; dữ liệu rỗng hoặc sai trả về null. */
     private LocalDate parseDate(String value) {
         if (value == null || value.isBlank()) {
             return null;
