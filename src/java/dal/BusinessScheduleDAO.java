@@ -70,6 +70,10 @@ public class BusinessScheduleDAO extends DBContext {
         return list;
     }
 
+    
+    /*
+    lưu giờ hoạt động cố định từng tuần 
+    */
     public boolean saveWeeklySchedule(String dayOfWeek, Time openTime,
             Time closeTime, int isClosed, String reason) {
         BusinessSchedule existing = findByDayOfWeek(dayOfWeek);
@@ -106,6 +110,10 @@ public class BusinessScheduleDAO extends DBContext {
         }
     }
 
+    /*
+    Lưu ngày đăc biệt 
+    */
+    
     public boolean saveSpecialDate(Date specificDate, Time openTime,
             Time closeTime, int isClosed, String reason) {
         BusinessSchedule existing = findBySpecificDate(specificDate);
@@ -142,6 +150,7 @@ public class BusinessScheduleDAO extends DBContext {
         }
     }
 
+    
     public boolean deleteSpecialDate(int scheduleID) {
         String sql = "DELETE FROM BusinessSchedule "
                 + "WHERE scheduleID=? AND specificDate IS NOT NULL";
@@ -154,10 +163,9 @@ public class BusinessScheduleDAO extends DBContext {
         }
     }
 
-    /**
-     * [OPERATING HOURS] Kiem tra thoi gian khach dat ban co nam trong gio
-     * hoat dong cua nha hang khong. Uu tien lich ngay dac biet, neu khong co
-     * thi dung lich theo thu trong tuan.
+    /*
+     * Kiem tra thoi gian khach dat ban co nam trong gio
+     * hoat dong cua nha hang khong
      */
     public String validateReservationTime(Timestamp orderTime) {
         if (orderTime == null) {
@@ -184,7 +192,7 @@ public class BusinessScheduleDAO extends DBContext {
         LocalTime selected = dateTime.toLocalTime();
         LocalTime open = schedule.getOpenTime().toLocalTime();
         LocalTime close = schedule.getCloseTime().toLocalTime();
-        // [OPERATING HOURS] Khach phai dat ban truoc gio dong cua toi thieu 1 gio 
+        // Khach phai dat ban truoc gio dong cua toi thieu 1 gio 
         LocalTime latestReservationTime = close.minusMinutes(60);
         if (selected.isBefore(open) || selected.isAfter(close)) {
             return "Thời gian đặt bàn phải nằm trong giờ hoạt động: "
@@ -198,7 +206,7 @@ public class BusinessScheduleDAO extends DBContext {
         }
         return null;
     }
-
+// tìm lịch theo ngày 
     private BusinessSchedule findScheduleForDate(Date date) {
         BusinessSchedule special = findBySpecificDate(date);
         if (special != null) {
@@ -210,6 +218,10 @@ public class BusinessScheduleDAO extends DBContext {
         return findByDayOfWeek(day.name());
     }
 
+    
+    /*
+    
+    */
     private BusinessSchedule findByDayOfWeek(String dayOfWeek) {
         String sql = "SELECT scheduleID, dayOfWeek, specificDate, openTime, closeTime, "
                 + "isClosed, reason, updatedAt "

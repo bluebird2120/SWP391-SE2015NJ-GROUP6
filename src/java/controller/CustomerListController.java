@@ -140,8 +140,7 @@ public class CustomerListController extends HttpServlet {
                 return;
             }
 
-            // [CHI TIET KHACH HANG] Trang danh sach chi hien thong tin gon,
-            // thong tin day du duoc dua sang JSP rieng.
+           
             request.setAttribute("customer", customer);
             request.getRequestDispatcher("/views/owner/customer-detail.jsp")
                     .forward(request, response);

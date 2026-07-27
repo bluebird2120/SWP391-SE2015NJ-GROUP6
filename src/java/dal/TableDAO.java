@@ -59,26 +59,12 @@ public class TableDAO extends DBContext {
 
     /*
      * Tính số bàn còn trống theo từng capacity trong khu vực.
-     *
-     * Logic:
-     * Bàn trống = Tổng số bàn - bàn bận trong cùng ngày
-     *
-     * Bàn bận gồm:
-     * - reserved
-     * - serving
-     * - cleaning
-     *
-     * Không giới hạn thời gian ăn:
-     * Nếu bàn đã reserved / serving / cleaning trong ngày đó
-     * thì khóa đến hết ngày đó. hoặc có nhân viên xác nhận đã dọn xẹp xong chuyển trạng thái bàn 
-     *
-     * Khách vẫn có thể đặt ngày tương lai khác,
-
+ 
+   
      */
     public List<Table> findAvailableTableGroups(String areaType, Timestamp orderTime) {
 
-        // [AUTO EXPIRE RESERVATION] Gom logic het han dat ban ve ReservationDAO.
-        // TableDAO chi phu trach tinh ban trong, khong tu xu ly Order/Invoice nua.
+       
         new ReservationDAO().autoExpireReservations();
 
         List<Table> resultList = new ArrayList<>();
@@ -102,10 +88,8 @@ public class TableDAO extends DBContext {
                 + "JOIN order_reservation_detail ord ON ord.orderID = o.orderID "
                 + "WHERE o.orderType = 1 "
                 + "  AND ord.areaType = ? "
-                + "  AND DATE(o.orderTime) = DATE(?) "
-                // [TABLE AVAILABILITY] serving la orderStatus; tableStatus ban ban gom pending/reserved/arrived/occupied/cleaning.
+                + "  AND DATE(o.orderTime) = DATE(?) "               
                 + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
-                // [HUY PHUC VU LE TAN] Cancelled + cleaning van khoa ban cho den khi don xong.
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled' OR o.tableStatus = 'cleaning') "
                 + "  AND NOT EXISTS ( "
                 + "      SELECT 1 "
@@ -116,9 +100,6 @@ public class TableDAO extends DBContext {
 
         /*
          * Đơn đã được gán bàn thật.
-        
-        
-         
          */
         String sqlBusyAssigned
                 = "SELECT t.capacity, COUNT(DISTINCT t.tableID) AS busy "
@@ -127,10 +108,8 @@ public class TableDAO extends DBContext {
                 + "JOIN `Table` t ON ot.tableID = t.tableID "
                 + "WHERE t.isActive = 1 "
                 + "  AND t.areaType = ? "
-                + "  AND DATE(o.orderTime) = DATE(?) "
-                // [TABLE AVAILABILITY] Don da gan ban that cung phai tru ban arrived/occupied.
+                + "  AND DATE(o.orderTime) = DATE(?) "               
                 + "  AND o.tableStatus IN ('pending', 'reserved', 'arrived', 'occupied', 'cleaning') "
-                // [HUY PHUC VU LE TAN] Cancelled + cleaning van khoa ban cho den khi don xong.
                 + "  AND (o.orderStatus IS NULL OR o.orderStatus <> 'cancelled' OR o.tableStatus = 'cleaning') "
                 + "GROUP BY t.capacity";
 
@@ -140,7 +119,7 @@ public class TableDAO extends DBContext {
 
         try {
             /*
-             * Query 1: lấy tổng số bàn.
+             * Query 1: lấy tổng số bàn thuộc loại bàn 
              */
             try (PreparedStatement ps = connection.prepareStatement(sqlTotal)) {
                 ps.setString(1, areaType);

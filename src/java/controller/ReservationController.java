@@ -51,7 +51,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // [PREORDER AFTER DEPOSIT] Khách chỉ được chọn món sau khi
+       
         // tiền cọc bàn đã thanh toán và đơn chuyển sang reserved.
         if ("preorder".equals(action)) {
             openPreorder(request, response);
@@ -71,8 +71,7 @@ public class ReservationController extends HttpServlet {
             request.setAttribute("orders", reservations);
             request.setAttribute("reservationDetails",
                     orderDAO.getReservationDetailsByCustomer(customerID));
-            // Gắn món đặt trước vào từng đơn đặt bàn
-            // để khách xem lịch sử là thấy luôn bàn + món + tổng tiền món.
+          
             Map<Integer, List<OrderItem>> preorderItemsByOrder = new HashMap<>();
             Map<Integer, List<MenuItem>> preorderMenusByOrder = new HashMap<>();
             Map<Integer, Integer> preorderTotalsByOrder = new HashMap<>();
@@ -132,7 +131,7 @@ public class ReservationController extends HttpServlet {
             }
 
             Timestamp orderTime = parseTimestamp(dateTimeStr);
-            // [OPERATING HOURS] Khong cho khach chon ban ngoai gio hoat dong cua nha hang.
+            //  Khong cho khach chon ban ngoai gio hoat dong cua nha hang.
             String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
             if (businessHourError != null) {
                 showPickTime(request, response, businessHourError);
@@ -187,7 +186,7 @@ public class ReservationController extends HttpServlet {
         String action = request.getParameter("action");
 
         //  Các thao tác giỏ đặt trước được xử lý trước
-        // form đặt bàn để không yêu cầu lại orderTime/areaType.
+        
         if ("addPreorderItem".equals(action)) {
             addPreorderItem(request, response);
             return;
@@ -220,7 +219,7 @@ public class ReservationController extends HttpServlet {
         }
 
         Timestamp orderTime = parseTimestamp(dateTimeStr);
-        // [OPERATING HOURS] Kiem tra lai truoc khi tao don de tranh khach bypass buoc chon ban.
+        //  Kiem tra lai truoc khi tao don de tranh khach bypass buoc chon ban.
         String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
         if (businessHourError != null) {
             showPickTime(request, response, businessHourError);
@@ -256,7 +255,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // Luôn kiểm tra lại ngay trước khi tạo đơn vì số bàn trống có thể đổi.
+      
         List<Table> tableGroups = tableDAO.findAvailableTableGroups(areaType, orderTime);
         List<OrderReservationDetail> details = new ArrayList<>();
         Map<String, Integer> selectedQuantities
@@ -294,9 +293,8 @@ public class ReservationController extends HttpServlet {
         }
 
         if (orderDAO.hasActivePendingReservation(customer.getCustomerID())) {
-            // [ANTI SPAM GIU BAN]
-            // Neu customer dang co don pending chua thanh toan coc va con han giu cho,
-            // khong cho tao them don moi de tranh spam giu ban ao.
+            
+           
             showChooseTable(request, response, tableGroups, dateTimeStr, areaType,
                     selectedQuantities,
                     "Bạn đang có một đơn đặt bàn chưa thanh toán "
@@ -325,8 +323,7 @@ public class ReservationController extends HttpServlet {
                 + ReservationDAO.HOLD_MINUTES * 60_000L);
         session.removeAttribute("redirectAfterLogin");
 
-        // [DEPOSIT FIRST] Sau khi chọn bàn luôn thanh toán cọc bàn ngay.
-        // Thời gian giữ chỗ 5 phút chỉ dành cho bước thanh toán này.
+      
         int invoiceID = orderDAO.createDepositInvoice(
                 orderID, ReservationDAO.DEFAULT_DEPOSIT_AMOUNT);
         if (invoiceID < 0) {
