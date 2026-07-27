@@ -124,7 +124,6 @@ public class DailyStockController extends HttpServlet {
         boolean hasError = false;
         String errorMessage = "";
 
-        // Trích xuất bộ lọc ẩn để phục hồi hiện trạng trang
         int categoryID = parseIntSafe(category_raw, 0, 0);
         int methodID = parseIntSafe(method_raw, 0, 0);
         int page = parseIntSafe(page_raw, 1, 1);
@@ -132,7 +131,7 @@ public class DailyStockController extends HttpServlet {
         String date = checkEmpty(date_raw) ? date_raw : LocalDate.now().toString();
         java.sql.Date dateSql = java.sql.Date.valueOf(date);
 
-        // 🌟 ĐÃ SỬA CHUẨN: Băm chuỗi và đảo ngược YYYY-MM-DD hoặc YYYY/MM/DD thành DD-MM-YYYY trong thông báo lỗi của Servlet
+        // Băm chuỗi và đảo ngược YYYY-MM-DD hoặc YYYY/MM/DD thành DD-MM-YYYY trong thông báo lỗi của Servlet
         if (!LocalDate.now().toString().equals(date.trim())) {
             hasError = true;
             String displayDate = date.trim();
@@ -255,17 +254,16 @@ public class DailyStockController extends HttpServlet {
     }
 
     private boolean checkHasLowStock(List<MenuItem> list) {
-        int flag = 0;
         if (list != null) {
             for (MenuItem mi : list) {
                 if (mi.getInitialQuantity() > 0) {
                     if (mi.getQuantityInStock() * 100 / mi.getInitialQuantity() < 20) {
-                        flag++;
+                        return true;
                     }
                 }
             }
         }
-        return flag > 0;
+        return false;
     }
 
     private boolean isConfigYet(List<MenuItem> list, String date) {

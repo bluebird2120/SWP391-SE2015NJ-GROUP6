@@ -76,7 +76,7 @@ public class MenuPerformaneController extends HttpServlet {
                     || endDate == null || !endDate.trim().matches("\\d{4}-\\d{2}-\\d{2}")) {
                 startDate = today.toString();
                 endDate = today.toString();
-            } else if (startDate.compareTo(endDate) > 0) { // Ngày ngược -> tự đảo
+            } else if (startDate.compareTo(endDate) > 0) {
                 String temp = startDate;
                 startDate = endDate;
                 endDate = temp;

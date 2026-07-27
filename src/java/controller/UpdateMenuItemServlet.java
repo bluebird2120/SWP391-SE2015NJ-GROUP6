@@ -99,7 +99,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
             List<MenuItemImages> subImages = menuItemDAO.getImagesByMenuItemId(id);
             request.setAttribute("subImages", subImages);
         }
-
+        
         if (session.getAttribute("updateSuccess") != null) {
             request.setAttribute("updateSuccess", session.getAttribute("updateSuccess"));
             session.removeAttribute("updateSuccess");
@@ -130,14 +130,15 @@ public class UpdateMenuItemServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
+        MenuItem mi;
+        double MAX_FILE_SIZE = 0.5 * 1024 * 1024;
         // [PHAN QUYEN] Chi Owner (roleID=1) moi duoc them/sua mon an
         model.Employee emp = (session != null) ? (model.Employee) session.getAttribute("employee") : null;
         if (emp == null || emp.getRoleID() != 1) {
             response.sendRedirect(request.getContextPath() + "/unauthorized");
             return;
         }
-        MenuItem mi;
-        double MAX_FILE_SIZE = 0.5 * 1024 * 1024;
+        
         String itemName = request.getParameter("name");
         String menuItemId_raw = request.getParameter("id");
         String categoryId_raw = request.getParameter("category");
@@ -256,6 +257,7 @@ public class UpdateMenuItemServlet extends HttpServlet {
         //tạo đường dẫn
         String upLoadSource = "D:\\Knowledge\\ki5\\SWP\\Project\\Restaurant-Reservation-And-Table-Service-System\\web\\images";
         String upLoadServer = getServletContext().getRealPath("/images");
+        
         //tạo folder
         File sourceFolder = new File(upLoadSource);
         if (!sourceFolder.exists()) {

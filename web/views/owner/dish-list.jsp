@@ -381,12 +381,10 @@
                 <form id="filterForm" action="${pageContext.request.contextPath}/menu" method="get" class="filter-form">
 
                     <div class="filter-group group-search">
-
                         <input type="text" name="search" value="${currentSearch}" placeholder="Tìm kiếm món ăn..." class="filter-input"/>
                     </div>
 
                     <div class="filter-group group-select">
-
                         <select name="category" class="filter-select">
                             <option value="0">Tất cả danh mục</option>
                             <c:forEach var="cat" items="${list}">
@@ -398,7 +396,6 @@
                     </div>
 
                     <div class="filter-group group-select">
-
                         <select name="cookingMethod" class="filter-select">
                             <option value="0">Tất cả phương thức</option>
                             <c:forEach var="method" items="${listMethod}">
@@ -411,7 +408,6 @@
 
                     <c:if test="${sessionScope.employee != null}">
                         <div class="filter-group group-select">
-
                             <select name="status" class="filter-select">
                                 <option value="-1" ${currentStatus == -1 ? 'selected' : '' }>Tất Cả Trạng Thái</option>
                                 <option value="1" ${currentStatus == 1 ? 'selected' : '' }>Đang Bán</option>
@@ -421,7 +417,6 @@
                     </c:if>
 
                     <div class="filter-group">
-
                         <div class="filter-price">
                             <input type="number" name="minPrice" value="${currentMinPrice}" placeholder="Từ" class="filter-input" />
                             <span>—</span>
@@ -431,7 +426,6 @@
 
                     <div class="line2">
                         <div class="filter-group">
-
                             <select name="price" class="filter-select">
                                 <option value="price" ${currentPriceType == 'price' ? 'selected' : '' }>Giá Gốc</option>
                                 <option value="discountedPrice" ${currentPriceType == 'discountedPrice' ? 'selected' : '' }>Giá Thực Tế</option>
@@ -439,7 +433,6 @@
                         </div>
 
                         <div class="filter-group">
-
                             <select name="sort" class="filter-select sort-order-group">
                                 <option value="asc" ${currentSort == 'asc' ? 'selected' : '' }>Tăng Dần ↑</option>
                                 <option value="desc" ${currentSort == 'desc' ? 'selected' : '' }>Giảm Dần ↓</option>
