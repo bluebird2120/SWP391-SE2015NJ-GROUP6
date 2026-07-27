@@ -123,8 +123,6 @@ public class StaffNotificationsController extends HttpServlet {
                 return ctx + "/staff/tables";
 
             //LỄ TÂN: khách vãng lai quét QR, cần ra mở bàn ──────────----------------------
-            // new_order chỉ gửi cho lễ tân — họ mở bàn xong hệ thống mới
-            case "new_order":
             // khách vãng lai quét QR cần mở bàn
             case "table_open_request":
             // đơn online cần gán bàn 

@@ -31,19 +31,6 @@ public class EmailService {
         //%d in in số nguyên, độ dài 6, thiếu thì thêm 0 bên trái
         return String.format("%06d", number);
     }
-
-//    public static String generateRandomPassword(int length) {
-//        String chars = "abcdefghijklmnopqrstuvwxyz";
-//        String charsUpper = chars.toUpperCase();
-//        String digit = "0123456789";
-//        String all = digit + chars + charsUpper;
-//        StringBuilder sb = new StringBuilder(length);
-//
-//        for (int i = 0; i < length; i++) {
-//            sb.append(all.charAt(RANDOM.nextInt(all.length())));
-//        }
-//        return sb.toString();
-//    }
     
     public static void sendOtpEmail(String toEmail, String otpCode, int expireMinutes)
             throws MessagingException {

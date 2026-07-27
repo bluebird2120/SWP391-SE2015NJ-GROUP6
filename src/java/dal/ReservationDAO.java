@@ -338,7 +338,7 @@ public class ReservationDAO extends DBContext {
         try {
             connection.setAutoCommit(false);
 
-            // ── [BƯỚC 1] Lấy trước danh sách orderID SẮP được confirm trong lần này.
+            // ── Lấy trước danh sách orderID SẮP được confirm trong lần này.
             //    Phải query TRƯỚC khi UPDATE để chỉ lấy đúng đơn mới, không lặp đơn cũ.
             //    LƯU Ý: KHÔNG lọc theo ngày ở đây nữa — khách đặt cho hôm nay hay
             //    ngày mai/ngày kia đều phải được xác nhận "đặt bàn thành công".
@@ -370,7 +370,7 @@ public class ReservationDAO extends DBContext {
                 }
             }
 
-            // ── [BƯỚC 2] Thực hiện UPDATE xác nhận cọc ──────────────────────
+            // ── Thực hiện UPDATE xác nhận cọc ──────────────────────
             int confirmed = 0;
             try (PreparedStatement confirmPs
                     = connection.prepareStatement(confirmSql)) {
@@ -378,7 +378,7 @@ public class ReservationDAO extends DBContext {
                 changed += confirmed;
             }
 
-            // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
+            // ──  Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
             //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
             //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
             if (confirmed > 0 && !newlyConfirmedIDs.isEmpty()) {

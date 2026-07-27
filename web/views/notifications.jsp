@@ -313,7 +313,6 @@
                                                     <c:when test="${n.type == 'feedback_response'}">Phản hồi đánh giá</c:when>
                                                     <c:when test="${n.type == 'table_assigned'}">Phân công bàn</c:when>
                                                     <c:when test="${n.type == 'table_open_request'}">Yêu cầu mở bàn</c:when>
-                                                    <c:when test="${n.type == 'new_order'}">Đơn hàng mới</c:when>
                                                     <c:when test="${n.type == 'checkout_requested'}">Yêu cầu thanh toán</c:when>
                                                     <c:when test="${n.type == 'payment_success'}">Thanh toán thành công</c:when>
                                                     <c:when test="${n.type == 'reservation_confirmed'}">Đặt bàn thành công</c:when>
