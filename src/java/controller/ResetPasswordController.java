@@ -18,12 +18,6 @@ import util.PasswordUtil;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 
-/**
- * Xử lý bước cuối của luồng quên mật khẩu: user bấm vào link trong email
- * (?token=...), nhập mật khẩu mới, hệ thống validate token rồi cập nhật DB.
- *
- * @author admin
- */
 @WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
 public class ResetPasswordController extends HttpServlet {
 

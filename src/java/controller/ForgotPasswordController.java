@@ -52,10 +52,8 @@ public class ForgotPasswordController extends HttpServlet {
         }
 
         try {
-            //Giữ lại email đã nhập cho toàn bộ phía dưới
             request.setAttribute("email", email);
 
-            // Tìm Employee trước 
             Employee employee = employeeDAO.findByEmail(email);
             Customer customer = (employee == null) ? customerDAO.findByEmail(email) : null;
             if (customer == null && employee == null) {
@@ -70,7 +68,6 @@ public class ForgotPasswordController extends HttpServlet {
                 return;
             }
 
-            //Nếu là tài khoản gg thì không thể reset password
             if (customer != null && "google".equalsIgnoreCase(customer.getLoginProvider())) {
                 request.setAttribute("emailError", "Tài khoản này đã đăng kí bằng Google. Vui lòng đăng nhập bằng Google.");
                 request.getRequestDispatcher("/views/forgot-password.jsp").forward(request, response);
@@ -80,7 +77,6 @@ public class ForgotPasswordController extends HttpServlet {
             String token = UUID.randomUUID().toString();
             Timestamp expiry = new Timestamp(System.currentTimeMillis() + RESET_TOKEN_EXPIRE_MINUTES * 60_000L);
 
-            // ── LƯU TOKEN TRƯỚC ── để link trong email vừa gửi có thể dùng được ngay
             boolean saved;
             if (customer != null) {
                 saved = customerDAO.saveResetToken(customer.getCustomerID(), token, expiry);
@@ -94,12 +90,6 @@ public class ForgotPasswordController extends HttpServlet {
                 return;
             }
 
-            // Tự động dựng URL đầy đủ dẫn tới trang đặt lại mật khẩu kèm theo mã Token ngẫu nhiên.
-            // Dựng đường dẫn động (Dynamic URL) theo môi trường:
-            // - request.getScheme(): "http" hoặc "https"
-            // - request.getServerName(): tên miền hoặc "localhost"
-            // - request.getServerPort(): tự thêm cổng (như :8080) nếu không phải cổng chuẩn 80/443
-            // - request.getContextPath(): tên ứng dụng web (Context Root)
             String resetLink = request.getScheme() + "://" + request.getServerName()
                     + (request.getServerPort() == 80 || request.getServerPort() == 443
                     ? "" : ":" + request.getServerPort())
@@ -109,7 +99,6 @@ public class ForgotPasswordController extends HttpServlet {
                 EmailService.sendResetLinkEmail(email, resetLink);
             } catch (MessagingException e) {
                 e.printStackTrace();
-                // Gửi email thất bại -> xóa token vừa lưu để tránh token "mồ côi" không ai dùng được
                 if (customer != null) {
                     customerDAO.clearResetToken(customer.getCustomerID());
                 } else {

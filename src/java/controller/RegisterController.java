@@ -25,15 +25,6 @@ public class RegisterController extends HttpServlet {
     private final CustomerDAO customerDAO = new CustomerDAO();
     private final EmployeeDAO employeeDAO = new EmployeeDAO();
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -64,14 +55,6 @@ public class RegisterController extends HttpServlet {
         request.getRequestDispatcher("/views/register.jsp").forward(request, response);
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -81,7 +64,6 @@ public class RegisterController extends HttpServlet {
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
 
-        //Validate
         boolean hasError = false;
 
         //UserName
@@ -130,7 +112,6 @@ public class RegisterController extends HttpServlet {
             hasError = true;
         }
 
-        //Nếu có lỗi
         if (hasError) {
             request.setAttribute("userName", userName);
             request.setAttribute("phoneNumber", phoneNumber);
@@ -139,8 +120,6 @@ public class RegisterController extends HttpServlet {
             return;
         }
         
-        //Lưu tạm thông tin đăng ký vào session (CHƯA insert vào Customer)
-        //Password được hash tại đây
         String hashedPassword = util.PasswordUtil.hash(password);
         
         HttpSession session = request.getSession();
@@ -148,8 +127,6 @@ public class RegisterController extends HttpServlet {
         session.setAttribute("pendingPhoneNumber", phoneNumber);
         session.setAttribute("pendingEmail", email);
         session.setAttribute("pendingPasswordHash", hashedPassword);
-        
-        //password để gửi qua VerifyOtpController và để fill vô form login
         session.setAttribute("pendingPassword", password);
         
         String otpCode = util.EmailService.generateOtp();
