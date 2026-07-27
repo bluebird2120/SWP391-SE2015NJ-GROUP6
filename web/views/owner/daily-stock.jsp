@@ -249,8 +249,7 @@
                         <span style="font-size: 14px; color: #7c7267;">
                             Phiên làm việc ngày: 
                             <b style="color: #de6b48;">
-                                <!-- 🌟 ĐÃ SỬA CHUẨN: Tự động bóc tách và định dạng lại ngày của thanh lọc sang dạng dd-MM-yyyy xuôi tăm tắp -->
-                                <c:choose>
+                                <c:choose>      
                                     <c:when test="${not empty date}">
                                         <fmt:parseDate value="${date}" pattern="yyyy-MM-dd" var="parsedFilterDate" />
                                         <fmt:formatDate value="${parsedFilterDate}" pattern="dd-MM-yyyy" />

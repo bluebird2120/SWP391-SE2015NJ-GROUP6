@@ -145,8 +145,7 @@ public class MenuItemController extends HttpServlet {
         boolean isReservationPreorder = "true".equals(request.getParameter("reservation"))
                 || Boolean.TRUE.equals(session.getAttribute("reservationFlow"));
 
-        // [GIU TRANG MENU] Gui URL hien tai sang form them mon de sau khi
-        // xu ly gio hang, khach quay lai dung trang va bo loc dang xem.
+        // Lưu url trang hiện tại để gửi sang trang update và create
         String currentMenuUrl = request.getRequestURI();
         if (request.getQueryString() != null
                 && !request.getQueryString().isBlank()) {
