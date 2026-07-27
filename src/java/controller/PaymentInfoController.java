@@ -22,12 +22,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "PaymentInfoController", urlPatterns = {"/payment-info"})
+/**
+ * HIỂN THỊ BIÊN LAI/HÓA ĐƠN SAU THANH TOÁN.
+ *
+ * <p>Chỉ đọc invoice + order items và kiểm tra quyền xem;
+ * không cập nhật trạng thái thanh toán tại màn hình này.</p>
+ */
 public class PaymentInfoController extends HttpServlet {
 
     private final InvoicesDAO invoicesDAO = new InvoicesDAO();
     private final OrderDAO orderDAO = new OrderDAO();
 
     @Override
+    /** Tải hóa đơn và chi tiết món rồi forward payment_info.jsp. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
@@ -111,6 +118,7 @@ public class PaymentInfoController extends HttpServlet {
     }
 
     // Hàm phụ trợ kết nối tìm kiếm Order dựa vào cột invoiceID trong CSDL
+    /** Truy vấn order liên kết với invoice để lấy dữ liệu và kiểm tra quyền. */
     private Order getOrderByInvoiceIdFromDB(int invoiceID) {
         String sql = "SELECT * FROM `Order` WHERE invoiceID = ? LIMIT 1";
         try (Connection conn = new dal.DBContext().getConnection();
@@ -144,6 +152,7 @@ public class PaymentInfoController extends HttpServlet {
     }
 
     @Override
+    /** Màn hình read-only nên POST dùng chung luồng đọc với GET. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doGet(request, response);

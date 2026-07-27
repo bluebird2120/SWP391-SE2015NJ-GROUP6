@@ -348,7 +348,6 @@
                                     <td>
                                         <input class="btn-table btn-edit" type="button" value="SỬA TÊN" onclick="openEditModal('${method.methodID}', '${method.methodName}')"/>
 
-                                        <!-- 🌟 ĐÃ TÍNH HỢP: Thêm sự kiện onsubmit để kích hoạt cảnh báo khi vô hiệu hóa phương thức -->
                                         <form action="${pageContext.request.contextPath}/owner/method-management" method="post" onsubmit="return confirmDisableMethod('${method.methodName}');">
                                             <input type="hidden" value="${method.methodID}" name="methodID"/>
                                             <input type="hidden" value="${currentPage}" name="page"/>
@@ -401,7 +400,6 @@
             </div>
         </div>
 
-        <%-- Modal Popup Chỉnh sửa cách chế biến --%>
         <div id="editModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeEditModal()">&times;</div>
@@ -423,7 +421,6 @@
             </div>
         </div>
 
-        <%-- Modal Popup Thêm mới cách chế biến --%>
         <div id="createModal" class="modal-wrapper">
             <div class="modal-box">
                 <div class="close-icon" onclick="closeCreateModal()">&times;</div>
@@ -446,7 +443,6 @@
         </div>
 
         <script>
-            // 🌟 ĐÃ TÍCH HỢP: Hàm kiểm tra hành động gửi form và kích hoạt hộp thoại xác nhận khi chọn VÔ HIỆU HÓA
             function confirmDisableMethod(methodName) {
                 const activeSubmitButton = document.activeElement;
                 if (activeSubmitButton && activeSubmitButton.name === "status" && activeSubmitButton.value === "0") {
@@ -477,49 +473,19 @@
                 document.getElementById('createModal').style.display = "none";
             }
 
-//            function validateMethodInput(inputElement, errorElement) {
-//                const value = inputElement.value.trim();
-//                if (value === "") {
-//                    errorElement.innerHTML = "Tên cách chế biến không được để trống";
-//                    return false;
-//                }
-//                if (value.length > 100) {
-//                    errorElement.innerHTML = "Tên cách chế biến phải ít hơn 100 kí tự";
-//                    return false;
-//                }
-//                errorElement.innerHTML = "";
-//                return true;
-//            }
-//
-//            document.getElementById("createForm").onsubmit = function (event) {
-//                const input = document.getElementById("createMethodName");
-//                const error = document.getElementById("createErrorName");
-//                if (!validateMethodInput(input, error)) {
-//                    event.preventDefault();
-//                }
-//            };
-//
-//            document.getElementById("editForm").onsubmit = function (event) {
-//                const input = document.getElementById("modalMethodName");
-//                const error = document.getElementById("editErrorName");
-//                if (!validateMethodInput(input, error)) {
-//                    event.preventDefault();
-//                }
-//            };
-//
-//            document.getElementById("searchForm").onsubmit = function (event) {
-//                const searchInput = this.elements["search"].value.trim();
-//                const errorBox = document.getElementById("jsErrorSearch");
-//
-//                if (searchInput.length > 100) {
-//                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
-//                    errorBox.style.display = "block";
-//                    event.preventDefault();
-//                } else {
-//                    errorBox.innerHTML = "";
-//                    errorBox.style.display = "none";
-//                }
-//            };
+            document.getElementById("searchForm").onsubmit = function (event) {
+                const searchInput = this.elements["search"].value.trim();
+                const errorBox = document.getElementById("jsErrorSearch");
+
+                if (searchInput.length > 100) {
+                    errorBox.innerHTML = "⚠️ <b>Lỗi tìm kiếm:</b> Tìm kiếm không vượt quá 100 kí tự";
+                    errorBox.style.display = "block";
+                    event.preventDefault();
+                } else {
+                    errorBox.innerHTML = "";
+                    errorBox.style.display = "none";
+                }
+            };
 
             function validateMethodModal(inputElement, errorElement) {
                 const value = inputElement.value.trim();

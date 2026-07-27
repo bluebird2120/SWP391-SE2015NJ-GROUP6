@@ -95,7 +95,7 @@ public class CategoryController extends HttpServlet {
         int isAvailable = parseIntSafe(isAvailable_raw, -1, -1);
         String currentSearch = checkEmpty(search_raw) ? search_raw : "";
 
-        // LUỒNG 1: Xử lý kích hoạt/vô hiệu hóa trạng thái danh mục chính và món ăn đi kèm
+        // Xử lý kích hoạt/vô hiệu hóa trạng thái danh mục chính và món ăn đi kèm
         if (status != -1 && id > 0) {
             boolean isCategoryChanged = menuCategoryDAO.changeStatusCategory(id, status);
             boolean isItemsChanged = menuCategoryDAO.changeStatusItemsByCategory(id, status);
@@ -109,7 +109,7 @@ public class CategoryController extends HttpServlet {
             return;
         }
 
-        // Khớp hoàn toàn thông báo text kiểm tra dữ liệu với file JSP
+        // Validate name khi tạo mới hoặc chỉnh sửa
         String errorName = isValidString(categoryName, 100, "Tên loại không được để trống", "Tên loại phải ít hơn 100 kí tự");
         if (!checkEmpty(errorName)) {
             if (menuCategoryDAO.checkDuplicateCategory(categoryName, id)) {
@@ -117,7 +117,7 @@ public class CategoryController extends HttpServlet {
             }
         }
 
-        // LUỒNG 2: Xử lý chặn lỗi và tái dựng lại dữ liệu bảng tại chỗ, KHÔNG GỌI BẮC CẦU DOGET TRỰC TIẾP
+        // Đẩy lại dữ liệu trang jsp khi lỗi
         if (checkEmpty(errorName)) {
             int totalCategory = menuCategoryDAO.countSearchCategory(currentSearch, isAvailable);
             int totalPage = (int) Math.ceil((double) totalCategory / PAGE_SIZE);
@@ -136,7 +136,7 @@ public class CategoryController extends HttpServlet {
                 mc.setTotalDish(totalDish);
             }
 
-            // Đẩy lại toàn bộ dữ liệu bẩn và lỗi trực tiếp sang View
+            // Đẩy lại toàn bộ dữ liệu sang jsp
             request.setAttribute("errorName", errorName);
             request.setAttribute("currentSearch", currentSearch);
             request.setAttribute("currentAvailable", isAvailable);
@@ -152,7 +152,7 @@ public class CategoryController extends HttpServlet {
             return;
         }
 
-        // LUỒNG 3: Lưu dữ liệu vào hệ thống khi kiểm tra hoàn tất
+        // Nếu ko có lõi thì thêm mới và chỉnh sửa
         boolean isSuccess = false;
         if (id > 0) {
             isSuccess = menuCategoryDAO.updateCategory(categoryName, id);

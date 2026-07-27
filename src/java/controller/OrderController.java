@@ -23,11 +23,24 @@ import java.sql.Timestamp;
 import model.Table;
 
 @WebServlet(name = "OrderController", urlPatterns = {"/order"})
+/**
+ * CONTROLLER TRUNG TÂM CỦA GIỎ HÀNG VÀ GỌI MÓN.
+ *
+ * <p>Thứ tự action POST để tìm bằng Ctrl+F:
+ * addTable -> add -> update -> remove -> sendToKitchen
+ * -> checkPaymentStatus -> checkoutTotal.</p>
+ *
+ * <p>Món mới nằm trong sessionCart. Chỉ khi sendToKitchen thành công
+ * hệ thống mới trừ DailyInventory và ghi OrderItem vào database.</p>
+ */
 public class OrderController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
 
+    // ==================== 1. VIEW CART ====================
+
     @Override
+    /** Ghép món trong DB với sessionCart, tính tổng và mở cart.jsp. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -89,6 +102,7 @@ public class OrderController extends HttpServlet {
     }
 
     @Override
+    /** Kiểm tra CSRF rồi điều hướng từng thao tác giỏ hàng theo action. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -105,7 +119,7 @@ public class OrderController extends HttpServlet {
 
         Integer currentOrderID = (Integer) session.getAttribute("orderID");
 
-        // --- GỘP BÀN TỪ QUÉT QR ---
+        // ==================== 2. MERGE TABLE FROM QR ====================
         if ("addTable".equals(action)) {
             String newTableToken = request.getParameter("tableToken");
             if (currentOrderID != null && newTableToken != null) {
@@ -123,9 +137,7 @@ public class OrderController extends HttpServlet {
             return;
         }
 
-        // =========================================================
-        // THAO TÁC GIỎ HÀNG BỘ NHỚ TẠM (SESSION)
-        // =========================================================
+        // ==================== 3. SESSION CART: ADD/UPDATE/REMOVE ====================
         List<OrderItem> sessionCart = (List<OrderItem>) session.getAttribute("sessionCart");
         if (sessionCart == null) { sessionCart = new ArrayList<>(); }
 
@@ -189,6 +201,18 @@ public class OrderController extends HttpServlet {
                         : (Integer) session.getAttribute("tableID");
             } catch (NumberFormatException e) {
                 session.setAttribute("errorMsg", "Mã bàn không hợp lệ.");
+                response.sendRedirect(request.getContextPath() + "/menu");
+                return;
+            }
+
+            // [QR/PREORDER SAFETY] Luong goi mon tai ban phai co ban trong session.
+            // Uu tien tableID cu, fallback currentTableID vi ScanQRController set ca 2 key.
+            // Neu luong dat mon truoc bi redirect nham vao /order, khong cho crash 500.
+            if (tableID == null) {
+                tableID = (Integer) session.getAttribute("currentTableID");
+            }
+            if (tableID == null) {
+                session.setAttribute("errorMsg", "Vui lòng quét mã QR của bàn trước khi gọi món.");
                 response.sendRedirect(request.getContextPath() + "/menu");
                 return;
             }
@@ -307,9 +331,7 @@ public class OrderController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
 
-        // =========================================================
-        // GỬI BẾP CÁC MÓN ĐƯỢC CHỌN (TRỪ KHO + GHI DATABASE)
-        // =========================================================
+        // ==================== 4. SEND TO KITCHEN ====================
         } else if ("sendToKitchen".equals(action)) {
             String[] selectedItems = request.getParameterValues("selectedItems");
 
@@ -373,9 +395,7 @@ public class OrderController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/order?action=cart");
             return;
             
-        // =========================================================
-        // THANH TOÁN TỔNG
-        // =========================================================
+        // ==================== 5. CHECK / REQUEST PAYMENT ====================
         } else if ("checkPaymentStatus".equals(action)) {
             // [CHO THANH TOAN] Khach chi kiem tra ket qua do staff xu ly,
             // khong tu cap nhat trang thai thanh toan.
@@ -453,6 +473,8 @@ public class OrderController extends HttpServlet {
         return "Order Controller Handles Session Cart and DB sync";
     }
 
+    // ==================== 6. SHARED HELPERS ====================
+
     /**
      * [CHO THANH TOAN] Xoa trang thai tham gia ban tren dung thiet bi khach
      * sau khi staff da thanh toan. Khong xoa tai khoan dang nhap customer.
@@ -470,7 +492,7 @@ public class OrderController extends HttpServlet {
         session.removeAttribute("checkoutWaiting");
     }
     
-    // Hàm phụ trợ: Lấy thông tin chi tiết của 1 món ăn dựa vào mã itemID
+    /** Lấy món đang mở bán từ DB; không sử dụng giá do client gửi lên. */
     private MenuItem getMenuItemById(int itemID) {
         // [ORDER VALIDATION] MenuItem dùng cột isAvailable (không phải status).
         // DailyInventory chỉ lưu tồn kho; món vẫn phải đang ở trạng thái mở bán.
@@ -498,9 +520,7 @@ public class OrderController extends HttpServlet {
         return null;
     }
 
-    /**
-     * [SECURITY FIX - QR FLOW] Chỉ bàn đã được nhân viên xác nhận mới gọi món.
-     */
+    /** Kiểm tra order còn được sửa và bàn QR đã được nhân viên xác nhận mở. */
     private boolean canModifyOrder(Integer orderID) {
         if (orderID == null) {
             return false;

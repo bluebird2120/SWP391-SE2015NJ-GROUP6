@@ -15,7 +15,7 @@ import model.OrderReservationDetail;
 
 public class ReservationDAO extends DBContext {
 
-    public static final int HOLD_MINUTES = 2;
+    public static final int HOLD_MINUTES = 5;
     // Tiền cọc cố định khi khách chỉ đặt bàn.
     public static final int DEFAULT_DEPOSIT_AMOUNT = 100000;
 
@@ -100,10 +100,12 @@ public class ReservationDAO extends DBContext {
         return -1;
     }
 
+    /*
+    Hủy đơn đặt trước đơn đặt trước nếu chưa cọc hủy sẽ không lưu vào databasse
+    Đơn đã cọc lưu vào database 
+    */
     public boolean cancelReservation(int orderID, int customerID) {
-        // [UNPAID RESERVATION CLEANUP]
-        // Chưa cọc: xóa dữ liệu giữ chỗ tạm. Đã cọc: giữ lịch sử và chỉ
-        // chuyển cancelled để phục vụ đối soát/hoàn tiền khi cần.
+       
         String stateSql
                 = "SELECT o.invoiceID, o.employeeID, o.orderTime, "
                 + "CASE WHEN LOWER(COALESCE(i.status,''))='paid' "
@@ -143,10 +145,7 @@ public class ReservationDAO extends DBContext {
                 }
             }
 
-            // [NGHIỆP VỤ] Bàn chỉ được gán khi khách thật sự đến quán (lễ tân gán
-            // lúc đó), không gán trước ngay khi cọc. Một khi đã gán bàn + gán nhân
-            // viên phụ trách rồi thì coi như khách đã có mặt/đang xử lý tại quán —
-            // không cho hủy online nữa (muốn hủy phải báo trực tiếp lễ tân/nhân viên).
+           
             if (assignedEmployeeID != null) {
                 connection.rollback();
                 return false;
@@ -211,14 +210,17 @@ public class ReservationDAO extends DBContext {
         }
     }
 
+    
+    /*
+    Tạo hóa đơn cọc 
+    */
     public int createDepositInvoice(int orderID, int depositAmount) {
         String invoiceSql
                 = "INSERT INTO Invoices "
                 + "(invoiceNumber, paymentMethod, subTotal, taxAmount, "
                 + " depositDeducted, finalAmount, issuedDate, status) "
                 + "VALUES (?, 'vnpay', ?, 0, 0, ?, CURDATE(), 'unpaid')";
-        //  Lưu cùng lúc invoiceID và số tiền cọc thực tế
-        // để hóa đơn cuối có thể trừ đúng khoản khách đã thanh toán trước.
+    
         String linkSql
                 = "UPDATE `Order` SET invoiceID = ?, depositAmount = ? "
                 + "WHERE orderID = ? AND orderStatus = 'pending'";
@@ -275,9 +277,9 @@ public class ReservationDAO extends DBContext {
         return -1;
     }
 
-    /**
+    /*
      * Sau giờ hẹn 30 phút, nếu nhân viên chưa chuyển bàn từ reserved sang
-     * serving thì đơn được hủy và bàn được tính là available trở lại.
+     *  thì đơn được hủy và bàn được tính là available trở lại.
      */
     public int autoExpireReservations() {
         int changed = synchronizeDepositStatus();
@@ -287,7 +289,7 @@ public class ReservationDAO extends DBContext {
                 + "WHERE orderType = 1 "
                 + "  AND orderStatus = 'reserved' "
                 + "  AND tableStatus = 'reserved' "
-                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
+                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 2 MINUTE)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             return changed + ps.executeUpdate();
@@ -298,11 +300,8 @@ public class ReservationDAO extends DBContext {
         return 0;
     }
 
-    /**
-     * Đồng bộ đơn giữ bàn với hóa đơn do module thanh toán quản lý. - paid: xác
-     * nhận giữ bàn. - paid: xác nhận giữ bàn. - chưa paid và hết thời gian giữ:
-     * xóa dữ liệu giữ chỗ tạm. - cancelled chưa paid do luồng cũ/TableDAO tạo:
-     * cũng được dọn.
+    /*
+     Đồng bộ dữ liệu cập nhật trạng thái sau khi khách hàng thanh toán tiền cọc 
      */
     public int synchronizeDepositStatus() {
         String confirmSql
@@ -334,7 +333,7 @@ public class ReservationDAO extends DBContext {
                 + "  ) FOR UPDATE";
 
         int changed = 0;
-        //Notification
+        
         try {
             connection.setAutoCommit(false);
 
@@ -350,11 +349,11 @@ public class ReservationDAO extends DBContext {
                     + "FROM `Order` o "
                     + "JOIN Invoices i ON i.invoiceID = o.invoiceID "
                     + "WHERE o.orderType = 1 "
-                    + "  AND o.orderStatus = 'pending' " // chưa confirm → sẽ được UPDATE
+                    + "  AND o.orderStatus = 'pending' "
                     + "  AND i.status = 'paid'";
             List<Integer> newlyConfirmedIDs = new ArrayList<>();
             List<Integer> newlyConfirmedTodayIDs = new ArrayList<>();
-            // Map orderID → customerID để thông báo cho đúng customer
+           
             java.util.Map<Integer, Integer> orderCustomerMap = new java.util.LinkedHashMap<>();
             try (PreparedStatement ps0
                     = connection.prepareStatement(pendingSql); ResultSet rs0 = ps0.executeQuery()) {
@@ -385,9 +384,7 @@ public class ReservationDAO extends DBContext {
                 // try-with-resources: tự đóng connection của NotificationDAO sau khi dùng xong
                 try (NotificationDAO notifDAO = new NotificationDAO()) {
 
-                    // ── [THÔNG BÁO CUSTOMER] Gửi xác nhận đặt bàn thành công cho khách.
-                    //    Áp dụng cho TẤT CẢ đơn mới confirm, không phân biệt hôm nay hay
-                    //    ngày tương lai — khách luôn cần biết đơn của mình đã được xác nhận.
+                   
                     for (int oID : newlyConfirmedIDs) {
                         Integer customerID = orderCustomerMap.get(oID);
                         if (customerID != null) {
@@ -401,14 +398,9 @@ public class ReservationDAO extends DBContext {
                         }
                     }
 
-                    // ── [BƯỚC 3] Thông báo cho lễ tân — chỉ với đơn của HÔM NAY.
-                    //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
-                    //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
+                    
                     if (!newlyConfirmedTodayIDs.isEmpty()) {
-                        // [FIX: CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy
-                        // TẤT CẢ Employee roleID=3 isActive=1, kể cả người không
-                        // có lịch làm hôm nay. Giờ join thêm EmployeeShifts để
-                        // chỉ lấy đúng lễ tân có ca hôm nay
+                        
                         String receptionistSql
                                 = "SELECT DISTINCT es.employeeID "
                                 + "FROM EmployeeShifts es "
@@ -450,8 +442,7 @@ public class ReservationDAO extends DBContext {
                 }
             }
 
-            // [UNPAID RESERVATION CLEANUP] Chỉ các bản ghi đã được khóa và
-            // xác nhận không có payment success mới được xóa.
+           
             for (int i = 0; i < orderIDs.size(); i++) {
                 if (deleteUnpaidReservationData(
                         orderIDs.get(i), invoiceIDs.get(i))) {
@@ -468,11 +459,9 @@ public class ReservationDAO extends DBContext {
         return changed;
     }
 
-    /**
-     * [UNPAID RESERVATION CLEANUP] Xóa toàn bộ dữ liệu của một lượt giữ bàn
-     * chưa thanh toán. Phương thức này phải được gọi bên trong transaction sau
-     * khi Order đã khóa.
-     */
+  /*
+    Xóa dự liệu đơn hàng bị hủy 
+    */
     private boolean deleteUnpaidReservationData(
             int orderID, Integer invoiceID) throws Exception {
         String[] orderChildSql = {
@@ -519,7 +508,7 @@ public class ReservationDAO extends DBContext {
         try {
             connection.rollback();
         } catch (Exception ignored) {
-            // Không che mất lỗi gốc.
+            
         }
     }
 
@@ -527,7 +516,7 @@ public class ReservationDAO extends DBContext {
         try {
             connection.setAutoCommit(true);
         } catch (Exception ignored) {
-            // Connection do DBContext quản lý.
+            
         }
     }
 
@@ -549,11 +538,12 @@ public class ReservationDAO extends DBContext {
         return null;
     }
 
+    
+    /*
+    Khách hàng đạt bàn nếu có đơn hàng đang pending thì sẽ không được đặt tiếp 
+    */
     public boolean hasActivePendingReservation(int customerID) {
-        // [ANTI SPAM GIU BAN]
-        // Mot customer chi duoc co 1 don dat ban pending chua thanh toan coc
-        // trong thoi gian giu cho. Don het han se duoc synchronizeDepositStatus()
-        // don/xoa truoc khi controller goi ham nay.
+        
         String sql
                 = "SELECT 1 "
                 + "FROM `Order` o "
@@ -581,6 +571,10 @@ public class ReservationDAO extends DBContext {
         return false;
     }
 
+    
+    /*
+    Lấy lịch sử đặt bàn của khách 
+    */
     public List<Order> getReservationsByCustomer(int customerID) {
         List<Order> list = new ArrayList<>();
 
@@ -605,6 +599,12 @@ public class ReservationDAO extends DBContext {
         return list;
     }
 
+    
+   /*
+    
+    
+    */
+ 
     public List<OrderReservationDetail> getReservationDetails(int orderID) {
         List<OrderReservationDetail> details = new ArrayList<>();
 
@@ -629,6 +629,10 @@ public class ReservationDAO extends DBContext {
         return details;
     }
 
+    
+    /*
+    Gom đơn chi tiết theo OrderID đẻ hiển thị lịch sử 
+    */
     public Map<Integer, List<OrderReservationDetail>> getReservationDetailsByCustomer(
             int customerID) {
         Map<Integer, List<OrderReservationDetail>> detailsByOrder = new LinkedHashMap<>();

@@ -9,7 +9,7 @@
         <title>JSP Page</title>
         <style>
             body{
-                background-color: #fdfbf7; /* 🌟 ĐÃ SỬA: Nền kem nhạt chuẩn Vị An */
+                background-color: #fdfbf7;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
             .form-container{
@@ -17,12 +17,12 @@
                 background-color: #ffffff;
                 padding: 30px;
                 border-radius: 12px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Đổ bóng nhẹ sang trọng */
+                box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             }
             h2{
                 margin-top: 0;
                 margin-bottom: 25px;
-                color: #78493b; /* 🌟 ĐÃ SỬA: Chữ màu nâu trầm chủ đạo */
+                color: #78493b;
                 font-size: 24px;
                 font-weight: 600;
                 border-bottom: 2px solid #f1ece6;
@@ -30,7 +30,6 @@
                 text-align: center;
             }
 
-            /* Hộp thông báo Flash Attribute */
             .alert-success-box {
                 background-color: #edf7ed;
                 border-left: 4px solid #28a745;
@@ -55,8 +54,8 @@
                 display: inline-flex;
                 align-items: center;
                 padding: 8px 16px;
-                background-color: #f1ece6; /* Màu nền kem nhạt */
-                color: #78493b;            /* Màu chữ nâu chủ đạo */
+                background-color: #f1ece6;
+                color: #78493b;
                 border-radius: 8px;
                 text-decoration: none;
                 font-size: 13px;
@@ -66,7 +65,7 @@
                 margin-right: 15px;
             }
             .btn-back:hover {
-                background-color: #ebdcd0; /* Hover nhẹ nhàng */
+                background-color: #ebdcd0;
                 color: #5c352d;
             }
 
@@ -84,7 +83,7 @@
                 display: block;
                 font-weight: 500;
                 margin-bottom: 8px;
-                color: #4a3f35; /* 🌟 ĐÃ SỬA: Chữ label nâu xám đậm */
+                color: #4a3f35;
                 font-size: 14px;
             }
             .form-input{
@@ -97,7 +96,7 @@
                 transition: all 0.2s ease;
             }
             .form-input:focus{
-                border-color: #78493b; /* 🌟 ĐÃ SỬA: Viền khi focus đổi sang nâu chủ đạo */
+                border-color: #78493b;
                 outline: none;
                 box-shadow: 0 0 0 3px rgba(120, 73, 59, 0.1);
             }
@@ -155,11 +154,11 @@
                 width: 16px;
                 height: 16px;
                 cursor: pointer;
-                accent-color: #78493b; /* Đổi màu checkbox sang tông nâu */
+                accent-color: #78493b;
             }
             .form-submit{
                 width: 100%;
-                background-color: #de6b48; /* 🌟 ĐÃ SỬA: Nút xác nhận đổi sang cam đất nổi bật giống nút của Vị An */
+                background-color: #de6b48;
                 color: #ffffff;
                 padding: 14px;
                 font-size: 16px;
@@ -171,7 +170,7 @@
                 transition: background-color 0.2s;
             }
             .form-submit:hover{
-                background-color: #c95938; /* Hover cam đậm hơn */
+                background-color: #c95938;
             }
         </style>
     </head>
@@ -252,7 +251,17 @@
                             <div class="configuration-block">
                                 <div class="form-image">
                                     <label class="form-label">Ảnh chính hiện tại:</label>
-                                    <img src="${pageContext.request.contextPath}/${dish.image}"/>
+                                    <c:choose>
+                                        <c:when test="${dish.image.startsWith('http://')
+                                                        or dish.image.startsWith('https://')}">
+                                                <img src="${dish.image}" alt="${dish.itemName}">
+                                        </c:when>
+
+                                        <c:otherwise>
+                                            <img src="${pageContext.request.contextPath}/${dish.image}"
+                                                 alt="${dish.itemName}">
+                                        </c:otherwise>
+                                    </c:choose>
                                     <input type="hidden" value="${dish.image}" name="oldImage"/>  
                                 </div>
                                 <div class="form-changeImage">

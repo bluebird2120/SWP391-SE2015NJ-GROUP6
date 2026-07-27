@@ -613,9 +613,8 @@
                     }
                 });
 
-                const labels = [];
-                const data = [];
-
+            const labels = [];
+            const data = [];
             <c:forEach items="${topChartList}" var="item">
                 <c:if test="${item.totalQuantity > 0}">
                 labels.push("${item.itemName}");

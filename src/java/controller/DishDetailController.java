@@ -48,11 +48,12 @@ public class DishDetailController extends HttpServlet {
 
         HttpSession session = request.getSession();
 
-        // 1. Lấy backUrl từ session, nếu null thì set mặc định về trang chủ hoặc menu
+        // [DISH DETAIL BACK URL] MenuItemController đã lưu URL menu gần nhất
+        // (kèm filter/phân trang). Nếu người dùng mở chi tiết trực tiếp thì
+        // fallback về /menu, không chuyển nhầm sang trang chủ.
         String backUrl = (String) session.getAttribute("lastDishListUrl");
-        System.out.println(backUrl);
         if (backUrl == null || backUrl.trim().isEmpty()) {
-            backUrl = "home"; // Thay "menu" bằng URL mặc định trang danh sách món ăn của bạn
+            backUrl = request.getContextPath() + "/menu";
         }
 
         // 2. Validate URL ID an toàn

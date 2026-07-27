@@ -435,7 +435,7 @@ public class MenuItemDAO extends DBContext {
             sql.append("AND mi.methodID = ? ");
         }
 
-        sql.append("GROUP BY mi.itemID, mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
+        sql.append("GROUP BY mi.itemID, mi.itemName, cm.methodName, mc.categoryName ");
         sql.append("ORDER BY totalQuantity DESC, ");
         sql.append("SUM(CASE WHEN o.orderID IS NOT NULL THEN oi.quantity * oi.price ELSE 0 END) DESC ");
         sql.append("LIMIT ? OFFSET ?");

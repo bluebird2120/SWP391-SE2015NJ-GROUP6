@@ -541,53 +541,6 @@
             </div>
         </c:if>
 
-        <script>
-            const filterForm = document.getElementById('filterForm');
-            const jsErrorSearch = document.getElementById("jsErrorSearch");
-            const jsErrorPrice = document.getElementById("jsErrorPrice");
-
-            filterForm.onsubmit = function (event) {
-                let isValid = true;
-
-                const searchInput = filterForm.elements["search"].value.trim();
-                const minPriceInput = filterForm.elements["minPrice"].value.trim();
-                const maxPriceInput = filterForm.elements["maxPrice"].value.trim();
-
-                if (jsErrorSearch) {
-                    if (searchInput.length > 100) {
-                        jsErrorSearch.innerHTML = "Tìm kiếm không vượt quá 100 kí tự";
-                        jsErrorSearch.style.display = "flex";
-                        isValid = false;
-                    } else {
-                        jsErrorSearch.innerHTML = "";
-                        jsErrorSearch.style.display = "none";
-                    }
-                }
-
-                if (jsErrorPrice) {
-                    let minPrice = minPriceInput !== "" ? parseInt(minPriceInput) : 0;
-                    let maxPrice = maxPriceInput !== "" ? parseInt(maxPriceInput) : Infinity;
-
-                    if (minPrice < 0 || maxPrice < 0) {
-                        jsErrorPrice.innerHTML = "Giá món ăn không được là số âm";
-                        jsErrorPrice.style.display = "flex";
-                        isValid = false;
-                    } else if (minPriceInput !== "" && maxPriceInput !== "" && minPrice > maxPrice) {
-                        jsErrorPrice.innerHTML = "Giá max phải lớn hơn giá Min";
-                        jsErrorPrice.style.display = "flex";
-                        isValid = false;
-                    } else {
-                        jsErrorPrice.innerHTML = "";
-                        jsErrorPrice.style.display = "none";
-                    }
-                }
-
-                if (!isValid) {
-                    event.preventDefault();
-                }
-            };
-        </script>
-
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
 
             <button onclick="openQRScanner()" 
@@ -624,63 +577,6 @@
             </div>
 
             <script src="https://unpkg.com/html5-qrcode"></script>
-            <script>
-                        let html5QrcodeScanner = null;
-
-                        function submitManualQR() {
-                            let inputVal = document.getElementById("manual-qr-input").value.trim();
-                            if (inputVal === "")
-                                return;
-
-                            let targetUrl = "";
-                            if (inputVal.includes("token=")) {
-                                targetUrl = inputVal; 
-                            } else {
-                                targetUrl = "${pageContext.request.contextPath}/scan?token=" + inputVal;
-                            }
-                            
-                            console.log("Đang chuyển hướng đến: " + targetUrl); 
-
-                            closeQRScanner();
-                            window.location.href = targetUrl;
-                        }
-                        
-                        function openQRScanner() {
-                            document.getElementById("qr-modal-overlay").style.display = "flex";
-                            document.getElementById("manual-qr-input").value = "";
-
-                            if (!html5QrcodeScanner) {
-                                html5QrcodeScanner = new Html5Qrcode("qr-reader");
-                            }
-
-                            html5QrcodeScanner.start(
-                                    {facingMode: "environment"},
-                                    {
-                                        fps: 10, 
-                                        qrbox: {width: 250, height: 250} 
-                                    },
-                                    (decodedText, decodedResult) => {
-                                closeQRScanner(); 
-                                window.location.href = decodedText;
-                            },
-                                    (errorMessage) => {
-                            }
-                            ).catch((err) => {
-                                console.log("Không có camera, sử dụng chế độ nhập tay.");
-                            });
-                        }
-
-                        function closeQRScanner() {
-                            document.getElementById("qr-modal-overlay").style.display = "none";
-                            if (html5QrcodeScanner) {
-                                html5QrcodeScanner.stop().then((ignore) => {
-                                    html5QrcodeScanner.clear();
-                                }).catch((err) => {
-                                    console.log("Stop failed: ", err);
-                                });
-                            }
-                        }
-            </script>          
         </c:if>
 
         <c:if test="${sessionScope.roleInTable == 'HOST'}">
@@ -706,75 +602,6 @@
 
             </div>
 
-            <script>
-                const apiPath = "${pageContext.request.contextPath}/api/table-join";
-                let isPanelOpen = false;
-
-                function toggleRequestPanel() {
-                    const panel = document.getElementById('request-panel');
-                    isPanelOpen = !isPanelOpen;
-                    panel.style.display = isPanelOpen ? 'block' : 'none';
-                    if (isPanelOpen)
-                        fetchPendingRequests(); 
-                }
-
-                setInterval(fetchPendingRequests, 3000);
-
-                function fetchPendingRequests() {
-                    fetch(apiPath + '?action=getPending')
-                            .then(response => response.json())
-                            .then(data => {
-                                const badge = document.getElementById('request-badge');
-                                const listDiv = document.getElementById('request-list-content');
-                                const panelCount = document.getElementById('panel-count');
-
-                                panelCount.innerText = data.length;
-                                if (data.length > 0) {
-                                    badge.style.display = 'flex';
-                                    badge.innerText = data.length;
-                                    document.getElementById('btn-toggle-requests').style.animation = "shake 0.5s"; 
-                                    setTimeout(() => document.getElementById('btn-toggle-requests').style.animation = "", 500);
-                                } else {
-                                    badge.style.display = 'none';
-                                }
-
-                                if (data.length === 0) {
-                                    listDiv.innerHTML = '<div style="text-align: center; color: #a8988e; font-size: 13px; padding: 20px 0;">Hiện không có ai xin vào bàn.</div>';
-                                } else {
-                                    listDiv.innerHTML = '';
-                                    data.forEach(req => {
-                                        listDiv.innerHTML += `
-                                    <div style="background: #fbf9f6; border: 1px solid #eae5da; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                                        <div style="font-size: 14px; font-weight: bold; color: #2c2520; margin-bottom: 8px;">
-                                            👤 ` + req.name + `
-                                        </div>
-                                        <div style="display: flex; gap: 8px;">
-                                            <button onclick="handleRequest(` + req.id + `, 'approve')" style="flex: 1; background: #10b981; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;">Cho phép</button>
-                                            <button onclick="handleRequest(` + req.id + `, 'reject')" style="flex: 1; background: #ef4444; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;">Từ chối</button>
-                                        </div>
-                                    </div>
-                                    `;
-                                    });
-                                }
-                            });
-                }
-
-                function handleRequest(reqID, actionType) {
-                    fetch(apiPath, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        // [CSRF FIX] Gửi token cho thao tác duyệt/từ chối yêu cầu vào bàn.
-                        body: 'action=' + actionType + '&requestID=' + reqID
-                                + '&csrfToken=' + encodeURIComponent('${sessionScope.csrfToken}')
-                    })
-                            .then(response => response.text())
-                            .then(res => {
-                                if (res === 'success') {
-                                    fetchPendingRequests(); 
-                                }
-                            });
-                }
-            </script>
             <style>
                 @keyframes shake {
                     0% { transform: rotate(0deg); }
@@ -785,5 +612,306 @@
                 }
             </style>
         </c:if>
+
+        <%-- =========================================================
+             JAVASCRIPT DUY NHẤT CỦA TRANG MENU
+             Thứ tự: khởi tạo -> filter -> QR gộp bàn -> HOST requests
+             ========================================================= --%>
+        <script>
+            const MENU_CONTEXT_PATH = '${pageContext.request.contextPath}';
+            const TABLE_JOIN_API = MENU_CONTEXT_PATH + '/api/table-join';
+            const MENU_CSRF_TOKEN = '${sessionScope.csrfToken}';
+
+            let html5QrcodeScanner = null;
+            let isRequestPanelOpen = false;
+            let pendingRequestTimer = null;
+
+            // ==================== 1. PAGE INITIALIZATION ====================
+
+            /**
+             * Hàm khởi tạo chung: gắn validate cho filter và chỉ bật polling
+             * yêu cầu vào bàn khi widget HOST thực sự tồn tại trên trang.
+             */
+            function initializeMenuPage() {
+                const filterForm = document.getElementById('filterForm');
+                if (filterForm) {
+                    filterForm.addEventListener('submit', validateMenuFilters);
+                }
+
+                if (document.getElementById('host-widget')) {
+                    fetchPendingRequests();
+                    pendingRequestTimer = window.setInterval(
+                            fetchPendingRequests, 3000);
+                }
+            }
+
+            // ==================== 2. MENU FILTER VALIDATION ====================
+
+            /**
+             * Validate từ khóa và khoảng giá trước khi submit GET.
+             * Backend vẫn validate lại; JavaScript chỉ giúp báo lỗi sớm.
+             */
+            function validateMenuFilters(event) {
+                const form = event.currentTarget;
+                const searchValue = form.elements.search.value.trim();
+                const minPriceValue = form.elements.minPrice.value.trim();
+                const maxPriceValue = form.elements.maxPrice.value.trim();
+                let isValid = true;
+
+                if (searchValue.length > 100) {
+                    showValidationError('jsErrorSearch',
+                            'Tìm kiếm không vượt quá 100 kí tự');
+                    isValid = false;
+                } else {
+                    hideValidationError('jsErrorSearch');
+                }
+
+                const minPrice = minPriceValue === ''
+                        ? 0 : Number(minPriceValue);
+                const maxPrice = maxPriceValue === ''
+                        ? Number.POSITIVE_INFINITY : Number(maxPriceValue);
+
+                if (minPrice < 0 || maxPrice < 0) {
+                    showValidationError('jsErrorPrice',
+                            'Giá món ăn không được là số âm');
+                    isValid = false;
+                } else if (minPriceValue !== '' && maxPriceValue !== ''
+                        && minPrice > maxPrice) {
+                    showValidationError('jsErrorPrice',
+                            'Giá max phải lớn hơn hoặc bằng giá min');
+                    isValid = false;
+                } else {
+                    hideValidationError('jsErrorPrice');
+                }
+
+                if (!isValid) {
+                    event.preventDefault();
+                }
+            }
+
+            /** Hiển thị một vùng báo lỗi validate theo id. */
+            function showValidationError(elementId, message) {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    return;
+                }
+                element.textContent = message;
+                element.style.display = 'flex';
+            }
+
+            /** Xóa nội dung và ẩn vùng báo lỗi validate. */
+            function hideValidationError(elementId) {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    return;
+                }
+                element.textContent = '';
+                element.style.display = 'none';
+            }
+
+            // ==================== 3. HOST - SCAN QR TO MERGE TABLE ====================
+
+            /**
+             * Nhận token/link nhập tay, chuẩn hóa thành URL /scan rồi chuyển
+             * sang ScanQRController để thực hiện gộp bàn.
+             */
+            function submitManualQR() {
+                const input = document.getElementById('manual-qr-input');
+                if (!input || input.value.trim() === '') {
+                    return;
+                }
+
+                const inputValue = input.value.trim();
+                const targetUrl = inputValue.includes('token=')
+                        ? inputValue
+                        : MENU_CONTEXT_PATH + '/scan?token='
+                        + encodeURIComponent(inputValue);
+
+                closeQRScanner();
+                window.location.href = targetUrl;
+            }
+
+            /** Mở modal, khởi tạo camera và bắt đầu đọc QR của bàn khác. */
+            function openQRScanner() {
+                const overlay = document.getElementById('qr-modal-overlay');
+                const manualInput = document.getElementById('manual-qr-input');
+                if (!overlay || typeof Html5Qrcode === 'undefined') {
+                    return;
+                }
+
+                overlay.style.display = 'flex';
+                if (manualInput) {
+                    manualInput.value = '';
+                }
+                if (!html5QrcodeScanner) {
+                    html5QrcodeScanner = new Html5Qrcode('qr-reader');
+                }
+
+                html5QrcodeScanner.start(
+                        {facingMode: 'environment'},
+                        {fps: 10, qrbox: {width: 250, height: 250}},
+                        function (decodedText) {
+                            closeQRScanner();
+                            window.location.href = decodedText;
+                        },
+                        function () {
+                            // Lỗi đọc từng frame là bình thường, không cần báo.
+                        }
+                ).catch(function () {
+                    console.log(
+                            'Không có camera, sử dụng chế độ nhập tay.');
+                });
+            }
+
+            /** Đóng modal và dừng camera để giải phóng tài nguyên thiết bị. */
+            function closeQRScanner() {
+                const overlay = document.getElementById('qr-modal-overlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+                if (!html5QrcodeScanner) {
+                    return;
+                }
+
+                html5QrcodeScanner.stop()
+                        .then(function () {
+                            html5QrcodeScanner.clear();
+                        })
+                        .catch(function () {
+                            // Scanner chưa chạy thì chỉ cần bỏ qua lỗi stop.
+                        });
+            }
+
+            // ==================== 4. HOST - JOIN REQUEST MANAGEMENT ====================
+
+            /** Mở/đóng panel yêu cầu vào bàn và refresh khi panel được mở. */
+            function toggleRequestPanel() {
+                const panel = document.getElementById('request-panel');
+                if (!panel) {
+                    return;
+                }
+                isRequestPanelOpen = !isRequestPanelOpen;
+                panel.style.display = isRequestPanelOpen ? 'block' : 'none';
+                if (isRequestPanelOpen) {
+                    fetchPendingRequests();
+                }
+            }
+
+            /** Poll API để lấy các GUEST đang chờ HOST duyệt. */
+            function fetchPendingRequests() {
+                if (!document.getElementById('host-widget')) {
+                    return;
+                }
+
+                fetch(TABLE_JOIN_API + '?action=getPending')
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Không tải được yêu cầu vào bàn');
+                            }
+                            return response.json();
+                        })
+                        .then(renderPendingRequests)
+                        .catch(function (error) {
+                            console.error(error);
+                        });
+            }
+
+            /** Render badge và danh sách request vào panel của HOST. */
+            function renderPendingRequests(requests) {
+                const badge = document.getElementById('request-badge');
+                const list = document.getElementById('request-list-content');
+                const panelCount = document.getElementById('panel-count');
+                const toggleButton =
+                        document.getElementById('btn-toggle-requests');
+                if (!badge || !list || !panelCount || !toggleButton) {
+                    return;
+                }
+
+                panelCount.textContent = requests.length;
+                badge.textContent = requests.length;
+                badge.style.display = requests.length > 0 ? 'flex' : 'none';
+
+                if (requests.length > 0) {
+                    toggleButton.style.animation = 'shake 0.5s';
+                    window.setTimeout(function () {
+                        toggleButton.style.animation = '';
+                    }, 500);
+                }
+
+                if (requests.length === 0) {
+                    list.innerHTML = '<div style="text-align:center;'
+                            + 'color:#a8988e;font-size:13px;padding:20px 0;">'
+                            + 'Hiện không có ai xin vào bàn.</div>';
+                    return;
+                }
+
+                list.innerHTML = requests.map(function (requestItem) {
+                    const requestId = Number(requestItem.id);
+                    const guestName = escapeHtml(requestItem.name);
+                    return '<div style="background:#fbf9f6;'
+                            + 'border:1px solid #eae5da;border-radius:8px;'
+                            + 'padding:12px;margin-bottom:10px;">'
+                            + '<div style="font-size:14px;font-weight:bold;'
+                            + 'color:#2c2520;margin-bottom:8px;">👤 '
+                            + guestName + '</div>'
+                            + '<div style="display:flex;gap:8px;">'
+                            + createRequestButton(
+                                    requestId, 'approve', 'Cho phép', '#10b981')
+                            + createRequestButton(
+                                    requestId, 'reject', 'Từ chối', '#ef4444')
+                            + '</div></div>';
+                }).join('');
+            }
+
+            /** Tạo HTML cho nút duyệt hoặc từ chối request. */
+            function createRequestButton(requestId, action, label, color) {
+                return '<button type="button" onclick="handleRequest('
+                        + requestId + ", '" + action + "')\" style=\"flex:1;"
+                        + 'background:' + color + ';color:white;border:none;'
+                        + 'padding:6px;border-radius:6px;cursor:pointer;'
+                        + 'font-weight:bold;font-size:12px;">'
+                        + label + '</button>';
+            }
+
+            /** HOST gửi quyết định approve/reject kèm CSRF token. */
+            function handleRequest(requestId, actionType) {
+                const body = new URLSearchParams();
+                body.set('action', actionType);
+                body.set('requestID', requestId);
+                body.set('csrfToken', MENU_CSRF_TOKEN);
+
+                fetch(TABLE_JOIN_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body.toString()
+                })
+                        .then(function (response) {
+                            return response.text();
+                        })
+                        .then(function (result) {
+                            if (result === 'success') {
+                                fetchPendingRequests();
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                        });
+            }
+
+            /** Escape dữ liệu khách trước khi đưa vào innerHTML. */
+            function escapeHtml(value) {
+                return String(value == null ? '' : value)
+                        .replaceAll('&', '&amp;')
+                        .replaceAll('<', '&lt;')
+                        .replaceAll('>', '&gt;')
+                        .replaceAll('"', '&quot;')
+                        .replaceAll("'", '&#039;');
+            }
+
+            document.addEventListener(
+                    'DOMContentLoaded', initializeMenuPage);
+        </script>
     </body>
 </html>

@@ -3,6 +3,7 @@ package controller;
 
 import dal.DBContext;
 import dal.EmployeeShiftDAO;
+import dal.ReservationDAO;
 import dal.StaffTableDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,6 +15,12 @@ import java.io.IOException;
 import model.Employee;
 
 @WebServlet(name = "ReceptionTableController", urlPatterns = {"/reception/tables"})
+/**
+ * LUỒNG LỄ TÂN GÁN/MỞ/CHECK-IN BÀN.
+ *
+ * <p>GET tải dashboard bàn. POST điều hướng các action assign, checkin,
+ * open_table và cancel_service sang StaffTableDAO.</p>
+ */
 public class ReceptionTableController extends HttpServlet {
 
     private static final String VIEW = "/views/reception/table-dashboard.jsp";
@@ -21,6 +28,7 @@ public class ReceptionTableController extends HttpServlet {
     private static final int RECEPTIONIST_ROLE_ID = 3;
 
     @Override
+    /** Tải bàn vật lý, đơn chờ bàn và số liệu tổng hợp cho dashboard. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         util.CsrfUtil.ensureToken(request.getSession());
@@ -29,6 +37,10 @@ public class ReceptionTableController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
             return;
         }
+
+        // [AUTO EXPIRE RESERVATION] Truoc khi le tan xem danh sach,
+        // tu huy cac don dat ban da qua gio hen 30 phut ma van chua duoc gan ban.
+        new ReservationDAO().autoExpireReservations();
 
         // [PHAN QUYEN LE TAN] Le tan xem tong quan va cac don cho gan ban.
         StaffTableDAO dao = new StaffTableDAO();
@@ -44,6 +56,7 @@ public class ReceptionTableController extends HttpServlet {
     }
 
     @Override
+    /** Kiểm tra CSRF/quyền rồi thực hiện action vận hành bàn. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
