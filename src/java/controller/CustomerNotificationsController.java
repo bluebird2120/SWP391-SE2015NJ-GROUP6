@@ -18,7 +18,6 @@ public class CustomerNotificationsController extends HttpServlet {
 
     private static final int LIST_LIMIT = 50;
 
-    // doGet: CHỈ hiển thị danh sách thông báo, không xử lý logic
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -30,11 +29,9 @@ public class CustomerNotificationsController extends HttpServlet {
             return;
         }
 
-        // ── 1. Lấy tham số Filter ──
         String keyword = trim(request.getParameter("keyword"));
         String readStatus = request.getParameter("readStatus");
 
-        // ── 2. Validate Backend ──
         if (keyword != null && keyword.length() > 100) {
             keyword = keyword.substring(0, 100);
         }
@@ -43,15 +40,15 @@ public class CustomerNotificationsController extends HttpServlet {
         }
 
         try (NotificationDAO notificationDAO = new NotificationDAO()) {
-            // ── 3. Gọi DAO đã có Filter ──
+            
             List<Notifications> list = notificationDAO.listByRecipientFiltered(
                     customer.getCustomerID(), "customer", LIST_LIMIT, keyword, readStatus);
             int unread = notificationDAO.countUnread(customer.getCustomerID(), "customer");
 
-            //Nuôi header
+            
             session.setAttribute("unreadCount", unread);
             request.setAttribute("notifications", list);
-            //Nuôi trang notification
+            
             request.setAttribute("unreadCount", unread);
             request.setAttribute("keyword", keyword);
             request.setAttribute("readStatus", readStatus);
@@ -61,7 +58,6 @@ public class CustomerNotificationsController extends HttpServlet {
         request.getRequestDispatcher("/views/notifications.jsp").forward(request, response);
     }
 
-    // doPost: xử lý TẤT CẢ action JSP gửi lên (markRead, markAllRead, readAndRedirect)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -84,22 +80,20 @@ public class CustomerNotificationsController extends HttpServlet {
             } else if ("markAllRead".equals(action)) {
                 notificationDAO.markAllRead(customer.getCustomerID(), "customer");
             } else if ("readAndRedirect".equals(action)) {
-                // Đánh dấu đã đọc rồi chuyển đến trang liên quan
+                
                 int notifID = parseInt(request.getParameter("notificationID"), 0);
                 if (notifID > 0) {
-                    notificationDAO.markRead(notifID, customer.getCustomerID(), "customer");
+                    notificationDAO.markRead(notifID, 
+                            customer.getCustomerID(), "customer");
 
-                    // Lấy thông báo để biết type mà redirect đúng trang
                     List<Notifications> list = notificationDAO.listByRecipient(customer.getCustomerID(), "customer", LIST_LIMIT);
                     for (Notifications noti : list) {
                         if (noti.getNotificationID() == notifID) {
                             if ("reservation_confirmed".equals(noti.getType())) {
-                                //Cập nhật số lượng tin nhắn chưa đọc trong session 
                                 updateUnread(session, customer, notificationDAO);
                                 response.sendRedirect(request.getContextPath() + "/reservation?action=history");
                                 return;
                             } else if ("feedback_response".equals(noti.getType())) {
-                                //Cập nhật số lượng tin nhắn chưa đọc trong session 
                                 updateUnread(session, customer, notificationDAO);
                                 response.sendRedirect(request.getContextPath() + "/customer/reviews");
                                 return;

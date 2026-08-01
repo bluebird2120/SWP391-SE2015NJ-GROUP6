@@ -16,7 +16,6 @@ import model.MenuItem;
 public class HomeController extends HttpServlet {
     
     private final MenuItemDAO menuItemDAO = new MenuItemDAO();
-    // Khởi tạo thêm các DAO để lấy dữ liệu đổ vào nút lọc select
     private final MenuCategoryDAO menuCategoryDAO = new MenuCategoryDAO();
     private final CookingMethodDAO cookingMethodDAO = new CookingMethodDAO();
     
@@ -26,7 +25,6 @@ public class HomeController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Đọc các bộ lọc được gửi từ client
         String keyword = request.getParameter("keyword");
         if (keyword == null) {
             keyword = "";
@@ -37,7 +35,6 @@ public class HomeController extends HttpServlet {
         String methodParam = request.getParameter("cookingMethod");
         String pageParam = request.getParameter("page");
 
-        //Nếu truyền bất kỳ tham số nào invalid
         if ((catParam != null && !catParam.isBlank() && !isNumeric(catParam)
                 || (methodParam != null && !methodParam.isBlank() && !isNumeric(methodParam))
                 || (pageParam != null && !pageParam.isBlank() && !isNumeric(pageParam)))) {
@@ -45,26 +42,24 @@ public class HomeController extends HttpServlet {
             return;
         }
 
-        // Đọc danh mục, phương thức nấu, kiểu sắp xếp từ Request
         int categoryId = parseIntOrDefault(catParam, 0);
         int methodID = parseIntOrDefault(methodParam, 0);
         
         String priceType = request.getParameter("price");
         if (priceType == null || priceType.isBlank()) {
-            priceType = "discountedPrice"; // Mặc định sắp xếp theo giá thực tế
+            priceType = "discountedPrice";
         }
         
         String sort = request.getParameter("sort");
         if (sort == null || sort.isBlank()) {
-            sort = "asc"; // Mặc định tăng dần
+            sort = "asc";
         }
 
-        // Cố định khoảng giá và trạng thái (Ngoại trừ khoảng giá như yêu cầu)
-        int status = 1; // Chỉ lấy món đang bán trên trang chủ
+        int status = 1;     //các món đang bán
         int minPrice = 0;
         int maxPrice = Integer.MAX_VALUE;
 
-        // 2. Xử lý phân trang
+        //Phân trang
         int page = parseIntOrDefault(request.getParameter("page"), 1);
         if (page < 1) {
             page = 1;
@@ -72,7 +67,6 @@ public class HomeController extends HttpServlet {
         //số lượng món bị bỏ qua khi vô page
         int offset = (page - 1) * PAGE_SIZE;
 
-        // 3. Gọi DAO truy vấn dữ liệu theo đúng các bộ lọc đã chọn
         List<MenuItem> menuItems = menuItemDAO.searchMenuItemPaging(
                 keyword, categoryId, methodID, status,
                 minPrice, maxPrice, sort, priceType, offset, PAGE_SIZE);
@@ -89,11 +83,9 @@ public class HomeController extends HttpServlet {
             page = totalPages;
         }
 
-        // 4. Lấy danh sách Categories và Methods để hiển thị lên thanh Lọc dữ liệu
         request.setAttribute("listCategory", menuCategoryDAO.getAllMenuCategory());
         request.setAttribute("listMethod", cookingMethodDAO.getAllCookingMethod());
 
-        // 5. Đẩy các thuộc tính ngược lại trang JSP
         request.setAttribute("menuItems", menuItems);
         request.setAttribute("keyword", keyword);
         request.setAttribute("currentPage", page);
@@ -114,9 +106,9 @@ public class HomeController extends HttpServlet {
         }
         try {
             Integer.parseInt(str.trim());
-            return true; // Nếu đổi thành số thành công
+            return true; 
         } catch (NumberFormatException e) {
-            return false; // Nếu chuỗi chứa ký tự chữ như "abc"
+            return false; 
         }
     }
     

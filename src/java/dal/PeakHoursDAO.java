@@ -77,20 +77,15 @@ public class PeakHoursDAO extends DBContext {
         if (filterType == null) filterType = "today";
         switch (filterType) {
             case "today":
-                // Đã sửa: DATE(createdAt) -> DATE(orderTime)
                 return "AND DATE(orderTime) = CURDATE() ";
             case "week":
-                // Đã sửa: YEARWEEK(createdAt, 1) -> YEARWEEK(orderTime, 1)
                 return "AND YEARWEEK(orderTime, 1) = YEARWEEK(CURDATE(), 1) ";
             case "month":
-                // Đã sửa: YEAR/MONTH(createdAt) -> YEAR/MONTH(orderTime)
                 return "AND YEAR(orderTime) = YEAR(CURDATE()) "
                      + "AND MONTH(orderTime) = MONTH(CURDATE()) ";
             case "year":
-                // Đã sửa: YEAR(createdAt) -> YEAR(orderTime)
                 return "AND YEAR(orderTime) = YEAR(CURDATE()) ";
             case "custom":
-                // Đã sửa: DATE(createdAt) -> DATE(orderTime)
                 return "AND DATE(orderTime) BETWEEN ? AND ? ";
             default:
                 return "AND DATE(orderTime) = CURDATE() ";

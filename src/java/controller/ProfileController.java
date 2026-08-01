@@ -24,13 +24,9 @@ import model.Employee;
 
 @WebServlet(name = "ProfileController", urlPatterns = {"/profile"})
 @MultipartConfig(
-        fileSizeThreshold = 1024 * 1024, //Ngưỡng phân loại < lưu vào RAM, > lưu vào ổ cứng
-        maxFileSize = 5L * 1024 * 1024, //Kích thước tối đa ảnh
-        maxRequestSize = 6L * 1024 * 1024 //Kích thước tối đa bao gồm ảnh, tên, địa chỉ của 1 request
-        
-//        fileSizeThreshold = 1024 * 1024, // > 1MB mới ghi ra file tạm trên đĩa
-//        maxFileSize = 500L * 1024, // Tối đa 500 KB cho 1 file ảnh
-//        maxRequestSize = 600L * 1024 // Tối đa 600 KB cho toàn bộ request (ảnh + text/form data)
+        fileSizeThreshold = 1024 * 1024, 
+        maxFileSize = 5L * 1024 * 1024, 
+        maxRequestSize = 6L * 1024 * 1024 
 )
 public class ProfileController extends HttpServlet {
 
@@ -106,13 +102,21 @@ public class ProfileController extends HttpServlet {
         if (!dobParam.isEmpty()) {
             try {
                 java.time.LocalDate parsed = java.time.LocalDate.parse(dobParam);
-                if (parsed.isAfter(java.time.LocalDate.now())) {
+                java.time.LocalDate today = java.time.LocalDate.now();
+
+                long yearsOld = java.time.temporal.ChronoUnit.YEARS.between(parsed, today);
+
+                if (parsed.isAfter(today)) {
                     errors.put("dob", "Ngày sinh không được ở tương lai.");
+                } else if (yearsOld < 13) {
+                    errors.put("dob", "Khách hàng phải từ 13 tuổi trở lên.");
+                } else if (yearsOld > 100) {
+                    errors.put("dob", "Ngày sinh không hợp lệ.");
                 } else {
                     dob = java.sql.Date.valueOf(parsed);
                 }
             } catch (Exception ex) {
-                errors.put("dob", "Ngày sinh không hợp lệ.");
+                errors.put("dob", "Ngày sinh không đúng định dạng.");
             }
         }
 
@@ -190,12 +194,9 @@ public class ProfileController extends HttpServlet {
         employee.setAddress(address.isEmpty() ? null : address);
 
         if (removeImage) {
-            // Xóa ảnh khỏi server
             deleteOldImageFile(request, employee.getImage());
-            // Xóa ảnh trong DB
             employee.setImage(null);
         } else if (imagePath != null) {
-            // Nếu upload ảnh mới thì xóa ảnh cũ trước
             deleteOldImageFile(request, employee.getImage());
             employee.setImage(imagePath);
         }
@@ -234,11 +235,9 @@ public class ProfileController extends HttpServlet {
                 return null;
             }
 
-            // Đọc 12 byte đầu để check magic bytes
+            
             byte[] header = new byte[12];
-            //đọc dữ liệu nhị phân trong file
             try (InputStream in = filePart.getInputStream()) {
-                //lấy ra 12 byte đầy tiên trong file
                 int bytesRead = in.read(header);
                 if (bytesRead < 4) {
                     errors.put("image", "Tệp không hợp lệ.");
@@ -253,14 +252,11 @@ public class ProfileController extends HttpServlet {
                 return null;
             }
 
-            // Tên file dùng extension thật sự từ magic bytes (không tin đuôi file user đặt)
             String fileName = filePrefix + "_" + System.currentTimeMillis() + "." + detectedType;
             Path uploadFolder = Paths.get(request.getServletContext().getRealPath("/"), "uploads/" + subFolder);
             Files.createDirectories(uploadFolder);
 
-            // Upload lại từ đầu (vì đã đọc stream rồi, cần đọc lại)
             try (InputStream in2 = filePart.getInputStream()) {
-                //Ném ảnh vô folder đã tạo
                 Files.copy(in2, uploadFolder.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             }
 
@@ -298,7 +294,6 @@ public class ProfileController extends HttpServlet {
                 && header[10] == (byte) 0x42 && header[11] == (byte) 0x50) {
             return "webp";
         }
-        // Không phải ảnh hợp lệ
         return null;
     }
 

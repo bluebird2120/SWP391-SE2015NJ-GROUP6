@@ -313,17 +313,18 @@
                                                     <c:when test="${n.type == 'feedback_response'}">Phản hồi đánh giá</c:when>
                                                     <c:when test="${n.type == 'table_assigned'}">Phân công bàn</c:when>
                                                     <c:when test="${n.type == 'table_open_request'}">Yêu cầu mở bàn</c:when>
-                                                    <c:when test="${n.type == 'new_order'}">Đơn hàng mới</c:when>
                                                     <c:when test="${n.type == 'checkout_requested'}">Yêu cầu thanh toán</c:when>
                                                     <c:when test="${n.type == 'payment_success'}">Thanh toán thành công</c:when>
                                                     <c:when test="${n.type == 'reservation_confirmed'}">Đặt bàn thành công</c:when>
                                                     <c:when test="${n.type == 'reservation_needs_table'}">Cần gán bàn</c:when>
-                                                    <c:when test="${n.type == 'shift_plan'}">Lịch ca làm việc</c:when>
+                                                    <c:when test="${n.type == 'shift_plan'}">Lịch ca tháng mới được phát hành</c:when>
                                                     <c:when test="${n.type == 'shift_request'}">Yêu cầu xin nghỉ</c:when>
                                                     <c:when test="${n.type == 'shift_request_approved'}">Yêu cầu được duyệt</c:when>
                                                     <c:when test="${n.type == 'shift_request_rejected'}">Yêu cầu bị từ chối</c:when>
                                                     <c:when test="${n.type == 'shift_request_colleague_pending'}">Nhờ làm thay ca</c:when>
                                                     <c:when test="${n.type == 'shift_request_colleague_rejected'}">Từ chối làm thay</c:when>
+                                                    <c:when test="${n.type == 'reservation_cancelled'}">Đơn đặt bàn bị hủy</c:when>
+                                                    <c:when test="${n.type == 'shift_assigned'}">Lịch ca làm việc</c:when>
                                                     <c:otherwise>${n.type}</c:otherwise>
                                                 </c:choose>
                                             </span>

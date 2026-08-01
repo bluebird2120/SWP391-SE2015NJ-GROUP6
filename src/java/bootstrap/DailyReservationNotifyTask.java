@@ -68,7 +68,7 @@ public class DailyReservationNotifyTask implements Runnable {
                 + receptionistIDs.size() + " lễ tân. Nội dung: " + message);
     }
 
-    //Lấy ra những đơn đã thanh toán cọc xong trong quá khứ của ngày hôm nay
+    //Lấy ra những đơn đã thanh toán cọc xong trong quá khứ đặt bàn của ngày hôm nay
     private List<int[]> getTodayPendingOrders() {
         List<int[]> list = new ArrayList<>();
 
@@ -100,8 +100,8 @@ public class DailyReservationNotifyTask implements Runnable {
 
     private List<Integer> getReceptionistIDs() {
         // CHỈ BÁO CHO LỄ TÂN CÓ CA HÔM NAY] Trước đây lấy TẤT CẢ
-        // Employee roleID=3 isActive=1, kể cả người không có lịch làm hôm
-        // nay. Giờ lọc đúng theo EmployeeShifts của hôm nay.
+        // Employee roleID=3 isActive=1, kể cả người không có lịch làm hôm nay.
+        //  Giờ lọc đúng theo EmployeeShifts của hôm nay.
         try (dal.EmployeeShiftDAO esDAO = new dal.EmployeeShiftDAO()) {
             return esDAO.getReceptionistsScheduledToday();
         } catch (Exception e) {

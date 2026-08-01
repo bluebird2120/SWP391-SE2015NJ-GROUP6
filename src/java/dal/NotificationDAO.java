@@ -59,9 +59,9 @@ public class NotificationDAO extends DBContext implements AutoCloseable {
      * Lấy danh sách các thông báo gần nhất của người nhận theo số lượng giới
      * hạn.
      *
-     * @param recipientID ID của người nhận thông báo
-     * @param recipientType Loại người nhận (ví dụ: 'staff' hoặc 'customer')
-     * @param limit Số lượng thông báo tối đa muốn lấy
+     * recipientID ID của người nhận thông báo
+     * recipientType Loại người nhận (ví dụ: 'staff' hoặc 'customer')
+     * limit Số lượng thông báo tối đa muốn lấy
      * @return Danh sách các đối tượng Notifications, sắp xếp theo thời gian mới
      * nhất trước
      */
@@ -145,7 +145,6 @@ public class NotificationDAO extends DBContext implements AutoCloseable {
      * @return Số lượng thông báo chưa đọc
      */
     public int countUnread(int recipientID, String recipientType) {
-        // 🌟 BỔ SUNG CHECK CONNECTION TRÁNH CRASH TRANG JSP
         if (this.connection == null) {
             return 0;
         }

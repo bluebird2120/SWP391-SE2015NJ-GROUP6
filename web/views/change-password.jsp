@@ -224,10 +224,9 @@
                     <h2>Đổi mật khẩu</h2>
                     <p>Nhập mật khẩu hiện tại và mật khẩu mới bạn muốn sử dụng.</p>
 
-                    <c:if test="${param.expired == 'true'}">
+                    <c:if test="${not empty forceReason}">
                         <div class="error-box">
-                            <i class="fas fa-circle-exclamation"></i>
-                            Mật khẩu đã quá hạn 90 ngày. Vui lòng đổi mật khẩu để tiếp tục sử dụng hệ thống.
+                            <i class="fas fa-circle-exclamation"></i> ${forceReason}
                         </div>
                     </c:if>
 

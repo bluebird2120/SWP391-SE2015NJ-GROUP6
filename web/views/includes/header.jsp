@@ -16,7 +16,6 @@
     int custUnreadCount = 0;
     int empUnreadCount = 0;
 
-    // BỌC TRY-CATCH AN TOÀN TRÁNH DÍNH LỖI 500 KHI DB KẾT NỐI CHẬP CHỜN
     try {
         if (cust != null) {
             custUnreadCount = new dal.NotificationDAO().countUnread(cust.getCustomerID(), "customer");

@@ -337,7 +337,13 @@ public class ReservationDAO extends DBContext {
         try {
             connection.setAutoCommit(false);
 
-           
+            // ── Lấy trước danh sách orderID SẮP được confirm trong lần này.
+            //    Phải query TRƯỚC khi UPDATE để chỉ lấy đúng đơn mới, không lặp đơn cũ.
+            //    LƯU Ý: KHÔNG lọc theo ngày ở đây nữa — khách đặt cho hôm nay hay
+            //    ngày mai/ngày kia đều phải được xác nhận "đặt bàn thành công".
+            //    Việc lọc theo ngày (chỉ hôm nay) CHỈ áp dụng cho thông báo của
+            //    LỄ TÂN ở BƯỚC 3 bên dưới (vì lễ tân chỉ cần xử lý đúng ngày,
+            //    đơn tương lai đã có DailyReservationNotifyTask lo vào đúng ngày lúc 06:00).
             String pendingSql
                     = "SELECT o.orderID, o.customerID, DATE(o.orderTime) = CURDATE() AS isToday "
                     + "FROM `Order` o "
@@ -363,7 +369,7 @@ public class ReservationDAO extends DBContext {
                 }
             }
 
-           
+            // ── Thực hiện UPDATE xác nhận cọc ──────────────────────
             int confirmed = 0;
             try (PreparedStatement confirmPs
                     = connection.prepareStatement(confirmSql)) {
@@ -371,7 +377,9 @@ public class ReservationDAO extends DBContext {
                 changed += confirmed;
             }
 
-     
+            // ──  Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
+            //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
+            //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
             if (confirmed > 0 && !newlyConfirmedIDs.isEmpty()) {
                 // try-with-resources: tự đóng connection của NotificationDAO sau khi dùng xong
                 try (NotificationDAO notifDAO = new NotificationDAO()) {

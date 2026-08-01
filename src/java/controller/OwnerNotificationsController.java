@@ -29,11 +29,9 @@ public class OwnerNotificationsController extends HttpServlet {
             return;
         }
 
-        // ── 1. Lấy tham số Filter ──
         String keyword = trim(request.getParameter("keyword"));
         String readStatus = request.getParameter("readStatus");
 
-        // ── 2. Validate Backend ──
         if (keyword != null && keyword.length() > 100) {
             keyword = keyword.substring(0, 100);
         }
@@ -42,15 +40,14 @@ public class OwnerNotificationsController extends HttpServlet {
         }
 
         try (NotificationDAO notificationDAO = new NotificationDAO()) {
-            // ── 3. Gọi DAO đã có Filter ──
+            
             List<Notifications> list = notificationDAO.listByRecipientFiltered(
                     emp.getEmployeeID(), "staff", LIST_LIMIT, keyword, readStatus);
             int unread = notificationDAO.countUnread(emp.getEmployeeID(), "staff");
 
-            //Nuôi header
             session.setAttribute("unreadCount", unread);
             request.setAttribute("notifications", list);
-            //Nuôi trang notification
+            
             request.setAttribute("unreadCount", unread);
             request.setAttribute("keyword", keyword);
             request.setAttribute("readStatus", readStatus);
@@ -84,7 +81,6 @@ public class OwnerNotificationsController extends HttpServlet {
                 if (notifID > 0) {
                     notificationDAO.markRead(notifID, emp.getEmployeeID(), "staff");
 
-                    // Lấy notification để biết type → redirect đúng trang
                     List<Notifications> list = notificationDAO.listByRecipient(
                             emp.getEmployeeID(), "staff", LIST_LIMIT);
 
@@ -99,7 +95,6 @@ public class OwnerNotificationsController extends HttpServlet {
                 }
             }
 
-            // Cập nhật lại unreadCount vào session
             session.setAttribute("unreadCount", notificationDAO.countUnread(emp.getEmployeeID(), "staff"));
         } catch (Exception e) {
             e.printStackTrace();
