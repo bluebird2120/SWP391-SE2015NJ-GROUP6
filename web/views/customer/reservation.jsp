@@ -550,7 +550,16 @@
                                                         </strong>
                                                     </p>
 
-                                                    <c:if test="${o.orderStatus == 'reserved'}">
+                                                    <%-- [EDIT RESERVATION] Lich su chi hien nut chi tiet; cac thao tac sua/huy nam trong trang chi tiet don. --%>
+                                                    <div class="d-flex justify-content-end gap-3 mt-2">
+                                                        <a href="${pageContext.request.contextPath}/reservation?action=detail&orderID=${o.orderID}"
+                                                           class="small text-decoration-none"
+                                                           style="color:#174f3d;font-weight:700;">
+                                                            Chi tiết đơn
+                                                        </a>
+                                                    </div>
+
+                                                    <c:if test="${false}">
                                                         <div class="d-flex justify-content-end gap-3 mt-2">
                                                             <a href="${pageContext.request.contextPath}/reservation?action=preorder&orderID=${o.orderID}"
                                                                class="small text-decoration-none"

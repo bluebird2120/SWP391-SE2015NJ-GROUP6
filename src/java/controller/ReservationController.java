@@ -31,6 +31,7 @@ import model.Table;
 @WebServlet(name = "ReservationController", urlPatterns = { "/reservation" })
 public class ReservationController extends HttpServlet {
 
+    private static final long EDIT_DEADLINE_MILLIS = 2L * 60 * 60 * 1000;
     private final TableDAO tableDAO = new TableDAO();
     private final ReservationDAO orderDAO = new ReservationDAO();
     private final OrderDAO preorderDAO = new OrderDAO();
@@ -55,6 +56,12 @@ public class ReservationController extends HttpServlet {
         // tiền cọc bàn đã thanh toán và đơn chuyển sang reserved.
         if ("preorder".equals(action)) {
             openPreorder(request, response);
+            return;
+        }
+
+        // [EDIT RESERVATION] Xem chi tiet don dat ban va form sua ban/gio neu con du dieu kien.
+        if ("detail".equals(action)) {
+            showReservationDetail(request, response);
             return;
         }
 
@@ -201,6 +208,10 @@ public class ReservationController extends HttpServlet {
         }
         if ("confirmPreorder".equals(action)) {
             confirmPreorder(request, response);
+            return;
+        }
+        if ("updateReservation".equals(action)) {
+            updateReservationInfo(request, response);
             return;
         }
 
@@ -534,6 +545,239 @@ public class ReservationController extends HttpServlet {
             if (group.getCapacity() == capacity) {
                 return group;
             }
+        }
+        return null;
+    }
+
+    private void showReservationDetail(HttpServletRequest request,
+            HttpServletResponse response) throws ServletException, IOException {
+        Customer customer = getCustomer(request);
+        if (customer == null) {
+            saveRedirectAndGoLogin(request, response,
+                    request.getContextPath() + "/reservation?action=history");
+            return;
+        }
+
+        int orderID = toInt(request.getParameter("orderID"), -1);
+        Order reservation = orderDAO.getOrderByID(orderID);
+        if (!isCustomerReservation(reservation, customer)) {
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=history");
+            return;
+        }
+
+        prepareReservationDetailPage(request, reservation,
+                request.getParameter("orderTime"),
+                request.getParameter("areaType"),
+                null);
+        request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                .forward(request, response);
+    }
+
+    private void updateReservationInfo(HttpServletRequest request,
+            HttpServletResponse response) throws ServletException, IOException {
+        Customer customer = getCustomer(request);
+        if (customer == null) {
+            saveRedirectAndGoLogin(request, response,
+                    request.getContextPath() + "/reservation?action=history");
+            return;
+        }
+
+        int orderID = toInt(request.getParameter("orderID"), -1);
+        Order reservation = orderDAO.getOrderByID(orderID);
+        if (!isCustomerReservation(reservation, customer)) {
+            response.sendRedirect(request.getContextPath()
+                    + "/reservation?action=history");
+            return;
+        }
+
+        String dateTimeStr = request.getParameter("orderTime");
+        String areaType = request.getParameter("areaType");
+        String editError = getReservationEditBlockReason(reservation);
+        if (editError != null) {
+            prepareReservationDetailPage(request, reservation,
+                    dateTimeStr, areaType, editError);
+            request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                    .forward(request, response);
+            return;
+        }
+
+        String dtError = validateDateTime(dateTimeStr);
+        if (dtError != null) {
+            prepareReservationDetailPage(request, reservation,
+                    dateTimeStr, areaType, dtError);
+            request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                    .forward(request, response);
+            return;
+        }
+
+        Timestamp newOrderTime = parseTimestamp(dateTimeStr);
+        String businessHourError = businessScheduleDAO.validateReservationTime(newOrderTime);
+        if (businessHourError != null) {
+            prepareReservationDetailPage(request, reservation,
+                    dateTimeStr, areaType, businessHourError);
+            request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                    .forward(request, response);
+            return;
+        }
+
+        Map<String, Integer> selectedQuantities = parseSelectedQuantities(request);
+        List<OrderReservationDetail> newDetails = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : selectedQuantities.entrySet()) {
+            SelectionKey selection = parseSelectionKey(entry.getKey());
+            if (selection != null) {
+                newDetails.add(new OrderReservationDetail(
+                        0, orderID, selection.capacity, selection.areaType,
+                        entry.getValue()));
+            }
+        }
+
+        if (newDetails.isEmpty()) {
+            prepareReservationDetailPage(request, reservation,
+                    dateTimeStr, areaType, "Vui long chon it nhat mot ban.");
+            request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                    .forward(request, response);
+            return;
+        }
+
+        List<OrderReservationDetail> oldDetails = orderDAO.getReservationDetails(orderID);
+        Map<String, List<Table>> groupsByArea = new HashMap<>();
+        for (OrderReservationDetail detail : newDetails) {
+            List<Table> areaGroups = groupsByArea.computeIfAbsent(
+                    detail.getAreaType(),
+                    key -> getAvailableGroupsForEdit(key, newOrderTime,
+                            reservation, oldDetails));
+            Table group = findGroup(areaGroups, detail.getCapacity());
+            if (group == null || detail.getQuantity() > group.getIsActive()) {
+                prepareReservationDetailPage(request, reservation,
+                        dateTimeStr, areaType,
+                        "So luong ban " + detail.getCapacity()
+                        + " cho khong con du. Vui long chon lai.");
+                request.getRequestDispatcher("/views/customer/reservation-detail.jsp")
+                        .forward(request, response);
+                return;
+            }
+        }
+
+        boolean updated = orderDAO.updateReservationInfo(
+                orderID, customer.getCustomerID(), newOrderTime, newDetails);
+        response.sendRedirect(request.getContextPath()
+                + "/reservation?action=detail&orderID=" + orderID
+                + (updated ? "&updated=true" : "&error=update_failed"));
+    }
+
+    private void prepareReservationDetailPage(HttpServletRequest request,
+            Order reservation, String requestedDateTime, String requestedArea,
+            String error) {
+        List<OrderReservationDetail> details
+                = orderDAO.getReservationDetails(reservation.getOrderID());
+        List<OrderItem> preorderItems
+                = preorderDAO.getOrderItemsByOrderId(reservation.getOrderID());
+        List<MenuItem> preorderMenus
+                = preorderDAO.getMenuItemsByOrderId(reservation.getOrderID());
+
+        String editDateTime = requestedDateTime;
+        if (editDateTime == null || editDateTime.isBlank()) {
+            editDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm")
+                    .format(reservation.getOrderTime());
+        }
+
+        String editAreaType = requestedArea;
+        if ((editAreaType == null || editAreaType.isBlank())
+                && !details.isEmpty()) {
+            editAreaType = details.get(0).getAreaType();
+        }
+        if (editAreaType == null || editAreaType.isBlank()) {
+            List<String> areaTypes = tableDAO.getAllAreaTypes();
+            editAreaType = areaTypes.isEmpty() ? "" : areaTypes.get(0);
+        }
+
+        Timestamp editTime = parseTimestamp(editDateTime);
+        List<Table> tableGroups = getAvailableGroupsForEdit(
+                editAreaType, editTime, reservation, details);
+
+        Map<String, Integer> selectedQuantities = parseSelectedQuantities(request);
+        if (selectedQuantities.isEmpty()) {
+            for (OrderReservationDetail detail : details) {
+                selectedQuantities.put(
+                        detail.getAreaType() + "_" + detail.getCapacity(),
+                        detail.getQuantity());
+            }
+        }
+
+        int preorderTotal = 0;
+        for (OrderItem item : preorderItems) {
+            preorderTotal += item.getPrice() * item.getQuantity();
+        }
+
+        String blockReason = getReservationEditBlockReason(reservation);
+        request.setAttribute("order", reservation);
+        request.setAttribute("orderDetails", details);
+        request.setAttribute("preorderItems", preorderItems);
+        request.setAttribute("preorderMenus", preorderMenus);
+        request.setAttribute("preorderTotal", preorderTotal);
+        request.setAttribute("canEditReservation", blockReason == null);
+        request.setAttribute("editBlockReason", blockReason);
+        request.setAttribute("editError", error);
+        request.setAttribute("editOrderTime", editDateTime);
+        request.setAttribute("editAreaType", editAreaType);
+        request.setAttribute("areaTypes", tableDAO.getAllAreaTypes());
+        request.setAttribute("tableGroups", tableGroups);
+        request.setAttribute("selectedQuantities", selectedQuantities);
+    }
+
+    private List<Table> getAvailableGroupsForEdit(String areaType,
+            Timestamp newOrderTime, Order reservation,
+            List<OrderReservationDetail> oldDetails) {
+        List<Table> groups = tableDAO.findAvailableTableGroups(areaType, newOrderTime);
+        if (reservation == null || reservation.getOrderTime() == null
+                || newOrderTime == null || oldDetails == null) {
+            return groups;
+        }
+
+        String oldDate = new SimpleDateFormat("yyyy-MM-dd")
+                .format(reservation.getOrderTime());
+        String newDate = new SimpleDateFormat("yyyy-MM-dd").format(newOrderTime);
+        if (!oldDate.equals(newDate)) {
+            return groups;
+        }
+
+        // [EDIT RESERVATION] Khi sua cung ngay, cong lai so ban cua chinh don nay
+        // vi ham tinh ban trong dang dem don hien tai la ban da duoc giu.
+        for (OrderReservationDetail oldDetail : oldDetails) {
+            if (!oldDetail.getAreaType().equals(areaType)) {
+                continue;
+            }
+            Table group = findGroup(groups, oldDetail.getCapacity());
+            if (group != null) {
+                group.setIsActive(group.getIsActive() + oldDetail.getQuantity());
+            }
+        }
+        return groups;
+    }
+
+    private boolean isCustomerReservation(Order reservation, Customer customer) {
+        return reservation != null
+                && customer != null
+                && reservation.getCustomerID() != null
+                && reservation.getCustomerID() == customer.getCustomerID()
+                && reservation.getOrderType() == 1;
+    }
+
+    private String getReservationEditBlockReason(Order reservation) {
+        if (reservation == null) {
+            return "Khong tim thay don dat ban.";
+        }
+        if (!"reserved".equals(reservation.getOrderStatus())
+                || !"reserved".equals(reservation.getTableStatus())) {
+            return "Don da duoc nha hang tiep nhan hoac da ket thuc nen khong the sua.";
+        }
+        if (reservation.getOrderTime() == null) {
+            return "Don chua co thoi gian den hop le.";
+        }
+        long deadline = reservation.getOrderTime().getTime() - EDIT_DEADLINE_MILLIS;
+        if (System.currentTimeMillis() > deadline) {
+            return "Chi duoc sua dat ban truoc gio den it nhat 2 tieng.";
         }
         return null;
     }

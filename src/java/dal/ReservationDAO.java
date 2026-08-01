@@ -633,6 +633,75 @@ public class ReservationDAO extends DBContext {
     /*
     Gom đơn chi tiết theo OrderID đẻ hiển thị lịch sử 
     */
+    /**
+     * [EDIT RESERVATION] Cap nhat lai gio den/khu vuc/so luong ban cua don dat
+     * ban da coc. Xoa chi tiet cu va them chi tiet moi trong cung transaction de
+     * tranh truong hop Order da doi gio nhung order_reservation_detail chua doi.
+     */
+    public boolean updateReservationInfo(int orderID, int customerID,
+            Timestamp orderTime, List<OrderReservationDetail> details) {
+
+        String updateOrderSql
+                = "UPDATE `Order` "
+                + "SET orderTime = ? "
+                + "WHERE orderID = ? "
+                + "  AND customerID = ? "
+                + "  AND orderType = 1 "
+                + "  AND orderStatus = 'reserved' "
+                + "  AND tableStatus = 'reserved'";
+
+        String deleteDetailSql
+                = "DELETE FROM order_reservation_detail WHERE orderID = ?";
+
+        String insertDetailSql
+                = "INSERT INTO order_reservation_detail "
+                + "(orderID, capacity, areaType, quantity) "
+                + "VALUES (?, ?, ?, ?)";
+
+        if (details == null || details.isEmpty()) {
+            return false;
+        }
+
+        try {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement ps = connection.prepareStatement(updateOrderSql)) {
+                ps.setTimestamp(1, orderTime);
+                ps.setInt(2, orderID);
+                ps.setInt(3, customerID);
+                if (ps.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            try (PreparedStatement ps = connection.prepareStatement(deleteDetailSql)) {
+                ps.setInt(1, orderID);
+                ps.executeUpdate();
+            }
+
+            try (PreparedStatement ps = connection.prepareStatement(insertDetailSql)) {
+                for (OrderReservationDetail detail : details) {
+                    ps.setInt(1, orderID);
+                    ps.setInt(2, detail.getCapacity());
+                    ps.setString(3, detail.getAreaType());
+                    ps.setInt(4, detail.getQuantity());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+
+            connection.commit();
+            return true;
+        } catch (Exception e) {
+            rollbackQuietly();
+            e.printStackTrace();
+            return false;
+        } finally {
+            restoreAutoCommit();
+        }
+    }
+
     public Map<Integer, List<OrderReservationDetail>> getReservationDetailsByCustomer(
             int customerID) {
         Map<Integer, List<OrderReservationDetail>> detailsByOrder = new LinkedHashMap<>();
