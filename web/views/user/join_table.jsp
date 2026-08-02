@@ -64,9 +64,7 @@
             fetch(contextPath + '/api/table-join', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                // [CSRF FIX] Token ngăn website khác giả mạo yêu cầu tham gia bàn.
                 body: 'action=requestJoin&guestName=' + encodeURIComponent(name)
-                        + '&csrfToken=' + encodeURIComponent('${sessionScope.csrfToken}')
             })
             .then(response => response.text())
             .then(res => {
@@ -93,8 +91,7 @@
             fetch(contextPath + '/api/table-join', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=requestReclaimHost&csrfToken='
-                        + encodeURIComponent('${sessionScope.csrfToken}')
+                body: 'action=requestReclaimHost'
             })
             .then(response => response.text())
             .then(res => {

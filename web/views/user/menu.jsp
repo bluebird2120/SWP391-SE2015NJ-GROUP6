@@ -483,8 +483,6 @@
                             <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
                                 <%-- 🌟 ĐẢM BẢO DÙNG CONTEXT PATH CHUẨN --%>
                                 <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                                    <%-- [CSRF FIX] Bảo vệ yêu cầu thêm món vào giỏ. --%>
-                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
@@ -620,7 +618,6 @@
         <script>
             const MENU_CONTEXT_PATH = '${pageContext.request.contextPath}';
             const TABLE_JOIN_API = MENU_CONTEXT_PATH + '/api/table-join';
-            const MENU_CSRF_TOKEN = '${sessionScope.csrfToken}';
 
             let html5QrcodeScanner = null;
             let isRequestPanelOpen = false;
@@ -873,12 +870,11 @@
                         + label + '</button>';
             }
 
-            /** HOST gửi quyết định approve/reject kèm CSRF token. */
+            /** HOST gửi quyết định approve/reject. */
             function handleRequest(requestId, actionType) {
                 const body = new URLSearchParams();
                 body.set('action', actionType);
                 body.set('requestID', requestId);
-                body.set('csrfToken', MENU_CSRF_TOKEN);
 
                 fetch(TABLE_JOIN_API, {
                     method: 'POST',

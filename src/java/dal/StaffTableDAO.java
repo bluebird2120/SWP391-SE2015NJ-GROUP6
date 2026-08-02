@@ -506,6 +506,32 @@ public class StaffTableDAO extends DBContext {
      Hủy phiên phục vụ khi order chưa có món gửi bếp.
      */
     
+    /**
+     * [TỪ CHỐI MỞ BÀN] Hủy yêu cầu walk-in trước khi lễ tân xác nhận.
+     * Điều kiện nằm trong UPDATE để request cũ không thể hủy bàn đã mở.
+     */
+    public boolean rejectPendingOpenRequest(int orderID) {
+        String sql = "UPDATE `Order` "
+                + "SET orderStatus='cancelled', tableStatus='available', "
+                + "checkoutRequestAt=NULL, hostToken=NULL "
+                + "WHERE orderID=? "
+                + "AND tableStatus='pending' "
+                + "AND isStaffConfirmed=0 "
+                + "AND orderStatus NOT IN ('completed','cancelled') "
+                + "AND NOT EXISTS (SELECT 1 FROM OrderItem oi "
+                + "WHERE oi.orderID=?)";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, orderID);
+            ps.setInt(2, orderID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[StaffTableDAO] rejectPendingOpenRequest lỗi: "
+                    + e.getMessage());
+            return false;
+        }
+    }
+
     public String cancelServiceByReception(int orderID) {
         String hasItemSql = "SELECT 1 FROM OrderItem WHERE orderID=? LIMIT 1";
         String cancelSql = "UPDATE `Order` "

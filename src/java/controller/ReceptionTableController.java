@@ -19,7 +19,7 @@ import model.Employee;
  * LUỒNG LỄ TÂN GÁN/MỞ/CHECK-IN BÀN.
  *
  * <p>GET tải dashboard bàn. POST điều hướng các action assign, checkin,
- * open_table và cancel_service sang StaffTableDAO.</p>
+ * open_table, reject_open_table và cancel_service sang StaffTableDAO.</p>
  */
 public class ReceptionTableController extends HttpServlet {
 
@@ -31,7 +31,6 @@ public class ReceptionTableController extends HttpServlet {
     /** Tải bàn vật lý, đơn chờ bàn và số liệu tổng hợp cho dashboard. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        util.CsrfUtil.ensureToken(request.getSession());
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -56,16 +55,10 @@ public class ReceptionTableController extends HttpServlet {
     }
 
     @Override
-    /** Kiểm tra CSRF/quyền rồi thực hiện action vận hành bàn. */
+    /** Kiểm tra quyền rồi thực hiện action vận hành bàn. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        // [CSRF FIX] Bảo vệ assign/open/check-in/cancel bàn.
-        if (!util.CsrfUtil.isValid(request)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "CSRF token không hợp lệ.");
-            return;
-        }
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -103,6 +96,14 @@ public class ReceptionTableController extends HttpServlet {
                         ? ("checkin".equals(action)
                                 ? "checkin_success" : "Mở bàn thành công")
                         : "Không thể mở bàn cho đơn này.";
+            } else if ("reject_open_table".equals(action)) {
+                // [TỪ CHỐI MỞ BÀN] Chỉ hủy yêu cầu pending, không dùng
+                // cancel_service vì bàn chưa chính thức được mở/phục vụ.
+                boolean rejected = new StaffTableDAO()
+                        .rejectPendingOpenRequest(orderID);
+                message = rejected
+                        ? "reject_open_success"
+                        : "Không thể từ chối: yêu cầu không còn ở trạng thái chờ mở bàn.";
             } else if ("cancel_service".equals(action)) {
                 // [HUY PHUC VU LE TAN]
                 // Le tan chi huy duoc khi don chua co mon gui bep.

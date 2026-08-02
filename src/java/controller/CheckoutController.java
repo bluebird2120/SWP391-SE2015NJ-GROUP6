@@ -55,7 +55,6 @@ public class CheckoutController extends HttpServlet {
     private void processCheckoutDisplay(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
-        util.CsrfUtil.ensureToken(session);
         Integer orderID = (Integer) session.getAttribute("orderID");
         Employee employee = (Employee) session.getAttribute("employee");
 
@@ -155,12 +154,6 @@ public class CheckoutController extends HttpServlet {
     /** Xác nhận quyền xử lý và điều hướng sang thanh toán tiền mặt/VNPay. */
     private void processPaymentConfirm(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
-        // [CSRF FIX] Xác nhận tiền mặt/VNPay là thao tác tài chính quan trọng.
-        if (!util.CsrfUtil.isValid(request)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "CSRF token không hợp lệ.");
-            return;
-        }
         HttpSession session = request.getSession();
         String paymentGateway = request.getParameter("paymentGateway");
         String orderIDParam = request.getParameter("orderID");

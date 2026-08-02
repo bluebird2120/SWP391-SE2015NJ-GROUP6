@@ -434,7 +434,6 @@
                         </p>
                         <form method="post"
                               action="${pageContext.request.contextPath}/order">
-                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                             <input type="hidden"
                                    name="action"
                                    value="checkPaymentStatus">
@@ -564,7 +563,6 @@
 
                                             <div class="item-actions-wrap">
                                                 <form method="post" action="${pageContext.request.contextPath}/order">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="update">
                                                 <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
                                                 <div class="qty-control-box">
@@ -575,7 +573,6 @@
                                             </form>
                                             <div class="item-line-total"><fmt:formatNumber value="${lineTotal}" type="number"/> VNĐ</div>
                                             <form method="post" action="${pageContext.request.contextPath}/order">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="remove">
                                                 <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
                                                 <button class="btn-delete-icon" type="submit" onclick="return confirm('Xóa món này khỏi giỏ?')">
@@ -627,7 +624,6 @@
                         <%-- NÚT: THANH TOÁN TỔNG --%>
                         <c:if test="${sessionScope.roleInTable == 'HOST'}">
                             <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
-                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                 <input type="hidden" name="action" value="checkoutTotal">
                                 <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
                                         onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
@@ -694,13 +690,6 @@
                 var form = document.createElement('form');
                 form.method = 'post';
                 form.action = '${pageContext.request.contextPath}/order';
-
-                // [CSRF FIX] Form tạo bằng JavaScript cũng phải mang token của phiên.
-                var csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfToken';
-                csrfInput.value = '${sessionScope.csrfToken}';
-                form.appendChild(csrfInput);
 
                 // Input điều hướng vào hàm sendToKitchen của Servlet
                 var inputAction = document.createElement('input');
