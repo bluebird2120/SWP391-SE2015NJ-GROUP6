@@ -193,8 +193,6 @@ Thứ tự vật lý trong `InvoicesDAO`:
 
 ## 10. Các điểm bảo mật thường được hỏi
 
-- **CSRF**: `CsrfUtil` tạo token theo session; POST thay đổi dữ liệu phải gửi
-  đúng token.
 - **Không tin dữ liệu client**: giá món được đọc lại từ DB.
 - **Authorization**: Owner, Receptionist, Staff và HOST được kiểm tra riêng.
 - **Transaction**: gửi bếp và hoàn tất thanh toán phải thành công toàn bộ hoặc

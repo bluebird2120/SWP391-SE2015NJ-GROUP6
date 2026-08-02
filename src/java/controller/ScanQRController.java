@@ -32,8 +32,6 @@ public class ScanQRController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
-        // [CSRF FIX] Chuẩn bị token cho các AJAX/form sau khi quét QR.
-        util.CsrfUtil.ensureToken(session);
         String token = request.getParameter("token");
 
         // Logic xử lý quét QR

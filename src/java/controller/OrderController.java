@@ -44,7 +44,6 @@ public class OrderController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        util.CsrfUtil.ensureToken(request.getSession());
         String action = request.getParameter("action");
         if (action == null) { action = "cart"; }
 
@@ -102,18 +101,11 @@ public class OrderController extends HttpServlet {
     }
 
     @Override
-    /** Kiểm tra CSRF rồi điều hướng từng thao tác giỏ hàng theo action. */
+    /** Điều hướng từng thao tác giỏ hàng theo action. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         request.setCharacterEncoding("UTF-8");
-        // [CSRF FIX] Chặn website khác lợi dụng cookie session để gọi món,
-        // gửi bếp hoặc yêu cầu thanh toán thay người dùng.
-        if (!util.CsrfUtil.isValid(request)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "CSRF token không hợp lệ.");
-            return;
-        }
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 

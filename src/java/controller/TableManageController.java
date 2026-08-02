@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.List;
 import model.Employee;
 import model.Table;
-import util.CsrfUtil;
 
 /**
  * LUỒNG TABLE MANAGEMENT CỦA OWNER.
@@ -47,7 +46,6 @@ public class TableManageController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
-        CsrfUtil.ensureToken(session);
         Employee loginUser = (Employee) session.getAttribute("employee");
 
         if (loginUser == null) {
@@ -193,7 +191,7 @@ public class TableManageController extends HttpServlet {
     // ==================== 6. SAVE ADD / EDIT ====================
 
     /**
-     * POST: CSRF -> quyền Owner -> đọc/validate form -> addTable/updateTable.
+     * POST: quyền Owner -> đọc/validate form -> addTable/updateTable.
      */
     @Override
     protected void doPost(HttpServletRequest request,
@@ -201,12 +199,6 @@ public class TableManageController extends HttpServlet {
             throws ServletException, IOException {
 
         request.setCharacterEncoding("UTF-8");
-        if (!CsrfUtil.isValid(request)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "CSRF token không hợp lệ.");
-            return;
-        }
-
         Employee loginUser = (Employee) request.getSession()
                 .getAttribute("employee");
         if (!isOwner(loginUser)) {
