@@ -165,7 +165,7 @@
                                            value="${oi.orderItemID}">
                                     <%--    
                                         Validate nhập số lượng 
-                                         để bắt được cả chữ/ký tự đặc biệt trước khi submit. --%>
+                                      --%>
                                     <input class="qty" type="text" name="quantity"
                                            inputmode="numeric" maxlength="2"
                                            value="${oi.quantity}"

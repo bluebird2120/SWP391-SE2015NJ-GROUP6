@@ -289,7 +289,7 @@ public class ReservationDAO extends DBContext {
                 + "WHERE orderType = 1 "
                 + "  AND orderStatus = 'reserved' "
                 + "  AND tableStatus = 'reserved' "
-                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 2 MINUTE)";
+                + "  AND orderTime < DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             return changed + ps.executeUpdate();
@@ -337,13 +337,7 @@ public class ReservationDAO extends DBContext {
         try {
             connection.setAutoCommit(false);
 
-            // ── Lấy trước danh sách orderID SẮP được confirm trong lần này.
-            //    Phải query TRƯỚC khi UPDATE để chỉ lấy đúng đơn mới, không lặp đơn cũ.
-            //    LƯU Ý: KHÔNG lọc theo ngày ở đây nữa — khách đặt cho hôm nay hay
-            //    ngày mai/ngày kia đều phải được xác nhận "đặt bàn thành công".
-            //    Việc lọc theo ngày (chỉ hôm nay) CHỈ áp dụng cho thông báo của
-            //    LỄ TÂN ở BƯỚC 3 bên dưới (vì lễ tân chỉ cần xử lý đúng ngày,
-            //    đơn tương lai đã có DailyReservationNotifyTask lo vào đúng ngày lúc 06:00).
+           
             String pendingSql
                     = "SELECT o.orderID, o.customerID, DATE(o.orderTime) = CURDATE() AS isToday "
                     + "FROM `Order` o "
@@ -369,7 +363,7 @@ public class ReservationDAO extends DBContext {
                 }
             }
 
-            // ── Thực hiện UPDATE xác nhận cọc ──────────────────────
+          
             int confirmed = 0;
             try (PreparedStatement confirmPs
                     = connection.prepareStatement(confirmSql)) {
@@ -377,11 +371,9 @@ public class ReservationDAO extends DBContext {
                 changed += confirmed;
             }
 
-            // ──  Thông báo cho lễ tân — chỉ với đơn MỚI vừa confirm.
-            //    Dùng danh sách lấy từ BƯỚC 1 (trước UPDATE) nên không bao giờ
-            //    lặp lại các đơn cũ đã reserved từ lần chạy trước.
+          
             if (confirmed > 0 && !newlyConfirmedIDs.isEmpty()) {
-                // try-with-resources: tự đóng connection của NotificationDAO sau khi dùng xong
+             
                 try (NotificationDAO notifDAO = new NotificationDAO()) {
 
                    
@@ -416,7 +408,7 @@ public class ReservationDAO extends DBContext {
                         }
 
                         for (int oID : newlyConfirmedTodayIDs) {
-                            // Mỗi đơn mới → 1 thông báo riêng cho từng lễ tân
+                            
                             for (int recID : receptionistIDs) {
                                 Notifications n = new Notifications();
                                 n.setRecipientID(recID);
@@ -632,11 +624,8 @@ public class ReservationDAO extends DBContext {
     
     /*
     Gom đơn chi tiết theo OrderID đẻ hiển thị lịch sử 
-    */
-    /**
-     * [EDIT RESERVATION] Cap nhat lai gio den/khu vuc/so luong ban cua don dat
-     * ban da coc. Xoa chi tiet cu va them chi tiet moi trong cung transaction de
-     * tranh truong hop Order da doi gio nhung order_reservation_detail chua doi.
+  
+     
      */
     public boolean updateReservationInfo(int orderID, int customerID,
             Timestamp orderTime, List<OrderReservationDetail> details) {

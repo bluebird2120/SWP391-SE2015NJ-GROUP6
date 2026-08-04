@@ -284,7 +284,7 @@
                                    name="orderTime"
                                    id="orderTime"
                                    value="${orderTime}"
-                                   required>
+                                   >
                         </div>
 
                         <div class="mb-4">
@@ -633,7 +633,7 @@
                                     <c:choose>
                                         <c:when test="${not empty tableGroups}">
                                             <div class="row g-3" id="tableGridContainer">
-                                                <c:forEach var="g" items="${tableGroups}">
+                                                    <c:forEach var="g" items="${tableGroups}">
                                                     <c:set var="selectionKey" value="${areaType}_${g.capacity}"/>
                                                     <div class="col-sm-6 col-md-4 card-item-filter"
                                                          data-name="bàn ${g.capacity} chỗ">

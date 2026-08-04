@@ -227,8 +227,7 @@ public class TableDAO extends DBContext {
 
         List<Table> resultList = new ArrayList<>();
 
-        System.out.println("[TableDAO] areaType = " + areaType);
-        System.out.println("[TableDAO] orderTime = " + orderTime);
+       
 
         /*
          * Tổng số bàn active theo capacity trong khu vực.

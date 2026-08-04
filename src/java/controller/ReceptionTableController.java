@@ -15,12 +15,7 @@ import java.io.IOException;
 import model.Employee;
 
 @WebServlet(name = "ReceptionTableController", urlPatterns = {"/reception/tables"})
-/**
- * LUỒNG LỄ TÂN GÁN/MỞ/CHECK-IN BÀN.
- *
- * <p>GET tải dashboard bàn. POST điều hướng các action assign, checkin,
- * open_table và cancel_service sang StaffTableDAO.</p>
- */
+
 public class ReceptionTableController extends HttpServlet {
 
     private static final String VIEW = "/views/reception/table-dashboard.jsp";
@@ -38,11 +33,10 @@ public class ReceptionTableController extends HttpServlet {
             return;
         }
 
-        // [AUTO EXPIRE RESERVATION] Truoc khi le tan xem danh sach,
-        // tu huy cac don dat ban da qua gio hen 30 phut ma van chua duoc gan ban.
+        
         new ReservationDAO().autoExpireReservations();
 
-        // [PHAN QUYEN LE TAN] Le tan xem tong quan va cac don cho gan ban.
+        // Le tan xem tong quan va cac don cho gan ban.
         StaffTableDAO dao = new StaffTableDAO();
         request.setAttribute("physicalTables", dao.getPhysicalTables());
         request.setAttribute("tableSummary", dao.getSummaryByTableType());
@@ -60,7 +54,7 @@ public class ReceptionTableController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        // [CSRF FIX] Bảo vệ assign/open/check-in/cancel bàn.
+       
         if (!util.CsrfUtil.isValid(request)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "CSRF token không hợp lệ.");
@@ -91,7 +85,7 @@ public class ReceptionTableController extends HttpServlet {
                     return;
                 }
                 int tableID = Integer.parseInt(request.getParameter("tableID"));
-                // [PHAN QUYEN LE TAN] Khong truyen ID le tan vao Order.
+               
                 String error = new StaffTableDAO().assignTable(orderID, tableID);
                 message = error == null ? "assign_success" : error;
             } else if ("checkin".equals(action) || "open_table".equals(action)) {
@@ -104,9 +98,7 @@ public class ReceptionTableController extends HttpServlet {
                                 ? "checkin_success" : "Mở bàn thành công")
                         : "Không thể mở bàn cho đơn này.";
             } else if ("cancel_service".equals(action)) {
-                // [HUY PHUC VU LE TAN]
-                // Le tan chi huy duoc khi don chua co mon gui bep.
-                // Ban da duoc gan cho khach thi chuyen sang cleaning, khong ve available ngay.
+              
                 message = new StaffTableDAO().cancelServiceByReception(orderID);
             } else {
                 message = "Thao tác không hợp lệ.";
@@ -125,12 +117,13 @@ public class ReceptionTableController extends HttpServlet {
                 : (Employee) session.getAttribute("employee");
     }
 
+    // kiểm tra xem lễ tân có lịch làm việc không 
     private boolean canOperateReceptionTable(Employee employee) {
         if (employee.getRoleID() == OWNER_ROLE_ID) {
             return true;
         }
         if (employee.getRoleID() == RECEPTIONIST_ROLE_ID) {
-            // [LICH LAM LE TAN] Le tan chi duoc tiep nhan/gan ban khi co ca lam hom nay.
+            //  Le tan chi duoc tiep nhan/gan ban khi co ca lam hom nay.
             return new EmployeeShiftDAO().isEmployeeOnShift(employee.getEmployeeID());
         }
         return false;

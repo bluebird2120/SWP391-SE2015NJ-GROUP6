@@ -212,7 +212,7 @@
                                     <td>
                                         <c:choose>
                                             <c:when test="${r.remainingQuantity > 0}">
-                                                <%-- [PHAN QUYEN LE TAN] Chỉ lễ tân/owner có form gán bàn ở màn này. --%>
+                                               
                                                 <form method="post" action="${pageContext.request.contextPath}/reception/tables" class="inline">
                                                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                     <input type="hidden" name="action" value="assign">
@@ -266,7 +266,7 @@
                                     </td>
                                     <td><c:if test="${not empty t.orderID}">#${t.orderID}</c:if></td>
                                     <td>
-                                        <%-- [PHAN QUYEN LE TAN] Lễ tân không xác nhận dọn bàn ở màn này. --%>
+                                        
                                         <c:if test="${false}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
                                                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">

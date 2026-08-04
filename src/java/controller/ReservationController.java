@@ -53,13 +53,13 @@ public class ReservationController extends HttpServlet {
         }
 
        
-        // tiền cọc bàn đã thanh toán và đơn chuyển sang reserved.
+       
         if ("preorder".equals(action)) {
             openPreorder(request, response);
             return;
         }
 
-        // [EDIT RESERVATION] Xem chi tiet don dat ban va form sua ban/gio neu con du dieu kien.
+        //  Xem chi tiet don dat ban va form sua ban/gio neu con du dieu kien.
         if ("detail".equals(action)) {
             showReservationDetail(request, response);
             return;
@@ -138,7 +138,7 @@ public class ReservationController extends HttpServlet {
             }
 
             Timestamp orderTime = parseTimestamp(dateTimeStr);
-            //  Khong cho khach chon ban ngoai gio hoat dong cua nha hang.
+            
             String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
             if (businessHourError != null) {
                 showPickTime(request, response, businessHourError);
@@ -230,7 +230,7 @@ public class ReservationController extends HttpServlet {
         }
 
         Timestamp orderTime = parseTimestamp(dateTimeStr);
-        //  Kiem tra lai truoc khi tao don de tranh khach bypass buoc chon ban.
+  
         String businessHourError = businessScheduleDAO.validateReservationTime(orderTime);
         if (businessHourError != null) {
             showPickTime(request, response, businessHourError);
@@ -269,8 +269,8 @@ public class ReservationController extends HttpServlet {
       
         List<Table> tableGroups = tableDAO.findAvailableTableGroups(areaType, orderTime);
         List<OrderReservationDetail> details = new ArrayList<>();
-        Map<String, Integer> selectedQuantities
-                = parseSelectedQuantities(request);
+        Map<String, Integer> selectedQuantities = parseSelectedQuantities(request);
+               
 
         for (Map.Entry<String, Integer> entry : selectedQuantities.entrySet()) {
             SelectionKey selection = parseSelectionKey(entry.getKey());
@@ -287,6 +287,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        // So sánh quantity với số bàn còn trống
         Map<String, List<Table>> groupsByArea = new HashMap<>();
         groupsByArea.put(areaType, tableGroups);
         for (OrderReservationDetail detail : details) {
@@ -374,7 +375,7 @@ public class ReservationController extends HttpServlet {
                 + "/menu?reservation=true&orderID=" + orderID);
     }
 
-    /**
+    /*
      *  Mở trang giỏ món riêng của khách đặt bàn trước.
      */
     private void showPreorderCart(HttpServletRequest request,
@@ -483,7 +484,7 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
-        // [PREORDER AFTER DEPOSIT] Món đã nằm trong OrderItem của orderID.
+        //  Món đã nằm trong OrderItem của orderID.
         // Chỉ kết thúc phiên chọn món, không tạo/cập nhật hóa đơn cọc.
         HttpSession session = request.getSession();
         session.removeAttribute("reservationOrderID");
@@ -513,6 +514,7 @@ public class ReservationController extends HttpServlet {
         return orderID;
     }
 
+    // kiểm tra đơn có đủ kiều kiện đặt món không 
     private boolean isEditableReservedOrder(
             Order reservation, Customer customer) {
         return reservation != null
@@ -557,7 +559,7 @@ public class ReservationController extends HttpServlet {
                     request.getContextPath() + "/reservation?action=history");
             return;
         }
-
+        
         int orderID = toInt(request.getParameter("orderID"), -1);
         Order reservation = orderDAO.getOrderByID(orderID);
         if (!isCustomerReservation(reservation, customer)) {
@@ -640,6 +642,8 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        
+    // Đoạn này dùng để kiểm tra khi sửa đơn đặt bàn: số lượng bàn mới mà khách chọn có còn đủ hay không.
         List<OrderReservationDetail> oldDetails = orderDAO.getReservationDetails(orderID);
         Map<String, List<Table>> groupsByArea = new HashMap<>();
         for (OrderReservationDetail detail : newDetails) {
@@ -666,6 +670,7 @@ public class ReservationController extends HttpServlet {
                 + (updated ? "&updated=true" : "&error=update_failed"));
     }
 
+    // thông tin đơn đặt cũ và  danh sách bàn trống 
     private void prepareReservationDetailPage(HttpServletRequest request,
             Order reservation, String requestedDateTime, String requestedArea,
             String error) {
@@ -725,7 +730,7 @@ public class ReservationController extends HttpServlet {
         request.setAttribute("tableGroups", tableGroups);
         request.setAttribute("selectedQuantities", selectedQuantities);
     }
-
+// Tìm bàn trống của ngày mới và khu vực mới 
     private List<Table> getAvailableGroupsForEdit(String areaType,
             Timestamp newOrderTime, Order reservation,
             List<OrderReservationDetail> oldDetails) {
@@ -742,8 +747,7 @@ public class ReservationController extends HttpServlet {
             return groups;
         }
 
-        // [EDIT RESERVATION] Khi sua cung ngay, cong lai so ban cua chinh don nay
-        // vi ham tinh ban trong dang dem don hien tai la ban da duoc giu.
+       
         for (OrderReservationDetail oldDetail : oldDetails) {
             if (!oldDetail.getAreaType().equals(areaType)) {
                 continue;
@@ -766,18 +770,19 @@ public class ReservationController extends HttpServlet {
 
     private String getReservationEditBlockReason(Order reservation) {
         if (reservation == null) {
-            return "Khong tim thay don dat ban.";
+            return "Không tìm thấy đơn đặt bàn .";
         }
         if (!"reserved".equals(reservation.getOrderStatus())
                 || !"reserved".equals(reservation.getTableStatus())) {
-            return "Don da duoc nha hang tiep nhan hoac da ket thuc nen khong the sua.";
+            return "Đơn đã được nhà hàng tiếp nhận hoặc không thể sửa.";
         }
         if (reservation.getOrderTime() == null) {
-            return "Don chua co thoi gian den hop le.";
+            return "Đơn chưa có thời gian đến hợp lệ "
+                    + ".";
         }
         long deadline = reservation.getOrderTime().getTime() - EDIT_DEADLINE_MILLIS;
         if (System.currentTimeMillis() > deadline) {
-            return "Chi duoc sua dat ban truoc gio den it nhat 2 tieng.";
+            return "chỉ được sửa bàn trước thời gian đặt trước ít nhất 2 tiếng.";
         }
         return null;
     }
@@ -913,7 +918,7 @@ public class ReservationController extends HttpServlet {
 
         return selections;
     }
-
+// hàm tách 
     private SelectionKey parseSelectionKey(String key) {
         if (key == null) {
             return null;
