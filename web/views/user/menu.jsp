@@ -481,13 +481,11 @@
                             </div>
 
                             <div class="button-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
-                                <%-- 🌟 ĐẢM BẢO DÙNG CONTEXT PATH CHUẨN --%>
                                 <form action="${pageContext.request.contextPath}/order" method="POST" style="flex: 1; margin: 0; display: flex; flex-direction: column; gap: 8px;">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="itemID" value="${item.itemID}">
                                     <input type="hidden" name="quantity" value="1">
-                                    <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">
-                                    <%-- [GIU TRANG MENU] Bao toan trang hien tai va toan bo bo loc sau khi them mon. --%>
+                                    <input type="hidden" name="price" value="${item.discountPercent > 0 ? item.discountedPrice : item.price}">                                   
                                     <input type="hidden" name="returnUrl" value="<c:out value='${returnUrl}'/>">
 
                                     <button type="submit" class="btn" style="width: 100%; background-color: #76493b; color: white; margin-top: 0;">

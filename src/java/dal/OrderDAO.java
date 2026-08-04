@@ -72,7 +72,6 @@ public class OrderDAO {
             ps.setInt(11, order.getDepositAmount());
             ps.setString(12, order.getOrderStatus() != null ? order.getOrderStatus() : "ordering");
             
-            // 🌟 ĐÃ SỬA: Truyền giá trị hostToken vào vị trí số 13
             ps.setString(13, order.getHostToken());
 
             ps.executeUpdate();

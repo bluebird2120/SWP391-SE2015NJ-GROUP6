@@ -97,7 +97,7 @@ public class PaymentController extends HttpServlet {
         String vnp_Command = "pay";
         String vnp_OrderInfo = "Thanh toan don hang #" + invoiceID;
         String orderType = "other"; 
-        String vnp_TxnRef = Config.getRandomNumber(8); // Mã giao dịch random
+        String vnp_TxnRef = Config.getRandomNumber(8); // Mã giao dịch random //mã tham chiếu của giao dịch
         String vnp_IpAddr = Config.getIpAddress(request);
         String vnp_TmnCode = Config.vnp_TmnCode;
 
