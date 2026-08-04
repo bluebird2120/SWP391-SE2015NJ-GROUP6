@@ -37,6 +37,12 @@
                     clearInterval(checkInterval);
                     // Nhân viên đã duyệt -> Load lại trang hiện tại (lúc này Controller sẽ cho thẳng vào Menu)
                     window.location.reload(); //reload() để load lại trang liên tục
+                } else if (data.status === 'rejected') {
+                    // [TỪ CHỐI MỞ BÀN] Dừng polling để khách không bị kẹt
+                    // tại trang chờ sau khi lễ tân đã từ chối.
+                    clearInterval(checkInterval);
+                    alert('Yêu cầu mở bàn đã bị từ chối. Vui lòng liên hệ lễ tân để được hỗ trợ.');
+                    window.location.href = contextPath + '/home';
                 }
             })
             .catch(err => console.log(err));

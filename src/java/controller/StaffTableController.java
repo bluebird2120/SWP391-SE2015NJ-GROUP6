@@ -35,7 +35,6 @@ public class StaffTableController extends HttpServlet {
     /** Điều hướng màn bàn đang phục vụ, lịch sử hoặc chi tiết order. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        util.CsrfUtil.ensureToken(request.getSession());
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");
@@ -68,16 +67,10 @@ public class StaffTableController extends HttpServlet {
     }
 
     @Override
-    /** Thực hiện action sau khi kiểm tra CSRF và order thuộc đúng nhân viên. */
+    /** Thực hiện action sau khi kiểm tra order thuộc đúng nhân viên. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        // [CSRF FIX] Bảo vệ checkout/cập nhật món/dọn bàn của nhân viên.
-        if (!util.CsrfUtil.isValid(request)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "CSRF token không hợp lệ.");
-            return;
-        }
         Employee employee = getLoggedInEmployee(request);
         if (employee == null) {
             response.sendRedirect(request.getContextPath() + "/login?type=employee");

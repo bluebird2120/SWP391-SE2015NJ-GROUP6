@@ -36,9 +36,6 @@ public class MenuItemController extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
-        // [CSRF FIX] Token dùng cho form thêm món và duyệt guest trên menu.
-        util.CsrfUtil.ensureToken(session);
-
         // [QR ROUTING] Link QR cũ dạng /menu?token=... cũng phải đi qua
         // ScanQRController; MenuItemController chỉ chịu trách nhiệm hiển thị menu.
         String token = request.getParameter("token");

@@ -407,7 +407,7 @@
                 <c:remove var="successMsg" scope="session"/>
             </c:if>
             
-            <%-- HIỂN THỊ THÔNG BÁO LỖI (VÍ DỤ: HẾT MÓN) --%>
+            <%-- HIỂN THỊ THÔNG BÁO LỖI (HẾT MÓN) --%>
             <c:if test="${not empty sessionScope.errorMsg}">
                 <div style="color:#D9534F; background:#FDE8E8; padding:12px 20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #D9534F; font-weight:bold; line-height: 1.5;">
                     ⚠ ${sessionScope.errorMsg}
@@ -421,8 +421,8 @@
                 </div>
             </c:if>
 
-            <%-- [CHO THANH TOAN] Chi HOST vua gui yeu cau moi co co session nay.
-                 Nut ben duoi chi hoi lai trang thai don, khong tu xac nhan thanh toan. --%>
+            <%-- [CHO THANH TOAN] chi host vua gui yeu cau moi co co session nay.
+                 Nut ben duoi chi hoi lai trang thai don, khong tu xac nhan thanh toan --%>
             <c:if test="${sessionScope.checkoutWaiting}">
                 <div class="checkout-waiting-overlay">
                     <div class="checkout-waiting-dialog">
@@ -434,7 +434,6 @@
                         </p>
                         <form method="post"
                               action="${pageContext.request.contextPath}/order">
-                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                             <input type="hidden"
                                    name="action"
                                    value="checkPaymentStatus">
@@ -482,9 +481,9 @@
 
                     <div class="cart-items-column">
 
-                        <%-- =============================================== --%>
+
                         <%-- KHU VỰC 1: CÁC MÓN ĐÃ GỬI BẾP (DATABASE - READ ONLY) --%>
-                        <%-- =============================================== --%>
+
                         <c:if test="${not empty dbOrderItems}">
                             <h3 style="color: #1c4332; font-size: 18px; margin-bottom: 5px;">🍲 Món đã gọi (Bếp đang làm)</h3>
                             <div class="table-group-box">
@@ -514,9 +513,9 @@
                         </c:if>
 
 
-                        <%-- =============================================== --%>
+                        
                         <%-- KHU VỰC 2: GIỎ HÀNG CHỜ GỬI (SESSION CART) --%>
-                        <%-- =============================================== --%>
+    
                         <c:if test="${not empty sessionCart}">
                             <h3 style="color: #D4A373; font-size: 18px; margin-top: 25px; margin-bottom: 5px;">🛒 Món mới (Chưa gửi bếp)</h3>
                             <div class="table-group-box">
@@ -564,7 +563,6 @@
 
                                             <div class="item-actions-wrap">
                                                 <form method="post" action="${pageContext.request.contextPath}/order">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="update">
                                                 <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
                                                 <div class="qty-control-box">
@@ -575,7 +573,6 @@
                                             </form>
                                             <div class="item-line-total"><fmt:formatNumber value="${lineTotal}" type="number"/> VNĐ</div>
                                             <form method="post" action="${pageContext.request.contextPath}/order">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="remove">
                                                 <input type="hidden" name="orderItemID" value="${oi.orderItemID}">
                                                 <button class="btn-delete-icon" type="submit" onclick="return confirm('Xóa món này khỏi giỏ?')">
@@ -627,7 +624,6 @@
                         <%-- NÚT: THANH TOÁN TỔNG --%>
                         <c:if test="${sessionScope.roleInTable == 'HOST'}">
                             <form method="post" action="${pageContext.request.contextPath}/order" style="margin-top: 20px;">
-                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                 <input type="hidden" name="action" value="checkoutTotal">
                                 <button class="btn-summary-action btn-sidebar-checkout" type="submit" ${empty dbOrderItems ? 'disabled' : ''}
                                         onclick="return confirm('Bạn xác nhận muốn tính tiền toàn bộ bữa ăn để ra về?')">
@@ -694,13 +690,6 @@
                 var form = document.createElement('form');
                 form.method = 'post';
                 form.action = '${pageContext.request.contextPath}/order';
-
-                // [CSRF FIX] Form tạo bằng JavaScript cũng phải mang token của phiên.
-                var csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfToken';
-                csrfInput.value = '${sessionScope.csrfToken}';
-                form.appendChild(csrfInput);
 
                 // Input điều hướng vào hàm sendToKitchen của Servlet
                 var inputAction = document.createElement('input');

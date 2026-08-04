@@ -149,6 +149,7 @@
                             <c:when test="${sessionScope.staffTableMessage == 'assign_success'}">Đã gán bàn thành công.</c:when>
                             <c:when test="${sessionScope.staffTableMessage == 'clean_success'}">Đã xác nhận dọn bàn xong.</c:when>
                             <c:when test="${sessionScope.staffTableMessage == 'cancel_service_success'}">Da huy phuc vu va chuyen ban sang cho don.</c:when>
+                            <c:when test="${sessionScope.staffTableMessage == 'reject_open_success'}">Đã từ chối yêu cầu mở bàn.</c:when>
                             <c:otherwise>${sessionScope.staffTableMessage}</c:otherwise>
                         </c:choose>
                     </div>
@@ -214,7 +215,6 @@
                                             <c:when test="${r.remainingQuantity > 0}">
                                                
                                                 <form method="post" action="${pageContext.request.contextPath}/reception/tables" class="inline">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                     <input type="hidden" name="action" value="assign">
                                                     <input type="hidden" name="orderID" value="${r.orderID}">
                                                     <select name="tableID" required>
@@ -269,7 +269,6 @@
                                         
                                         <c:if test="${false}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="cleaned">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="clean" type="submit"
@@ -281,7 +280,6 @@
 
                                         <c:if test="${t.physicalStatus == 'reserved'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="checkin">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button class="checkin" type="submit"
@@ -293,12 +291,23 @@
 
                                         <c:if test="${t.physicalStatus == 'pending'}">
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="open_table">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit" style="background: #e67e22; font-weight: bold;"
                                                         onclick="return confirm('Xác nhận mở bàn #${t.orderID} để khách có thể bắt đầu gọi món?')">
                                                     <i class="fas fa-unlock"></i> Xác nhận mở bàn
+                                                </button>
+                                            </form>
+
+                                            <%-- [TỪ CHỐI MỞ BÀN] Chỉ hiển thị khi yêu cầu còn pending. --%>
+                                            <form method="post" action="${pageContext.request.contextPath}/reception/tables"
+                                                  style="display:inline-block; margin-top:4px;">
+                                                <input type="hidden" name="action" value="reject_open_table">
+                                                <input type="hidden" name="orderID" value="${t.orderID}">
+                                                <button type="submit"
+                                                        style="background:transparent; color:#dc2626; border:1px solid #dc2626; padding:6px 10px; border-radius:6px; font-size:13px; font-weight:bold;"
+                                                        onclick="return confirm('Bạn có chắc muốn từ chối yêu cầu mở bàn #${t.orderID}?')">
+                                                    <i class="fas fa-times-circle"></i> Từ chối mở bàn
                                                 </button>
                                             </form>
                                         </c:if>
@@ -308,7 +317,6 @@
                                         <c:if test="${t.physicalStatus == 'serving' || t.physicalStatus == 'occupied'}">
                                             <%-- [HUY PHUC VU LE TAN] Chi cho huy khi don chua co mon gui bep; backend se kiem tra lai. --%>
                                             <form method="post" action="${pageContext.request.contextPath}/reception/tables" style="display:inline-block;">
-                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                 <input type="hidden" name="action" value="cancel_service">
                                                 <input type="hidden" name="orderID" value="${t.orderID}">
                                                 <button type="submit"
@@ -346,9 +354,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         // Truyền requestID = 0 (Hoặc bạn có thể tối ưu Backend để chỉ cần duyệt theo orderID)
-                        // [CSRF FIX] Bảo vệ thao tác cấp lại quyền HOST.
                         body: 'action=staffApproveReclaim&requestID=0&orderID=' + orderID
-                                + '&csrfToken=' + encodeURIComponent('${sessionScope.csrfToken}')
                     })
                     .then(response => response.text())
                     .then(res => {

@@ -32,7 +32,6 @@ public class TableJoinController extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
         HttpSession session = request.getSession();
-        util.CsrfUtil.ensureToken(session);
 
         if ("checkStatus".equals(action)) {
             Integer orderID = (Integer) session.getAttribute("pendingOrderID");
@@ -82,7 +81,31 @@ public class TableJoinController extends HttpServlet {
                 dal.OrderDAO orderDAO = new dal.OrderDAO();
                 model.Order order = orderDAO.getOrderById(orderID);
 
-                if (order != null && order.getIsStaffConfirmed() == 1) {
+                // [TỪ CHỐI MỞ BÀN] Không để khách polling "waiting" mãi
+                // khi lễ tân đã hủy order pending.
+                if (order == null || "cancelled".equals(order.getOrderStatus())) {
+                    Integer rejectedTableID
+                            = (Integer) session.getAttribute("pendingTableID");
+                    if (rejectedTableID == null) {
+                        rejectedTableID
+                                = (Integer) session.getAttribute("currentTableID");
+                    }
+
+                    // Token trong DB đã bị xóa; xóa luôn cookie cũ trên máy khách.
+                    if (rejectedTableID != null) {
+                        jakarta.servlet.http.Cookie expiredHostCookie
+                                = new jakarta.servlet.http.Cookie(
+                                        "HOST_OF_TABLE_" + rejectedTableID, "");
+                        expiredHostCookie.setMaxAge(0);
+                        expiredHostCookie.setPath("/");
+                        expiredHostCookie.setHttpOnly(true);
+                        expiredHostCookie.setSecure(request.isSecure());
+                        response.addCookie(expiredHostCookie);
+                    }
+
+                    clearRejectedTableSession(session);
+                    out.print("{\"status\": \"rejected\"}");
+                } else if (order.getIsStaffConfirmed() == 1) {
                     out.print("{\"status\": \"approved\"}");
                 } else {
                     out.print("{\"status\": \"waiting\"}");
@@ -114,18 +137,12 @@ public class TableJoinController extends HttpServlet {
     }
 
     @Override
-    /** Thay đổi yêu cầu tham gia bàn sau khi kiểm tra CSRF và vai trò. */
+    /** Thay đổi yêu cầu tham gia bàn sau khi kiểm tra vai trò. */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
         response.setContentType("text/plain;charset=UTF-8");
         PrintWriter out = response.getWriter();
         HttpSession session = request.getSession();
-        // [CSRF FIX] Bảo vệ request join/approve/reclaim làm thay đổi DB.
-        if (!util.CsrfUtil.isValid(request)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            out.print("csrf_invalid");
-            return;
-        }
 
         if ("requestJoin".equals(action)) {
             Integer orderID = (Integer) session.getAttribute("pendingOrderID");
@@ -219,5 +236,19 @@ public class TableJoinController extends HttpServlet {
                 .replace("\r", "\\r")
                 .replace("\n", "\\n")
                 .replace("\t", "\\t");
+    }
+
+    /** Xóa ngữ cảnh gọi món của yêu cầu mở bàn đã bị lễ tân từ chối. */
+    private void clearRejectedTableSession(HttpSession session) {
+        session.removeAttribute("orderID");
+        session.removeAttribute("roleInTable");
+        session.removeAttribute("tableID");
+        session.removeAttribute("currentTableID");
+        session.removeAttribute("areaType");
+        session.removeAttribute("pendingOrderID");
+        session.removeAttribute("pendingTableID");
+        session.removeAttribute("pendingAreaType");
+        session.removeAttribute("sessionCart");
+        session.removeAttribute("checkoutWaiting");
     }
 }
