@@ -167,6 +167,41 @@ public class MenuItemDAO extends DBContext {
         return null;
     }
 
+    /**
+     * Lấy một món đang mở bán để dùng cho luồng gọi món của khách.
+     * Món không tồn tại hoặc đã tạm ngưng sẽ trả về null.
+     */
+    public MenuItem getAvailableMenuItemById(int itemID) {
+        String sql = "SELECT mi.*, mc.categoryName "
+                + "FROM MenuItem mi "
+                + "JOIN MenuCategory mc ON mi.categoryID = mc.categoryID "
+                + "WHERE mi.itemID = ? AND mi.isAvailable = 1";
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, itemID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new MenuItem(rs.getInt("itemID"),
+                            rs.getInt("categoryID"),
+                            rs.getInt("methodID"),
+                            rs.getString("itemName"),
+                            rs.getString("description"),
+                            rs.getInt("price"),
+                            rs.getInt("discountPercent"),
+                            rs.getInt("discountedPrice"),
+                            rs.getString("image"),
+                            rs.getInt("isAvailable"),
+                            rs.getString("allergyNotes"),
+                            rs.getString("categoryName"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[MenuItemDAO] Lỗi lấy món đang mở bán: "
+                    + e.getMessage());
+        }
+        return null;
+    }
+
     public boolean updateMenuItem(int id, int categoryId, String itemName, String description, int price,
             int discountPercent, String image, int isAvailable, String allergyNotes, int methodID) {
         String sql = "update MenuItem "
